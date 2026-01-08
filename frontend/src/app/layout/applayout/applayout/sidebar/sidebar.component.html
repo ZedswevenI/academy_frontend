@@ -1,0 +1,14 @@
+<aside class="sidebar" style="width:240px;">
+  <nav class="nav-wrap p-3 mt-3">
+    <a
+      *ngFor="let menu of menuItems"
+      class="sidebar-link"
+      [routerLink]="menu.route"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      <i [class]="menu.icon + ' me-2'"></i>
+      {{ menu.label }}
+    </a>
+  </nav>
+</aside>
