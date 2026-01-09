@@ -1,0 +1,55 @@
+<div class="row g-3 mb-3">
+    <div class="col d-flex" *ngFor="let d of dates">
+        <!-- <div class="card text-center flex-fill d-flex align-items-center justify-content-center"
+            [ngClass]="selectedDate === d.value ? 'border-primary bg-light' : ''" (click)="selectDate(d)"
+            style="cursor:pointer; min-height: 60px;background-color: #a0bce7;">
+            <strong>{{ d.label }}</strong>
+        </div> -->
+        <div class="card text-center flex-fill d-flex align-items-center justify-content-center"
+            [ngClass]="selectedDate === d.value ? 'selected-date' : 'border-primary bg-light'" (click)="selectDate(d)"
+            style="cursor:pointer; min-height: 60px;background-color: #fff; border: primary;">
+            <strong>{{ d.label }}</strong>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="selectedDay" class="attendance-card-wrapper">
+    <!-- <div class="small-date-card p-2 text-center mb-3">
+        <div class="date-day">{{ selectedDate | date:'dd' }}</div>
+        <div class="date-month">{{ selectedDate | date:'MMM' }}</div>
+    </div> -->
+
+    <!-- <div class="card p-4 shadow-sm rounded-3">
+        <form [formGroup]="form" class="row g-3">
+
+            <div class="col-md-6">
+                <selectbox label="Batch" [options]="batch_options" formControlName="batch" [required]="true"
+                    [control]="form.get('batch')">
+                </selectbox>
+            </div>
+
+            <div class="col-md-6">
+                <selectbox label="Class" [options]="class_options" formControlName="class" [required]="true"
+                    [control]="form.get('class')">
+                </selectbox>
+            </div>
+
+            <div class="col-12">
+                <checkbox label="Mark Attendance" class="mt-2" [required]="false" [control]="form.get('attendance')"
+                    formControlName="attendance">
+                </checkbox>
+            </div>
+
+            <div class="col-12 text-end mt-3">
+                <button class="btn btn-primary px-4" [disabled]="form.invalid" (click)="markAttendance()">
+                    Save
+                </button>
+            </div>
+        </form>
+    </div> -->
+
+    <!-- <h4 class="mb-3 text-primary">My Batch</h4> -->
+    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+        [searchPlaceholder]="'Search BatchCode,Venue,...'" [totalRecords]="totalRecords"
+        (requestData)="loadTableData($event)"></custom-table>
+</div>

@@ -5,12 +5,10 @@ import { DashboardRoutingModule } from './dashboard.routing.module';
 import { SampleComponent } from './sample/sample.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ReportComponent } from './report/report.component';
 
 @NgModule({
   declarations: [
     SampleComponent,
-    ReportComponent
   ],
   imports: [
     CommonModule, 
@@ -19,5 +17,6 @@ import { ReportComponent } from './report/report.component';
     ReactiveFormsModule,
     FormsModule
   ],
+  exports: []
 })
 export class DashboardModule {}

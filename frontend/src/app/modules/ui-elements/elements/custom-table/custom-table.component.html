@@ -1,11 +1,11 @@
 <!-- Top Bar: Search + Rows + Filters (optional) -->
 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
   <!-- Search -->
-  <div class="position-relative" style="width: 368px; max-width: 100%" *ngIf="showsearch">
+  <div class="position-relative" style="width: 368px; max-width: 100%;" *ngIf="showsearch">
     <img src="assets/icons/searchicon.svg" alt="search" width="24" height="24" class="position-absolute"
       style="left: 16px; top: 50%; transform: translateY(-50%)" />
-    <input [(ngModel)]="searchText" placeholder="Search Location, email, City..."
-      class="form-control search-table-input" style="height: 48px; padding-left: 48px" [disabled]="loading"
+    <input [(ngModel)]="searchText" [placeholder]="searchPlaceholder"
+      class="form-control search-table-input" style="height: 48px; padding-left: 48px; border-radius: 25px;" [disabled]="loading"
       (keyup.enter)="onSearch()" />
 
     <button *ngIf="searchText" type="button" class="btn btn-link position-absolute text-muted px-0"
@@ -20,7 +20,7 @@
     <!-- Rows per page -->
     <div class="position-relative" *ngIf="showpageoptions">
       <select [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)" class="form-select filternew fs-16 fw-normal"
-        style="height: 48px; padding-right: 40px" aria-label="Rows per page">
+        style="height: 48px; padding-right: 40px; border-radius: 25px;" aria-label="Rows per page">
         <option value="5">5 Rows</option>
         <option value="10">10 Rows</option>
         <option value="20">20 Rows</option>

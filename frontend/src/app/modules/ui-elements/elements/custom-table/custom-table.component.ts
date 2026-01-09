@@ -18,6 +18,7 @@ export class CustomTableComponent {
   @Input() loading: boolean = false;
   @Input() showpageoptions: boolean = true;
   @Input() showsearch: boolean = true;
+  @Input() searchPlaceholder: string = '';
 
   @Input() autoFitChars = false;
   @Input() baseCharWidth = 8;

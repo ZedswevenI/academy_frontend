@@ -12,41 +12,30 @@ export interface NavItem {
 
 export const MENU_ITEMS: MenuItem[] = [
   {
-    label: 'Dashboard',
+    label: 'Attendance',
     icon: 'fa-solid fa-gauge',
-    route: '/app/dashboard',
+    route: '/app/attendance',
   },
   {
-    label: 'Inward',
+    label: 'My Batch',
     icon: 'fa-solid fa-arrow-down',
-    route: '/app/inward',
+    route: '/app/batch',
   },
   {
-    label: 'Dispatch',
+    label: 'My Class',
     icon: 'fa-solid fa-arrow-up',
-    route: '/app/dispatch',
+    route: '/app/class',
   },
   {
-    label: 'Picking',
-    icon: 'fa-solid fa-box',
-    route: '/app/picking',
+    label: 'My Student',
+    icon: 'fa-solid fa-arrow-up',
+    route: '/app/student',
   },
-  {
-    label: 'Delivery',
-    icon: 'fa-solid fa-truck',
-    route: '/app/delivery',
-  },
-  {
-    label: 'Reports',
-    icon: 'fa-solid fa-chart-column',
-    route: '/app/report',
-  },
-  {
-    label: 'Products',
-    icon: 'fa-solid fa-cart-shopping',
-    route: '/app/product',
-  },
-
+  // {
+  //   label: 'My Class',
+  //   icon: 'fa-solid fa-arrow-up',
+  //   route: '/app/inward',
+  // },
 ];
 
 export const NAV_ITEMS: NavItem[] = [
@@ -54,20 +43,5 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Report',
     icon: 'fa-solid fa-gauge',
     route: '/app/dashboard/report',
-  },
-  {
-    label: 'Warehouse',
-    icon: 'fa-solid fa-warehouse',
-    route: '/app/warehouse',
-  },
-  {
-    label: 'Location',
-    icon: 'fa-solid fa-map-pin',
-    route: '/app/location',
-  },
-  {
-    label: 'Users',
-    icon: 'fa-solid fa-users',
-    route: '/app/user',
   },
 ]
