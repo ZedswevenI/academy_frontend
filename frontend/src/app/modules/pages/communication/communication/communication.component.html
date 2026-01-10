@@ -1,0 +1,104 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <!-- Header Section -->
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-comments"></i> Communication
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="communication mt-3 card">
+            <div class="row">
+                <!-- Left Panel -->
+                <div class="col-md-2 border-end">
+                    <div class="row">
+                        <div class="position-relative w-70">
+
+                            <!-- Search Icon -->
+                            <img src="assets/icons/searchicon.svg" alt="search" width="20" height="20"
+                                class="position-absolute" style="left: 16px; top: 50%; transform: translateY(-50%)" />
+
+                            <!-- Search Input -->
+                            <input type="text" placeholder="Search" class="form-control search-table-input shadow-sm"
+                                style="height: 48px; padding-left: 48px; padding-right: 40px; border-radius: 25px;"
+                                [(ngModel)]="searchText" (input)="onSearch()" />
+
+                            <!-- Clear Button -->
+                            <button *ngIf="searchText" type="button"
+                                class="btn btn-link position-absolute text-muted px-0"
+                                style="right: 14px; top: 50%; transform: translateY(-50%)" aria-label="Clear search"
+                                (click)="clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
+
+                        </div>
+                        <div class="row my-2">
+                            <div class="row my-2 px-2">
+                                <div class="col-12 d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-primary"
+                                        [class.active]="selectedFilter === 'all'" (click)="setFilter('all')">
+                                        All
+                                    </button>
+
+                                    <button type="button" class="btn btn-outline-primary"
+                                        [class.active]="selectedFilter === 'group'" (click)="setFilter('group')">
+                                        Group
+                                    </button>
+
+                                    <button type="button" class="btn btn-outline-primary"
+                                        [class.active]="selectedFilter === 'direct'" (click)="setFilter('direct')">
+                                        Individual
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- BATCH GROUPS -->
+                            <div class="chat-section px-2">
+                                <h6 class="section-title">Batch Groups</h6>
+
+                                <div class="chat-item" *ngFor="let chat of filteredBatchGroups"
+                                    (click)="selectChat(chat)" [class.active]="selectedChat?.id === chat.id">
+                                    <div class="avatar group">{{ chat.name[0] }}</div>
+                                    <div class="chat-info">
+                                        <div class="chat-title">{{ chat.name }}</div>
+                                        <div class="chat-last">{{ chat.lastMessage }}</div>
+                                    </div>
+                                    <span class="time">{{ chat.time }}</span>
+                                </div>
+                            </div>
+
+                            <!-- DIRECT CHATS -->
+                            <div class="chat-section px-2">
+                                <h6 class="section-title">Direct Messages</h6>
+
+                                <div class="chat-item" *ngFor="let chat of filteredDirectChats"
+                                    (click)="selectChat(chat)" [class.active]="selectedChat?.id === chat.id">
+                                    <div class="avatar">{{ chat.name[0] }}</div>
+                                    <div class="chat-info">
+                                        <div class="chat-title">{{ chat.name }}</div>
+                                        <div class="chat-last">{{ chat.lastMessage }}</div>
+                                    </div>
+                                    <span class="online-dot" *ngIf="chat.online"></span>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                    </div>
+                </div>
+
+
+                <!-- RIGHT Panel-->
+                <div class="col-md-10">
+                    <h4>Right</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

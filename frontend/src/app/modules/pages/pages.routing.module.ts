@@ -8,14 +8,9 @@ const routes: Routes = [
       import('./dashboard/dashboard.module').then((m) => m.DashboardModule),
   },
   {
-    path: 'attendance',
+    path: 'timetable',
     loadChildren: () =>
-      import('../pages/attendance/attendance.module').then((m) => m.AttendanceModule),
-  },
-  {
-    path: 'inward',
-    loadChildren: () =>
-      import('./inward/inward.module').then((m) => m.InwardModule),
+      import('../pages/timetable/timetable.module').then((m) => m.TimetableModule),
   },
   {
     path: 'batch',
@@ -32,6 +27,37 @@ const routes: Routes = [
     loadChildren: () =>
       import('../pages/student/student.module').then((m) => m.StudentModule),
   },
+  {
+    path: 'attendance',
+    loadChildren: () =>
+      import('../pages/attendance/attendance.module').then((m) => m.AttendanceModule),
+  },
+  {
+    path: 'assignment',
+    loadChildren: () =>
+      import('../pages/assignment/assignment.module').then((m) => m.AssignmentModule),
+  },
+  {
+    path: 'task',
+    loadChildren: () =>
+      import('../pages/task/task.module').then((m) => m.TaskModule),
+  },
+  {
+    path: 'communication',
+    loadChildren: () =>
+      import('../pages/communication/communication.module').then((m) => m.CommunicationModule),
+  },
+  {
+    path: 'knowledge',
+    loadChildren: () =>
+      import('../pages/knowledge/knowledge.module').then((m) => m.KnowledgeModule),
+  },
+  {
+    path: 'inward',
+    loadChildren: () =>
+      import('./inward/inward.module').then((m) => m.InwardModule),
+  },
+
 ];
 
 @NgModule({

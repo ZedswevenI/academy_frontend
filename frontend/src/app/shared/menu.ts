@@ -12,24 +12,54 @@ export interface NavItem {
 
 export const MENU_ITEMS: MenuItem[] = [
   {
-    label: 'Attendance',
+    label: 'Dashboard',
     icon: 'fa-solid fa-gauge',
+    route: '/app/dashboard',
+  },
+  {
+    label: 'Timetable',
+    icon: 'fa-solid fa-calendar-days',
+    route: '/app/timetable'
+  },
+  {
+    label: 'Batch',
+    icon: 'fa-solid fa-layer-group',
+    route: '/app/batch',
+  },
+  // {
+  //   label: 'Class',
+  //   icon: 'fa-solid fa-chalkboard-user',
+  //   route: '/app/class',
+  // },
+  {
+    label: 'Student',
+    icon: 'fa-solid fa-user-graduate',
+    route: '/app/student',
+  },
+  {
+    label: 'Attendance',
+    icon: 'fa-solid fa-clipboard-check',
     route: '/app/attendance',
   },
   {
-    label: 'My Batch',
-    icon: 'fa-solid fa-arrow-down',
-    route: '/app/batch',
+    label: 'Assignment',
+    icon: 'fa-solid fa-file-lines',
+    route: '/app/assignment',
   },
   {
-    label: 'My Class',
-    icon: 'fa-solid fa-arrow-up',
-    route: '/app/class',
+    label: 'Task',
+    icon: 'fa-solid fa-list-check',
+    route: '/app/task',
   },
   {
-    label: 'My Student',
-    icon: 'fa-solid fa-arrow-up',
-    route: '/app/student',
+    label: 'Communication',
+    icon: 'fa-solid fa-comments',
+    route: '/app/communication',
+  },
+  {
+    label: 'Knowledge Base',
+    icon: 'fa-solid fa-book-open',
+    route: '/app/knowledge',
   },
   // {
   //   label: 'My Class',

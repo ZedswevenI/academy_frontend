@@ -5,3 +5,54 @@
   font-weight: bold;
 }
 
+//add button
+.btn-newbutton {
+  background-color: var(--btn-bg, #1d90ff) !important;
+  border-color: var(--btn-bg, #1d90ff) !important;
+  color: var(--btn-text, #ffffff) !important;
+  box-shadow: var(--btn-shadow, 0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px;
+  white-space: nowrap;
+}
+.btn-newbutton:hover {
+  background-color: var(--btn-hover-color, #1673cb) !important;
+  border-color: var(--btn-hover-color, #1673cb) !important;
+  color: var(--btn-text-hover, var(--btn-text, #ffffff)) !important;
+}
+
+//formfield label
+.form-label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #4d4c4c;
+}
+
+//submit button
+.submitbutton {
+  background-color: var(--btn-bg, #1d90ff) !important;
+  border-color: var(--btn-bg, #1d90ff) !important;
+  color: var(--btn-text, #ffffff) !important;
+  box-shadow: var(--btn-shadow, 0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
+  border-radius: 42px !important;
+}
+
+.submitbutton:hover {
+  background-color: var(--btn-hover-color, #1673cb) !important;
+  border-color: var(--btn-hover-color, #1673cb) !important;
+  color: var(--btn-text-hover, var(--btn-text, #ffffff)) !important;
+  border-radius: 42px !important;
+}
+
+//close button
+.closebutton {
+  background-color: transparent !important;
+  color: var(--btn-bg, #1d90ff) !important;
+  border: none !important;
+}
+.closebutton:hover {
+  background-color: transparent !important;
+  color: var(--btn-hover-color, #1673cb) !important;
+  border: none !important;
+}

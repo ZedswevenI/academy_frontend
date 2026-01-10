@@ -107,7 +107,7 @@ export class AttendanceComponent {
   }) {
     let filtered = [...this.originalData];
 
-    // 🔍 SEARCH
+    //  SEARCH
     if (req.search) {
       const value = req.search.toLowerCase();
       filtered = filtered.filter(row =>
@@ -117,7 +117,7 @@ export class AttendanceComponent {
       );
     }
 
-    // 🔁 SORT
+    //  SORT
     if (req.sortKey) {
       filtered.sort((a, b) => {
         const x = a[req.sortKey!];
@@ -128,7 +128,7 @@ export class AttendanceComponent {
       });
     }
 
-    // 📄 PAGINATION
+    // PAGINATION
     this.totalRecords = filtered.length;
     const start = (req.page - 1) * req.pageSize;
     const end = start + req.pageSize;
