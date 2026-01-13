@@ -36,11 +36,11 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: 'fa-solid fa-user-graduate',
     route: '/app/student',
   },
-  {
-    label: 'Attendance',
-    icon: 'fa-solid fa-clipboard-check',
-    route: '/app/attendance',
-  },
+  // {
+  //   label: 'Attendance',
+  //   icon: 'fa-solid fa-clipboard-check',
+  //   route: '/app/attendance',
+  // },
   {
     label: 'Assignment',
     icon: 'fa-solid fa-file-lines',

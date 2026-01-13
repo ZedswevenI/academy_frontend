@@ -1,0 +1,82 @@
+<div class=" p-3">
+    <!-- <h4 class="mb-3 text-primary">Student Attendance</h4> -->
+    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+        <i class="fa-solid fa-calendar-days me-2"></i> Student Attendance
+    </h1>
+    <!-- Select All -->
+    <div class="form-check d-flex align-items-end justify-content-end gap-2 mb-5">
+        <input type="checkbox" class="form-check-input" id="markAll" [(ngModel)]="selectAll"
+            (change)="toggleSelectAll()">
+
+        <label for="markAll" class="fw-medium">
+            Select All
+        </label>
+    </div>
+    <div class="row g-3">
+        <div class="col-6 col-sm-4 col-md-3 col-lg-2" *ngFor="let student of students">
+
+            <!-- <div class="student-card" [class.present]="student.present" (click)="toggleAttendance(student)"> -->
+            <div class="student-card" [ngClass]="{
+       'present': student.present === true,
+       'absent': student.present === false,
+       'neutral': student.present === null
+     }" (click)="toggleAttendance(student)">
+
+                <div class="student-avatar">
+                    {{ student.name.charAt(0) }}
+                </div>
+
+                <div class="student-name">{{ student.name }}</div>
+                <div class="student-roll">{{ student.rollNo }}</div>
+
+                <!-- <input type="checkbox" class="form-check-input mt-2" [checked]="student.present"
+                    (click)="$event.stopPropagation()"> -->
+                <input type="checkbox" class="form-check-input mt-2" [checked]="student.present === true"
+                    (click)="$event.stopPropagation(); toggleAttendance(student)">
+
+
+            </div>
+
+        </div>
+    </div>
+
+    <div class="text-end mt-4">
+        <button class="btn btn-primary px-4" (click)="submitAttendance()">
+            Submit Attendance
+        </button>
+    </div>
+</div>
+
+<!-- POP UP -->
+<!-- Attendance Summary Popup -->
+<div *ngIf="showSummary" class="attendance-popup-backdrop">
+    <div class="attendance-popup card p-4">
+
+        <h5 class="text-primary mb-3">Attendance Summary</h5>
+
+        <div class="mb-2">
+            <strong class="text-success">Present:</strong> {{ presentCount }}
+        </div>
+
+        <div class="mb-2">
+            <strong class="text-danger">Absent:</strong> {{ absentCount }}
+        </div>
+
+        <div *ngIf="absentStudents.length">
+            <strong class="text-danger">Absent Students:</strong>
+            <ul class="mt-2">
+                <li *ngFor="let name of absentStudents">{{ name }}</li>
+            </ul>
+        </div>
+
+        <div class="text-end mt-3">
+            <button class="btn closebutton me-2" (click)="showSummary = false">
+                Close
+            </button>
+            <button class="btn submitbutton" (click)="showSummary = false" (click)="onConfirm()">
+                Confirm
+            </button>
+        </div>
+
+    </div>
+</div>
