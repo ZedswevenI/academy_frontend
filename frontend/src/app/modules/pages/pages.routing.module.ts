@@ -53,6 +53,16 @@ const routes: Routes = [
       import('../pages/knowledge/knowledge.module').then((m) => m.KnowledgeModule),
   },
   {
+    path: 'performance',
+    loadChildren: () =>
+      import('../pages/performance/performance.module').then((m) => m.PerformanceModule),
+  },
+   {
+    path: 'phase',
+    loadChildren: () =>
+      import('../pages/phase/phase.module').then((m) => m.PhaseModule),
+  },
+  {
     path: 'inward',
     loadChildren: () =>
       import('./inward/inward.module').then((m) => m.InwardModule),

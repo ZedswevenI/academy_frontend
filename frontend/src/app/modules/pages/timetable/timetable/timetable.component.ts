@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 @Component({
   selector: 'app-timetable',
@@ -8,4 +9,7 @@ import { Component } from '@angular/core';
 })
 export class TimetableComponent {
 
+  constructor(private breadcrump: BredcrumpService){
+    this.breadcrump.set([{label: 'Timetable'}])
+  }
 }

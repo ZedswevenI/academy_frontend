@@ -40,6 +40,6 @@ export class LoginComponent {
     const password = this.form.value.password;
 
     // After validation success → navigate
-    this.router.navigate(['/app/attendance']);
+    this.router.navigate(['/app/dashboard']);
   }
 }

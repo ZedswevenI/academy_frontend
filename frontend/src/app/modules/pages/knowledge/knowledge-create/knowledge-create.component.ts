@@ -4,12 +4,12 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-knowledge',
+  selector: 'app-knowledge-create',
   standalone: false,
-  templateUrl: './knowledge.component.html',
-  styleUrl: './knowledge.component.scss'
+  templateUrl: './knowledge-create.component.html',
+  styleUrl: './knowledge-create.component.scss'
 })
-export class KnowledgeComponent {
+export class KnowledgeCreateComponent {
   knowledgeForm!: FormGroup;
 
   class_options = [
@@ -24,7 +24,7 @@ export class KnowledgeComponent {
   ]
 
   constructor(private breadcrump: BredcrumpService, private fb: FormBuilder, private router: Router) {
-    this.breadcrump.set([{ label: 'Knowledge Base' }])
+    this.breadcrump.set([{ label: 'Knowledge Base', link: '/app/knowledge' }, { label: 'Create'}])
   }
 
   ngOnInit(): void {

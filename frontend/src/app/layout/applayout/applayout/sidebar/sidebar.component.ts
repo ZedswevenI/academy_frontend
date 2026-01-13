@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { MENU_ITEMS, MenuItem } from '../../../../shared/menu';
+import { Input, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-sidebar',
@@ -9,4 +10,8 @@ import { MENU_ITEMS, MenuItem } from '../../../../shared/menu';
 })
 export class SidebarComponent {
   menuItems: MenuItem[] = MENU_ITEMS;
+
+  @Input() open = false;
+  @Output() close = new EventEmitter<void>();
+
 }

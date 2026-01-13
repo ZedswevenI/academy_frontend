@@ -97,7 +97,8 @@
                 <span class="truncate-cell" [style.maxWidth.px]="col.maxWidthPx || 240"
                   [attr.title]="needsTooltip(getCellValue(row, col.key), col) ? getCellValue(row, col.key) : null"
                   (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                  (mouseleave)="scheduleCollapse()" (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)">
+                  (mouseleave)="scheduleCollapse()" (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
+                 [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
                   {{ truncate(getCellValue(row, col.key), col) }}
                 </span>
               </ng-template>

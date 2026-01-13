@@ -1,12 +1,15 @@
 <div class="app-shell d-flex flex-column">
     <!-- Header -->
-    <app-header class="flex-shrink-0 border-bottom app-header"></app-header>
+    <app-header class="flex-shrink-0 border-bottom app-header" (menuToggle)="toggleSidebar()"></app-header>
     <!-- <app-navbar class="flex-shrink-0 border-bottom app-header"></app-navbar> -->
-    
+
     <!-- Sidebar + Main content -->
-    <div class="main-wrap d-flex flex-grow-1" style="background-color: #f8f9fa;">
+    <div class="layout-body" style="background-color: #f8f9fa;">
         <!-- Sidebar -->
-        <app-sidebar class="border-end app-sidebar bg-white vh-100"></app-sidebar>
+        <app-sidebar class="border-end app-sidebar bg-white" [open]="sidebarOpen"
+            (close)="closeSidebar()"></app-sidebar>
+        <div class="overlay d-lg-none" *ngIf="sidebarOpen" (click)="closeSidebar()">
+        </div>
 
         <!-- Main content -->
         <main class="flex-grow-1 p-3 p-md-4 app-main">
@@ -17,5 +20,5 @@
     </div>
 
     <!-- Footer -->
-    <app-footer></app-footer>
-</div> 
+    <app-footer class="app-footer"></app-footer>
+</div>

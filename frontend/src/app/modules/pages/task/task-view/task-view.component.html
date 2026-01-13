@@ -1,0 +1,82 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <!-- Header Section -->
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-list-check me-2"></i>Task View
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <form>
+                <div class="row g-3">
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-4 col-form-label">
+                                Task Name
+                            </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2"><strong>ENR2001</strong></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-4 col-form-label">
+                                Description
+                            </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2"><strong>Prepare project documentation</strong></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-4 col-form-label">
+                                Remarks
+                            </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-1"><button class="btn closebutton" type="button" (click)="onAct()">Action</button></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-12 text-end mt-3">
+                    <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/task">
+                        Back
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- POP UP -->
+<div *ngIf="isStatus" class="task-popup-backdrop">
+    <div class="task-popup card p-4">
+        <h5 class="text-primary mb-3">Status of Task</h5>
+        <div *ngFor="let item of statusOptions; let i = index" class="row align-items-center mb-2">
+            <div class="col-auto">
+                <input type="checkbox" class="form-check-input" [checked]="item.checked" (change)="selectStatus(i)" />
+            </div>
+            <div class="col">
+                <p class="mb-0">{{ item.label }}</p>
+            </div>
+        </div>
+
+
+        <div class="text-end mt-3">
+            <button class="btn closebutton" (click)="onClose()">
+                Back
+            </button>
+            <button class="btn submitbutton" (click)="onConfirm()">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>

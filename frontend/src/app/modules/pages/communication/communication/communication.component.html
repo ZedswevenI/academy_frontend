@@ -13,11 +13,11 @@
 
 
         <div class="communication mt-3 card">
-            <div class="row">
+            <div class="row h-100">
                 <!-- Left Panel -->
-                <div class="col-md-2 border-end">
+                <div class="col-12 col-md-4 col-lg-3 border-end d-flex flex-column">
                     <div class="row">
-                        <div class="position-relative w-70">
+                        <div class="position-relative ms-2" style="width: 80%">
 
                             <!-- Search Icon -->
                             <img src="assets/icons/searchicon.svg" alt="search" width="20" height="20"
@@ -37,7 +37,7 @@
                             </button>
 
                         </div>
-                        <div class="row my-2">
+                        <div class="row my-2 ms-2">
                             <div class="row my-2 px-2">
                                 <div class="col-12 d-flex gap-2">
                                     <button type="button" class="btn btn-outline-primary"
@@ -57,7 +57,8 @@
                                 </div>
                             </div>
 
-                            <!-- BATCH GROUPS -->
+                           <div class="chat-list flex-grow-1 overflow-auto px-2">
+                             <!-- BATCH GROUPS -->
                             <div class="chat-section px-2">
                                 <h6 class="section-title">Batch Groups</h6>
 
@@ -86,6 +87,7 @@
                                     <span class="online-dot" *ngIf="chat.online"></span>
                                 </div>
                             </div>
+                           </div>
 
                         </div>
 
@@ -95,8 +97,59 @@
 
 
                 <!-- RIGHT Panel-->
-                <div class="col-md-10">
-                    <h4>Right</h4>
+                <div class="col-12 col-md-8 col-lg-9 d-flex flex-column">
+                    <div class="chat-window d-flex flex-column h-100">
+
+                        <!-- Chat Header -->
+                        <div class="chat-header d-flex align-items-center justify-content-between px-3 py-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar header-avatar">
+                                    {{ selectedChat?.name?.charAt(0) || 'Select a chat' }}
+                                </div>
+                                <div>
+                                    <div class="chat-title fw-semibold">
+                                        {{ selectedChat?.name || 'Select a chat' }}
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ selectedChat?.online ? 'Online' : 'Last seen recently' }}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-3 text-muted">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </div>
+                        </div>
+
+                        <!-- Chat Messages -->
+                        <div class="chat-body flex-grow-1 px-3 py-3 overflow-auto">
+
+                            <div *ngFor="let msg of messages" class="message-wrapper" [class.sent]="msg.sender === 'teacher'"
+                                [class.received]="msg.sender !== 'teacher'">
+
+                                <div class="message-bubble">
+                                    {{ msg.text }}
+                                    <div class="message-time">{{ msg.time }}</div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- Chat Input -->
+                        <div class="chat-input d-flex align-items-center px-3 py-2 gap-2">
+                            <i class="far fa-smile text-muted fs-5"></i>
+
+                            <input type="text" class="form-control message-input" placeholder="Type a message"
+                                [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" />
+
+                            <button class="btn send-btn" (click)="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
                 </div>
             </div>
         </div>

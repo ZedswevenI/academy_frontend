@@ -5,10 +5,12 @@ import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { StudentComponent } from './student/student.component';
 import { StudentRoutingModule } from './student.routing.module';
+import { StudentViewComponent } from './student-view/student-view.component';
 
 @NgModule({
   declarations: [
-    StudentComponent
+    StudentComponent,
+    StudentViewComponent
   ],
   imports: [
     CommonModule,

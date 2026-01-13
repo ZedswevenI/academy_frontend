@@ -1,9 +1,13 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { KnowledgeComponent } from './knowledge/knowledge.component';
+import { KnowledgeListComponent } from './knowledge-list/knowledge-list.component';
+import { KnowledgeViewComponent } from './knowledge-view/knowledge-view.component';
+import { KnowledgeCreateComponent } from './knowledge-create/knowledge-create.component';
 
 const routes: Routes = [
-    { path: '', component: KnowledgeComponent, title: 'Knowledge Base'}
+    { path: '', component: KnowledgeListComponent, title: 'Knowledge Base'},
+    { path: 'create', component: KnowledgeCreateComponent, title: 'Knowledge Base'},
+    { path: 'view', component: KnowledgeViewComponent, title: 'Knowledge Base'}
 ];
 
 @NgModule({

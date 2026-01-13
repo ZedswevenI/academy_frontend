@@ -7,7 +7,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChange
   styleUrl: './custom-table.component.scss'
 })
 export class CustomTableComponent {
-// Table details
+  // Table details
   @Input() columns: { key: string; label: string; sortable: boolean; date?: boolean; maxWidthPx?: number }[] = [];
   @Input() data: any[] = [];
   @Input() actions: any[] = [];
@@ -51,7 +51,7 @@ export class CustomTableComponent {
     return Math.ceil(this.totalRecords / this.pageSize) || 1;
   }
 
-  constructor() {}
+  constructor() { }
 
   ngOnInit(): void {
     this.pageSize = this.pageSizeOptions[0];
@@ -274,4 +274,78 @@ export class CustomTableComponent {
   onExpanderLeave() {
     this.scheduleCollapse(120);
   }
+
+  @Input() value: number | string | null = null;
+  @Input() dangerLimit!: number;
+  @Input() warningLimit!: number;
+  @Input() success!: string;
+  @Input() warn!: string;
+  @Input() danger!: string;
+  @Input() primary!: string;
+
+  getNetStyle(value: number | string | null, colKey?: string) {
+
+    // String Condition
+    if (typeof value === 'string') {
+      if (value === this.success) {
+        return {
+          backgroundColor: '#10bc6c',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '6px',
+          borderRadius: '30px'
+        }
+      } else if (value === this.warn) {
+        return {
+          backgroundColor: '#fab81a',
+          color: '#000',
+          fontWeight: 'bold',
+          padding: '6px',
+          borderRadius: '30px'
+        };
+      } else if (value === this.danger) {
+        return {
+          backgroundColor: '#db3545',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '6px',
+          borderRadius: '30px'
+        };
+      } else if (value === this.primary) {
+        return {
+          backgroundColor: '#217ace',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '6px',
+          borderRadius: '30px',
+        };
+      }
+    }
+
+    // Number Condition
+    if (colKey === 'net' && typeof value === 'number') {
+      if (value < this.dangerLimit) {
+        return {
+          backgroundColor: '#f7606f',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '6px',
+          borderRadius: '6px'
+        };
+      }
+      return {
+        backgroundColor: '#fab81a',
+        color: '#000',
+        fontWeight: 'bold',
+        padding: '6px',
+        borderRadius: '6px'
+      };
+    }
+
+    return {};
+  }
 }
+
+
+
+

@@ -1,5 +1,17 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { Router } from '@angular/router';
+
+interface Message {
+  text: string;
+  sender: 'teacher' | 'student';
+  time: string;
+}
+
+interface Chat {
+  name: string;
+  online?: boolean;
+}
 
 @Component({
   selector: 'app-student',
@@ -8,6 +20,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
   styleUrl: './student.component.scss'
 })
 export class StudentComponent {
+  isChat: boolean = false
 
   columnsArray = [
     { key: 'id', label: 'ID', sortable: true },
@@ -41,7 +54,7 @@ export class StudentComponent {
     },
   ]
 
-  constructor(private breadcrump: BredcrumpService) {
+  constructor(private breadcrump: BredcrumpService, private router: Router) {
     this.breadcrump.set([{ label: 'Student' }])
   }
 
@@ -112,6 +125,51 @@ export class StudentComponent {
     this.dataArray = filtered.slice(start, end);
   }
 
-  viewStudent(row: any) { }
-  chatStudent(row: any) { }
+  viewStudent(row: any) {
+    this.router.navigate(['/app/student/view'])
+  }
+
+  chatStudent(row: any) {
+    this.isChat = true;
+  }
+
+
+  selectedChat: Chat | null = {
+    name: 'Student Chat',
+    online: true
+  };
+
+  messages: Message[] = [
+    {
+      text: 'Hello Sir 👋',
+      sender: 'student',
+      time: '10:00 AM'
+    },
+    {
+      text: 'Hello! How can I help you?',
+      sender: 'teacher',
+      time: '10:01 AM'
+    }
+  ];
+
+  // New message
+  newMessage = '';
+  closeChat() {
+    this.isChat = false;
+  }
+
+  sendMessage() {
+    if (!this.newMessage.trim()) return;
+
+    this.messages.push({
+      text: this.newMessage,
+      sender: 'teacher',
+      time: new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    });
+
+    this.newMessage = '';
+  }
 }

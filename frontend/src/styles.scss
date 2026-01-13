@@ -1,4 +1,20 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+  --header-height: 64px;
+  --footer-height: 48px;
+  --sidebar-width: 240px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+app-root {
+  height: 100%;
+  display: block;
+}
+
 .sidebar-link.active {
   background-color: var(--brand-primary);
   color: #fff;

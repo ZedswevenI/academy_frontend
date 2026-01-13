@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -8,4 +9,7 @@ import { Component } from '@angular/core';
 })
 export class DashboardComponent {
 
+  constructor(private breadcrump: BredcrumpService){
+    this.breadcrump.set([{label: 'Dashboard'}])
+  }
 }

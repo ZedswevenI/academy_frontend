@@ -7,5 +7,13 @@ import { Component } from '@angular/core';
   styleUrl: './applayout.component.scss'
 })
 export class ApplayoutComponent {
+  sidebarOpen = false;
 
+  toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar() {
+    this.sidebarOpen = false;
+  }
 }

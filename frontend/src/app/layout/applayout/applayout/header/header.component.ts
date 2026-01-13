@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-header',
@@ -14,5 +15,12 @@ export class HeaderComponent {
     sessionStorage.clear();
     this.router.navigate(['/auth/login']);
   }
+
+  @Output() menuToggle = new EventEmitter<void>();
+
+  toggle() {
+    this.menuToggle.emit();
+  }
+
 
 }

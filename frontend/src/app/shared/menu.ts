@@ -61,6 +61,16 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: 'fa-solid fa-book-open',
     route: '/app/knowledge',
   },
+  {
+    label: 'Student Performance',
+    icon: 'fa-solid fa-chart-column ',
+    route: '/app/performance',
+  },
+  {
+    label: 'Phase Plan',
+    icon: 'fa-solid fa-hourglass-half',
+    route: '/app/phase',
+  },
   // {
   //   label: 'My Class',
   //   icon: 'fa-solid fa-arrow-up',

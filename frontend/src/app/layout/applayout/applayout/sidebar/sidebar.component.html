@@ -1,5 +1,9 @@
-<aside class="sidebar" style="width:240px;">
-  <nav class="nav-wrap p-3 mt-3">
+
+<aside class="sidebar" style="width:240px;" [class.open]="open">
+  <div class="d-flex justify-content-end align-items-center">
+    <button class="btn close-btn d-lg-none text-dark" (click)="close.emit()">✕</button>
+  </div>
+  <nav class="nav-wrap p-2">
     <a
       *ngFor="let menu of menuItems"
       class="sidebar-link"
