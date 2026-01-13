@@ -10,6 +10,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 export class TaskViewComponent {
   isStatus: boolean = false;
   selectedStatus: string | null = null;
+  remarks: string = '';
 
   statusOptions = [
     { label: 'Completed', checked: false },
@@ -38,12 +39,14 @@ export class TaskViewComponent {
 
   onConfirm() {
     const selected = this.statusOptions.find(s => s.checked);
-    if (!selected) {
-      alert('Please select a status.');
+    const remark = this.remarks
+    if (!selected || !remark) {
+      alert('Please select a status / remarks.');
       return;
     }
 
     this.selectedStatus = selected.label;
+    console.log('Remarks:', this.remarks);
     console.log('Selected status:', selected.label);
     this.isStatus = false; 
 

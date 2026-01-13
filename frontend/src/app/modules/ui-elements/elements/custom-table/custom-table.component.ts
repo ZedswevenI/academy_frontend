@@ -289,7 +289,7 @@ export class CustomTableComponent {
     if (typeof value === 'string') {
       if (value === this.success) {
         return {
-          backgroundColor: '#10bc6c',
+          backgroundColor: '#198754',
           color: '#fff',
           fontWeight: 'bold',
           padding: '6px',
@@ -297,7 +297,7 @@ export class CustomTableComponent {
         }
       } else if (value === this.warn) {
         return {
-          backgroundColor: '#fab81a',
+          backgroundColor: '#ffc107',
           color: '#000',
           fontWeight: 'bold',
           padding: '6px',
@@ -305,7 +305,7 @@ export class CustomTableComponent {
         };
       } else if (value === this.danger) {
         return {
-          backgroundColor: '#db3545',
+          backgroundColor: '#dc3545',
           color: '#fff',
           fontWeight: 'bold',
           padding: '6px',
@@ -313,7 +313,7 @@ export class CustomTableComponent {
         };
       } else if (value === this.primary) {
         return {
-          backgroundColor: '#217ace',
+          backgroundColor: '#0d6efd',
           color: '#fff',
           fontWeight: 'bold',
           padding: '6px',
@@ -326,7 +326,7 @@ export class CustomTableComponent {
     if (colKey === 'net' && typeof value === 'number') {
       if (value < this.dangerLimit) {
         return {
-          backgroundColor: '#f7606f',
+          backgroundColor: '#dc3545',
           color: '#fff',
           fontWeight: 'bold',
           padding: '6px',
@@ -334,7 +334,7 @@ export class CustomTableComponent {
         };
       }
       return {
-        backgroundColor: '#fab81a',
+        backgroundColor: '#ffc107',
         color: '#000',
         fontWeight: 'bold',
         padding: '6px',

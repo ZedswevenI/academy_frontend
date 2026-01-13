@@ -16,7 +16,7 @@
                 <div class="row g-3">
                     <div class="col-lg-6 col-md-12 mb-3">
                         <div class="row">
-                            <label class="col-sm-4 col-form-label">
+                            <label class="col-sm-3 col-form-label">
                                 Task Name
                             </label>
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
@@ -25,14 +25,32 @@
                     </div>
                     <div class="col-lg-6 col-md-12 mb-3">
                         <div class="row">
-                            <label class="col-sm-4 col-form-label">
+                            <label class="col-sm-3 col-form-label">
+                                Faculty Name
+                            </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2"><strong>Dr. Rajesh Kumar</strong></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label">
+                                Due Date
+                            </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2"><strong>20-01-2026</strong></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label">
                                 Description
                             </label>
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
                             <div class="col-sm-7 pt-2"><strong>Prepare project documentation</strong></div>
                         </div>
                     </div>
-                    <div class="col-lg-6 col-md-12 mb-3">
+                    <!-- <div class="col-lg-6 col-md-12 mb-3">
                         <div class="row">
                             <label class="col-sm-4 col-form-label">
                                 Remarks
@@ -40,13 +58,16 @@
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
                             <div class="col-sm-7 pt-1"><button class="btn closebutton" type="button" (click)="onAct()">Action</button></div>
                         </div>
-                    </div>
+                    </div> -->
 
                 </div>
 
                 <div class="col-12 text-end mt-3">
                     <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/task">
                         Back
+                    </button>
+                    <button class="btn submitbutton px-4" style="border-radius: 30px;" (click)="onAct()">
+                        Update
                     </button>
                 </div>
 
@@ -59,7 +80,18 @@
 <!-- POP UP -->
 <div *ngIf="isStatus" class="task-popup-backdrop">
     <div class="task-popup card p-4">
-        <h5 class="text-primary mb-3">Status of Task</h5>
+        <div class="d-flex justify-content-between">
+            <h5 class="text-primary mb-3">Update Status</h5>
+            <button  class="btn-close position-absolute top-0 end-0 m-3" (click)="onClose()"></button>
+        </div>
+
+        <!-- Remarks -->
+        <label class="col-form-label">Remarks</label>
+        <textarea class="form-control mb-3" rows="3" placeholder="Enter remarks" [(ngModel)]="remarks">
+    </textarea>
+
+        <!-- Task Status -->
+        <label class="col-form-label">Task Status</label>
         <div *ngFor="let item of statusOptions; let i = index" class="row align-items-center mb-2">
             <div class="col-auto">
                 <input type="checkbox" class="form-check-input" [checked]="item.checked" (change)="selectStatus(i)" />
@@ -69,14 +101,9 @@
             </div>
         </div>
 
-
         <div class="text-end mt-3">
-            <button class="btn closebutton" (click)="onClose()">
-                Back
-            </button>
-            <button class="btn submitbutton" (click)="onConfirm()">
-                Confirm
-            </button>
+            <button class="btn closebutton" (click)="onClose()">Back</button>
+            <button class="btn submitbutton" (click)="onConfirm()">Confirm</button>
         </div>
     </div>
 </div>

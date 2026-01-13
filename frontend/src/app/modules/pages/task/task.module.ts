@@ -5,12 +5,14 @@ import { TaskComponent } from './task/task.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TaskViewComponent } from './task-view/task-view.component';
+import { TaskCreateComponent } from './task-create/task-create.component';
 
 
 @NgModule({
     declarations: [
         TaskComponent,
-        TaskViewComponent
+        TaskViewComponent,
+        TaskCreateComponent
     ],
     imports: [
         CommonModule,

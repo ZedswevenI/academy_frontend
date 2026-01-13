@@ -95,7 +95,7 @@
                 </div>
             </div>
             <div class="mt-3">
-                <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="false"
+                <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="false" [dangerLimit]="2"
                     [searchPlaceholder]="'Search Student, Avg...'" [totalRecords]="totalRecords"
                     (requestData)="loadTableData($event)"></custom-table>
             </div>
