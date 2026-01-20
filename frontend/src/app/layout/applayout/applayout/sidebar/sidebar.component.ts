@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { MENU_ITEMS, MenuItem } from '../../../../shared/menu';
 import { Input, Output, EventEmitter } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-sidebar',
@@ -14,4 +15,9 @@ export class SidebarComponent {
   @Input() open = false;
   @Output() close = new EventEmitter<void>();
 
+  constructor(private router: Router){}
+
+  logout(){
+    this.router.navigate(['/auth/login']);
+  }
 }

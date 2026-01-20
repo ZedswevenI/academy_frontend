@@ -1,0 +1,82 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <!-- Header Section -->
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-headset me-2"></i>Support
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <form [formGroup]="supportForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <selectbox label="Class" [options]="class_options" formControlName="class"
+                            [control]="supportForm.get('class')" [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-4">
+                        <selectbox label="Batch" [options]="batch_options" formControlName="batch"
+                            [control]="supportForm.get('batch')" [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-4">
+                        <selectbox label="Student" [options]="student_options" formControlName="student"
+                            [control]="supportForm.get('student')" [required]="true">
+                        </selectbox>
+                    </div>
+                </div>
+
+                <div class="col-12 text-end mt-3">
+                    <button class="btn submitbutton px-4" [disabled]="supportForm.invalid" (click)="onProceed()"
+                        style="border-radius: 30px;">
+                        Proceed
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="mt-3" *ngIf="isProceed">
+            <div class="card support-page p-4">
+
+                <!-- Header content (same for both) -->
+                <h2 class="title">We are happy to help you</h2>
+                <p class="subtitle">
+                    Please select an area where you need a support
+                </p>
+
+                <!-- Buttons -->
+                <div class="action-row">
+                    <button class="btn rounded-pill"
+                        [ngClass]="activeTab === 'new' ? 'btn-primary' : 'btn-outline-primary'" (click)="setTab('new')">
+                        New Ticket
+                    </button>
+
+                    <button class="btn rounded-pill"
+                        [ngClass]="activeTab === 'existing' ? 'btn-primary' : 'btn-outline-primary'"
+                        (click)="setTab('existing')">
+                        Existing Ticket
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="content-box mt-4">
+
+                    <ng-container *ngIf="activeTab === 'new'">
+                        <app-new-ticket></app-new-ticket>
+                    </ng-container>
+
+                    <ng-container *ngIf="activeTab === 'existing'">
+                        <app-existing-ticket></app-existing-ticket>
+                    </ng-container>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

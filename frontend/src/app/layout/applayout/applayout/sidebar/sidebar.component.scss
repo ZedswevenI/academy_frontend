@@ -1,14 +1,13 @@
 :root {
-  --hdr-h: 56px;
+  // --hdr-h: 56px;
+  // --header-h: 56px;
+  --brand-primary: #0b5ed7;
 }
 
 .app-sidebar {
-  height: calc(100vh - var(--hdr-h));
+  // height: calc(100vh - var(--header-h));
+  height: calc(100vh - var(--header-height));
   overflow: hidden;
-}
-
-:root {
-  --brand-primary: #0b5ed7;
 }
 
 .sidebar-link {
@@ -16,16 +15,21 @@
   align-items: center;
   padding: 0.625rem 0.75rem;
   border-radius: 0.75rem;
-  color: #6b7280;
+  // color: #6b7280;
+  color: #fff;
   transition: background-color 0.15s, color 0.15s;
 
   &:hover {
-    background-color: #f3f4f6;
-    color: #111827;
+    // background-color: #f3f4f6;
+    // color: #111827;
+    background-color: #6e8ee7;
+    color: #000;
+    font-weight: bold;
   }
+
   &.active {
     background-color: #0b5ed7;
-    color: #fff;
+    color: #000;
     font-weight: bold;
   }
 }
@@ -69,6 +73,22 @@
 }
 
 
+/* Logout */
+.sidebar {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-wrap {
+  flex: 1;
+}
+
+.logout-wrap {
+  border-top: 1px solid #eee;
+}
+
+/* Responsive */
 .app-sidebar,
 .sidebar {
   width: var(--sidebar-width);
@@ -77,6 +97,7 @@
 
 /* MOBILE */
 @media (max-width: 991px) {
+
   .sidebar,
   .app-sidebar {
     position: fixed;
@@ -97,6 +118,7 @@
 
 /* DESKTOP */
 @media (min-width: 992px) {
+
   .sidebar,
   .app-sidebar {
     position: relative;

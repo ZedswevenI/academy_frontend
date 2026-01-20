@@ -1,0 +1,34 @@
+.support-page {
+  max-width: 650px;
+  margin: auto;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.action-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.content-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+// .content-text {
+//   font-size: 15px;
+//   color: #374151;
+// }

@@ -15,13 +15,13 @@
             <form [formGroup]="Form">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <selectbox label="Batch" [options]="batch_options" formControlName="batch"
-                            [control]="Form.get('batch')" [required]="true">
+                        <selectbox label="Class" [options]="class_options" formControlName="class"
+                            [control]="Form.get('class')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-4">
-                        <selectbox label="Class" [options]="class_options" formControlName="class"
-                            [control]="Form.get('class')" [required]="true">
+                        <selectbox label="Batch" [options]="batch_options" formControlName="batch"
+                            [control]="Form.get('batch')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-4">

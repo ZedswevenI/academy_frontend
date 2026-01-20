@@ -1,0 +1,27 @@
+<div>
+    <form [formGroup]="ticketForm">
+        <div class="row">
+            <div class="col-12 mt-2">
+                <selectbox label="Area" [options]="area_options" formControlName="area"
+                    [control]="ticketForm.get('area')" [required]="true">
+                </selectbox>
+            </div>
+            <div class="col-12 mt-2">
+                <formfield class="text-align-left" label="Subject" formControlName="subject"
+                    [control]="ticketForm.get('subject')" placeholder="Enter Subject" [required]="true"></formfield>
+            </div>
+            <div class="col-12 mt-2">
+                <description label="Detail" placeholder="Type detail here" [control]="ticketForm.get('detail')"
+                    formControlName="detail" [required]="true"></description>
+            </div>
+        </div>
+
+        <div class="col-12 text-end mt-3">
+            <button class="btn submitbutton px-4" [disabled]="ticketForm.invalid" (click)="createTicket()"
+                style="border-radius: 30px;">
+                Create New Ticket
+            </button>
+        </div>
+
+    </form>
+</div>

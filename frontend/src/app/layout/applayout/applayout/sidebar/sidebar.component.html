@@ -1,18 +1,18 @@
-
-<aside class="sidebar" style="width:240px;" [class.open]="open">
+<aside class="sidebar" style="width:240px; background-color: #1543c6;" [class.open]="open">
   <div class="d-flex justify-content-end align-items-center">
     <button class="btn close-btn d-lg-none text-dark" (click)="close.emit()">✕</button>
   </div>
   <nav class="nav-wrap p-2">
-    <a
-      *ngFor="let menu of menuItems"
-      class="sidebar-link"
-      [routerLink]="menu.route"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: false }" style="text-decoration: none;"
-    >
+    <a *ngFor="let menu of menuItems" class="sidebar-link" [routerLink]="menu.route" routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: false }" style="text-decoration: none;">
       <i [class]="menu.icon + ' me-2'"></i>
       {{ menu.label }}
     </a>
   </nav>
+  <!-- <div class="logout-wrap p-3 align-items-center">
+    <button class="btn btn-outline-danger d-flex align-items-center gap-1" (click)="logout()">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      <span>Log Out</span>
+    </button>
+  </div> -->
 </aside>
