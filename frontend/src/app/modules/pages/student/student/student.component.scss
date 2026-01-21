@@ -1,94 +1,45 @@
-/* Floating container */
-.chat-float-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1100;
-  animation: slideUp 0.35s ease-out;
-}
-
-/* Chat card */
-.chat-popup {
-  width: 360px;
-  height: 520px;
-  border-radius: 14px;
+/* grid/ list*/
+.view-switch {
+  display: flex;
+  border: 1px solid #dee2e6;
+  border-radius: 999px;
   overflow: hidden;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
-  background: #fff;
+  background-color: #ffffff;
 }
 
-/* Slide animation */
-@keyframes slideUp {
-  from {
-    transform: translateY(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Header */
-.chat-header {
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
-}
-
-/* Avatar */
-.avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #2563eb;
-  color: #fff;
+.view-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 600;
-}
-
-/* Body */
-.chat-body {
-  background: #f9fafb;
-}
-
-/* Messages */
-.message-wrapper {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.message-wrapper.sent {
-  justify-content: flex-end;
-}
-
-.message-wrapper.received {
-  justify-content: flex-start;
-}
-
-.message-bubble {
-  max-width: 75%;
-  padding: 10px 14px;
-  border-radius: 16px;
+  gap: 6px;
+  padding: 6px 14px;
+  border: none;
+  background-color: transparent;
+  color: #6c757d;
   font-size: 14px;
-  background: #e5e7eb;
+  cursor: pointer;
 }
 
-.message-wrapper.sent .message-bubble {
-  background: #2563eb;
-  color: #fff;
+.view-btn.active {
+  background-color: #0b1f3b; 
+  color: #ffffff;
 }
 
-/* Input */
-.chat-input {
-  border-top: 1px solid #e5e7eb;
+.view-btn:not(.active):hover {
+  background-color: #f1f3f5;
 }
 
-.send-btn {
-  background: #2563eb;
-  color: #fff;
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
+.add-student-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: #0b5ed7;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.add-student-btn i {
+  font-size: 14px;
 }

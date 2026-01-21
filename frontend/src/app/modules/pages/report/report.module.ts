@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 
 import { ReportRoutingModule } from './report.routing.module';
 import { ReportComponent } from './report/report.component';
+import { UiElementsModule } from '../../ui-elements/ui-elements.module';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
     declarations: [
@@ -10,7 +12,10 @@ import { ReportComponent } from './report/report.component';
     ],
     imports: [
         CommonModule,
-        ReportRoutingModule
+        ReportRoutingModule,
+        UiElementsModule,
+        ReactiveFormsModule,
+        FormsModule
     ],
     exports: []
 })

@@ -16,10 +16,24 @@
             </div>
         </div>
 
+        <div class="row mt-3">
+            <div class="col-4">
+                <div class="d-flex align-items-center gap-2 refresh-box" (click)="generateTicketNumber()">
+
+                    <input type="text" class="form-control ticket-number-input" [value]="ticketNumber" readonly />
+
+
+                    <button type="button" class="btn closebutton" style="border: none;">
+                        <!-- <i class="fa-solid fa-rotate-right"></i> -->Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="col-12 text-end mt-3">
             <button class="btn submitbutton px-4" [disabled]="ticketForm.invalid" (click)="createTicket()"
                 style="border-radius: 30px;">
-                Create New Ticket
+                Create Support Ticket
             </button>
         </div>
 

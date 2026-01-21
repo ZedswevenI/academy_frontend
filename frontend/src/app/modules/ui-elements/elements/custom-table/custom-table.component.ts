@@ -289,32 +289,32 @@ export class CustomTableComponent {
     if (typeof value === 'string') {
       if (value === this.success) {
         return {
-          backgroundColor: '#198754',
-          color: '#fff',
+          backgroundColor: '#ddfcea',
+          color: '#198754',
           fontWeight: 'bold',
           padding: '6px',
           borderRadius: '30px'
         }
       } else if (value === this.warn) {
         return {
-          backgroundColor: '#ffc107',
-          color: '#000',
+          backgroundColor: '#fff5d6',
+          color: '#ffc107',
           fontWeight: 'bold',
           padding: '6px',
           borderRadius: '30px'
         };
       } else if (value === this.danger) {
         return {
-          backgroundColor: '#dc3545',
-          color: '#fff',
+          backgroundColor: '#fde3e3',
+          color: '#dc3545',
           fontWeight: 'bold',
           padding: '6px',
           borderRadius: '30px'
         };
       } else if (value === this.primary) {
         return {
-          backgroundColor: '#0d6efd',
-          color: '#fff',
+          backgroundColor: '#c8dcfa',
+          color: '#0d6efd',
           fontWeight: 'bold',
           padding: '6px',
           borderRadius: '30px',

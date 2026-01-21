@@ -1,0 +1,55 @@
+<div>
+    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+        [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
+        (requestData)="loadTableData($event)"></custom-table>
+</div>
+
+
+<!-- POP UP -->
+<div *ngIf="isChat" class="chat-float-container">
+
+    <div class="chat-popup card d-flex flex-column">
+
+        <!-- Header -->
+        <div class="chat-header d-flex align-items-center justify-content-between px-3 py-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="avatar">
+                    {{ selectedChat?.name?.charAt(0) || 'C' }}
+                </div>
+                <div>
+                    <div class="chat-title fw-semibold">
+                        {{ selectedChat?.name || 'Chat' }}
+                    </div>
+                    <small class="text-muted">
+                        {{ selectedChat?.online ? 'Online' : 'Last seen recently' }}
+                    </small>
+                </div>
+            </div>
+
+            <i class="fas fa-times cursor-pointer" (click)="isChat = false"></i>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-body flex-grow-1 px-3 py-3 overflow-auto">
+            <div *ngFor="let msg of messages" class="message-wrapper" [class.sent]="msg.sender === 'teacher'"
+                [class.received]="msg.sender !== 'teacher'">
+
+                <div class="message-bubble">
+                    {{ msg.text }}
+                    <div class="message-time">{{ msg.time }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input d-flex align-items-center px-3 py-2 gap-2">
+            <input type="text" class="form-control message-input" placeholder="Type a message" [(ngModel)]="newMessage"
+                (keyup.enter)="sendMessage()" />
+
+            <button class="btn send-btn" (click)="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+
+    </div>
+</div>

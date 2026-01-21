@@ -10,12 +10,28 @@
   min-height: 0; 
 }
 
+// .app-main {
+//   flex: 1;
+//   padding: 16px;
+//   background: #f8f9fa;
+//   overflow: auto;
+// }
+
 .app-main {
   flex: 1;
-  padding: 16px;
-  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
   overflow: auto;
 }
-
-
-
+.app-footer {
+  margin-top: auto;   
+  height: 40px;
+  background: #0b3c7d;
+  color: #fff;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 16px;
+}

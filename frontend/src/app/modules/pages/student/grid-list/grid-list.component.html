@@ -1,0 +1,58 @@
+<div class="container-fluid mt-4">
+  <div class="row g-4">
+
+    <div class="col-xl-3 col-lg-6 col-md-12" *ngFor="let s of students">
+      <div class="student-card">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div class="d-flex gap-3">
+            <div class="avatar">{{ s.initials }}</div>
+
+            <div>
+              <div class="fw-bold fs-6">{{ s.name }}</div>
+              <div class="text-muted small">Enr: {{ s.code }}</div>
+            </div>
+          </div>
+
+          <span
+            class="status-pill"
+            [ngClass]="s.status === 'Active' ? 'active' : 'completed'">
+            {{ s.status }}
+          </span>
+        </div>
+
+        <!-- Course + Center -->
+        <div class="d-flex justify-content-between mb-2">
+          <div class="text-muted small">{{ s.course }}</div>
+          <div class="fw-medium small">{{ s.center }}</div>
+        </div>
+
+        <!-- Phone -->
+        <div class="d-flex align-items-center gap-2 mb-1 text-muted small">
+          <i class="fa-solid fa-phone"></i>
+          {{ s.phone }}
+        </div>
+
+        <!-- Location -->
+        <div class="d-flex align-items-center gap-2 mb-3 text-muted small">
+          <i class="fa-solid fa-location-dot"></i>
+          {{ s.city }}
+        </div>
+
+        <!-- Footer -->
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">
+            Attd: {{ s.attendance }}%
+          </div>
+
+          <a href="javascript:void(0)" class="view-link" routerLink="/app/student/view">
+            View details <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

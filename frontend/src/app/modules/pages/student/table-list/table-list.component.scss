@@ -1,0 +1,94 @@
+/* Floating container */
+.chat-float-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1100;
+  animation: slideUp 0.35s ease-out;
+}
+
+/* Chat card */
+.chat-popup {
+  width: 360px;
+  height: 520px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  background: #fff;
+}
+
+/* Slide animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.chat-header {
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+/* Avatar */
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+/* Body */
+.chat-body {
+  background: #f9fafb;
+}
+
+/* Messages */
+.message-wrapper {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.message-wrapper.sent {
+  justify-content: flex-end;
+}
+
+.message-wrapper.received {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  background: #e5e7eb;
+}
+
+.message-wrapper.sent .message-bubble {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* Input */
+.chat-input {
+  border-top: 1px solid #e5e7eb;
+}
+
+.send-btn {
+  background: #2563eb;
+  color: #fff;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+}
