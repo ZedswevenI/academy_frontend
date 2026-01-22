@@ -1,0 +1,49 @@
+<div class="row g-3 mb-1">
+
+    <!-- First -->
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">
+            {{ label1 }} <span *ngIf="required" class="text-danger">*</span>
+        </label>
+
+        <select class="form-select" [disabled]="disabled" [ngModel]="value.value1" (ngModelChange)="onSelect1($event)">
+            <option [ngValue]="null" disabled>{{ placeholder }}</option>
+            <option *ngFor="let opt of options1" [ngValue]="opt[optionValue1]">
+                {{ getLabel1(opt) }}
+            </option>
+        </select>
+    </div>
+
+    <!-- Second -->
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">
+            {{ label2 }} <span *ngIf="required" class="text-danger">*</span>
+        </label>
+
+        <select class="form-select" [disabled]="!value.value1" [ngModel]="value.value2"
+            (ngModelChange)="onSelect2($event)">
+            <option [ngValue]="null" disabled>{{ placeholder }}</option>
+            <option *ngFor="let opt of options2" [ngValue]="opt[optionValue2]">
+                {{ getLabel2(opt) }}
+            </option>
+        </select>
+    </div>
+
+    <!-- Third -->
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">
+            {{ label3 }} <span *ngIf="required" class="text-danger">*</span>
+        </label>
+
+        <select class="form-select" [disabled]="!value.value2" [ngModel]="value.value3"
+            (ngModelChange)="onSelect3($event)">
+            <option [ngValue]="null" disabled>{{ placeholder }}</option>
+            <option *ngFor="let opt of options3" [ngValue]="opt[optionValue3]">
+                {{ getLabel3(opt) }}
+            </option>
+        </select>
+    </div>
+    <div *ngIf="control && control.invalid && (control.touched || control.dirty)">
+        <small class="text-danger" *ngIf="control.errors?.['required']">All selections are required.</small>
+    </div>
+</div>

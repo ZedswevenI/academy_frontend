@@ -16,7 +16,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, AbstractControl } from '@angul
 })
 
 export class SelectboxComponent implements ControlValueAccessor {
- @Input() label: string = '';
+  @Input() label: string = '';
   @Input() placeholder: string = 'Select';
   @Input() required: boolean = false;
   @Input() options: any[] = [];
@@ -26,8 +26,8 @@ export class SelectboxComponent implements ControlValueAccessor {
   @Input() disabled: boolean = false;
   @Output() selectionChange = new EventEmitter<any>();
   value: any = '';
-  onChange = (_: any) => {};
-  onTouched = () => {};
+  onChange = (_: any) => { };
+  onTouched = () => { };
 
   writeValue(value: any): void {
     if (value === '') {
