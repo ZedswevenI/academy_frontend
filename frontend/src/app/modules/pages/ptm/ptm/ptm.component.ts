@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-ptm',
@@ -38,15 +39,13 @@ export class PtmComponent {
     { label: 'Karthik R', value: 'Karthik R' }
   ];
 
-    columnsArray = [
-    { key: 'id', label: 'Enrolment nNumber', sortable: true },
-    { key: 'name', label: 'Student Name', sortable: true },
-    { key: 'batch', label: 'Batch Code', sortable: true },
-    { key: 'class', label: 'Class', sortable: false },
-    { key: 'sub', label: 'Subject', sortable: false },
-    { key: 'ass', label: 'Assgn', sortable: false },
-    { key: 'test', label: 'Test', sortable: false },
-    { key: 'net', label: 'Net', sortable: false }
+  columnsArray = [
+    { key: 'date', label: 'Date', sortable: true },
+    { key: 'class', label: 'Class', sortable: true },
+    { key: 'time', label: 'Timing', sortable: false },
+    { key: 'teacher', label: 'Incharge', sortable: true },
+    { key: 'mode', label: 'Mode', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
   ];
 
   actions = [
@@ -66,22 +65,17 @@ export class PtmComponent {
 
   ngOnInit(): void {
     this.ptmForm = this.fb.group({
-      class: ['', [Validators.required]],
-      batch: ['', [Validators.required]],
-      student: ['', [Validators.required]]
+      filter: [null, [this.filterValidator]]
     });
 
-        this.originalData = [
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2001', name: 'Aarav Kumar', ass: 1.98, test: 9.71, net: 2.71 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2002', name: 'Diya Sharma', ass: 2.19, test: 6.82, net: 2.61 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2003', name: 'Rohan Patel', ass: 0.97, test: 3.06, net: 1.14 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2004', name: 'Ananya Iyer', ass: 1.94, test: 7.03, net: 2.43 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2005', name: 'Karthik Raj', ass: 1.75, test: 7.23, net: 2.25 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2006', name: 'Meera Nair', ass: 2.5, test: 6.36, net: 2.86 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2007', name: 'Sanjay Verma', ass: 0.43, test: 8.74, net: 1.19 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2008', name: 'Pooja Singh', ass: 1.98, test: 9.71, net: 2.71 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2009', name: 'Rahul Das', ass: 2.19, test: 6.82, net: 2.61 },
-      { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2010', name: 'Nithya Krishnan', ass: 0.97, test: 3.06, net: 1.14 }
+    this.originalData = [
+      { date: '10-Jan-2026', class: '6th', time: '10:00am  - 4:00pm', teacher: 'Mr. R. Kumar', mode: 'Offline', status: 'Completed' },
+      { date: '12-Jan-2026', class: '7th', time: '10:00am  - 4:00pm', teacher: 'Mr. R. Kumar', mode: 'Offline', status: 'Completed' },
+      { date: '14-Jan-2026', class: '8th', time: '10:00am  - 4:00pm', teacher: 'Ms. Anitha', mode: 'Online', status: 'Completed' },
+      { date: '15-Jan-2026', class: '9th', time: '10:00am  - 4:00pm', teacher: 'Ms. Anitha', mode: 'Offline', status: 'Completed' },
+      { date: '18-Jan-2026', class: '10th', time: '10:00am  - 4:00pm', teacher: 'Mr. Prakash', mode: 'Offline', status: 'Completed' },
+      { date: '20-Jan-2026', class: '11th', time: '10:00am  - 4:00pm', teacher: 'Mr. Prakash', mode: 'Online', status: 'Completed' },
+      { date: '22-Jan-2026', class: '12th', time: '10:00am  - 4:00pm', teacher: 'Ms. Revathi', mode: 'Offline', status: 'Scheduled' },
     ];
 
     this.loadTableData({ page: 1, pageSize: 5 });
@@ -128,5 +122,13 @@ export class PtmComponent {
     this.isProceed = true;
   }
 
-  viewptm(row: any){}
+  filterValidator(control: AbstractControl) {
+    const val = control.value;
+    if (!val || !val.value1 || !val.value2 || !val.value3) {
+      return { required: true };
+    }
+    return null;
+  }
+
+  viewptm(row: any) { }
 }
