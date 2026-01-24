@@ -22,12 +22,12 @@ interface Chat {
 export class TableListComponent {
   isChat: boolean = false;
   columnsArray = [
-    { key: 'id', label: 'ID', sortable: true },
     { key: 'studentName', label: 'Student Name', sortable: true },
-    { key: 'batch', label: 'Batch', sortable: true },
-    { key: 'phone', label: 'Phone', sortable: true },
-    { key: 'parent', label: 'Parent Phone', sortable: true },
-    { key: 'avg', label: 'Performance Avg', sortable: true },
+    { key: 'admission', label: 'Admission No.', sortable: true },
+    { key: 'program', label: 'Program', sortable: true },
+    { key: 'address', label: 'Center', sortable: true },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'mobile', label: 'Mobile', sortable: true },
   ];
 
   dataArray: any[] = [];
@@ -59,29 +59,26 @@ export class TableListComponent {
 
   ngOnInit(): void {
     this.originalData = [
-      { id: 1, studentName: 'Arun Kumar', batch: 'Batch A', phone: '9876543210', parent: '9876500001', avg: 78 },
-      { id: 2, studentName: 'Priya Sharma', batch: 'Batch A', phone: '9876543211', parent: '9876500002', avg: 85 },
-      { id: 3, studentName: 'Rahul Verma', batch: 'Batch B', phone: '9876543212', parent: '9876500003', avg: 72 },
-      { id: 4, studentName: 'Sneha Iyer', batch: 'Batch B', phone: '9876543213', parent: '9876500004', avg: 88 },
-      { id: 5, studentName: 'Karthik Raj', batch: 'Batch C', phone: '9876543214', parent: '9876500005', avg: 91 },
-
-      { id: 6, studentName: 'Ananya Gupta', batch: 'Batch A', phone: '9876543215', parent: '9876500006', avg: 84 },
-      { id: 7, studentName: 'Vikram Singh', batch: 'Batch C', phone: '9876543216', parent: '9876500007', avg: 76 },
-      { id: 8, studentName: 'Divya Patel', batch: 'Batch B', phone: '9876543217', parent: '9876500008', avg: 89 },
-      { id: 9, studentName: 'Suresh Reddy', batch: 'Batch A', phone: '9876543218', parent: '9876500009', avg: 68 },
-      { id: 10, studentName: 'Meena Joshi', batch: 'Batch C', phone: '9876543219', parent: '9876500010', avg: 92 },
-
-      { id: 11, studentName: 'Ajay Nair', batch: 'Batch B', phone: '9876543220', parent: '9876500011', avg: 74 },
-      { id: 12, studentName: 'Pooja Malhotra', batch: 'Batch A', phone: '9876543221', parent: '9876500012', avg: 86 },
-      { id: 13, studentName: 'Rohit Mehta', batch: 'Batch C', phone: '9876543222', parent: '9876500013', avg: 79 },
-      { id: 14, studentName: 'Kavya Menon', batch: 'Batch B', phone: '9876543223', parent: '9876500014', avg: 90 },
-      { id: 15, studentName: 'Nitin Chauhan', batch: 'Batch A', phone: '9876543224', parent: '9876500015', avg: 71 },
-
-      { id: 16, studentName: 'Aishwarya Rao', batch: 'Batch C', phone: '9876543225', parent: '9876500016', avg: 87 },
-      { id: 17, studentName: 'Manoj Pandey', batch: 'Batch B', phone: '9876543226', parent: '9876500017', avg: 66 },
-      { id: 18, studentName: 'Neha Kulkarni', batch: 'Batch A', phone: '9876543227', parent: '9876500018', avg: 93 },
-      { id: 19, studentName: 'Sanjay Mishra', batch: 'Batch C', phone: '9876543228', parent: '9876500019', avg: 75 },
-      { id: 20, studentName: 'Ritika Bose', batch: 'Batch B', phone: '9876543229', parent: '9876500020', avg: 82 }
+      { studentName: 'Arun Kumar', admission: 'ADM001', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543210' },
+      { studentName: 'Priya Sharma', admission: 'ADM002', program: 'NEET Crash Course', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543211' },
+      { studentName: 'Rahul Singh', admission: 'ADM003', program: 'JEE Foundation', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543212' },
+      { studentName: 'Anjali Verma', admission: 'ADM004', program: 'ICON - One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543213' },
+      { studentName: 'Vikram Patil', admission: 'ADM005', program: 'NEET Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543214' },
+      { studentName: 'Sneha Gupta', admission: 'ADM006', program: 'JEE Crash Course', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543215' },
+      { studentName: 'Karan Mehta', admission: 'ADM007', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543216' },
+      { studentName: 'Radhika Joshi', admission: 'ADM008', program: 'NEET Foundation', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543217' },
+      { studentName: 'Saurabh Kumar', admission: 'ADM009', program: 'JEE Advanced Program', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543218' },
+      { studentName: 'Pooja Reddy', admission: 'ADM010', program: 'ICON - One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543219' },
+      { studentName: 'Amit Jain', admission: 'ADM011', program: 'NEET Crash Course', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543220' },
+      { studentName: 'Neha Kapoor', admission: 'ADM012', program: 'JEE Two Year Program', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543221' },
+      { studentName: 'Manish Sharma', admission: 'ADM013', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543222' },
+      { studentName: 'Shivani Singh', admission: 'ADM014', program: 'NEET One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543223' },
+      { studentName: 'Rohit Verma', admission: 'ADM015', program: 'JEE Crash Course', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543224' },
+      { studentName: 'Alok Patel', admission: 'ADM016', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543225' },
+      { studentName: 'Isha Agarwal', admission: 'ADM017', program: 'NEET Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543226' },
+      { studentName: 'Nikhil Reddy', admission: 'ADM018', program: 'JEE Foundation', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543227' },
+      { studentName: 'Tanya Kapoor', admission: 'ADM019', program: 'ICON - One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543228' },
+      { studentName: 'Aditya Singh', admission: 'ADM020', program: 'NEET Crash Course', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543229' }
     ];
 
     this.loadTableData({ page: 1, pageSize: 5 });

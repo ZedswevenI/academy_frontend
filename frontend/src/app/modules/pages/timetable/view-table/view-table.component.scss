@@ -1,0 +1,81 @@
+.sub-text {
+    color: #6c757d;
+    font-size: 14px;
+  }
+
+/* Table */
+.table-wrapper {
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 10px;
+  margin-top: 20px;
+}
+
+.timetable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Header */
+thead th {
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px;
+  border-bottom: 1px solid #dcdfe4;
+  border-right: 1px solid #dcdfe4;
+}
+
+.day-col {
+  width: 180px;
+}
+
+/* Body cells */
+tbody td {
+  border-right: 1px solid #dcdfe4;
+  padding: 16px;
+  vertical-align: middle;
+}
+
+tbody tr td:last-child {
+  border-right: none;
+}
+
+/* Day cell */
+.day-cell {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Period cell */
+.period-cell {
+  text-align: center;
+}
+
+.period-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.empty {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.subject {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Hall badge */
+.hall-badge {
+  margin-top: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid #cfd4da;
+  background: #fff;
+}

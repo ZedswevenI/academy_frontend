@@ -1,0 +1,35 @@
+<div class="modal-header">
+    <h5 class="modal-title">
+        {{ isEditMode ? 'Edit Center' : 'Add Center' }}
+    </h5>
+    <button type="button" class="btn-close" (click)="close.emit()"></button>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="centerForm">
+        <div class="d-flex g-3 me-2">
+            <div class="me-3">
+                <formfield label="Department Code" formControlName="code" [control]="centerForm.get('code')"
+                    placeholder="Enter Department Code" [required]="true">
+                </formfield>
+            </div>
+            <div class="me-4">
+                 <formfield label="Department Name" formControlName="name" [control]="centerForm.get('name')"
+                placeholder="Enter Department Name" [required]="true">
+            </formfield>
+            </div>
+            <div class="mt-4">
+                <checkbox label="Active" [required]="false" [control]="centerForm.get('active')"
+                    formControlName="active">
+                </checkbox>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button class="btn closebutton" (click)="close.emit()">Cancel</button>
+    <button class="btn submitbutton" (click)="submit()">
+        {{ isEditMode ? 'Update' : 'Save Department' }}
+    </button>
+</div>

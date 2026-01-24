@@ -1,20 +1,58 @@
-<aside class="sidebar" style="width:240px; background-color: #1543c6;" [class.open]="open">
-  <div class="d-flex justify-content-end align-items-center">
-    <button class="btn close-btn d-lg-none text-dark" (click)="close.emit()">✕</button>
+<aside class="sidebar" [class.open]="open">
+
+  <!-- Mobile close -->
+  <div class="sidebar-header d-lg-none d-flex align-items-end justify-content-end">
+    <button class="btn close-btn text-white fw-bold" (click)="close.emit()">✕</button>
   </div>
-  <nav class="nav-wrap p-2">
-    <a *ngFor="let menu of menuItems" class="sidebar-link" [routerLink]="menu.route" routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: false }" style="text-decoration: none;">
-      <i [class]="menu.icon + ' me-2'"></i>
-      {{ menu.label }}
-    </a>
+
+  <!-- Scrollable Menu -->
+  <nav class="nav-wrap">
+
+    <ng-container *ngFor="let menu of menuItems">
+
+      <!-- Single menu -->
+      <a *ngIf="!menu.children"
+         class="sidebar-link"
+         [routerLink]="menu.route"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{ exact: false }" style="text-decoration: none;">
+        <i [class]="menu.icon + ' me-2'"></i>
+        {{ menu.label }}
+      </a>
+
+      <!-- Parent menu -->
+      <div *ngIf="menu.children" class="sidebar-group">
+
+        <div class="sidebar-link parent"
+             (click)="toggleMenu(menu)">
+          <i [class]="menu.icon + ' me-2'"></i>
+          {{ menu.label }}
+          <i class="fa-solid fa-chevron-down ms-auto"
+             [class.rotate]="menu.expanded"></i>
+        </div>
+
+        <div class="submenu" *ngIf="menu.expanded">
+          <a *ngFor="let child of menu.children"
+             class="sidebar-link child"
+             [routerLink]="child.route"
+             routerLinkActive="active" style="text-decoration: none;">
+             <i [class]="child.icon + ' me-2'"></i>
+            {{ child.label }}
+          </a>
+        </div>
+
+      </div>
+
+    </ng-container>
+
   </nav>
-  <!-- <div class="logout-wrap p-3 align-items-center">
-    <button class="btn btn-outline-danger d-flex align-items-center gap-1" (click)="logout()">
-      <i class="fa-solid fa-right-from-bracket"></i>
-      <span>Log Out</span>
+
+  <!-- Fixed Logout -->
+  <div class="logout-wrap">
+    <button class="btn logout-btn" (click)="logout()">
+      <i class="fa-solid fa-right-from-bracket me-2"></i>
+      Log Out
     </button>
   </div>
-  background-color: #1543c6 -->
 
 </aside>

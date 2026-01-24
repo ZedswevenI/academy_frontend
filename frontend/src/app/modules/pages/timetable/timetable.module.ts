@@ -5,11 +5,13 @@ import { TimetableComponent } from './timetable/timetable.component';
 import { ListComponent } from './list/list.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ViewTableComponent } from './view-table/view-table.component';
 
 @NgModule({
     declarations: [
         TimetableComponent,
-        ListComponent
+        ListComponent,
+        ViewTableComponent
     ],
     imports: [
         CommonModule,

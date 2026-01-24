@@ -1,1 +1,218 @@
-<p>view-teacher works!</p>
+<div class="container-fluid p-4 bg-light min-vh-100">
+
+    <div class="d-flex flex-column gap-4 mb-2">
+        <!-- Header Section -->
+        <div class="d-flex flex-column gap-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                    <i class="fa-solid fa-book-open me-2"></i>Staff Details
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="card shadow-sm mb-4 p-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="avatar">RR</div>
+                <div>
+                    <h5 class="mb-1 fw-semibold">Rajesh R</h5>
+                    <small class="text-muted">
+                        Staff Code: STF002 <br>
+                        Department: ACADEMICS • Center: 64-Cimbatore-Sub Main
+                    </small>
+                </div>
+            </div>
+
+            <!-- Header Badges -->
+            <div>
+                <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge badge-outline">Role: Faculty</span>
+                        <span class="badge badge-outline">Payroll: z7i</span>
+                        <span class="badge bg-success">Active</span>
+                        <!-- <button class="btn closebutton" style="padding: 0px;">Back to Teacher</button> -->
+                        <button class="btn btn-outline-secondary btn-sm px-2" style="padding: 0px;"
+                            routerLink="/app/teacher">
+                            <i class="fa-solid fa-arrow-left"></i> Back to Teacher
+                        </button>
+                    </div>
+                </div>
+                <div class="row text-muted small me-2">
+                    Created: 20-Jan-2026, 06:36 AM |
+                    Updated: 20-Jan-2026, 06:40 AM
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Left Column -->
+        <div class="col-lg-4">
+
+            <!-- Profile -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">Profile</h6>
+
+                    <p><i class="fa-solid fa-phone me-2"></i>9876543210</p>
+                    <p><i class="fa-solid fa-envelope me-2"></i>rajesh&#64;example.com</p>
+
+                    <hr>
+
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <p class="mb-1 fw-semibold">Staff Code</p>
+                            <p class="mb-0">STF002</p>
+                        </div>
+
+                        <div class="col-6">
+                            <p class="mb-1 fw-semibold">Employee ID</p>
+                            <p class="mb-0">EMP003</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <p class="mb-1 fw-semibold">Joining Date</p>
+                            <p class="mb-0">01-Jan-2026</p>
+                        </div>
+
+                        <div class="col-6">
+                            <p class="mb-1 fw-semibold">Relieving Date</p>
+                            <p class="mb-0">23-Jan-2026</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <p class="mb-1 fw-semibold">Faculty Type</p>
+                            <p class="mb-0">TEACHING</p>
+                        </div>
+
+                        <div class="col-6">
+                            <p class="mb-1 fw-semibold">Subject</p>
+                            <p class="mb-0">PHYSICS</p>
+                        </div>
+                    </div>
+
+                    <p class="mb-1"><strong>WeekOff</strong></p>
+                    <p>Sunday</p>
+
+                    <p class="mb-1"><strong>Address</strong></p>
+                    <p class="mb-0">
+                        12, ABC Apartments<br>
+                        Near XYZ Signal<br>
+                        Coimbatore - 641004<br>
+                        Tamil Nadu
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab"
+                                data-bs-target="#attendance">Attendance</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab"
+                                data-bs-target="#assignments">Assignments</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#feedback">Feedback</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#relieving">Relieving
+                                Date</button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+
+                        <!-- Attendance -->
+                        <div class="tab-pane fade show active" id="attendance">
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray"
+                                [showaction]="false" [success]="'Present'" [danger]="'Absent'"
+                                [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
+                        </div>
+
+                        <!-- Assignments -->
+                        <div class="tab-pane fade" id="assignments">
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray1" [data]="dataArray1"
+                                [showaction]="false" [success]="'Completed'" [danger]="'Overdue'" [warn]="'Pending'"
+                                [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
+                        </div>
+
+                        <!-- Feedback -->
+                        <div class="tab-pane fade" id="feedback">
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray4" [data]="dataArray4"
+                                [showaction]="false"
+                                [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
+                        </div>
+
+                        <!-- Relieving -->
+                        <div class="tab-pane fade" id="relieving">
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray5" [data]="dataArray5"
+                                [actions]="actions" [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- POP UP -->
+<div *ngIf="isupdate" class="assignment-popup-backdrop">
+    <div class="assignment-popup card p-4">
+        <h5 class="text-primary mb-3">Assign Assignment</h5>
+        <!-- Title + Date -->
+        <div class="row align-items-center mt-3">
+            <div class="col-lg-12">
+                <strong>Update Relieving Date</strong>
+            </div>
+
+            <div class="col-lg-12 mt-2">
+                <div class="">
+                    <input type="date" class="form-control" value="2026-01-23">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="row mt-4">
+            <div class="col-lg-12 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-primary rounded-pill">
+                    Update Relieving Date
+                </button>
+                <button type="button" class="btn btn-danger rounded-pill">
+                    Retire Employee
+                </button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill" routerLink="/app/teacher">
+                    Close
+                </button>
+            </div>
+        </div>
+
+        <!-- <div class="text-end mt-3">
+            <button class="btn closebutton" (click)="onClose()">
+                Back
+            </button>
+            <button class="btn submitbutton" (click)="onConfirm()">
+                Confirm
+            </button>
+        </div> -->
+    </div>
+</div>

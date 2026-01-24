@@ -5,7 +5,7 @@
       <div class="d-flex flex-column gap-4">
         <div class="d-flex align-items-center justify-content-between">
           <h1 class="fw-bold mb-0" style="font-size: 30px;">
-            <i class="fa-solid fa-layer-group me-2"></i>My Batch
+            <i class="fa-solid fa-layer-group me-2"></i>Batch
           </h1>
           <!-- <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button">
             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
@@ -13,10 +13,62 @@
         </div>
       </div>
     </div>
+
     <div class="mt-3">
-      <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="false"
-        [searchPlaceholder]="'Search BatchName, Student...'" [totalRecords]="totalRecords"
-        (requestData)="loadTableData($event)"></custom-table>
+      <form [formGroup]="batchForm">
+        <div class="row g-3 align-items-end">
+
+          <!-- First field – little longer -->
+          <div class="col-md-4">
+            <formfield label="Search" formControlName="search" [control]="batchForm.get('search')"
+              placeholder="Batch name / code / program..." [required]="false">
+            </formfield>
+          </div>
+
+          <!-- Remaining fields – equal width -->
+          <div class="col-md-2">
+            <selectbox label="Status" placeholder="Select Status" [options]="status_options" formControlName="status"
+              [required]="false" [control]="batchForm.get('status')"> </selectbox>
+          </div>
+
+          <div class="col-md-2">
+            <selectbox label=" Academic Year" placeholder="Select Academic Year" [options]="ay_options"
+              formControlName="ay" [required]="false" [control]="batchForm.get('ay')"> </selectbox>
+          </div>
+
+          <div class="col-md-2">
+            <selectbox label="Program" placeholder="Select Program" [options]="program_options"
+              formControlName="program" [required]="false" [control]="batchForm.get('program')"> </selectbox>
+          </div>
+
+          <div class="col-md-2">
+            <selectbox label="Center" placeholder="Select Center" [options]="center_options" formControlName="center"
+              [required]="false" [control]="batchForm.get('center')"> </selectbox>
+          </div>
+
+        </div>
+        <div class="row mt-2">
+          <div class="col d-flex justify-content-end gap-2">
+            <button class="btn btn-outline-secondary" style="border-radius: 25px;">Cancel</button>
+            <button class="btn btn-primary" style="border-radius: 25px;">Search</button>
+          </div>
+        </div>
+      </form>
+
     </div>
+
+    <div class="mt-3">
+      <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+        [success]="'Active'" [danger]="'Inactive'" [searchPlaceholder]="'Search BatchName, Student...'"
+        [totalRecords]="totalRecords" (requestData)="loadTableData($event)"></custom-table>
+    </div>
+
   </div>
+</div>
+
+<!-- Close Batch -->
+ <div>
+    <delete [title]="'Close Batch'" [message]="'Are you sure you want to close this batch?'"
+        [(visible)]="modalVisible" (closed)="onModalClosed($event)">
+    </delete>
 </div>

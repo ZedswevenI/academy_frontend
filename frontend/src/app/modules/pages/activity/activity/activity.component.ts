@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-activity',
@@ -65,12 +66,10 @@ export class ActivityComponent {
 
   ngOnInit(): void {
     this.activityForm = this.fb.group({
-      class: ['', [Validators.required]],
-      batch: ['', [Validators.required]],
-      student: ['', [Validators.required]]
+      filter: [null, [this.filterValidator]]
     });
 
-        this.originalData = [
+    this.originalData = [
       { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2001', name: 'Aarav Kumar', ass: 1.98, test: 9.71, net: 2.71 },
       { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2002', name: 'Diya Sharma', ass: 2.19, test: 6.82, net: 2.61 },
       { batch: 'Batch A', sub: 'Maths', class: 'Class 7', id: 'ENR2003', name: 'Rohan Patel', ass: 0.97, test: 3.06, net: 1.14 },
@@ -127,6 +126,14 @@ export class ActivityComponent {
     this.isProceed = true;
   }
 
-  viewAct(row: any){}
+  filterValidator(control: AbstractControl) {
+    const val = control.value;
+    if (!val || !val.value1 || !val.value2 || !val.value3) {
+      return { required: true };
+    }
+    return null;
+  }
+
+  viewAct(row: any) { }
 
 }

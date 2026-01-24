@@ -1,7 +1,9 @@
 export interface MenuItem {
   label: string;
   icon: string;
-  route: string;
+  route?: string;
+  children?: MenuItem[];
+  expanded?: boolean;
 }
 
 export interface NavItem {
@@ -30,11 +32,6 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Attendance',
     icon: 'fa-solid fa-clipboard-check',
     route: '/app/attendance',
-  },
-  {
-    label: 'Report',
-    icon: 'fa-solid fa-chart-line',
-    route: '/app/report',
   },
   {
     label: 'Teachers',
@@ -97,9 +94,56 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/task',
   },
   {
+    label: 'Report',
+    icon: 'fa-solid fa-chart-line',
+    route: '/app/report',
+  },
+  {
     label: 'Org Masters',
     icon: 'fa-solid fa-sitemap',
-    route: '/app/org-master',
+    // route: '/app/org-master',
+    children: [
+      {
+        label: 'Institute',
+        icon: 'fa-solid fa-building-columns',
+        route: '/app/org-master/institute',
+      },
+      {
+        label: 'Center',
+        icon: 'fa-solid fa-landmark',
+        route: '/app/org-master/center',
+      },
+      {
+        label: 'Program',
+        icon: 'fa-solid fa-graduation-cap',
+        route: '/app/org-master/program',
+      },
+      {
+        label: 'Department',
+        icon: 'fa-solid fa-briefcase',
+        route: '/app/org-master/department',
+      },
+      {
+        label: 'Topic',
+        icon: 'fa-solid fa-book-open',
+        route: '/app/org-master/topic',
+      },
+      {
+        label: 'Sub Topic',
+        icon: 'fa-solid fa-book',
+        route: '/app/org-master/sub-topic',
+      },
+      {
+        label: 'CGPA Config',
+        icon: 'fa-solid fa-cogs',
+        route: '/app/org-master/cgpa',
+      },
+      {
+        label: 'Exam Config',
+        icon: 'fa-solid fa-sliders-h',
+        route: '/app/org-master/exam',
+      }
+    ]
   },
   {
     label: 'Phase Plan',

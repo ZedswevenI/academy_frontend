@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-report',
@@ -24,7 +25,7 @@ export class ReportComponent {
     { label: 'Class 11', value: 'Class 11' },
     { label: 'Class 12', value: 'Class 12' }
   ];
-   student_options = [
+  student_options = [
     { label: 'Arun Kumar', value: 'Arun Kumar' },
     { label: 'Divya Sharma', value: 'Divya Sharma' },
     { label: 'Rahul Verma', value: 'Rahul Verma' },
@@ -109,12 +110,10 @@ export class ReportComponent {
   constructor(private breadcrump: BredcrumpService, private fb: FormBuilder) {
     this.breadcrump.set([{ label: 'Report' }])
   }
-  
+
   ngOnInit(): void {
     this.reportForm = this.fb.group({
-      class: ['', [Validators.required]],
-      student: ['', [Validators.required]],
-      batch: ['', [Validators.required]]
+      filter: [null, [this.filterValidator]]
     });
   }
 
@@ -127,5 +126,12 @@ export class ReportComponent {
     this.selctedReport = sub.value;
   }
 
+  filterValidator(control: AbstractControl) {
+    const val = control.value;
+    if (!val || !val.value1 || !val.value2 || !val.value3) {
+      return { required: true };
+    }
+    return null;
+  }
 
 }

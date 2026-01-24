@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 @Component({
   selector: 'app-grid-list',
@@ -42,4 +43,9 @@ students = [
       attendance: 91
     }
   ];
+
+   constructor(private breadcrump: BredcrumpService) {
+    this.breadcrump.set([{ label: 'Student'}])
+  }
+
 }

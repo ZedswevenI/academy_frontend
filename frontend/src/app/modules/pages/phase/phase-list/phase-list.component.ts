@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
+import { AbstractControl } from '@angular/forms';
 @Component({
   selector: 'app-phase-list',
   standalone: false,
@@ -64,9 +65,7 @@ export class PhaseListComponent {
 
   ngOnInit(): void {
     this.phaseForm = this.fb.group({
-      class: ['', [Validators.required]],
-      subject: ['', [Validators.required]],
-      batch: ['', [Validators.required]]
+      filter: [null, [this.filterValidator]]
     });
 
     this.originalData = [
@@ -126,5 +125,13 @@ export class PhaseListComponent {
     this.isProceed = true;
   }
 
-  viewPerf(row: any) {}
+  filterValidator(control: AbstractControl) {
+    const val = control.value;
+    if (!val || !val.value1 || !val.value2 || !val.value3) {
+      return { required: true };
+    }
+    return null;
+  }
+
+  viewPerf(row: any) { }
 }

@@ -1,5 +1,5 @@
 <div>
-    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions" [success]="'Active'" [danger]="'Inactive'"
         [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
         (requestData)="loadTableData($event)"></custom-table>
 </div>

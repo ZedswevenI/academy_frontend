@@ -7,7 +7,7 @@
 .layout-body {
   flex: 1;
   display: flex;
-  min-height: 0; 
+  min-height: 0;
 }
 
 // .app-main {
@@ -17,6 +17,15 @@
 //   overflow: auto;
 // }
 
+// .app-header {
+//   position: fixed;
+//   top: 0;
+//   left: 0;
+//   width: 100%;
+//   z-index: 1030; 
+//   background: #fff;
+// }
+
 .app-main {
   flex: 1;
   display: flex;
@@ -24,14 +33,24 @@
   background: #f8fafc;
   overflow: auto;
 }
+
 .app-footer {
-  margin-top: auto;   
+  margin-top: auto;
   height: 40px;
-  background: #0b3c7d;
+  // background: #0b3c7d;
+  background-color: #111827;
   color: #fff;
   font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding: 0 16px;
+}
+
+.sidebar {
+  background: linear-gradient(90deg,
+      #364e81 5%,
+      #0B1220 90%) !important;
+  margin-top: 0px !important;
+  padding-top: 0px !important;
 }

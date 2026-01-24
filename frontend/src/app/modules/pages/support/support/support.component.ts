@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-support',
@@ -43,15 +44,21 @@ export class SupportComponent {
 
   ngOnInit(): void {
     this.supportForm = this.fb.group({
-      class: ['', [Validators.required]],
-      batch: ['', [Validators.required]],
-      student: ['', [Validators.required]],
+      filter: [null, [this.filterValidator]]
     })
-    
+
   }
 
-   setTab(tab: 'new' | 'existing') {
+  setTab(tab: 'new' | 'existing') {
     this.activeTab = tab;
+  }
+
+  filterValidator(control: AbstractControl) {
+    const val = control.value;
+    if (!val || !val.value1 || !val.value2 || !val.value3) {
+      return { required: true };
+    }
+    return null;
   }
 
   onProceed() {

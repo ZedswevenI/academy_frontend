@@ -5,9 +5,9 @@
 
     <!-- Sidebar + Main content -->
     <div class="layout-body" style="background-color: #f8f9fa;">
-        <!-- Sidebar -->
-        <div style="background-color: #1543c6; color: #fff;">
-            <app-sidebar class="app-sidebar" [open]="sidebarOpen" (close)="closeSidebar()"></app-sidebar>
+        <!-- Sidebar background-color: #1543c6;-->
+        <div class="sidebar">
+            <app-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-sidebar>
             <div class="overlay d-lg-none" *ngIf="sidebarOpen" (click)="closeSidebar()">
             </div>
         </div>

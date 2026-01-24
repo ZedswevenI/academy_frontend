@@ -16,7 +16,10 @@
 
     <div class="mt-3">
       <form [formGroup]="reportForm">
-        <div class="row g-3">
+        <filter label1="Class" label2="Batch" label3="Student" [required]="true" [options1]="class_options"
+          [options2]="batch_options" [options3]="student_options" [placeholder]="'Select'" formControlName="filter"
+          [control]="reportForm.get('filter')"></filter>
+        <!-- <div class="row g-3">
           <div class="col-md-4">
             <selectbox label="Class" [options]="class_options" formControlName="class" [control]="reportForm.get('class')"
               [required]="true">
@@ -32,7 +35,7 @@
               [control]="reportForm.get('student')" [required]="true">
             </selectbox>
           </div>
-        </div>
+        </div> -->
 
         <div class="col-12 text-end mt-3">
           <button class="btn submitbutton px-4" [disabled]="reportForm.invalid" (click)="onProceed()"

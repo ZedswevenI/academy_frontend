@@ -1,0 +1,90 @@
+
+/* CONTENT */
+.content {
+  display: flex;
+  gap: 16px;
+}
+
+/* TABLE */
+.table-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px;
+  overflow: auto;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 12px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .active {
+    color: #198754;
+    font-weight: 600;
+  }
+
+  .actions i {
+    margin-right: 10px;
+    cursor: pointer;
+  }
+}
+
+/* ASSIGN PANEL */
+.assign-panel {
+  width: 360px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.panel-body {
+  padding: 12px;
+
+  .hint {
+    font-size: 12px;
+    color: #6c757d;
+  }
+}
+
+.search-student {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0;
+
+  input {
+    flex: 1;
+    padding: 6px;
+  }
+
+  .go-btn {
+    border-radius: 50%;
+    border: 1px solid #0d6efd;
+    background: #fff;
+    color: #0d6efd;
+  }
+}
+
+.student-box {
+  border: 1px solid #e0e0e0;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}

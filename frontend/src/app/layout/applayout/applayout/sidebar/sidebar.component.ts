@@ -20,4 +20,10 @@ export class SidebarComponent {
   logout(){
     this.router.navigate(['/auth/login']);
   }
+
+
+
+  toggleMenu(menu: any) {
+    menu.expanded = !menu.expanded;
+  }
 }

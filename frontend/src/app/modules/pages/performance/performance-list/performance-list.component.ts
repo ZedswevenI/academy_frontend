@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-performance-list',
@@ -65,9 +66,7 @@ export class PerformanceListComponent {
 
   ngOnInit(): void {
     this.Form = this.fb.group({
-      class: ['', [Validators.required]],
-      subject: ['', [Validators.required]],
-      batch: ['', [Validators.required]]
+      filter: [null, [this.filterValidator]]
     });
 
     this.originalData = [
@@ -127,7 +126,15 @@ export class PerformanceListComponent {
     this.isProceed = true;
   }
 
+  filterValidator(control: AbstractControl) {
+    const val = control.value;
+    if (!val || !val.value1 || !val.value2 || !val.value3) {
+      return { required: true };
+    }
+    return null;
+  }
+
   viewPerf(row: any) {
-    this.router.navigate(['/app/student/view'], { state: { isPerformance: true }})
+    this.router.navigate(['/app/student/view'], { state: { isPerformance: true } })
   }
 }

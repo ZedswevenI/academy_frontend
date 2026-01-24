@@ -1,0 +1,79 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <!-- Header Section -->
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                            <i class="fa-solid fa-calendar-days me-2"></i> Timetable View
+                        </h1>
+                        <p class="sub-text">{{batch}}</p>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-end">
+                        <button class="btn btn-outline-secondary me-2" style="border-radius: 25px;"
+                            routerLink="/app/timetable"><i class="fa-solid fa-arrow-left"></i>Back</button>
+                        <button class="btn btn-outline-primary" style="border-radius: 25px;"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Upload via CSV</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row m-2">
+            <div class="card col-lg-3 p-2 me-2">
+                <label>Week Starting</label>
+                <strong>{{ weekStarting }}</strong>
+            </div>
+
+            <div class="card col-lg-3 p-2">
+                <label>Status</label>
+                <button class="btn btn-success fw-bold"
+                    style="border-radius: 25px; width: 80px; padding: 0px; font-size: 12px;">{{ status}}</button>
+            </div>
+        </div>
+
+        <!-- Timetable -->
+        <div class="table-wrapper">
+            <table class="timetable">
+                <thead>
+                    <tr>
+                        <th class="day-col">DAY</th>
+                        <th>Period 1</th>
+                        <th>Period 2</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <!-- DAY -->
+                        <td class="day-cell">
+                            WEDNESDAY
+                        </td>
+
+                        <!-- PERIOD 1 -->
+                        <td class="period-cell">
+                            <div class="period-content">
+                                <div class="empty">-</div>
+                                <div class="subject">PSA</div>
+                                <div class="empty">-</div>
+                                <span class="hall-badge">Hall A</span>
+                            </div>
+                        </td>
+
+                        <!-- PERIOD 2 -->
+                        <td class="period-cell">
+                            <div class="period-content">
+                                <div class="empty">-</div>
+                                <div class="subject">STF002</div>
+                                <div class="empty">-</div>
+                                <span class="hall-badge">Hall A</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+    </div>
+</div>

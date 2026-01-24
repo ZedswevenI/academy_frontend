@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-feedback',
@@ -45,9 +46,7 @@ export class FeedbackComponent {
 
   ngOnInit(): void {
     this.feedbackForm = this.fb.group({
-      class: ['', [Validators.required]],
-      batch: ['', [Validators.required]],
-      student: ['', [Validators.required]]
+      filter: [null, [this.filterValidator]]
     });
   }
 
@@ -65,6 +64,14 @@ export class FeedbackComponent {
 
   onProceed() {
     this.isProceed = true;
+  }
+
+  filterValidator(control: AbstractControl) {
+    const val = control.value;
+    if (!val || !val.value1 || !val.value2 || !val.value3) {
+      return { required: true };
+    }
+    return null;
   }
 
   viewptm(row: any) { }

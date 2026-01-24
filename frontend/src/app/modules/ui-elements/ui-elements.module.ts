@@ -21,6 +21,7 @@ import { ReadonlyComponent } from './elements/readonly/readonly.component';
 import { CustomTableComponent } from './elements/custom-table/custom-table.component';
 import { EditTableComponent } from './elements/edit-table/edit-table.component';
 import { ViewTableComponent } from './elements/view-table/view-table.component';
+import { FilterComponent } from './elements/filter/filter.component';
 
 @NgModule({
   declarations: [
@@ -41,7 +42,8 @@ import { ViewTableComponent } from './elements/view-table/view-table.component';
     ReadonlyComponent,
     CustomTableComponent,
     EditTableComponent,
-    ViewTableComponent
+    ViewTableComponent,
+    FilterComponent
   ],
   imports: [
     CommonModule,
@@ -68,7 +70,8 @@ import { ViewTableComponent } from './elements/view-table/view-table.component';
     ReadonlyComponent,
     CustomTableComponent,
     EditTableComponent,
-    ViewTableComponent
+    ViewTableComponent,
+    FilterComponent
   ]
 })
 export class UiElementsModule {}

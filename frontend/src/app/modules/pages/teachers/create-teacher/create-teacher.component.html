@@ -16,39 +16,81 @@
                 <div class="row g-3">
 
                     <div class="col-md-6">
-                        <formfield label="Teacher's ID" formControlName="id" [control]="teacherForm.get('id')"
+                        <formfield label="Teacher Name" formControlName="name" [control]="teacherForm.get('name')"
+                            placeholder="Enter Teacher Name" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Staff Code" formControlName="staff" [control]="teacherForm.get('staff')"
+                            placeholder="Enter Staff Code" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Employee ID" formControlName="id" [control]="teacherForm.get('id')"
                             placeholder="Enter Teacher's ID" [required]="true">
                         </formfield>
                     </div>
 
                     <div class="col-md-6">
-                        <formfield label="Teacher Name" formControlName="name" [control]="teacherForm.get('name')"
-                            placeholder="Enter Teacher Name" [required]="true">
+                        <formfield label="Phone" formControlName="phone" [control]="teacherForm.get('phone')"
+                            placeholder="Enter Phone Number" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Email" formControlName="mail" [control]="teacherForm.get('mail')"
+                            placeholder="Enter Email" [required]="true">
                         </formfield>
                     </div>
                     
                     <div class="col-md-6">
-                        <formfield label="Joined On" formControlName="date" [control]="teacherForm.get('date')"
-                            placeholder="Enter Date" [required]="true">
+                        <formfield label="Center" formControlName="center" [control]="teacherForm.get('center')"
+                            placeholder="Enter Address" [required]="true">
                         </formfield>
                     </div>
 
                     <div class="col-md-6">
-                        <formfield label="Contact Number" formControlName="num" [control]="teacherForm.get('num')"
-                            placeholder="Enter Contact Number" [required]="true">
+                        <formfield label="Department" formControlName="dep" [control]="teacherForm.get('dep')"
+                            placeholder="Enter Department" [required]="true">
                         </formfield>
-                    </div>
-          
-                    <div class="col-md-6">
-                        <selectbox label="Subject" [options]="subject_options" formControlName="sub"
-                            [control]="teacherForm.get('sub')" [required]="true">
-                        </selectbox>
                     </div>
 
                     <div class="col-md-6">
-                        <multiselect label="Classes Handle" placeholder="Select Class" [options]="class_options"
-                            formControlName="class" [control]="teacherForm.get('class')" [required]="true">
-                        </multiselect>
+                        <formfield label="Weekoff" formControlName="week" [control]="teacherForm.get('week')"
+                            placeholder="Enter WeekOff" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Joining Date" formControlName="join" [control]="teacherForm.get('join')"
+                            placeholder="Enter Joining Date" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Relieving Date" formControlName="relieve" [control]="teacherForm.get('relieve')"
+                            placeholder="Enter Relieving Date" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Faculty Type" formControlName="type" [control]="teacherForm.get('type')"
+                            placeholder="Enter Faculty Type" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Subject" formControlName="sub" [control]="teacherForm.get('sub')"
+                            placeholder="Enter Subject" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <div class="col-md-6">
+                        <formfield label="Update Relieving Date" formControlName="update" [control]="teacherForm.get('update')"
+                            placeholder="Enter Update Relieving Date" [required]="true">
+                        </formfield>
                     </div>
 
                 </div>

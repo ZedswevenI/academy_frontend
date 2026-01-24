@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl } from '@angular/forms';
 
 @Component({
   selector: 'app-package',
@@ -63,9 +64,7 @@ export class PackageComponent {
 
   ngOnInit(): void {
     this.packageForm = this.fb.group({
-      class: ['', [Validators.required]],
-      batch: ['', [Validators.required]],
-      student: ['', [Validators.required]]
+      filter: [null, [this.filterValidator]]
     });
 
     this.originalData = [
@@ -124,6 +123,14 @@ export class PackageComponent {
   onProceed() {
     this.isProceed = true;
   }
+
+  filterValidator(control: AbstractControl) {
+  const val = control.value;
+  if (!val || !val.value1 || !val.value2 || !val.value3) {
+    return { required: true };
+  }
+  return null;
+}
 
   viewPack(row: any) { }
 }

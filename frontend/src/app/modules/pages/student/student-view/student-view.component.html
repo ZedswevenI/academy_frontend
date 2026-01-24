@@ -123,14 +123,14 @@
                         <div class="tab-pane fade show active" id="program">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <p><strong>Program</strong><br>JEE 2 Year Classroom</p>
-                                    <p><strong>Stream</strong><br>JEE</p>
-                                    <p><strong>Duration</strong><br>2 Years</p>
+                                    <p>Program<br><strong>JEE 2 Year Classroom</strong></p>
+                                    <p>Stream<br><strong>JEE</strong></p>
+                                    <p>Duration<br><strong>2 Years</strong></p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p><strong>Batch</strong><br>JEE-2025-A</p>
-                                    <p><strong>Joining Date</strong><br>10/05/2024</p>
-                                    <p><strong>Mentor</strong><br>Arun Kumar</p>
+                                    <p>Batch<br><strong>JEE-2025-A</strong></p>
+                                    <p>Joining Date<br><strong>10/05/2024</strong></p>
+                                    <p>Mentor<br><strong>Arun Kumar</strong></p>
                                 </div>
                             </div>
                         </div>
@@ -161,30 +161,32 @@
 
                         <!-- Performance -->
                         <div class="tab-pane fade" id="perform">
-                            <p><strong>Total Fees:</strong> ₹1,20,000</p>
-                            <p><strong>Paid:</strong> ₹90,000</p>
-                            <p class="text-danger fw-semibold"><strong>Due:</strong> ₹30,000</p>
+ <custom-table [autoFitChars]="true" [columns]="columnsArray6" [data]="dataArray6"
+                                [showaction]="false" 
+                                [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
                         </div>
 
                         <!-- PTM -->
                         <div class="tab-pane fade" id="ptm">
-                            <p><strong>Total Fees:</strong> ₹1,20,000</p>
-                            <p><strong>Paid:</strong> ₹90,000</p>
-                            <p class="text-danger fw-semibold"><strong>Due:</strong> ₹30,000</p>
+                             <custom-table [autoFitChars]="true" [columns]="columnsArray3" [data]="dataArray3"
+                                [showaction]="false" 
+                                [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
                         </div>
 
                         <!-- Feedback -->
                         <div class="tab-pane fade" id="feedback">
-                            <p><strong>Total Fees:</strong> ₹1,20,000</p>
-                            <p><strong>Paid:</strong> ₹90,000</p>
-                            <p class="text-danger fw-semibold"><strong>Due:</strong> ₹30,000</p>
+                              <custom-table [autoFitChars]="true" [columns]="columnsArray4" [data]="dataArray4"
+                                [showaction]="false" 
+                                [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
+                                (requestData)="loadExamData($event)"></custom-table>
                         </div>
 
                         <!-- Package -->
                         <div class="tab-pane fade" id="pack">
-                            <p><strong>Total Fees:</strong> ₹1,20,000</p>
-                            <p><strong>Paid:</strong> ₹90,000</p>
-                            <p class="text-danger fw-semibold"><strong>Due:</strong> ₹30,000</p>
+                              <custom-table [autoFitChars]="true" [columns]="columnsArray5" [data]="dataArray5"
+                                [showaction]="false"
+                                [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
+                                (requestData)="loadExamData($event)"></custom-table>
                         </div>
                     </div>
                 </div>
