@@ -20,6 +20,8 @@ export class DoceditorComponent implements ControlValueAccessor {
   @Input() placeholder: string = '';
   @Input() control: AbstractControl | null = null;
   @Input() id: string = 'quillEditor';
+  @Input() height: string = '200px';
+  @Input() width: string = '250px'
 
   value: any = '';
   onChange = (_: any) => { };

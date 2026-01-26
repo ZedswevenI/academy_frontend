@@ -1,27 +1,21 @@
 .sidebar {
-  width: 240px;
-  height: calc(100vh - var(--header-h));
-  position: sticky;
-  top: var(--header-h);
-
+  height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-
-  background: linear-gradient(90deg,
-      #364e81 5%,
-      #0B1220 90%) !important;
+  color: #fff;
 }
 
+/* scroll area */
 .nav-wrap {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 0.5rem;
-
+  flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  // scrollbar-width: none;        
+  // -ms-overflow-style: none;
 }
-
+// .nav-wrap::-webkit-scrollbar {
+//   width: 0;
+//   height: 0;
+// }
 .nav-wrap::-webkit-scrollbar {
   width: 6px;
 }
@@ -35,14 +29,16 @@
   background: rgba(255, 255, 255, 0.4);
 }
 
+/* links */
 .sidebar-link {
   display: flex;
   align-items: center;
+  // padding: 0.75rem 1rem;
+  // color: #cfd8ff;
   padding: 0.625rem 0.75rem;
   border-radius: 0.75rem;
-  // color: #6b7280;
   color: #E5E7EB;
-  transition: background-color 0.15s, color 0.15s;
+  text-decoration: none;
 
   &:hover {
     // background-color: #f3f4f6;
@@ -57,18 +53,6 @@
     color: #FFFFFF;
     font-weight: bold;
   }
-}
-
-
-
-/* Chevron animation */
-.fa-chevron-down {
-  font-size: 0.75rem;
-  transition: transform 0.2s ease;
-}
-
-.fa-chevron-down.rotate {
-  transform: rotate(180deg);
 }
 
 /* Submenu */
@@ -88,58 +72,22 @@
   font-weight: bold;
 }
 
-.sidebar-link.child.active {
-  // background-color: rgba(37, 99, 235, 0.2);
-  // color: #ffffff;
-  background-color: #2563EB;
-  color: #FFFFFF;
-  font-weight: bold;
-}
-
+/* logout fixed */
 .logout-wrap {
   padding: 1rem;
-  border-top: 1px solid #fff;
-  margin-bottom: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.logout-wrap button {
+.logout-btn {
   width: 100%;
-  padding: 0.6rem;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 10px;
+  border: 3px solid rgba(248, 113, 113, 0.4);
   background: transparent;
-
   color: #f87171;
   font-weight: 700;
-  border: 3px solid rgba(248, 113, 113, 0.4);
+  padding: 0.6rem;
 
-  transition: all 0.2s ease;
-}
-
-.logout-wrap button:hover {
-  background: rgba(248, 113, 113, 0.15);
-  color: #ffffff;
-}
-
-@media (max-width: 991px) {
-  .sidebar {
-    position: fixed;
-    top: var(--header-h);
-    left: 0;
-
-    height: calc(100vh - var(--header-h));
-    z-index: 1050;
-
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+  &:hover {
+    background: rgba(248, 113, 113, 0.15);
+    color: #ffffff;
   }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
 }

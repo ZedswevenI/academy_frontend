@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { NewTicketComponent } from './new-ticket.component';
+import { CreateCircularComponent } from './create-circular.component';
 
-describe('NewTicketComponent', () => {
-  let component: NewTicketComponent;
-  let fixture: ComponentFixture<NewTicketComponent>;
+describe('CreateCircularComponent', () => {
+  let component: CreateCircularComponent;
+  let fixture: ComponentFixture<CreateCircularComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [NewTicketComponent]
+      declarations: [CreateCircularComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(NewTicketComponent);
+    fixture = TestBed.createComponent(CreateCircularComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

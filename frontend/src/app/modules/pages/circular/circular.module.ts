@@ -5,10 +5,12 @@ import { CircularRoutingModule } from './circular.routing.module';
 import { CircularComponent } from './circular/circular.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CreateCircularComponent } from './create-circular/create-circular.component';
 
 @NgModule({
     declarations: [
-        CircularComponent
+        CircularComponent,
+        CreateCircularComponent
     ],
     imports: [
         CommonModule,

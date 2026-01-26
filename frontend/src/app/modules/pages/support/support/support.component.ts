@@ -13,29 +13,42 @@ import { AbstractControl } from '@angular/forms';
 export class SupportComponent {
   supportForm!: FormGroup;
   isProceed: boolean = false;
+  isUnassign: boolean = false;
+  confirmAssign: boolean = false;
 
-  activeTab: 'new' | 'existing' = 'new';
+  isUpdate: boolean = false;
+  isForward: boolean = false;
 
-  class_options = [
-    { label: 'Class 6', value: 'Class 6' },
-    { label: 'Class 7', value: 'Class 7' },
-    { label: 'Class 8', value: 'Class 8' },
-    { label: 'Class 9', value: 'Class 9' },
-    { label: 'Class 10', value: 'Class 10' },
-    { label: 'Class 11', value: 'Class 11' },
-    { label: 'Class 12', value: 'Class 12' }
+  columnsArray = [
+    { key: 'ticket', label: 'Ticket NO', sortable: true },
+    { key: 'area', label: 'Area', sortable: false },
+    { key: 'subject', label: 'Subject', sortable: false },
+    { key: 'detail', label: 'Details', sortable: false }
   ];
-  batch_options = [
-    { label: 'Batch A', value: 'Batch A' },
-    { label: 'Batch B', value: 'Batch B' },
-    { label: 'Batch C', value: 'Batch C' }
+  dataArray = [
+    { ticket: 1002345, area: 'Technical Support', subject: 'Login Issue', detail: 'User unable to login to portal' },
+    { ticket: 1002346, area: 'Academic Support', subject: 'Course Material', detail: 'Request for semester syllabus' },
+    { ticket: 1002347, area: 'Fee Related', subject: 'Payment Error', detail: 'Unable to process tuition fee payment' },
+    { ticket: 1002348, area: 'General Inquiry', subject: 'Holiday Schedule', detail: 'Query about upcoming holidays' },
+    { ticket: 1002349, area: 'Other', subject: 'Feedback', detail: 'Suggestion for improving portal interface' }
+  ];
+  action = [
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-eye',
+      tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.viewSupport(row)
+    },
   ]
-  student_options = [
+
+  employee_options = [
     { label: 'Arun Kumar', value: 'Arun Kumar' },
-    { label: 'Divya Sharma', value: 'Divya Sharma' },
-    { label: 'Rahul Verma', value: 'Rahul Verma' },
-    { label: 'Sneha Patel', value: 'Sneha Patel' },
-    { label: 'Karthik R', value: 'Karthik R' }
+    { label: 'Priya Sharma', value: 'Priya Sharma' },
+    { label: 'Suresh Reddy', value: 'Suresh Reddy' },
+    { label: 'Kavya Nair', value: 'Kavya Nair' },
+    { label: 'Rahul Verma', value: 'Rahul Verma' }
   ];
 
   constructor(private breadcrump: BredcrumpService, private fb: FormBuilder, private router: Router) {
@@ -44,24 +57,66 @@ export class SupportComponent {
 
   ngOnInit(): void {
     this.supportForm = this.fb.group({
-      filter: [null, [this.filterValidator]]
-    })
+      employee: ['', Validators.required],
+      complete: [''],
+      notComplete: [''],
+      forward: ['']
+    });
+
+    const controls = ['complete', 'notComplete', 'forward'];
+
+    controls.forEach(ctrl => {
+      this.supportForm.get(ctrl)?.valueChanges.subscribe(val => {
+        if (val) {
+          controls.forEach(other => {
+            if (other !== ctrl) {
+              this.supportForm.get(other)?.setValue(false, { emitEvent: false });
+            }
+          });
+        }
+      });
+    });
 
   }
 
-  setTab(tab: 'new' | 'existing') {
-    this.activeTab = tab;
+  viewSupport(row: any) {
+    this.isUnassign = true;
   }
 
-  filterValidator(control: AbstractControl) {
-    const val = control.value;
-    if (!val || !val.value1 || !val.value2 || !val.value3) {
-      return { required: true };
+  onClose() {
+    this.isUnassign = false;
+    this.isUpdate = false;
+  }
+
+  onUpdate() {
+    this.isUnassign = false;
+    this.isUpdate = true;
+  }
+  closeUpdate() {
+    this.isUpdate = false;
+  }
+
+  forward() {
+    this.isUpdate = false;
+    this.isForward = true;
+  }
+  closeForward() {
+    this.isForward = false;
+  }
+
+  onSubmit() {
+    const { complete, notComplete, forward } = this.supportForm.value;
+
+    if (forward) {
+      this.isForward = true;
+      this.isUpdate = false;
+      this.supportForm.patchValue({ complete: false, notComplete: false });
+    } else if (complete) {
+      this.isUpdate = false;
+    } else if (notComplete) {
+      this.isUpdate = false;
+    } else {
+      alert('Please select one option');
     }
-    return null;
-  }
-
-  onProceed() {
-    this.isProceed = true;
   }
 }

@@ -38,6 +38,11 @@ const routes: Routes = [
       import('../pages/student/student.module').then((m) => m.StudentModule),
   },
   {
+    path: 'chat',
+    loadChildren: () =>
+      import('../pages/chat/chat.module').then((m) => m.ChatModule),
+  },
+  {
     path: 'communication',
     loadChildren: () =>
       import('../pages/communication/communication.module').then((m) => m.CommunicationModule),

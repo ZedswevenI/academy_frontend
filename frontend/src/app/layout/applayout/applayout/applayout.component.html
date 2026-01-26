@@ -1,33 +1,37 @@
-<div class="app-shell d-flex flex-column">
-    <!-- Header -->
-    <app-header class="flex-shrink-0 border-bottom app-header" (menuToggle)="toggleSidebar()"></app-header>
-    <!-- <app-navbar class="flex-shrink-0 border-bottom app-header"></app-navbar> -->
+<div class="app-shell">
 
-    <!-- Sidebar + Main content -->
-    <div class="layout-body" style="background-color: #f8f9fa;">
-        <!-- Sidebar background-color: #1543c6;-->
-        <div class="sidebar">
-            <app-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-sidebar>
-            <div class="overlay d-lg-none" *ngIf="sidebarOpen" (click)="closeSidebar()">
-            </div>
-        </div>
+  <!-- HEADER -->
+  <app-header (menuToggle)="toggleSidebar()"></app-header>
 
-        <!-- Main content -->
-        <!-- <main class="flex-grow-1 p-3 p-md-4 app-main">
-            <alert></alert>
-            <app-bredcrump></app-bredcrump>
-            <router-outlet></router-outlet>
-            <app-footer></app-footer>
-        </main> -->
-        <main class="app-main">
-            <alert></alert>
-            <app-bredcrump></app-bredcrump>
-            <router-outlet></router-outlet>
+  <!-- BODY -->
+  <div class="app-body">
 
-            <app-footer class="app-footer"></app-footer>
-        </main>
+    <!-- SIDEBAR -->
+    <aside class="app-sidebar" [class.open]="sidebarOpen">
+      <app-sidebar
+        [open]="sidebarOpen"
+        (close)="closeSidebar()">
+      </app-sidebar>
+    </aside>
+
+    <!-- OVERLAY (mobile) -->
+    <div
+      class="sidebar-overlay d-lg-none"
+      *ngIf="sidebarOpen"
+      (click)="closeSidebar()">
     </div>
 
-    <!-- Footer -->
-    <!-- <app-footer class="app-footer"></app-footer> -->
+    <!-- MAIN -->
+    <main class="app-main">
+      <app-bredcrump></app-bredcrump>
+      <alert></alert>
+
+      <div class="app-content">
+        <router-outlet></router-outlet>
+      </div>
+
+      <app-footer></app-footer>
+    </main>
+
+  </div>
 </div>

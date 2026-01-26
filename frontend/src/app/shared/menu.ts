@@ -44,6 +44,11 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/student',
   },
   {
+    label: 'Chat',
+    icon: 'fa-solid fa-comments',
+    route: '/app/chat',
+  },
+  {
     label: 'Communication',
     icon: 'fa-solid fa-comments',
     route: '/app/communication',

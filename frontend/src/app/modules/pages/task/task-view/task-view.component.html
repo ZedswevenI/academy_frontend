@@ -67,7 +67,7 @@
                         Back
                     </button>
                     <button class="btn submitbutton px-4" style="border-radius: 30px;" (click)="onAct()">
-                        Update
+                        Update Status
                     </button>
                 </div>
 
@@ -82,16 +82,16 @@
     <div class="task-popup card p-4">
         <div class="d-flex justify-content-between">
             <h5 class="text-primary mb-3">Update Status</h5>
-            <button  class="btn-close position-absolute top-0 end-0 m-3" (click)="onClose()"></button>
+            <button class="btn-close position-absolute top-0 end-0 m-3" (click)="onClose()"></button>
         </div>
 
         <!-- Remarks -->
-        <label class="col-form-label">Remarks</label>
+        <label class="col-form-label">Remarks <span style="color: red">*</span></label>
         <textarea class="form-control mb-3" rows="3" placeholder="Enter remarks" [(ngModel)]="remarks">
     </textarea>
 
         <!-- Task Status -->
-        <label class="col-form-label">Task Status</label>
+        <label class="col-form-label">Task Status <span style="color: red">*</span></label>
         <div *ngFor="let item of statusOptions; let i = index" class="row align-items-center mb-2">
             <div class="col-auto">
                 <input type="checkbox" class="form-check-input" [checked]="item.checked" (change)="selectStatus(i)" />
@@ -103,7 +103,7 @@
 
         <div class="text-end mt-3">
             <button class="btn closebutton" (click)="onClose()">Back</button>
-            <button class="btn submitbutton" (click)="onConfirm()">Confirm</button>
+            <button class="btn submitbutton" (click)="onConfirm()">Update Status</button>
         </div>
     </div>
 </div>

@@ -1,56 +1,97 @@
+:host {
+  height: 100vh;
+  display: block;
+}
+
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.layout-body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
+/* HEADER */
+app-header {
+  height:  56px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
 }
 
-// .app-main {
-//   flex: 1;
-//   padding: 16px;
-//   background: #f8f9fa;
-//   overflow: auto;
-// }
-
-// .app-header {
-//   position: fixed;
-//   top: 0;
-//   left: 0;
-//   width: 100%;
-//   z-index: 1030; 
-//   background: #fff;
-// }
-
-.app-main {
-  flex: 1;
+/* BODY */
+.app-body {
   display: flex;
-  flex-direction: column;
-  background: #f8fafc;
-  overflow: auto;
+  height: calc(100vh -  56px);
+  margin-top:  56px;
+  overflow: hidden;
+  scrollbar-width: none;        
+  -ms-overflow-style: none;
+}
+.app-body ::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
-.app-footer {
-  margin-top: auto;
-  height: 40px;
-  // background: #0b3c7d;
-  background-color: #111827;
-  color: #fff;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 16px;
-}
-
-.sidebar {
-  background: linear-gradient(90deg,
+/* SIDEBAR */
+.app-sidebar {
+  width: 260px;
+  position: fixed;
+  top: 56px;
+  bottom: 0;
+  left: 0;
+ background: linear-gradient(90deg,
       #364e81 5%,
       #0B1220 90%) !important;
-  margin-top: 0px !important;
-  padding-top: 0px !important;
+  transition: transform 0.3s ease;
+  z-index: 1040;
+}
+
+/* Desktop */
+@media (min-width: 992px) {
+  .app-sidebar {
+    transform: translateX(0);
+  }
+}
+
+/* Mobile */
+@media (max-width: 991px) {
+  .app-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* OVERLAY */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1030;
+}
+
+/* MAIN */
+.app-main {
+  margin-left: 260px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+@media (max-width: 991px) {
+  .app-main {
+    margin-left: 0;
+  }
+}
+
+/* CONTENT */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
 }
