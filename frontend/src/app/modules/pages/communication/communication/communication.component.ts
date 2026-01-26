@@ -1,22 +1,9 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-
-interface ChatItem {
-  id: number;
-  name: string;
-  type: 'group' | 'direct';
-  lastMessage: string;
-  time?: string;
-  readOnly?: boolean;
-  online?: boolean;
-  messages: Message[];
-}
-
-interface Message {
-  text: string;
-  sender: 'teacher' | 'student';
-  time: string;
-}
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { filter } from 'rxjs';
+import { Router } from '@angular/router';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 @Component({
   selector: 'app-communication',
@@ -25,126 +12,75 @@ interface Message {
   styleUrl: './communication.component.scss'
 })
 export class CommunicationComponent {
-  searchText: string = '';
 
-  batchGroups: ChatItem[] = [
-    {
-      id: 1, name: 'Batch A', type: 'group', lastMessage: 'Assignment posted', time: '10:30 AM', readOnly: true, messages: [
-        { text: 'Hello sir', sender: 'student', time: '09:10 AM' },
-        { text: 'Yes, tell me', sender: 'teacher', time: '09:11 AM' },
-        { text: 'Assignment submitted?', sender: 'student', time: '09:12 AM' }
-      ]
-    },
-    {
-      id: 2, name: 'Batch B', type: 'group', lastMessage: 'Class at 4 PM', time: '09:15 AM', readOnly: false, messages: [
-        { text: 'Sir, class today?', sender: 'student', time: '10:00 AM' },
-        { text: 'Yes, at 4 PM', sender: 'teacher', time: '10:05 AM' }
-      ]
-    },
+  communicationForm!: FormGroup;
+
+  class_options = [
+    { label: 'Class 6', value: 'Class 6' },
+    { label: 'Class 7', value: 'Class 7' },
+    { label: 'Class 8', value: 'Class 8' },
+    { label: 'Class 9', value: 'Class 9' },
+    { label: 'Class 10', value: 'Class 10' },
+    { label: 'Class 11', value: 'Class 11' },
+    { label: 'Class 12', value: 'Class 12' }
+  ];
+  batch_options = [
+    { label: 'Batch A', value: 'Batch A' },
+    { label: 'Batch B', value: 'Batch B' },
+    { label: 'Batch C', value: 'Batch C' }
+  ]
+  student_options = [
+    { label: 'Arun Kumar', value: 'Arun Kumar' },
+    { label: 'Divya Sharma', value: 'Divya Sharma' },
+    { label: 'Rahul Verma', value: 'Rahul Verma' },
+    { label: 'Sneha Patel', value: 'Sneha Patel' },
+    { label: 'Karthik R', value: 'Karthik R' }
   ];
 
-  directChats: ChatItem[] = [
-    {
-      id: 3, name: 'Student 1', type: 'direct', lastMessage: 'Sir, I have a doubt', online: false, messages: [
-        { text: 'Sir, I have a doubt', sender: 'student', time: '11:00 AM' }
-      ]
-    },
-    {
-      id: 4, name: 'Student 2', type: 'direct', lastMessage: 'Thank you sir', online: false, messages: [
-        { text: 'Thank you sir', sender: 'student', time: '11:20 AM' }
-      ]
-    }
-  ];
-
-  filteredBatchGroups: ChatItem[] = [];
-  filteredDirectChats: ChatItem[] = [];
-
-  // messages = [
-  //   { text: 'Hello sir', sender: 'other', time: '09:10 AM' },
-  //   { text: 'Yes, tell me', sender: 'me', time: '09:11 AM' },
-  //   { text: 'Assignment submitted?', sender: 'other', time: '09:12 AM' },
-  // ];
-
-  newMessage = '';
-
-  // selectedChat: ChatItem | null = this.batchGroups[0];
-  selectedChat: ChatItem | null = null;
-  messages: Message[] = [];
-
-  constructor(private breadcrump: BredcrumpService) {
-    this.breadcrump.set([{ label: 'Communiation' }]);
-    // Initialize filtered lists
-    this.filteredBatchGroups = [...this.batchGroups];
-    this.filteredDirectChats = [...this.directChats];
+  constructor(private breadcrump: BredcrumpService, private fb: FormBuilder, private router: Router, private alertService: AlertService) {
+    this.breadcrump.set([{ label: 'Communiation', link: '/app/communication' }, {label: 'Create'}]);
   }
 
   ngOnInit() {
-    this.resetChats();
-    this.selectChat(this.batchGroups[0]);
+    this.communicationForm = this.fb.group({
+      filter: ['', [Validators.required]],
+      whatsapp: [false],
+      mail: [false],
+      sms: [false]
+    });
+
+    const controls = ['whatsapp', 'mail', 'sms'];
+
+    controls.forEach(ctrl => {
+      this.communicationForm.get(ctrl)?.valueChanges.subscribe(val => {
+        if (val) {
+          controls.forEach(other => {
+            if (other !== ctrl) {
+              this.communicationForm.get(other)?.setValue(false, { emitEvent: false });
+            }
+          });
+        }
+      });
+    });
+
   }
 
-  resetChats() {
-    this.filteredBatchGroups = [...this.batchGroups];
-    this.filteredDirectChats = [...this.directChats];
-  }
+  onSubmit() {
+    this.alertService.success('Record saved successfully!');
 
-  onSearch() {
-    const search = this.searchText.toLowerCase().trim();
+    // const { whatsapp, mail, sms } = this.communicationForm.value;
 
-    this.filteredBatchGroups = this.batchGroups.filter(chat =>
-      chat.name.toLowerCase().includes(search) ||
-      chat.lastMessage.toLowerCase().includes(search)
-    );
-
-    this.filteredDirectChats = this.directChats.filter(chat =>
-      chat.name.toLowerCase().includes(search) ||
-      chat.lastMessage.toLowerCase().includes(search)
-    );
-  }
-
-  clearSearch(): void {
-    this.searchText = '';
-    this.resetChats();
-  }
-
-  selectedFilter: 'all' | 'group' | 'direct' = 'all';
-
-  setFilter(filter: 'all' | 'group' | 'direct') {
-    this.selectedFilter = filter;
-
-    this.filteredBatchGroups = this.batchGroups.filter(chat =>
-      filter === 'all' || (filter === 'group' && chat.type === 'group')
-    );
-
-    this.filteredDirectChats = this.directChats.filter(chat =>
-      filter === 'all' || (filter === 'direct' && chat.type === 'direct')
-    );
-  }
-
-  sendMessage() {
-    if (!this.newMessage.trim() || !this.selectedChat) return;
-
-    const msg: Message = {
-      text: this.newMessage,
-      sender: 'teacher',
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
-
-    this.selectedChat.messages.push(msg);
-    this.messages = this.selectedChat.messages;
-
-    // update last message in left panel
-    this.selectedChat.lastMessage = this.newMessage;
-
-    this.newMessage = '';
-  }
-
-
-  selectChat(chat: ChatItem) {
-    this.selectedChat = chat;
-    this.messages = chat.messages;
+    // if (whatsapp) {
+    //   this.router.navigate(['/app/communication/whatsApp']);
+    // }
+    // else if (mail) {
+    //   this.router.navigate(['/app/communication/email']);
+    // }
+    // else if (sms) {
+    //   this.router.navigate(['/app/communication/message']);
+    // }
+    // else {
+    //   alert('Please select one communication option');
+    // }
   }
 }

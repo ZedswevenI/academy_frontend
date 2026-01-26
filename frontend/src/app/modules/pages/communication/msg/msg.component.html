@@ -1,0 +1,40 @@
+<div class="chat-container mat-elevation-z2">
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="profile">
+            <div class="avatar">B</div>
+            <div class="profile-info">
+                <div class="name">Batch A</div>
+                <div class="last-seen">+91 98765 43210 | Last seen recently</div>
+            </div>
+        </div>
+        <div class="menu">
+            <span>&#x22EE;</span> <!-- vertical dots icon -->
+        </div>
+    </div>
+    <!-- Messages -->
+    <div class="messages">
+        <div *ngFor="let msg of chatMessages" [ngClass]="{ 'message-sent': msg.sent, 'message-received': !msg.sent }"
+            class="message">
+            <div class="message-text">{{ msg.text }}</div>
+            <div class="message-time">{{ msg.time }}</div>
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input">
+        <input type="text" placeholder="Type a message" [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" />
+        <button (click)="sendMessage()">
+            <span class="send-icon">&#10148;</span>
+        </button>
+    </div>
+</div>
+
+<!-- 
+    <form [formGroup]="msgForm" class="w-100">
+        <div class="col-12">
+            <doceditor label="" [required]="true" [control]="msgForm.get('body')" formControlName="body" id="body"
+                class="w-100" [height]="'400px'" [width]="'500px'">
+            </doceditor>
+        </div>
+    </form> -->

@@ -11,147 +11,46 @@
             </div>
         </div>
 
+        <div class="mt-3">
+            <form [formGroup]="communicationForm">
+                <filter label1="Class" label2="Batch" label3="Student" [required]="true" [options1]="class_options"
+                    [options2]="batch_options" [options3]="student_options" [placeholder]="'Select'"
+                    formControlName="filter" [control]="communicationForm.get('filter')"></filter>
 
-        <div class="communication mt-3 card">
-            <div class="row h-100">
-                <!-- Left Panel -->
-                <div class="col-12 col-md-4 col-lg-3 border-end d-flex flex-column">
+                <div class="row mt-5 ms-3">
+                    <label class="form-label fw-black fs-9 ms-n3">Select Message Template<span class="requierdstar"
+                            style="color: red">*</span></label>
+                </div>
+                <div class="col-md-12 ms-5">
                     <div class="row">
-                        <div class="position-relative ms-2" style="width: 80%">
+                        <checkbox label="Whats App" class="mt-2" [required]="false"
+                            [control]="communicationForm.get('whatsapp')" formControlName="whatsapp">
+                        </checkbox>
+                    </div>
 
-                            <!-- Search Icon -->
-                            <img src="assets/icons/searchicon.svg" alt="search" width="20" height="20"
-                                class="position-absolute" style="left: 16px; top: 50%; transform: translateY(-50%)" />
+                    <div class="row">
+                        <checkbox label="EMail" class="mt-2" [required]="false"
+                            [control]="communicationForm.get('mail')" formControlName="mail">
+                        </checkbox>
+                    </div>
 
-                            <!-- Search Input -->
-                            <input type="text" placeholder="Search" class="form-control search-table-input shadow-sm"
-                                style="height: 48px; padding-left: 48px; padding-right: 40px; border-radius: 25px;"
-                                [(ngModel)]="searchText" (input)="onSearch()" />
-
-                            <!-- Clear Button -->
-                            <button *ngIf="searchText" type="button"
-                                class="btn btn-link position-absolute text-muted px-0"
-                                style="right: 14px; top: 50%; transform: translateY(-50%)" aria-label="Clear search"
-                                (click)="clearSearch()">
-                                <i class="fas fa-times"></i>
-                            </button>
-
-                        </div>
-                        <div class="row my-2 ms-2">
-                            <div class="row my-2 px-2">
-                                <div class="col-12 d-flex gap-2">
-                                    <button type="button" class="btn btn-outline-primary"
-                                        [class.active]="selectedFilter === 'all'" (click)="setFilter('all')">
-                                        All
-                                    </button>
-
-                                    <button type="button" class="btn btn-outline-primary"
-                                        [class.active]="selectedFilter === 'group'" (click)="setFilter('group')">
-                                        Group
-                                    </button>
-
-                                    <button type="button" class="btn btn-outline-primary"
-                                        [class.active]="selectedFilter === 'direct'" (click)="setFilter('direct')">
-                                        Individual
-                                    </button>
-                                </div>
-                            </div>
-
-                           <div class="chat-list flex-grow-1 overflow-auto px-2">
-                             <!-- BATCH GROUPS -->
-                            <div class="chat-section px-2">
-                                <h6 class="section-title">Batch Groups</h6>
-
-                                <div class="chat-item" *ngFor="let chat of filteredBatchGroups"
-                                    (click)="selectChat(chat)" [class.active]="selectedChat?.id === chat.id">
-                                    <div class="avatar group">{{ chat.name[0] }}</div>
-                                    <div class="chat-info">
-                                        <div class="chat-title">{{ chat.name }}</div>
-                                        <div class="chat-last">{{ chat.lastMessage }}</div>
-                                    </div>
-                                    <span class="time">{{ chat.time }}</span>
-                                </div>
-                            </div>
-
-                            <!-- DIRECT CHATS -->
-                            <div class="chat-section px-2">
-                                <h6 class="section-title">Direct Messages</h6>
-
-                                <div class="chat-item" *ngFor="let chat of filteredDirectChats"
-                                    (click)="selectChat(chat)" [class.active]="selectedChat?.id === chat.id">
-                                    <div class="avatar">{{ chat.name[0] }}</div>
-                                    <div class="chat-info">
-                                        <div class="chat-title">{{ chat.name }}</div>
-                                        <div class="chat-last">{{ chat.lastMessage }}</div>
-                                    </div>
-                                    <span class="online-dot" *ngIf="chat.online"></span>
-                                </div>
-                            </div>
-                           </div>
-
-                        </div>
-
-
+                    <div class="row">
+                        <checkbox label="SMS" class="mt-2" [required]="false" [control]="communicationForm.get('sms')"
+                            formControlName="sms">
+                        </checkbox>
                     </div>
                 </div>
 
 
-                <!-- RIGHT Panel-->
-                <div class="col-12 col-md-8 col-lg-9 d-flex flex-column">
-                    <div class="chat-window d-flex flex-column h-100">
-
-                        <!-- Chat Header -->
-                        <div class="chat-header d-flex align-items-center justify-content-between px-3 py-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="avatar header-avatar">
-                                    {{ selectedChat?.name?.charAt(0) || 'Select a chat' }}
-                                </div>
-                                <div>
-                                    <div class="chat-title fw-semibold">
-                                        {{ selectedChat?.name || 'Select a chat' }}
-                                    </div>
-                                    <small class="text-muted">
-                                        {{ selectedChat?.online ? 'Online' : 'Last seen recently' }}
-                                    </small>
-                                </div>
-                            </div>
-
-                            <div class="d-flex gap-3 text-muted">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </div>
-                        </div>
-
-                        <!-- Chat Messages -->
-                        <div class="chat-body flex-grow-1 px-3 py-3 overflow-auto">
-
-                            <div *ngFor="let msg of messages" class="message-wrapper" [class.sent]="msg.sender === 'teacher'"
-                                [class.received]="msg.sender !== 'teacher'">
-
-                                <div class="message-bubble">
-                                    {{ msg.text }}
-                                    <div class="message-time">{{ msg.time }}</div>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        <!-- Chat Input -->
-                        <div class="chat-input d-flex align-items-center px-3 py-2 gap-2">
-                            <i class="far fa-smile text-muted fs-5"></i>
-
-                            <input type="text" class="form-control message-input" placeholder="Type a message"
-                                [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" />
-
-                            <button class="btn send-btn" (click)="sendMessage()">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-
+                <div class="row mt-2">
+                    <div class="d-flex justify-content-end px-2">
+                        <button class="btn closebutton" routerLink="/app/communication">Back</button>
+                        <button class="btn submitbutton" (click)="onSubmit()">Submit</button>
                     </div>
-
                 </div>
-            </div>
+            </form>
         </div>
+
+
     </div>
 </div>
