@@ -22,6 +22,7 @@ import { CustomTableComponent } from './elements/custom-table/custom-table.compo
 import { EditTableComponent } from './elements/edit-table/edit-table.component';
 import { ViewTableComponent } from './elements/view-table/view-table.component';
 import { FilterComponent } from './elements/filter/filter.component';
+import { RichTextEditorComponent } from './elements/rich-text-editor/rich-text-editor.component';
 
 @NgModule({
   declarations: [
@@ -43,7 +44,8 @@ import { FilterComponent } from './elements/filter/filter.component';
     CustomTableComponent,
     EditTableComponent,
     ViewTableComponent,
-    FilterComponent
+    FilterComponent,
+    RichTextEditorComponent
   ],
   imports: [
     CommonModule,
@@ -71,7 +73,8 @@ import { FilterComponent } from './elements/filter/filter.component';
     CustomTableComponent,
     EditTableComponent,
     ViewTableComponent,
-    FilterComponent
+    FilterComponent,
+    RichTextEditorComponent
   ]
 })
 export class UiElementsModule {}

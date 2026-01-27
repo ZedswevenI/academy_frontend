@@ -23,6 +23,11 @@ const routes: Routes = [
       import('../pages/attendance/attendance.module').then((m) => m.AttendanceModule),
   },
   {
+    path: 'tests',
+    loadChildren: () =>
+      import('../pages/test/test.module').then((m) => m.TestModule),
+  },
+  {
     path: 'report',
     loadChildren: () =>
       import('../pages/report/report.module').then((m) => m.ReportModule),
