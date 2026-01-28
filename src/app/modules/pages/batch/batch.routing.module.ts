@@ -13,7 +13,7 @@ const routes: Routes = [
     { path: 'addFaculty', component: AddFacultyComponent, title: 'My Batch'},
     { path: 'assign', component: AssignStudentComponent, title: 'My Batch'},
     { path: 'close', component: CloseBatchComponent, title: 'My Batch'},
-    { path: 'view', component: ViewBatchComponent, title: 'My Batch'},
+    { path: 'view/:batchId', component: ViewBatchComponent, title: 'My Batch'},
 ];
 
 @NgModule({

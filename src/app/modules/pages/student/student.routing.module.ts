@@ -9,7 +9,7 @@ import { CreateStudentComponent } from './create-student/create-student.componen
 
 const routes: Routes = [
     { path: '', component: StudentComponent, title: 'Student' },
-    { path: 'view', component: StudentViewComponent, title: 'Student' },
+    { path: 'view/:id', component: StudentViewComponent, title: 'Student' },
     { path: 'grid', component: GridListComponent, title: 'Student' },
     { path: 'list', component: TableListComponent, title: 'Student' },
     { path: 'create', component: CreateStudentComponent, title: 'Student' }

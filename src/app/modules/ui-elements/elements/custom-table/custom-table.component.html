@@ -212,7 +212,10 @@
         class="btn btn-sm d-flex align-items-center justify-content-center rounded-circle fs-14"
         [class.pagination-active]="item.isActive" [ngClass]="!item.isActive ? 'bg-transparent border-0' : ''"
         style="width: 40px; height: 40px" (click)="onPageChange(+item.page)">
-        <span class="fw-medium small" [class.text-dark]="item.isActive" [class.text-muted]="!item.isActive">
+        <!-- <span class="fw-medium small" [class.text-dark]="item.isActive" [class.text-muted]="!item.isActive">
+          {{ item.page }}
+        </span> -->
+        <span class="small" [class.fw-bold]="item.isActive" [class.text-muted]="!item.isActive">
           {{ item.page }}
         </span>
       </button>

@@ -2,6 +2,9 @@ import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-timetable',
@@ -15,32 +18,16 @@ export class TimetableComponent {
   originalData: any[] = [];
   totalRecords = 0;
 
-  
-  program_options = [
-    {label: 'All', value: 'All'},
-    {label: 'Program1', value: 'Program1'},
-    {label: 'Program2', value: 'Program2'},
-    {label: 'Program3', value: 'Program3'},
-    {label: 'Program4', value: 'Program4'},
-    {label: 'Program5', value: 'Program5'},
-    {label: 'Program6', value: 'Program6'},
-  ]
+  loading: boolean = false;
 
-  batch_options = [
-    { label: 'Batch A', value: 'Batch A' },
-    { label: 'Batch B', value: 'Batch B' },
-    { label: 'Batch C', value: 'Batch C' }
-  ]
-
-  center_options = [
-    {label: 'All', value: 'All'},
-    {label: 'Coimbatore - Sub Main', value: 'Coimbatore - Sub Main'},
-  ]
+  program_options = []
+  batch_options = []
+  center_options = []
 
   columnsArray = [
-    { key: 'batch', label: 'Batch', sortable: true },
-    { key: 'center', label: 'Center', sortable: true },
-    { key: 'week', label: 'Week Starting', sortable: true },
+    { key: 'batchCode', label: 'Batch', sortable: true },
+    { key: 'centerCode', label: 'Center', sortable: true },
+    { key: 'wkStartOn', label: 'Week Starting', sortable: true },
     { key: 'phase', label: 'Phase', sortable: true },
     { key: 'status', label: 'Status', sortable: true }
   ];
@@ -56,7 +43,12 @@ export class TimetableComponent {
     },
   ]
 
-  constructor(private breadcrump: BredcrumpService, private fb: FormBuilder, private router: Router) {
+  constructor(
+    private breadcrump: BredcrumpService,
+    private fb: FormBuilder,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService) {
     this.breadcrump.set([{ label: 'Time Table' }]);
   }
 
@@ -65,51 +57,98 @@ export class TimetableComponent {
       filter: ['', [Validators.required]]
     })
 
-    this.originalData = [
-      { batch: '9BATCH', center: '64', week: '30/03/2026', phase: 'Phase 1', status: 'Active' },
-    ];
-
-    this.loadTableData({ page: 1, pageSize: 5 })
+    this.loadAllLookupsAndInit();
   }
 
-  loadTableData(req: {
+  // program, batch, center List
+  loadAllLookupsAndInit() {
+    const body = {
+      entiId: localStorage.getItem('tenantId')
+    };
+
+    this.loading = true;
+
+    forkJoin({
+      program: this.commonApi.fetchData(body, 'ims', 'program/list?list=full'),
+      batch: this.commonApi.fetchData(body, 'batch', 'list?list=full'),
+      center: this.commonApi.fetchData(body, 'ims', 'center/list?list=full'),
+    }).subscribe({
+      next: ({ program, batch, center }) => {
+        this.program_options = program.data || [];
+        this.batch_options = batch.data || [];
+        this.center_options = center.data || [];
+      },
+      error: (err) => {
+        this.loading = false;
+        this.alert.error(`Unable to load initial data!`);
+      }
+    });
+  }
+
+  fetchTableData(params: {
     page: number;
     pageSize: number;
     search?: string;
     sortKey?: string;
-    sortDirection?: 'asc' | 'desc';
+    sortDirection?: string;
   }) {
-    let filtered = [...this.originalData];
+    this.loading = true;
 
-    //  SEARCH
-    if (req.search) {
-      const value = req.search.toLowerCase();
-      filtered = filtered.filter(row =>
-        Object.values(row).some(v =>
-          String(v).toLowerCase().includes(value)
-        )
-      );
+    // Pagination & Sort
+    let sortParam = '';
+    if (params.sortKey) {
+      sortParam =
+        params.sortDirection === 'desc'
+          ? `-${params.sortKey}`
+          : params.sortKey;
     }
 
-    //  SORT
-    if (req.sortKey) {
-      filtered.sort((a, b) => {
-        const x = a[req.sortKey!];
-        const y = b[req.sortKey!];
-        return req.sortDirection === 'asc'
-          ? String(x).localeCompare(String(y))
-          : String(y).localeCompare(String(x));
-      });
-    }
+    const query: any = {
+      page: params.page,
+      limit: params.pageSize
+    };
+    if (sortParam) query.sort = sortParam;
+    if (params.search) query.search = params.search;
 
-    // PAGINATION
-    this.totalRecords = filtered.length;
-    const start = (req.page - 1) * req.pageSize;
-    const end = start + req.pageSize;
-    this.dataArray = filtered.slice(start, end);
+    //filter (optional)
+    // if (this.statusFilter && this.statusFilter !== 'all') {
+    //   query.status = this.statusFilter;
+    // }
+    // if (this.selectedProgram) {
+    //   query.programId = this.selectedProgram;
+    // }
+    // if (this.selectedCenter) {
+    //   query.centerId = this.selectedCenter;
+    // }
+
+    // Build query string
+    const queryString = Object.keys(query)
+      .map(
+        (key) => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`
+      )
+      .join('&');
+
+    const body = {
+      entiId: localStorage.getItem('tenantId')
+    };
+
+    this.commonApi.fetchData(body, 'timetable', `list?${queryString}`).subscribe({
+      next: (res: any) => {
+        this.dataArray = res.data;
+        this.totalRecords = res?.count || 0;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        this.alert.error('Error loading admissions');
+      }
+    });
   }
 
-  viewTimetable(row: any){
-    this.router.navigate(['/app/timetable/view'])
+
+  viewTimetable(row: any) {
+    // this.router.navigate(['/app/timetable/view'])
+    const item = row?._raw || row;
+    this.router.navigate(['/app/timetable/view', item._id]);
   }
 }

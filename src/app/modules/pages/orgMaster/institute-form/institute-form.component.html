@@ -15,8 +15,8 @@
             <form [formGroup]="institueForm">
                 <div class="row g-3">
                     <div class="col-lg-6">
-                        <formfield label="Institute Name" formControlName="institute"
-                            [control]="institueForm.get('institute')" placeholder="Enter Institute Name"
+                        <formfield label="Institute Name" formControlName="name"
+                            [control]="institueForm.get('name')" placeholder="Enter Institute Name"
                             [required]="true">
                         </formfield>
                     </div>
@@ -26,21 +26,23 @@
                         </formfield>
                     </div>
                     <div class="col-lg-3 mt-4">
-                        <checkbox label="Active" [required]="false"
-                            [control]="institueForm.get('active')" formControlName="active">
+                        <checkbox label="Active" [control]="institueForm.get('isActive')"
+                            formControlName="isActive">
                         </checkbox>
                     </div>
                 </div>
 
                 <div class="row g-3 mt-3">
                     <div class="col-lg-6">
-                        <formfield label="Address Line1" formControlName="add1" [control]="institueForm.get('add1')"
-                            placeholder="Enter Address Line1" [required]="true">
+                        <formfield label="Address Line1" formControlName="addressLine1"
+                            [control]="institueForm.get('addressLine1')" placeholder="Enter Address Line1"
+                            [required]="true">
                         </formfield>
                     </div>
                     <div class="col-lg-6">
-                        <formfield label="Address Line2" formControlName="add2" [control]="institueForm.get('add2')"
-                            placeholder="Enter Address Line2" [required]="false">
+                        <formfield label="Address Line2" formControlName="addressLine2"
+                            [control]="institueForm.get('addressLine2')" placeholder="Enter Address Line2"
+                            [required]="false">
                         </formfield>
                     </div>
                 </div>
@@ -57,7 +59,7 @@
                         </formfield>
                     </div>
                     <div class="col-lg-4">
-                        <formfield label="Pincode" formControlName="pin" [control]="institueForm.get('pin')"
+                        <formfield label="Pincode" formControlName="pincode" [control]="institueForm.get('pincode')"
                             placeholder="Enter Pincode" [required]="true">
                         </formfield>
                     </div>
@@ -65,8 +67,8 @@
 
                 <div class="row g-3 mt-3">
                     <div class="col-lg-6">
-                        <formfield label="Contact Email" formControlName="email" [control]="institueForm.get('email')"
-                            placeholder="Enter Email" [required]="true">
+                        <formfield label="Contact Email" formControlName="contactEmail"
+                            [control]="institueForm.get('contactEmail')" placeholder="Enter Email" [required]="true">
                         </formfield>
                     </div>
                     <div class="col-lg-3">
@@ -82,7 +84,8 @@
                 </div>
 
                 <div class="col-12 text-end mt-3">
-                    <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/org-master/institute">
+                    <button class="btn closebutton px-4" style="border-radius: 30px;"
+                        routerLink="/app/org-master/institute">
                         Back
                     </button>
                     <button class="btn submitbutton px-4" [disabled]="institueForm.invalid" (click)="updateInstitute()"
