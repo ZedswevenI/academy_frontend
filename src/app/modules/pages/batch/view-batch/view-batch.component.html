@@ -258,7 +258,8 @@
                                         <div class="mb-2">
                                             <label class="small text-muted">Faculty</label>
                                             <select class="form-select form-select-sm" formControlName="staffId"
-                                                (change)="onStaffChange(i)" [disabled]="!filteredStaffMap[i]?.length">
+                                                (change)="onStaffChange(i)" [disabled]="!filteredStaffMap[i].length">
+                                                <!-- [disabled]="!filteredStaffMap[i]?.length" -->
                                                 <option value="">-- Select Faculty --</option>
                                                 <option *ngFor="let s of filteredStaffMap[i]" [value]="s.staffId">
                                                     {{ s.staffName }} ({{ s.staffCode }})

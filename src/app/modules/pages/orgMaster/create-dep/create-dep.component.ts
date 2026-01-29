@@ -60,7 +60,6 @@ submit() {
         },
         error: () => this.alert.error('Server error while updating Department')
       });
-
     } else {
       const form = this.centerForm.value;
       const payload = {
@@ -76,7 +75,6 @@ submit() {
             this.alert.error(res.message || 'Failed to create Department');
             return;
           }
-
           this.alert.success('Center created successfully');
           this.router.navigate(['/app/org-master/center']);
         },
