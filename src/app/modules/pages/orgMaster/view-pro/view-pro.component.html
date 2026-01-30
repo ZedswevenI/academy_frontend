@@ -19,7 +19,7 @@
                         <label class="col-sm-4 col-form-label">
                             Program Name
                         </label>
-                        <div><strong>Arise - One Year Foundation Program</strong></div>
+                        <div><strong>{{ program.programName }}</strong></div>
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-12 mb-3">
@@ -27,7 +27,7 @@
                         <label class="col-sm-4 col-form-label">
                             Program Code
                         </label>
-                        <div><strong>6053</strong></div>
+                        <div><strong>{{ program.programCodes }}</strong></div>
                     </div>
                 </div>
             </div>
@@ -37,7 +37,7 @@
                         <label class="col-sm-4 col-form-label">
                             Stream / Target
                         </label>
-                        <div><strong>Foundation</strong></div>
+                        <div><strong>{{ program.target }}</strong></div>
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-12 mb-3">
@@ -45,7 +45,7 @@
                         <label class="col-sm-4 col-form-label">
                             Version
                         </label>
-                        <div><strong>Special Sunday Classes</strong></div>
+                        <div><strong>{{ program.version }}</strong></div>
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-12 mb-3">
@@ -53,7 +53,7 @@
                         <label class="col-sm-4 col-form-label">
                             Status
                         </label>
-                        <div><strong>Active</strong></div>
+                        <div><strong>{{ program.status }}</strong></div>
                     </div>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                         <label class="col-sm-4 col-form-label">
                             Eligible Class
                         </label>
-                        <div><strong>6</strong></div>
+                        <div><strong>{{ program.eligibleToClass }}</strong></div>
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-12 mb-3">
@@ -71,7 +71,7 @@
                         <label class="col-sm-4 col-form-label">
                             Starting Class
                         </label>
-                        <div><strong>6</strong></div>
+                        <div><strong>{{ program.startingClass }}</strong></div>
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-12 mb-3">
@@ -79,7 +79,7 @@
                         <label class="col-sm-4 col-form-label">
                             Ending Class
                         </label>
-                        <div><strong>6</strong></div>
+                        <div><strong>{{ program.endingClass }}</strong></div>
                     </div>
                 </div>
             </div>
@@ -89,7 +89,7 @@
                         <label class="col-sm-4 col-form-label">
                             Duration (Years)
                         </label>
-                        <div><strong>1</strong></div>
+                        <div><strong>{{ program.duration }}</strong></div>
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-12 mb-3">
@@ -97,8 +97,11 @@
                         <label class="col-sm-4 col-form-label">
                             Subjects
                         </label>
-                        <div class="d-flex"><strong class="border me-2 px-2">Maths</strong><strong
-                                class="border me-2 px-2">Physics</strong></div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <strong *ngFor="let sub of program?.subjects" class="border rounded px-2 py-1 bg-light">
+                                {{ sub.subjectName }}
+                            </strong>
+                        </div>
                     </div>
                 </div>
             </div>

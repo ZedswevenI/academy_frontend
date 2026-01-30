@@ -101,7 +101,7 @@ export class CenterComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.alert.error('Error loading admissions');
+        this.alert.error('Error loading center');
       }
     });
   }
@@ -141,6 +141,8 @@ export class CenterComponent {
   }
 
   onModalClosed(confirmed: boolean) {
+    this.modalVisible = false;
+
     if (!confirmed || !this.deleteTarget) {
       this.deleteTarget = null;
       return;
@@ -164,8 +166,6 @@ export class CenterComponent {
         this.alert.error(err?.message || 'Server error while deleting center');
       }
     });
-
-    this.modalVisible = false;
     this.deleteTarget = null;
   }
 

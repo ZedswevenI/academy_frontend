@@ -143,6 +143,7 @@ export class DepartmentComponent {
   }
 
   onModalClosed(confirmed: boolean) {
+    this.modalVisible = false;
     if (!confirmed || !this.deleteTarget) {
       this.deleteTarget = null;
       return;
@@ -166,8 +167,6 @@ export class DepartmentComponent {
         this.alert.error(err?.message || 'Server error while deleting department');
       }
     });
-
-    this.modalVisible = false;
     this.deleteTarget = null;
   }
 

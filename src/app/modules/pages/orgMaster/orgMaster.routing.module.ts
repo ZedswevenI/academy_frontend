@@ -22,7 +22,7 @@ const routes: Routes = [
 
     { path: 'program', component: ProgramComponent, title: 'Org Master - PROGRAM' },
     { path: 'program/add', component: CreateProComponent, title: 'Org Master - PROGRAM' },
-    { path: 'program/view', component: ViewProComponent, title: 'Org Master - PROGRAM' },
+    { path: 'program/view/:programId', component: ViewProComponent, title: 'Org Master - PROGRAM' },
     
     { path: 'department', component: DepartmentComponent, title: 'Org Master - DEPARTMENT'},
     { path: 'department/add', component: CreateDepComponent, title: 'Org Master - DEPARTMENT'}

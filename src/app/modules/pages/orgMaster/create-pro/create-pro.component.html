@@ -16,55 +16,58 @@
             <form [formGroup]="proForm">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <formfield label="Program Name" formControlName="name" [control]="proForm.get('name')"
-                            placeholder="Enter Program Name" [required]="true">
+                        <formfield label="Program Name" formControlName="programName"
+                            [control]="proForm.get('programName')" placeholder="Enter Program Name" [required]="true">
                         </formfield>
                     </div>
                     <div class="col-md-6">
-                        <formfield label="Program Code" formControlName="code" [control]="proForm.get('code')"
-                            placeholder="Enter Program Code" [required]="true">
+                        <formfield label="Program Code" formControlName="programCodes"
+                            [control]="proForm.get('programCodes')" placeholder="Enter Program Code" [required]="true">
                         </formfield>
                     </div>
                     <div class="col-md-6">
-                        <selectbox label="Stream" [options]="stream_options" formControlName="stream"
-                            [control]="proForm.get('stream')" [required]="true">
+                        <selectbox label="Stream" [options]="streamOptions" formControlName="target"
+                            [control]="proForm.get('target')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-6">
-                        <selectbox label="Eligible Class" [options]="class_options" formControlName="class"
-                            [control]="proForm.get('class')" [required]="true">
+                        <selectbox label="Eligible Class" [options]="eligibleClassOptions" formControlName="eligibleToClass"
+                            [control]="proForm.get('eligibleToClass')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-6">
-                        <selectbox label="Starting Class" [options]="start_options" formControlName="start"
-                            [control]="proForm.get('start')" [required]="true">
+                        <selectbox label="Starting Class" [options]="startingClassOptions" formControlName="startingClass"
+                            [control]="proForm.get('startingClass')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-6">
-                        <selectbox label="Duration Class" [options]="dur_options" formControlName="dur"
-                            [control]="proForm.get('dur')" [required]="true">
+                        <selectbox label="Duration Class" [options]="durationOptions" formControlName="duration"
+                            [control]="proForm.get('duration')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-6">
-                        <formfield label="Ending Class" formControlName="end" [control]="proForm.get('end')"
-                            placeholder="Enter Ending Class" [required]="true">
-                        </formfield>
+                        <!-- <formfield label="Ending Class" formControlName="endingClass"
+                            [control]="proForm.get('endingClass')" placeholder="Enter Ending Class" [required]="true">
+                        </formfield> -->
+                        <readonly label="Ending Class" [required]="false"
+                                [control]="proForm.get('endingClass')" formControlName="endingClass"
+                                placeholder="-"></readonly>
                     </div>
                     <div class="col-md-6">
                         <formfield label="Version" formControlName="version" [control]="proForm.get('version')"
-                            placeholder="Enter Version" [required]="true">
+                            placeholder="Special Sunday / Regular" [required]="true">
                         </formfield>
                     </div>
                     <div class="col-md-6">
-                        <checkbox label="Active" [required]="false" [control]="proForm.get('active')"
-                            formControlName="active"></checkbox>
+                        <checkbox label="Active" [required]="false" [control]="proForm.get('isActive')"
+                            formControlName="isActive"></checkbox>
                     </div>
                 </div>
                 <div class="row g-3">
                     <label class="form-label fw-black fs-9 ms-n3">Subjects</label>
-                    <div class="row border p-3">
+                    <div class="row border p-3 mx-1">
                         <div class="row d-flex">
-                            <div class="col-lg-3">
+                            <!-- <div class="col-lg-3">
                                 <checkbox label="ENGLISH(ENG)" [required]="false" [control]="proForm.get('eng')"
                                     formControlName="eng"></checkbox>
                             </div>
@@ -79,16 +82,29 @@
                             <div class="col-lg-3">
                                 <checkbox label="CHEMISTRY(CHEM)" [required]="false" [control]="proForm.get('chem')"
                                     formControlName="chem"></checkbox>
+                            </div> -->
+                            <div class="col-md-4" *ngFor="let s of subjectOptions">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" [id]="'sub_' + s.value"
+                                        [checked]="isSubjectChecked(s.value)"
+                                        (change)="toggleSubject(s.value, $any($event.target).checked)" />
+                                    <label class="form-check-label" [for]="'sub_' + s.value">
+                                        <span class="fw-semibold">{{ s.label }}</span>
+                                        <span class="text-muted small" *ngIf="s.code">({{ s.code }})</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                   <div class="col-12 text-end mt-3">
-                    <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/org-master/program">
+                <div class="col-12 text-end mt-3">
+                    <button class="btn closebutton px-4" style="border-radius: 30px;"
+                        routerLink="/app/org-master/program">
                         Back
                     </button>
-                    <button class="btn submitbutton px-4" [disabled]="proForm.invalid" (click)="addPro()" style="border-radius: 30px;">
+                    <button class="btn submitbutton px-4" [disabled]="proForm.invalid" (click)="addPro()"
+                        style="border-radius: 30px;">
                         {{ !isEditMode ? 'Save Program' : 'Update Program' }}
                     </button>
                 </div>
