@@ -1,6 +1,11 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
+import { forkJoin } from 'rxjs';
+
+const safeTrim = (v: any) => (v === undefined || v === null ? '' : String(v).trim());
 
 @Component({
   selector: 'app-student-view',
@@ -9,6 +14,11 @@ import { Router } from '@angular/router';
   styleUrl: './student-view.component.scss'
 })
 export class StudentViewComponent {
+  loading = false;
+  entiId: any;
+  studentId = '';
+  student: any = null;
+
   // Attendance
   columnsArray = [
     { key: 'date', label: 'Date', sortable: false },
@@ -101,7 +111,12 @@ export class StudentViewComponent {
   ];
 
 
-  constructor(private breadcrump: BredcrumpService, private router: Router) {
+  constructor(
+    private breadcrump: BredcrumpService,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService,
+    private route: ActivatedRoute) {
     this.breadcrump.set([{ label: 'Student', link: '/app/student' }, { label: 'View' }])
   }
 
@@ -136,6 +151,54 @@ export class StudentViewComponent {
 
     this.loadExamData({ page: 1, pageSize: 5 });
 
+    this.studentId = safeTrim(this.route.snapshot.paramMap.get('id'));
+    if (!this.studentId) {
+      this.alert.error('Student ID missing');
+      this.router.navigate(['/app/students']);
+      return;
+    }
+    this.loadStudentData();
+
+  }
+
+  loadStudentData() {
+    this.loading = true;
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      studentId: this.studentId
+    };
+    forkJoin({
+      profile: this.commonApi.fetchData(payload, 'student', 'view'),
+      finance: this.commonApi.fetchData(payload, 'student', 'finance/summary'),
+      academic: this.commonApi.fetchData(payload, 'student', 'academic/summary')
+    }).subscribe({
+      next: (results: any) => {
+        this.loading = false;
+        const p = results.profile?.data || {};
+        const f = results.finance?.data || {};
+        const a = results.academic?.data || {};
+        this.student = {
+          basic: p.basic || {},
+          program: p.program || {},
+          fees: f || {},
+          attendance: a.attendance || {},
+          assignments: a.assignments || {},
+          exams: a.exams || {}
+        };
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(err?.error?.message || 'Failed to load student details');
+      }
+    });
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    const first = parts[0]?.[0] ?? '';
+    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + last).toUpperCase();
   }
 
   loadTableData(req: {

@@ -8,7 +8,8 @@
                         <i class="fa-solid fa-building-columns me-2"></i> Institute
                     </h1>
                     <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
-                        routerLink="/app/org-master/institute/edit">
+                       (click)="editInstitute(instituteInfo)">
+                         <!-- (click)="editInstitute(instituteInfo)" -->
                         <i class="fa-solid fa-edit me-2"></i>
                         Edit Institute</button>
                 </div>
@@ -23,32 +24,36 @@
                         <h6 class="text-uppercase text-dark">Basic Details</h6>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Institute Name</span>
-                            <span>Z7i Institute</span>
+                            <span>{{ instituteInfo.name || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Code</span>
-                            <span>Z7I-HO</span>
+                            <span>{{ instituteInfo.code || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">City</span>
-                            <span>Coimbatore</span>
+                            <span>{{ instituteInfo.city || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">State</span>
-                            <span>Tamil Nadu</span>
+                            <span>{{ instituteInfo.state || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Pincode</span>
-                            <span>641002</span>
+                            <span>{{ instituteInfo.pincode || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Status</span>
-                            <span class="badge bg-warning text-dark">Active</span>
+                            <!-- <span class="badge bg-warning text-dark">Active</span> -->
+                              <span class="status-pill" [class.status-pill-active]="instituteInfo.isActive"
+                                    [class.status-pill-inactive]="!instituteInfo.isActive">
+                                    {{ instituteInfo.isActive ? 'Active' : 'Inactive' }}
+                                </span>
                         </div>
                     </div>
 
@@ -57,22 +62,22 @@
                         <h6 class="text-uppercase text-dark">Contact & Address</h6>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Contact Email</span>
-                            <span>admin&#64;z7i.com</span>
+                            <span>{{ instituteInfo.contactEmail || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Phone</span>
-                            <span>9876543210</span>
+                            <span>{{ instituteInfo.phone || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Address Line 1</span>
-                            <span>124, Avinashi Road</span>
+                            <span>{{ instituteInfo.addressLine1 || '--' }}</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Address Line 2</span>
-                            <span>Near XYZ Signal</span>
+                            <span>{{ instituteInfo.addressLine2 || '--' }}</span>
                         </div>
                     </div>
                 </div>

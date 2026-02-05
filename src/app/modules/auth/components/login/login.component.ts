@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../../../../service/auth/auth.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +15,17 @@ export class LoginComponent {
   loading = false;
   form!: FormGroup
 
-  constructor(private fb: FormBuilder, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    public service: AuthService,
+    private alert: AlertService) {
+
+    this.service.formReset$.subscribe(() => {
+      this.loading = false;
+      this.form.reset();
+    });
+
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
@@ -30,16 +42,16 @@ export class LoginComponent {
   }
 
   onSubmit() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+    // if (this.form.invalid) {
+    //   this.form.markAllAsTouched();
+    //   return;
+    // }
 
-    // Dummy login logic for now
-    const email = this.form.value.email;
-    const password = this.form.value.password;
+    // const email = this.form.value.email;
+    // const password = this.form.value.password;
 
-    // After validation success → navigate
-    this.router.navigate(['/app/dashboard']);
+    // this.router.navigate(['/app/dashboard']);
+    this.loading = true;
+    this.service.signIn(this.form.value, 'ims/user', 'login');
   }
 }

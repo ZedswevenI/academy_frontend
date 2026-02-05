@@ -20,15 +20,15 @@
         <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
             <div class="d-flex align-items-start gap-2">
                 <div>
-                    <h5 class="mb-0 fw-bold">9th class</h5>
+                    <h5 class="mb-0 fw-bold">{{ batch?.batchName || 'Loading...' }}</h5>
                     <small class="text-muted">
-                        9BATCH · 2025 - 2029 · Coimbatore - Sub Main
+                        {{ batch?.batchCode }} • {{ batch?.academicYear }} • {{ batch?.centerName }}
                     </small>
                 </div>
             </div>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary" style="border-radius: 25px;" routerLink="/app/batch/edit">
+                <button class="btn btn-outline-secondary" style="border-radius: 25px;" (click)="openStudent('edit')">
                     <i class="fa-solid fa-edit me-1"></i> Edit Batch
                 </button>
                 <div class="dropdown">
@@ -39,7 +39,8 @@
 
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
-                            <button class="dropdown-item text-danger d-flex align-items-center gap-2" routerLink="/app/batch/close">
+                            <button class="dropdown-item text-danger d-flex align-items-center gap-2"
+                                routerLink="/app/batch/close">
                                 <i class="fa-solid fa-lock"></i>
                                 <span>Close Batch</span>
                             </button>
@@ -60,7 +61,7 @@
                         </div>
                         <div>
                             <small class="text-muted">TOTAL STUDENTS</small>
-                            <h4 class="mb-0 fw-bold">3</h4>
+                            <h4 class="mb-0 fw-bold">{{ batch?.studentCount || 0 }}</h4>
                         </div>
                     </div>
                 </div>
@@ -74,8 +75,8 @@
                         </div>
                         <div>
                             <small class="text-muted">DURATION</small>
-                            <div class="fw-medium">Apr 1, 2026</div>
-                            <small class="text-muted">to Mar 31, 2030</small>
+                            <div class="fw-medium">{{ batch?.startDate | date:'mediumDate' }}</div>
+                            <small class="text-muted">to {{ batch?.endDate | date:'mediumDate' }}</small>
                         </div>
                     </div>
                 </div>
@@ -89,7 +90,13 @@
                         </div>
                         <div>
                             <small class="text-muted">STATUS</small><br />
-                            <span class="badge bg-success">ACTIVE</span>
+                            <span class="badge rounded-pill" [ngClass]="{
+                            'bg-success': batch?.status === 'ACTIVE',
+                            'bg-secondary': batch?.status === 'DRAFT',
+                            'bg-danger': batch?.status === 'CLOSED'
+                        }">
+                                {{ batch?.status }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -117,11 +124,19 @@
             <!-- Student -->
             <div class="tab-pane fade show active" id="student">
                 <div class="d-flex justify-content-end mb-2">
-                    <button class="btn submitbutton" (click)="openStudent()">
+                    <button class="btn btn-sm btn-outline-danger" *ngIf="selected.size > 0"
+                        (click)="triggerConfirmation('removeStudents')">
+                        <i class="fa-regular fa-trash-can"></i> Remove ({{selected.size}})
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" *ngIf="selected.size > 0"
+                        (click)="openStudent('shuffle')">
+                        <i class="fa-solid fa-shuffle"></i> Shuffle ({{selected.size}})
+                    </button>
+                    <button class="btn submitbutton" (click)="openStudent('assign')">
                         <i class="fa-solid fa-user-plus me-1"></i> Assign Students
                     </button>
                 </div>
-                <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="false"
+                <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="studentRows" [showaction]="false"
                     [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
             </div>
 
@@ -129,35 +144,25 @@
             <div class="tab-pane fade" id="faculty">
                 <div class="row">
                     <div class="d-flex justify-content-end">
-                        <button class="btn submitbutton" (click)="openFaculty()">
+                        <button class="btn submitbutton" (click)="openStudent('staff')">
                             <i class="fa-solid fa-pen me-1"></i> Edit Faculty Map
                         </button>
 
                     </div>
                     <div class="row g-3">
-                        <div class="col-lg-4">
-                            <div class="subject-card">
-                                <div class="subject-icon">
-                                    <i class="fa-solid fa-note-sticky"></i>
+                        <div class="col-md-6 col-lg-4" *ngFor="let f of batch?.staffMap">
+                            <div class="d-flex align-items-center border rounded p-2">
+                                <div class="bg-light rounded-circle p-2 me-3">
+                                    <i class="fa-solid fa-book text-secondary"></i>
                                 </div>
-
-                                <div class="subject-content">
-                                    <div class="subject-title">PHYSICS</div>
-                                    <div class="subject-sub">Saravanakumar</div>
+                                <div>
+                                    <div class="fw-bold">{{ f.subjectName || f.subjectId }}</div>
+                                    <div class="text-muted small">{{ f.staffName || f.staffId }}</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-4">
-                            <div class="subject-card">
-                                <div class="subject-icon">
-                                    <i class="fa-solid fa-note-sticky"></i>
-                                </div>
-
-                                <div class="subject-content">
-                                    <div class="subject-title">MATHS</div>
-                                    <div class="subject-sub">Rajesh K</div>
-                                </div>
-                            </div>
+                        <div class="col-12 text-center py-4 text-muted" *ngIf="!batch?.staffMap?.length">
+                            No faculty mapped yet. Click "Edit Faculty Map" to add.
                         </div>
                     </div>
                 </div>
@@ -169,44 +174,184 @@
 
     <!-- POP UP -->
     <!-- Assign Student -->
-    <div class="drawer-overlay" *ngIf="showStudentPanel" (click)="closeStudent()"></div>
+    <div class="drawer-overlay" *ngIf="offcanvasMode === 'assign'"></div>
     <div class="assign-drawer" [class.open]="showStudentPanel">
 
         <div class="drawer-header">
-            <h4>Assign Students</h4>
-            <i class="fa-solid fa-xmark" (click)="closeStudent()"></i>
+            <!-- <h4>Assign Students</h4> -->
+            <h4>
+                <span *ngIf="offcanvasMode === 'edit'">Edit Batch</span>
+                <span *ngIf="offcanvasMode === 'staff'">Faculty Mapping</span>
+                <span *ngIf="offcanvasMode === 'assign'">Assign Students</span>
+                <span *ngIf="offcanvasMode === 'shuffle'">Shuffle Students</span>
+            </h4>
+            <i class="fa-solid fa-xmark" (click)="closeOffcanvas()"></i>
         </div>
 
         <div class="drawer-body">
-            <!-- Search -->
-            <div class="student-search">
-                <input type="text" placeholder="Search..." />
-                <button class="go-btn">Go</button>
-            </div>
 
-            <!-- Student card -->
-            <div class="student-card">
-                <label class="student-row">
-                    <input type="checkbox" (change)="onStudentToggle($event)" />
-                    <div>
-                        <div class="student-name">fgsdffs</div>
-                        <div class="student-phone">9020642590002</div>
+            <form *ngIf="offcanvasMode === 'edit'" [formGroup]="editForm">
+                <div class="mb-3">
+                    <label class="form-label small">Batch Name</label>
+                    <input class="form-control" formControlName="batchName">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Batch Code</label>
+                    <input class="form-control" formControlName="batchCode">
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label small">Start Date</label>
+                        <input type="date" class="form-control" formControlName="startDate">
                     </div>
-                </label>
+                    <div class="col-6">
+                        <label class="form-label small">End Date</label>
+                        <input type="date" class="form-control" formControlName="endDate">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Status</label>
+                    <select class="form-select" formControlName="status">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="CLOSED">CLOSED</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-primary" (click)="saveBatch()" [disabled]="loading">Save Changes</button>
+                </div>
+            </form>
+
+            <div *ngIf="offcanvasMode === 'staff'">
+                <form [formGroup]="staffForm">
+                    <div formArrayName="staffMap">
+                        <div *ngFor="let g of staffFA.controls; let i=index" [formGroup]="asFormGroup(g)"
+                            class="card mb-2 bg-light border-0">
+                            <div class="card-body p-2 position-relative">
+                                <button class="btn btn-sm btn-link text-danger position-absolute top-0 end-0"
+                                    (click)="removeStaffRow(i)">
+                                    <i class="fa-solid fa-times"></i>
+                                </button>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <!-- <label class="small text-muted">Subject</label>
+                                        <select class="form-select form-select-sm" formControlName="subjectId"
+                                            (change)="onSubjectChange(i)">
+                                            <option value="">-- Select Subject --</option>
+                                            <option *ngFor="let sub of subjectsList" [value]="sub.subjectId">
+                                                {{ sub.subjectName }} ({{ sub.subjectCode }})
+                                            </option>
+                                        </select> -->
+                                        <div class="mb-2">
+                                            <label class="small text-muted">Subject</label>
+                                            <select class="form-select form-select-sm" formControlName="subjectId"
+                                                (change)="onSubjectChange(i)">
+                                                <option value="">-- Select Subject --</option>
+                                                <option *ngFor="let sub of subjectsList" [value]="sub.subjectId">
+                                                    {{ sub.subjectName }} ({{ sub.subjectCode }})
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <!-- FACULTY -->
+                                        <div class="mb-2">
+                                            <label class="small text-muted">Faculty</label>
+                                            <select class="form-select form-select-sm" formControlName="staffId"
+                                                (change)="onStaffChange(i)" [disabled]="!filteredStaffMap[i].length">
+                                                <!-- [disabled]="!filteredStaffMap[i]?.length" -->
+                                                <option value="">-- Select Faculty --</option>
+                                                <option *ngFor="let s of filteredStaffMap[i]" [value]="s.staffId">
+                                                    {{ s.staffName }} ({{ s.staffCode }})
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- <div class="col-12">
+                                        <label class="small text-muted">Faculty</label>
+                                        <select class="form-select form-select-sm" formControlName="staffId"
+                                            (change)="onStaffChange(i)">
+                                            <option value="">-- Select Faculty --</option>
+                                            <option *ngFor="let s of staffList" [value]="s.staffId">
+                                                {{ s.staffName }} ({{ s.staffCode }})
+                                            </option>
+                                        </select>
+                                    </div> -->
+
+                                    <input type="hidden" formControlName="subjectName">
+                                    <input type="hidden" formControlName="staffName">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <div *ngIf="!allSubjectsSelected()"> -->
+                    <button class="btn btn-sm btn-outline-primary w-100 mb-3" (click)="addStaffRow()"
+                        [disabled]="loading">+ Add
+                        Mapping</button>
+                    <!-- </div> -->
+                    <div class="d-grid">
+                        <button class="btn btn-primary" (click)="saveStaffMap()" [disabled]="loading">Save
+                            Mapping</button>
+                    </div>
+                </form>
             </div>
 
-            <!-- Assign Button -->
-            <button class="btn submitbutton w-100">
-                Assign {{ selectedCount }} Students
-            </button>
+            <div *ngIf="offcanvasMode === 'assign'">
+                <!-- Search -->
+                <div class="student-search">
+                    <input type="text" placeholder="Search..." />
+                    <button class="go-btn">Go</button>
+                </div>
 
+                <!-- Student card -->
+                <div class="">
+                    <label *ngFor="let s of eligibleRows" class="list-group-item d-flex gap-2 student-card">
+                        <input class="form-check-input flex-shrink-0" type="checkbox"
+                            [checked]="eligibleSelected.has(s.studentId)"
+                            (change)="toggleEligible(s.studentId, $any($event.target).checked)">
+                        <span>
+                            <div class="fw-bold small">{{ s.student?.name }}</div>
+                            <div class="text-muted small">{{ s.admissionNo }}</div>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Assign Button -->
+                <button class="btn submitbutton w-100" (click)="assignEligibleSelected()"
+                    [disabled]="!eligibleSelected.size || loading">
+                    Assign {{ eligibleSelected.size }} Students
+                </button>
+
+            </div>
+
+            <div *ngIf="offcanvasMode === 'shuffle'">
+                <div class="alert alert-info small">
+                    Moving <b>{{ selected.size }}</b> students from {{ batch?.batchName }}.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Target Batch</label>
+                    <select class="form-select" [(ngModel)]="shuffleToBatchId">
+                        <option value="">-- Select --</option>
+                        <option *ngFor="let b of batchesFull" [value]="b.batchId">
+                            {{ b.batchName }} ({{ b.batchCode }})
+                        </option>
+                    </select>
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-warning" (click)="shuffleSelected()"
+                        [disabled]="!shuffleToBatchId || loading">
+                        Confirm Shuffle
+                    </button>
+                </div>
+            </div>
         </div>
 
 
     </div>
 
     <!-- Edit Faculty -->
-    <div class="drawer-overlay" *ngIf="showFacultyPanel" (click)="closeFaculty()"></div>
+    <!-- <div class="drawer-overlay" *ngIf="showFacultyPanel" (click)="closeFaculty()"></div>
 
     <div class="assign-drawer" [class.open]="showFacultyPanel">
 
@@ -245,6 +390,4 @@
             </form>
         </div>
 
-    </div>
-
-    
+    </div> -->

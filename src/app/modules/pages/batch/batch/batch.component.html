@@ -38,12 +38,14 @@
 
           <div class="col-md-2">
             <selectbox label="Program" placeholder="Select Program" [options]="program_options"
-              formControlName="program" [required]="false" [control]="batchForm.get('program')"> </selectbox>
+              [optionLabel]="'programName'" [optionValue]="'programId'" formControlName="program" [required]="false"
+              [control]="batchForm.get('program')"> </selectbox>
           </div>
 
           <div class="col-md-2">
             <selectbox label="Center" placeholder="Select Center" [options]="center_options" formControlName="center"
-              [required]="false" [control]="batchForm.get('center')"> </selectbox>
+              [optionLabel]="'centerName'" [optionValue]="'centerId'" [required]="false"
+              [control]="batchForm.get('center')"> </selectbox>
           </div>
 
         </div>
@@ -58,17 +60,138 @@
     </div>
 
     <div class="mt-3">
-      <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
-        [success]="'Active'" [danger]="'Inactive'" [searchPlaceholder]="'Search BatchName, Student...'"
-        [totalRecords]="totalRecords" (requestData)="loadTableData($event)"></custom-table>
+      <custom-table [autoFitChars]="true" [loading]="loading" [columns]="columnsArray" [data]="dataArray"
+        [actions]="actions" [success]="'ACTIVE'" [danger]="'INACTIVE'"
+        [searchPlaceholder]="'Search BatchName, Student...'" [totalRecords]="totalRecords"
+        (requestData)="fetchBatchData($event)"></custom-table>
     </div>
 
   </div>
+
+
+
+  <div class="modal-backdrop fade show" *ngIf="showEditorModal"></div>
+
+  <div class="modal fade show d-block" tabindex="-1" *ngIf="showEditorModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h6 class="modal-title fw-semibold mb-0">
+            {{ editorMode === 'create' ? 'Create Batch' : 'Update Batch' }}
+          </h6>
+          <button type="button" class="btn-close" (click)="closeEditorModal()"></button>
+        </div>
+
+        <div class="modal-body">
+          <form [formGroup]="editorForm" class="row g-2">
+            <div class="col-12 col-md-6">
+              <label class="form-label small">Batch Name *</label>
+              <input class="form-control form-control-sm" formControlName="batchName" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small">Batch Code *</label>
+              <input class="form-control form-control-sm" formControlName="batchCode" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <!-- <label class="form-label small">Academic Year *</label> -->
+              <!-- <select class="form-select form-select-sm" formControlName="academicYear"
+                                [class.bg-light]="editorForm.get('academicYear')?.disabled">
+                                <option value="">Select</option>
+                                <option *ngFor="let y of academicYears" [value]="y">{{ y }}</option>
+                            </select> -->
+              <selectbox label="Academic Year" placeholder="Select Academic Year" [options]="ay_options"
+                formControlName="academicYear" [required]="false">
+              </selectbox>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <!-- <label class="form-label small">Program *</label> -->
+              <!-- <select class="form-select form-select-sm" formControlName="programId"
+                                (change)="onProgramChanged(editorForm.value.programId)"
+                                [class.bg-light]="editorForm.get('programId')?.disabled">
+                                <option value="">Select</option>
+                                <option *ngFor="let p of programsFull" [value]="p.programId || p._id">
+                                    {{ p.programCodes }} - {{ p.programName || p.name }}
+                                </option>
+                            </select> -->
+              <selectbox label="Program" placeholder="Select Program" [options]="program_options"
+                [optionLabel]="'programName'" [optionValue]="'programId'" formControlName="programId"
+                [required]="false">
+              </selectbox>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <!-- <label class="form-label small">Center *</label> -->
+              <!-- <select class="form-select form-select-sm" formControlName="centerId"
+                                (change)="onCenterChanged(editorForm.value.centerId)"
+                                [class.bg-light]="editorForm.get('centerId')?.disabled">
+                                <option value="">Select</option>
+                                <option *ngFor="let c of centersFull" [value]="c.centerId || c._id">
+                                    {{ c.centerName || c.name }} ({{ c.centerCode || c.code || '-' }})
+                                </option>
+                            </select> -->
+              <selectbox label="Center" placeholder="Select Center" [options]="center_options"
+                [optionLabel]="'centerName'" [optionValue]="'centerId'" formControlName="centerId" [required]="false">
+              </selectbox>
+            </div>
+
+            <input type="hidden" formControlName="programName" />
+            <input type="hidden" formControlName="programCode" />
+            <input type="hidden" formControlName="centerName" />
+            <input type="hidden" formControlName="centerCode" />
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small">Start Date *</label>
+              <input class="form-control form-control-sm" type="date" formControlName="startDate" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small">End Date *</label>
+              <input class="form-control form-control-sm" type="date" formControlName="endDate" />
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small">Status *</label>
+              <select class="form-select form-select-sm" formControlName="status">
+                <option value="DRAFT">DRAFT</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="CLOSED">CLOSED</option>
+                <option value="INACTIVE">INACTIVE</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small">Remarks</label>
+              <input class="form-control form-control-sm" formControlName="remarks" />
+            </div>
+
+            <div class="col-12" *ngIf="editorForm.get('programId')?.disabled">
+              <div class="alert alert-warning py-1 px-2 mb-0 small border-0">
+                <i class="fa-solid fa-lock me-1"></i>
+                Program, Center, and Academic Year are locked because students are assigned to this
+                batch.
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-sm btn-outline-secondary" (click)="closeEditorModal()">Cancel</button>
+          <button class="btn btn-sm btn-primary" (click)="saveBatch()" [disabled]="loading">
+            <i class="fa-solid fa-floppy-disk"></i> Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Close Batch -->
- <div>
-    <delete [title]="'Close Batch'" [message]="'Are you sure you want to close this batch?'"
-        [(visible)]="modalVisible" (closed)="onModalClosed($event)">
-    </delete>
+<div>
+  <delete [title]="'Close Batch'" [message]="'Are you sure you want to close this batch?'" [(visible)]="modalVisible"
+    (closed)="onModalClosed($event)">
+  </delete>
 </div>

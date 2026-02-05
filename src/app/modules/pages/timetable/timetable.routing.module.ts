@@ -7,7 +7,7 @@ import { ViewTableComponent } from './view-table/view-table.component';
 const routes: Routes = [
   { path: '', component: TimetableComponent, title: 'Student Attendance' },
   { path: 'table', component: ListComponent, title: 'Student Attendance' },
-  { path: 'view', component: ViewTableComponent, title: 'Student Attendance' }
+  { path: 'view/:id', component: ViewTableComponent, title: 'Student Attendance' }
 ];
 
 @NgModule({

@@ -9,18 +9,18 @@
     <form [formGroup]="centerForm">
         <div class="d-flex g-3 me-2">
             <div class="me-3">
-                <formfield label="Department Code" formControlName="code" [control]="centerForm.get('code')"
+                <formfield label="Department Code" formControlName="departmentCode" [control]="centerForm.get('departmentCode')"
                     placeholder="Enter Department Code" [required]="true">
                 </formfield>
             </div>
             <div class="me-4">
-                 <formfield label="Department Name" formControlName="name" [control]="centerForm.get('name')"
+                 <formfield label="Department Name" formControlName="departmentName" [control]="centerForm.get('departmentName')"
                 placeholder="Enter Department Name" [required]="true">
             </formfield>
             </div>
             <div class="mt-4">
-                <checkbox label="Active" [required]="false" [control]="centerForm.get('active')"
-                    formControlName="active">
+                <checkbox label="Active" [required]="false" [control]="centerForm.get('isActive')"
+                    formControlName="isActive">
                 </checkbox>
             </div>
         </div>

@@ -1,21 +1,32 @@
-<div class="container-fluid p-4 bg-light min-vh-100">
+<div class="container-fluid p-4 bg-light min-vh-100" *ngIf="student">
 
     <!-- Header -->
     <div class="card shadow-sm mb-4 p-3">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
-                <div class="avatar">AR</div>
+                <div class="avatar">{{ getInitials(student.basic?.name) }}</div>
                 <div>
-                    <h5 class="mb-1 fw-semibold">Arjun R</h5>
-                    <small class="text-muted">
-                        Enrolment: Z7I-JEE-2025-001 <br>
-                        Program: JEE 2 Year Classroom • Center: Gandhipuram Center
-                    </small>
+                    <h5 class="mb-1 fw-semibold">{{ student.basic?.name }}</h5>
+                    <div class="text-muted small">
+                        Admission No: <span class="fw-medium">{{ student.basic?.admissionNo }}</span>
+                    </div>
+                    <div class="text-muted small">
+                        Program: <span class="fw-medium">{{ student.program?.programName }}</span>
+                        &nbsp;&bull;&nbsp;
+                        Center: <span class="fw-medium">{{ student.program?.centerName }}</span>
+                    </div>
                 </div>
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-success-subtle text-success px-3 py-2">Active</span>
+                <!-- <span class="badge bg-success-subtle text-success px-3 py-2">{{ student.basic?.status }}</span> -->
+                <span class="badge px-3 py-1" [ngClass]="{
+                    'bg-success-subtle text-success': student.basic?.status === 'ACTIVE',
+                    'bg-secondary-subtle text-secondary': student.basic?.status === 'INACTIVE',
+                    'bg-danger-subtle text-danger': student.basic?.status === 'DROPOUT'
+                }">
+                    {{ student.basic?.status }}
+                </span>
                 <span class="text-muted">Attendance: <strong>94%</strong></span>
                 <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
                     <i class="fa-solid fa-arrow-left"></i> Back to Students
@@ -37,16 +48,16 @@
                 <div class="card-body">
                     <h6 class="fw-semibold mb-3">Profile</h6>
 
-                    <p><i class="fa-solid fa-phone me-2"></i>9000000001</p>
-                    <p><i class="fa-solid fa-envelope me-2"></i>arjun.r&#64;z7iinstitute.com</p>
+                    <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.mobile }}</p>
+                    <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email || '--' }}</p>
 
                     <hr>
 
                     <p class="mb-1"><strong>Parent Name</strong></p>
-                    <p>Ramesh Kumar</p>
+                    <p>{{ student.basic?.parentName }}</p>
 
                     <p class="mb-1"><strong>Parent Mobile</strong></p>
-                    <p>9888888888</p>
+                    <p>{{ student.basic?.parentMobile }}</p>
 
                     <p class="mb-1"><strong>Address</strong></p>
                     <p class="mb-0">
@@ -64,16 +75,21 @@
                     <h6 class="fw-semibold mb-3">Quick Stats</h6>
 
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Attendance</span><strong>94%</strong>
+                        <span>Attendance</span>
+                        <span class="fw-semibold">
+                            {{ student.assignments?.completed || 0 }}/{{ student.assignments?.total || 0 }}
+                        </span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Assignments Completed</span><strong>12/15</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Average Score</span><strong>82%</strong>
+                        <span>Average Score</span>
+                        <span class="fw-semibold">{{ student.exams?.averageScore || 0 }}%</span>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <span>Fees Paid</span><strong>₹90,000</strong>
+                        <span>Fees Paid</span>
+                        <span class="fw-semibold text-success">₹{{ student.fees?.paidAmount | number : '1.0-0' }}</span>
                     </div>
                 </div>
             </div>
@@ -123,14 +139,37 @@
                         <div class="tab-pane fade show active" id="program">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <p>Program<br><strong>JEE 2 Year Classroom</strong></p>
-                                    <p>Stream<br><strong>JEE</strong></p>
-                                    <p>Duration<br><strong>2 Years</strong></p>
+                                    <div class="mb-3">
+                                        <div class="text-muted">Program Name</div>
+                                        <div class="fw-semibold">{{ student.program?.programName }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted">Academic Year</div>
+                                        <div class="fw-medium">{{ student.program?.academicYear }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted">Program Code</div>
+                                        <div class="fw-medium">{{ student.program?.programCode }}</div>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <p>Batch<br><strong>JEE-2025-A</strong></p>
-                                    <p>Joining Date<br><strong>10/05/2024</strong></p>
-                                    <p>Mentor<br><strong>Arun Kumar</strong></p>
+                                    <div class="mb-3">
+                                        <div class="text-muted">Current Batch</div>
+                                        <div class="fw-medium">
+                                            <i class="fa-solid fa-layer-group me-1 text-muted"></i>
+                                            {{ student.program?.batchName }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted">Joining Date</div>
+                                        <div class="fw-medium">
+                                            {{ student.program?.joiningDate | date : 'mediumDate' }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted">Mentor / Faculty</div>
+                                        <div class="fw-medium">{{ student.program?.mentorName }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -153,40 +192,38 @@
 
                         <!-- Exam Results -->
                         <div class="tab-pane fade" id="exam">
-                             <custom-table [autoFitChars]="true" [columns]="columnsArray2" [data]="dataArray2"
-                                [showaction]="false" [success]="'Pass'" 
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray2" [data]="dataArray2"
+                                [showaction]="false" [success]="'Pass'"
                                 [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
                                 (requestData)="loadExamData($event)"></custom-table>
                         </div>
 
                         <!-- Performance -->
                         <div class="tab-pane fade" id="perform">
- <custom-table [autoFitChars]="true" [columns]="columnsArray6" [data]="dataArray6"
-                                [showaction]="false" 
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray6" [data]="dataArray6"
+                                [showaction]="false"
                                 [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
                         </div>
 
                         <!-- PTM -->
                         <div class="tab-pane fade" id="ptm">
-                             <custom-table [autoFitChars]="true" [columns]="columnsArray3" [data]="dataArray3"
-                                [showaction]="false" 
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray3" [data]="dataArray3"
+                                [showaction]="false"
                                 [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
                         </div>
 
                         <!-- Feedback -->
                         <div class="tab-pane fade" id="feedback">
-                              <custom-table [autoFitChars]="true" [columns]="columnsArray4" [data]="dataArray4"
-                                [showaction]="false" 
-                                [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-                                (requestData)="loadExamData($event)"></custom-table>
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray4" [data]="dataArray4"
+                                [showaction]="false" [searchPlaceholder]="'Search StudentName,Batch,...'"
+                                [totalRecords]="totalRecords" (requestData)="loadExamData($event)"></custom-table>
                         </div>
 
                         <!-- Package -->
                         <div class="tab-pane fade" id="pack">
-                              <custom-table [autoFitChars]="true" [columns]="columnsArray5" [data]="dataArray5"
-                                [showaction]="false"
-                                [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-                                (requestData)="loadExamData($event)"></custom-table>
+                            <custom-table [autoFitChars]="true" [columns]="columnsArray5" [data]="dataArray5"
+                                [showaction]="false" [searchPlaceholder]="'Search StudentName,Batch,...'"
+                                [totalRecords]="totalRecords" (requestData)="loadExamData($event)"></custom-table>
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 interface Message {
   text: string;
@@ -22,17 +24,19 @@ interface Chat {
 export class TableListComponent {
   isChat: boolean = false;
   columnsArray = [
-    { key: 'studentName', label: 'Student Name', sortable: true },
-    { key: 'admission', label: 'Admission No.', sortable: true },
-    { key: 'program', label: 'Program', sortable: true },
-    { key: 'address', label: 'Center', sortable: true },
+    { key: 'student.name', label: 'Student Name', sortable: true },
+    { key: 'admissionNo', label: 'Admission No.', sortable: true },
+    { key: 'programName', label: 'Program', sortable: true },
+    { key: 'centerName', label: 'Center', sortable: true },
     { key: 'status', label: 'Status', sortable: true },
-    { key: 'mobile', label: 'Mobile', sortable: true },
+    { key: 'student.phone', label: 'Mobile', sortable: true },
   ];
 
   dataArray: any[] = [];
   originalData: any[] = [];
   totalRecords = 0;
+  loading = false;
+
 
   actions = [
     {
@@ -53,76 +57,81 @@ export class TableListComponent {
     },
   ]
 
-  constructor(private breadcrump: BredcrumpService, private router: Router) {
+  constructor(
+    private breadcrump: BredcrumpService,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService) {
     this.breadcrump.set([{ label: 'Student' }])
   }
 
-  ngOnInit(): void {
-    this.originalData = [
-      { studentName: 'Arun Kumar', admission: 'ADM001', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543210' },
-      { studentName: 'Priya Sharma', admission: 'ADM002', program: 'NEET Crash Course', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543211' },
-      { studentName: 'Rahul Singh', admission: 'ADM003', program: 'JEE Foundation', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543212' },
-      { studentName: 'Anjali Verma', admission: 'ADM004', program: 'ICON - One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543213' },
-      { studentName: 'Vikram Patil', admission: 'ADM005', program: 'NEET Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543214' },
-      { studentName: 'Sneha Gupta', admission: 'ADM006', program: 'JEE Crash Course', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543215' },
-      { studentName: 'Karan Mehta', admission: 'ADM007', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543216' },
-      { studentName: 'Radhika Joshi', admission: 'ADM008', program: 'NEET Foundation', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543217' },
-      { studentName: 'Saurabh Kumar', admission: 'ADM009', program: 'JEE Advanced Program', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543218' },
-      { studentName: 'Pooja Reddy', admission: 'ADM010', program: 'ICON - One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543219' },
-      { studentName: 'Amit Jain', admission: 'ADM011', program: 'NEET Crash Course', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543220' },
-      { studentName: 'Neha Kapoor', admission: 'ADM012', program: 'JEE Two Year Program', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543221' },
-      { studentName: 'Manish Sharma', admission: 'ADM013', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543222' },
-      { studentName: 'Shivani Singh', admission: 'ADM014', program: 'NEET One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543223' },
-      { studentName: 'Rohit Verma', admission: 'ADM015', program: 'JEE Crash Course', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543224' },
-      { studentName: 'Alok Patel', admission: 'ADM016', program: 'ICON - Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543225' },
-      { studentName: 'Isha Agarwal', admission: 'ADM017', program: 'NEET Two Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543226' },
-      { studentName: 'Nikhil Reddy', admission: 'ADM018', program: 'JEE Foundation', address: 'Coimbatore - Sub Main', status: 'Inactive', mobile: '9876543227' },
-      { studentName: 'Tanya Kapoor', admission: 'ADM019', program: 'ICON - One Year Program', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543228' },
-      { studentName: 'Aditya Singh', admission: 'ADM020', program: 'NEET Crash Course', address: 'Coimbatore - Sub Main', status: 'Active', mobile: '9876543229' }
-    ];
+  ngOnInit(): void {}
 
-    this.loadTableData({ page: 1, pageSize: 5 });
-  }
-
-  loadTableData(req: {
+  fetchTableData(params: {
     page: number;
     pageSize: number;
     search?: string;
     sortKey?: string;
-    sortDirection?: 'asc' | 'desc';
+    sortDirection?: string;
   }) {
-    let filtered = [...this.originalData];
+    this.loading = true;
 
-    // SEARCH
-    if (req.search) {
-      const value = req.search.toLowerCase();
-      filtered = filtered.filter(row =>
-        Object.values(row).some(v =>
-          String(v).toLowerCase().includes(value)
-        )
-      );
+    // Pagination & Sort
+    let sortParam = '';
+    if (params.sortKey) {
+      sortParam =
+        params.sortDirection === 'desc'
+          ? `-${params.sortKey}`
+          : params.sortKey;
     }
 
-    // SORT
-    if (req.sortKey) {
-      filtered.sort((a, b) => {
-        const x = a[req.sortKey!];
-        const y = b[req.sortKey!];
-        return req.sortDirection === 'asc'
-          ? String(x).localeCompare(String(y))
-          : String(y).localeCompare(String(x));
-      });
-    }
+    const query: any = {
+      page: params.page,
+      limit: params.pageSize
+    };
+    if (sortParam) query.sort = sortParam;
+    if (params.search) query.search = params.search;
 
-    // PAGINATION
-    this.totalRecords = filtered.length;
-    const start = (req.page - 1) * req.pageSize;
-    const end = start + req.pageSize;
-    this.dataArray = filtered.slice(start, end);
+    //filter (optional)
+    // if (this.statusFilter && this.statusFilter !== 'all') {
+    //   query.status = this.statusFilter;
+    // }
+    // if (this.selectedProgram) {
+    //   query.programId = this.selectedProgram;
+    // }
+    // if (this.selectedCenter) {
+    //   query.centerId = this.selectedCenter;
+    // }
+
+    // Build query string
+    const queryString = Object.keys(query)
+      .map(
+        (key) => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`
+      )
+      .join('&');
+
+    const body = {
+      entiId: localStorage.getItem('tenantId')
+    };
+
+    this.commonApi.fetchData(body, 'student', `list?${queryString}`).subscribe({
+      next: (res: any) => {
+        this.dataArray = res.data;
+        this.totalRecords = res?.count || 0;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        this.alert.error('Error loading admissions');
+      }
+    });
   }
 
+
   viewStudent(row: any) {
-    this.router.navigate(['/app/student/view'])
+    // this.router.navigate(['/app/student/view'])
+    const s = row?._raw || row;
+    this.router.navigate(['/app/student/view', s.studentId]);
   }
 
   chatStudent(row: any) {
