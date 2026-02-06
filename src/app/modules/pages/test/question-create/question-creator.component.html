@@ -228,7 +228,7 @@
                 ({{ getSelectedQuestionType() === 'mcq-single' ? 'Select one correct answer' : 'Select all correct answers' }})
               </small>
               
-              <div formArrayName="options">
+              <div formArrayName="questionOptions">
                 <div *ngFor="let option of options.controls; let i = index" 
                      [formGroupName]="i" 
                      class="mb-3">
@@ -595,6 +595,9 @@
                 <button type="submit" class="btn btn-primary" [disabled]="!questionForm.valid">
                   <i class="fas fa-save"></i> Save Question
                 </button>
+                <!-- <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save"></i> Save Question
+                </button> -->
               </div>
             </div>
           </form>

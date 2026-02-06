@@ -394,7 +394,7 @@ export class QuestionImportComponent implements OnInit {
     // Here you would call your API
     // this.http.post('/api/questions/bulk', payload).subscribe(...)
 
-    this.currentStep = 'success';
+    // this.currentStep = 'success';
   }
 
   reset() {
@@ -420,26 +420,68 @@ export class QuestionImportComponent implements OnInit {
     return this.questionForm.get('matrixRight') as FormArray;
   }
 
-  buildBulkQuestionPayload() {
-    return {
-      questions: this.parsedQuestions.map(q => ({
-        question_type: q.qtype,
-        question_html: q.questionHtml,
-        difficulty: q.difficulty,
-        positive_marks: q.positiveMarks,
-        negative_marks: q.negativeMarks,
-        options:
-          q.options && q.options.length > 0
-            ? q.options.map(opt => ({
-              text: opt.html,
-              is_correct: q.answer
+  extractBase64Images(html: string): { images: string[]; cleanedHtml: string } {
+    const images: string[] = [];
+    let cleanedHtml = html;
+
+    const imgRegex = /<img[^>]+src="(data:image\/[^"]+)"[^>]*>/g;
+
+    let match;
+    while ((match = imgRegex.exec(html)) !== null) {
+      images.push(match[1]);
+    }
+
+    return { images, cleanedHtml };
+  }
+
+  async replaceImagesWithUrls(html: string): Promise<string> {
+    const { images } = this.extractBase64Images(html);
+    let updatedHtml = html;
+    for (const base64 of images) {
+      // const imageUrl = await this.uploadImage(base64);
+      updatedHtml = updatedHtml.replace(
+        base64,
+        ""
+      );
+    }
+
+    return updatedHtml;
+  }
+
+
+  async buildBulkQuestionPayload(): Promise<any> {
+
+    const questions = await Promise.all(
+      this.parsedQuestions.map(async (q) => {
+
+        const questionHtml = await this.replaceImagesWithUrls(q.questionHtml);
+        const solutionHtml = q.solutionHtml
+          ? await this.replaceImagesWithUrls(q.solutionHtml)
+          : null;
+
+        const processedOptions = q.options && q.options.length
+          ? await Promise.all(
+            q.options.map(async (opt) => ({
+              textHtml: await this.replaceImagesWithUrls(opt.html),
+              isCorrect: q.answer
                 .split(',')
                 .map(a => a.trim().toLowerCase())
                 .includes(opt.label)
             }))
-            : [],
-        solution_html: q.solutionHtml || null
-      }))
-    };
+          )
+          : [];
+        return {
+          questionType: q.qtype,
+          questionHtml,
+          difficulty: q.difficulty,
+          positiveMarks: q.positiveMarks,
+          negativeMarks: q.negativeMarks,
+          questionOptions: processedOptions,
+          solution: solutionHtml
+        };
+      })
+    );
+
+    return { questions };
   }
 }

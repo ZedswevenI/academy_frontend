@@ -53,6 +53,13 @@ export class CustomTableComponent {
 
   constructor() { }
 
+  ngAfterViewInit() {
+    document.addEventListener('shown.bs.dropdown', (event: any) => {
+      const btn = event.target as HTMLElement;
+      this.moveDropdownToBody(btn);
+    });
+  }
+
   ngOnInit(): void {
     this.pageSize = this.pageSizeOptions[0];
     if (this.columns) {
@@ -344,6 +351,23 @@ export class CustomTableComponent {
 
     return {};
   }
+
+  moveDropdownToBody(button: HTMLElement) {
+    const menu = button.parentElement?.querySelector('.dropdown-menu') as HTMLElement;
+    if (!menu) return;
+
+    const rect = button.getBoundingClientRect();
+
+    // Move to body
+    document.body.appendChild(menu);
+
+    // Position near button
+    menu.style.position = 'fixed';
+    menu.style.top = `${rect.bottom}px`;
+    menu.style.left = `${rect.right - menu.offsetWidth}px`;
+    menu.style.zIndex = '1080';
+  }
+  
 }
 
 

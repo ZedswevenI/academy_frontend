@@ -170,3 +170,39 @@ th .fa {
   background-color: #ceeefd !important;
   border: none;
 }
+
+.action-btn-group {
+  position: relative;
+}
+
+.action-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+}
+
+.action-icon-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.dropdown-menu {
+  min-width: 220px;
+  border-radius: 10px;
+}
+
+.dropdown-item {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}

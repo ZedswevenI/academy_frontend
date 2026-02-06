@@ -98,7 +98,7 @@
                   [attr.title]="needsTooltip(getCellValue(row, col.key), col) ? getCellValue(row, col.key) : null"
                   (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
                   (mouseleave)="scheduleCollapse()" (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                 [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
+                  [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
                   {{ truncate(getCellValue(row, col.key), col) }}
                 </span>
               </ng-template>
@@ -141,22 +141,18 @@
 
 
                   <!-- DROPDOWN BUTTON -->
-                  <div *ngIf="action.type === 'dropdown'" class="btn-group me-2">
-                    <button type="button"
-                      class="btn btn-sm submitbuttonclr d-inline-flex align-items-center whitespace-nowrap"
-                      [ngClass]="action.color ? 'btn-' + action.color : 'btn-secondary'" (click)="action.callback(row)">
-                      <i *ngIf="action.icon" [class]="action.icon" class="me-1 icon-14"></i>
-                      {{ action.text }}
+                  <div *ngIf="action.type === 'dropdown'" class="btn-group action-btn-group">
+
+                    <button type="button" class="btn btn-sm action-icon-btn" data-bs-toggle="dropdown"
+                      aria-expanded="false" #dropdownBtn>
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
-                    <button type="button" class="btn btn-sm dropdown-toggle dropdown-toggle-split submitbuttonclr"
-                      [ngClass]="action.color ? 'btn-' + action.color : 'btn-secondary'" data-bs-toggle="dropdown"
-                      aria-expanded="false">
-                      <span class="visually-hidden">Toggle Dropdown</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
+
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                       <li *ngFor="let sub of action.dropdown">
-                        <a class="dropdown-item" (click)="sub.callback(row)">
-                          <i *ngIf="sub.icon" [class]="sub.icon" class="me-1 icon-14"></i>
+                        <a class="dropdown-item d-flex align-items-center gap-2" data-bs-dismiss="dropdown"
+                          (click)="sub.callback(row)">
+                          <i *ngIf="sub.icon" [class]="sub.icon" class="icon-14"></i>
                           {{ sub.text }}
                         </a>
                       </li>

@@ -1,94 +1,249 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { Router } from '@angular/router';
+import { NavigationStart, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 @Component({
-  selector: 'app-assignment',
+  selector: 'app-tests',
   standalone: false,
   templateUrl: './test.component.html',
   styleUrl: './test.component.scss'
 })
-export class TestComponent {
-  columnsArray = [
-    { key: 'assignment', label: 'Assignment Title', sortable: true },
-    { key: 'due', label: 'Due Date', sortable: true },
-    { key: 'count', label: 'Submission Count', sortable: false },
-  ];
+export class TestComponent implements OnInit {
 
-  dataArray: any[] = [];
-  originalData: any[] = [];
+  loading = false;
   totalRecords = 0;
 
-  actions = [
-      {
-      type: 'icon',
-      icon: 'fa-regular fa-eye',
-      tooltip: 'View',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      callback: (row: any) => this.viewAss(row)
-    },
-  ]
+  private routerSub!: Subscription;
 
-  constructor(private breadcrump: BredcrumpService, private router: Router) {
-    this.breadcrump.set([{ label: 'Test' }])
-  }
+
+  /* ================= TABLE COLUMNS ================= */
+  columnsArray = [
+    { key: 'testNumber', label: 'Test No', sortable: true },
+    { key: 'testCode', label: 'Test Code', sortable: true },
+    { key: 'testId', label: 'Test ID', sortable: true },
+    { key: 'classNo', label: 'Class', sortable: true },
+    { key: 'subject', label: 'Subject', sortable: true },
+    // { key: 'numberOfQuestions', label: 'No of questions', sortable: true },
+
+  ];
+
+  /* ================= STATIC DATA ================= */
+  dataArray = [];
+
+  /* ================= ACTIONS ================= */
+  actions = [
+    {
+      type: 'dropdown',
+      text: 'Actions',
+      icon: 'fa-solid fa-ellipsis-vertical',
+      color: 'secondary',
+      callback: (row: any) => { }, // optional main click
+      dropdown: [
+        {
+          text: 'Edit Test',
+          icon: 'fa-regular fa-pen-to-square',
+          callback: (row: any) => this.editTest(row)
+        },
+        {
+          text: 'View Questions',
+          icon: 'fa-regular fa-eye',
+          callback: (row: any) => this.viewQuestions(row)
+        },
+        {
+          text: 'Add Question',
+          icon: 'fa-solid fa-file-import',
+          callback: (row: any) => this.addQuestions(row)
+        },
+        {
+          text: 'Import Questions',
+          icon: 'fa-solid fa-file-import',
+          callback: (row: any) => this.importQuestions(row)
+        },
+        {
+          text: 'Print Test',
+          icon: 'fa-solid fa-print',
+          callback: (row: any) => this.printTest(row)
+        },
+        {
+          text: 'Student Feedbacks',
+          icon: 'fa-solid fa-comments',
+          callback: (row: any) => this.studentFeedbacks(row)
+        },
+        {
+          text: 'Report',
+          icon: 'fa-solid fa-chart-line',
+          callback: (row: any) => this.report(row)
+        },
+        {
+          text: 'Update Ans/Solutions',
+          icon: 'fa-solid fa-pen',
+          callback: (row: any) => this.updateAnswers(row)
+        },
+        {
+          text: 'Delete',
+          icon: 'fa-regular fa-trash-can',
+          callback: (row: any) => this.deleteTest(row)
+        }
+      ]
+    }
+  ];
+
+  constructor(
+    private breadcrumb: BredcrumpService,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService
+
+  ) { }
 
   ngOnInit(): void {
-    this.originalData = [
-      { assignment: 'Math Homework – Algebra Basics', due: '15-01-2026', count: '18 / 40' },
-      { assignment: 'Science Project – Human Digestive System', due: '18-01-2026', count: '22 / 40' },
-      { assignment: 'English Essay – My Favorite Book', due: '20-01-2026', count: '19 / 40' },
-      { assignment: 'Computer Lab – HTML & CSS Basics', due: '22-01-2026', count: '25 / 40' },
-      { assignment: 'Social Studies – Indian Freedom Movement', due: '25-01-2026', count: '21 / 40' },
-      { assignment: 'Physics Worksheet – Laws of Motion', due: '27-01-2026', count: '16 / 40' },
-      { assignment: 'Chemistry Assignment – Periodic Table', due: '28-01-2026', count: '20 / 40' },
-      { assignment: 'Biology Notes – Plant Reproduction', due: '30-01-2026', count: '23 / 40' },
-      { assignment: 'Mathematics Test – Fractions & Decimals', due: '02-02-2026', count: '24 / 40' },
-      { assignment: 'Computer Science – JavaScript Basics', due: '05-02-2026', count: '17 / 40' }
-    ]
-
-    this.loadTableData({ page: 1, pageSize: 5 });
+    this.breadcrumb.set([
+      { label: 'Tests' }
+    ]);
+    this.routerSub = this.router.events.subscribe(event => {
+      if (event instanceof NavigationStart) {
+        this.forceCloseDropdowns();
+      }
+    });
+    this.totalRecords = this.dataArray.length;
   }
 
-  loadTableData(req: {
+  ngOnDestroy(): void {
+    this.routerSub?.unsubscribe();
+  }
+
+  private forceCloseDropdowns(): void {
+    // 1. Remove "show" class
+    document
+      .querySelectorAll('.dropdown-menu.show')
+      .forEach(menu => {
+        menu.classList.remove('show');
+      });
+
+    // 2. Remove orphan dropdowns moved to body (if any)
+    document
+      .querySelectorAll('body > .dropdown-menu')
+      .forEach(menu => {
+        menu.remove();
+      });
+
+    // 3. Reset aria-expanded
+    document
+      .querySelectorAll('.dropdown-toggle[aria-expanded="true"]')
+      .forEach(toggle => {
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+  }
+
+  /* ================= ACTION HANDLERS ================= */
+  viewTest(row: any) {
+    console.log('View test', row);
+    // this.router.navigate(['/tests/view', row.id]);
+  }
+
+  deleteTest(row: any) {
+    if (!confirm(`Delete test ${row.testCode}?`)) return;
+    console.log('Delete test', row);
+  }
+
+  viewQuestions(row: any) {
+    console.log('View questions', row);
+  }
+
+  editTest(row: any) {
+    console.log('Edit test', row);
+  }
+
+  importQuestions(row: any) {
+    this.router.navigate(['/app/tests/question-import'])
+  }
+
+  addQuestions(row: any) {
+    this.router.navigate(['/app/tests/question-create'])
+  }
+
+
+
+  printTest(row: any) {
+    console.log('Print test', row);
+  }
+
+  studentFeedbacks(row: any) {
+    console.log('Student feedbacks', row);
+  }
+
+  report(row: any) {
+    console.log('Report', row);
+  }
+
+  updateAnswers(row: any) {
+    console.log('Update answers/solutions', row);
+  }
+
+  fetchTableData(params: {
     page: number;
     pageSize: number;
     search?: string;
     sortKey?: string;
-    sortDirection?: 'asc' | 'desc';
+    sortDirection?: string;
   }) {
-    let filtered = [...this.originalData];
 
-    // SEARCH
-    if (req.search) {
-      const value = req.search.toLowerCase();
-      filtered = filtered.filter(row =>
-        Object.values(row).some(v =>
-          String(v).toLowerCase().includes(value)
-        )
-      );
+    this.loading = true;
+
+    let sortParam = '';
+    if (params.sortKey) {
+      sortParam =
+        params.sortDirection === 'desc'
+          ? `-${params.sortKey}`
+          : params.sortKey;
     }
 
-    // SORT
-    if (req.sortKey) {
-      filtered.sort((a, b) => {
-        const x = a[req.sortKey!];
-        const y = b[req.sortKey!];
-        return req.sortDirection === 'asc'
-          ? String(x).localeCompare(String(y))
-          : String(y).localeCompare(String(x));
+    const query: any = {
+      page: params.page,
+      limit: params.pageSize
+    };
+
+    if (sortParam) query.sort = sortParam;
+    if (params.search) query.search = params.search;
+
+    const queryString = Object.keys(query)
+      .map(
+        (key) =>
+          `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`
+      )
+      .join('&');
+
+    const body = {
+      entiId: localStorage.getItem('tenantId')
+    };
+
+    // 🔥 CHANGE MODULE NAME HERE
+    this.commonApi
+      .fetchData(body, 'assignment', `list?${queryString}`)
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.dataArray = res.data.map((item: any) => ({
+              ...item,
+              testNumber: item.testNo,
+              testCode: item.testCode,
+              classNo: item.classNo,
+              subject: item.subjectId?.subjectName,
+              numberOfQuestions: item.numberOfQuestions,
+              status: item.status,
+              createdAt: item.createdAt,
+              id: item._id
+            })); this.totalRecords = res.count || 0;
+          }
+          this.loading = false;
+        },
+        error: (err) => {
+          this.loading = false;
+          this.alert.error('Error loading assignments');
+        }
       });
-    }
-
-    // PAGINATION
-    this.totalRecords = filtered.length;
-    const start = (req.page - 1) * req.pageSize;
-    const end = start + req.pageSize;
-    this.dataArray = filtered.slice(start, end);
-  }
-
-  viewAss(row:any){
-    this.router.navigate(['/app/assignment/view'])
   }
 }

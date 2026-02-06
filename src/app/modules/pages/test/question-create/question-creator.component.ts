@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators, ValueChangeEvent } from '@angular/forms';
 
 interface QuestionOption {
-  text: string;
+  optionHtml: string;
   isCorrect: boolean;
 }
 
@@ -37,11 +37,11 @@ export class QuestionCreatorComponent implements OnInit {
       enableInstruction: [false],
       enableSolution: [false],
       questionType: ['mcq-single', Validators.required],
-      questionHtml: ['', Validators.required],
+      questionText: ['', Validators.required],
       positiveMarks: [1, [Validators.required, Validators.min(0)]],
-      nagetiveMarks: [1, [Validators.required, Validators.min(0)]],
+      negativeMarks: [1, [Validators.required, Validators.min(0)]],
       difficulty: ['medium'],
-      options: this.fb.array([]),
+      questionOptions: this.fb.array([]),
       passageId: [null],          // selected passage ID
       passageText: [''],          // display-only content
       instruction: [''],
@@ -101,7 +101,7 @@ export class QuestionCreatorComponent implements OnInit {
   }
 
   get options(): FormArray {
-    return this.questionForm.get('options') as FormArray;
+    return this.questionForm.get('questionOptions') as FormArray;
   }
 
   get matrixLeft(): FormArray {
@@ -178,10 +178,28 @@ export class QuestionCreatorComponent implements OnInit {
     return this.questionForm.get('questionType')?.value || 'mcq-single';
   }
 
+  logInvalidControls(form: FormGroup | FormArray, path: string = ''): void {
+    Object.keys(form.controls).forEach(key => {
+      const control = form.get(key);
+      const controlPath = path ? `${path}.${key}` : key;
+
+      if (control instanceof FormGroup || control instanceof FormArray) {
+        this.logInvalidControls(control, controlPath);
+      } else {
+        if (control?.invalid) {
+          console.log('❌ Invalid control:', controlPath, control.errors);
+        }
+      }
+    });
+  }
+
   onSubmit(): void {
+    this.logInvalidControls(this.questionForm);
     if (this.questionForm.valid) {
-      const questionData = this.prepareQuestionData();
-      console.log('Question Data:', questionData);
+      // const questionData = this.prepareQuestionData();
+      this.prepareQuestionData().then(payload => {
+        console.log('Question Data:', payload);
+      });
       // Here you would typically send this data to your backend
       alert('Question saved successfully!');
     } else {
@@ -234,58 +252,130 @@ export class QuestionCreatorComponent implements OnInit {
     });
   }
 
+  extractBase64Images(html: string): { images: string[]; cleanedHtml: string } {
+    const images: string[] = [];
+    let cleanedHtml = html;
 
-  prepareQuestionData(): any {
+    const imgRegex = /<img[^>]+src="(data:image\/[^"]+)"[^>]*>/g;
+
+    let match;
+    while ((match = imgRegex.exec(html)) !== null) {
+      images.push(match[1]);
+    }
+
+    return { images, cleanedHtml };
+  }
+
+  // uploadImage(base64: string): Promise<string> {
+  // return this.http
+  //   .post<{ url: string }>('/api/upload-image', { image: base64 })
+  //   .toPromise()
+  //   .then(res => res.url);
+// }
+
+  async replaceImagesWithUrls(html: string): Promise<string> {
+    const { images } = this.extractBase64Images(html);
+    let updatedHtml = html;
+    for (const base64 of images) {
+      // const imageUrl = await this.uploadImage(base64);
+      updatedHtml = updatedHtml.replace(
+        base64,
+        ""
+      );
+    }
+
+    return updatedHtml;
+  }
+
+
+  async prepareQuestionData(): Promise<any> {
     const formValue = this.questionForm.value;
     const questionType = formValue.questionType;
+
+    // 🔹 Process common rich-text fields
+    const questionText = await this.replaceImagesWithUrls(formValue.questionText);
+    const instruction = await this.replaceImagesWithUrls(formValue.instruction);
+    const solution = await this.replaceImagesWithUrls(formValue.solution);
 
     const baseData = {
       enablePassage: formValue.enablePassage,
       enableInstruction: formValue.enableInstruction,
       enableSolution: formValue.enableSolution,
-      type: questionType,
-      instruction: formValue.instruction,
-      solution: formValue.solution,
-      questionText: formValue.questionText,
+      questionType: questionType,
+      instruction,
+      solution,
+      questionHtml : questionText,
       positiveMarks: formValue.positiveMarks,
       negativeMarks: formValue.negativeMarks,
       difficulty: formValue.difficulty
     };
 
     switch (questionType) {
+
+      /* ================= MCQ ================= */
       case 'mcq-single':
-      case 'mcq-multiple':
+      case 'mcq-multiple': {
+        const processedOptions = await Promise.all(
+          formValue.questionOptions.map(async (opt: QuestionOption) => ({
+            ...opt,
+            textHtml: await this.replaceImagesWithUrls(opt.optionHtml) // ✅ option images handled
+          }))
+        );
+
         return {
           ...baseData,
-          options: formValue.options,
-          correctAnswers: formValue.options
-            .map((opt: QuestionOption, idx: number) => opt.isCorrect ? idx : null)
+          questionOptions: processedOptions,
+          correctAnswers: processedOptions
+            .map((opt, idx) => opt.isCorrect ? idx : null)
             .filter((idx: number | null) => idx !== null)
         };
+      }
 
+      /* ================= TRUE / FALSE ================= */
       case 'true-false':
         return {
           ...baseData,
           correctAnswer: formValue.trueFalseAnswer
         };
 
-      case 'subjective':
+      /* ================= SUBJECTIVE ================= */
+      case 'subjective': {
+        const sampleAnswer = await this.replaceImagesWithUrls(formValue.subjectiveAnswer);
+
         return {
           ...baseData,
-          sampleAnswer: formValue.subjectiveAnswer
+          sampleAnswer
         };
+      }
 
+      /* ================= TEXT BASED ================= */
       case 'text-based':
         return {
           ...baseData
         };
 
-      case 'matrix':
+      /* ================= MATRIX ================= */
+      case 'matrix': {
+        const leftColumn = await Promise.all(
+          formValue.matrixLeft.map(async (item: any) => ({
+            ...item,
+            text: await this.replaceImagesWithUrls(item.text)
+          }))
+        );
+
+        const rightColumn = await Promise.all(
+          formValue.matrixRight.map(async (item: any) => ({
+            ...item,
+            text: await this.replaceImagesWithUrls(item.text)
+          }))
+        );
+
         return {
           ...baseData,
-          leftColumn: formValue.matrixLeft,
-          rightColumn: formValue.matrixRight
+          leftColumn,
+          rightColumn
         };
+      }
 
       default:
         return baseData;
