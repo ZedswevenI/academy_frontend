@@ -16,14 +16,18 @@
                             routerLink="/app/tests/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Add Test</button>
+                        <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                            routerLink="/app/tests/import">
+                            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
+                            Import Tests</button>
                     </div>
 
                 </div>
             </div>
         </div>
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
-            [success]="'Active'" [primary]="'Inactive'" [totalRecords]="totalRecords" [loading]="loading" (requestData)="fetchTableData($event)"
-            [searchPlaceholder]="'Search Test, Code, Class...'">
+            [success]="'Active'" [primary]="'Inactive'" [totalRecords]="totalRecords" [loading]="loading"
+            (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search Test, Code, Class...'">
         </custom-table>
 
     </div>

@@ -40,15 +40,12 @@ export class TestCreateComponent {
   subTopics: any[] = [];
   examCategories: any[] = [];
   examSubCategories: any[] = [];
-
   loading = false;
 
 
   ngOnInit(): void {
-    console.log('Component initialized');
-
     this.testForm = this.fb.group({
-      classNo: ['', Validators.required],
+      classNo: [6, Validators.required],
       subjectId: ['', Validators.required],
       topicId: [''],
       subTopicId: [''],
@@ -59,15 +56,12 @@ export class TestCreateComponent {
       numberOfQuestions: [0, [Validators.required, Validators.min(1)]],
       status: ['active']
     });
-
     this.loadSubjects();
     this.loadExamCategories();
-
-    this.testForm.get('subjectId')?.valueChanges.subscribe(val => {
+    this.testForm.get('subjectId')?.valueChanges.subscribe(val => { 
       console.log('Subject changed:', val);
       this.onSubjectChange(val);
     });
-
     this.testForm.get('topicId')?.valueChanges.subscribe(val => {
       console.log('Topic changed:', val);
       this.onTopicChange(val);
@@ -78,8 +72,6 @@ export class TestCreateComponent {
       this.onCategoryChange(val);
     });
   }
-
-  /* ---------- SUBJECT ---------- */
   loadSubjects() {
     const body = {
       entiId: localStorage.getItem('tenantId')
@@ -90,29 +82,24 @@ export class TestCreateComponent {
         error: () => this.alert.error('Error loading subjects')
       });
   }
-
-  /* ---------- TOPIC ---------- */
   onSubjectChange(data: any) {
+    console.log("data ",data)
     this.topics = [];
     this.subTopics = [];
     const body = {
       entiId: localStorage.getItem('tenantId')
     };
-    console.log("Class ",this.testForm.value.classNo);
-    
+    const selectedClassNo = Number(this.testForm.value.classNo);
     this.commonApi.fetchData(body, 'ims/topic', 'list?list=full')
       .subscribe({
         next: (res: any) => {
           this.topics = (res?.data || []).filter((t: any) =>
-            (t.subjectId?._id || t.subjectId) === data && t.classNo == this.testForm.value.classNo);
+            (t.subjectId._id) === data && t.classNo == selectedClassNo);
         },
         error: () => this.alert.error('Error loading topics')
       });
   }
-
-  /* ---------- SUB TOPIC ---------- */
   onTopicChange(topicId: any) {
-    // const topicId = this.testForm.value.topicId;
     console.log("Tets data ", topicId);
     this.subTopics = [];
     const body = {
@@ -129,7 +116,6 @@ export class TestCreateComponent {
       });
   }
 
-  /* ---------- EXAM CATEGORY ---------- */
   loadExamCategories() {
     const body = {
       entiId: localStorage.getItem('tenantId')
@@ -141,7 +127,6 @@ export class TestCreateComponent {
       });
   }
 
-  /* ---------- EXAM SUB CATEGORY ---------- */
   onCategoryChange(categoryId: any) {
     this.examSubCategories = [];
     const body = {
@@ -158,7 +143,6 @@ export class TestCreateComponent {
       });
   }
 
-  /* ---------- SUBMIT ---------- */
   submitTest() {
     if (this.testForm.invalid) {
       this.alert.error('Please fill all required fields');

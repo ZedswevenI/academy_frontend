@@ -9,25 +9,11 @@ import { TestViewComponent } from './test-view/test-view.component';
 import { QuestionCreatorComponent } from './question-create/question-creator.component';
 import { QuestionImportComponent } from './question-import/question-import.component';
 import { PassageSelectorComponent } from './passage-selector/passage-selector.component';
+import { TestimportComponent } from './testimport/testimport.component';
 
 @NgModule({
-    declarations: [
-        TestComponent,
-        TestCreateComponent,
-        TestViewComponent,
-        QuestionCreatorComponent,
-        QuestionImportComponent,
-        PassageSelectorComponent
-    ],
-    imports: [
-        CommonModule,
-        TestRoutingModule,
-        UiElementsModule,
-        ReactiveFormsModule,
-        FormsModule,
-        NgIf,
-        NgFor
-    ],
-    exports: []
+  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent],
+  imports: [CommonModule, TestRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor],
+  exports: []
 })
-export class TestModule { }
+export class TestModule {}
