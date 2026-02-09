@@ -32,7 +32,7 @@ export class AddCenterComponent {
 
   ngOnInit(): void {
     console.log('Received center:', this.rowData);
-    this.breadcrump.set([{ label: 'Center', link: '/app/org-master/center' }, { label: this.isEditMode ? 'Edit' : 'Add' }])
+    this.breadcrump.set([{ label: 'Org Master' }, { label: 'Center', link: '/app/org-master/center' }, { label: this.isEditMode ? 'Edit' : 'Add' }])
 
     this.centerForm = this.fb.group({
       centerName: ['', [Validators.required]],

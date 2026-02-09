@@ -21,7 +21,7 @@ export class InstituteFormComponent {
     private router: Router,
     private alert: AlertService,
     private commonApi: CommonapiService) {
-    this.breadcrump.set([{ label: 'Institute', link: '/app/org-master/institute' }, { label: 'Edit' }]);
+    this.breadcrump.set([{ label: 'Org Master' }, { label: 'Institute', link: '/app/org-master/institute' }, { label: 'Edit' }]);
 
     const navigation = this.router.getCurrentNavigation();
     this.institute = navigation?.extras?.state?.['institute'];

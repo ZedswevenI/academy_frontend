@@ -14,6 +14,10 @@ import { DepartmentComponent } from './department/department.component';
 import { CreateDepComponent } from './create-dep/create-dep.component';
 import { CreateProComponent } from './create-pro/create-pro.component';
 import { ViewProComponent } from './view-pro/view-pro.component';
+import { TopicComponent } from './topic/topic.component';
+import { SubTopicComponent } from './sub-topic/sub-topic.component';
+import { CategoryComponent } from './category/category.component';
+import { SubCategoryComponent } from './sub-category/sub-category.component';
 
 @NgModule({
     declarations: [
@@ -26,7 +30,11 @@ import { ViewProComponent } from './view-pro/view-pro.component';
         InstituteFormComponent,
         DepartmentComponent,
         CreateDepComponent,
-        ViewProComponent
+        ViewProComponent,
+        TopicComponent,
+        SubTopicComponent,
+        CategoryComponent,
+        SubCategoryComponent
     ],
     imports: [
         CommonModule,

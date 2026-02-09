@@ -19,7 +19,7 @@ export class InstituteComponent {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private router: Router) {
-    this.breadcrump.set([{ label: 'Institute' }])
+    this.breadcrump.set([{ label: 'Org Master' }, { label: 'Institute' }])
   }
 
   ngOnInit(): void {
