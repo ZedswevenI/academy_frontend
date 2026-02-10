@@ -10,6 +10,10 @@ import { DepartmentComponent } from './department/department.component';
 import { CreateDepComponent } from './create-dep/create-dep.component';
 import { CreateProComponent } from './create-pro/create-pro.component';
 import { ViewProComponent } from './view-pro/view-pro.component';
+import { TopicComponent } from './topic/topic.component';
+import { SubTopicComponent } from './sub-topic/sub-topic.component';
+import { CategoryComponent } from './category/category.component';
+import { SubCategoryComponent } from './sub-category/sub-category.component';
 
 const routes: Routes = [
     // { path: '', component: OrgMasterComponent, title: 'Org-Master' }
@@ -25,7 +29,13 @@ const routes: Routes = [
     { path: 'program/view/:programId', component: ViewProComponent, title: 'Org Master - PROGRAM' },
     
     { path: 'department', component: DepartmentComponent, title: 'Org Master - DEPARTMENT'},
-    { path: 'department/add', component: CreateDepComponent, title: 'Org Master - DEPARTMENT'}
+    { path: 'department/add', component: CreateDepComponent, title: 'Org Master - DEPARTMENT'},
+
+    { path: 'topics', component: TopicComponent, title: 'Org Master - TOPIC'},
+    { path: 'sub-topic', component: SubTopicComponent, title: 'Org Master - SUB TOPIC'},
+    { path: 'category', component: CategoryComponent, title: 'Org Master - CATEGORY'},
+    { path: 'sub-category', component: SubCategoryComponent, title: 'Org Master - SUB CATEGORY'}
+
 ];
 
 @NgModule({

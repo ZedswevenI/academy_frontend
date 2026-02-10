@@ -54,7 +54,7 @@ export class CenterComponent {
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService) {
-    this.breadcrump.set([{ label: 'Center' }])
+    this.breadcrump.set([{ label: 'Org Master' }, { label: 'Center' }])
   }
 
   fetchCenterData(params: {

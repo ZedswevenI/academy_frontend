@@ -50,7 +50,7 @@ export class CreateProComponent {
 
   ngOnInit(): void {
     console.log('Received Program:', this.rowData);
-    this.breadcrump.set([{ label: 'Program', link: '/app/org-master/program' }, { label: this.isEditMode ? 'Edit' : 'Add' }])
+    this.breadcrump.set([{ label: 'Org Master' }, { label: 'Program', link: '/app/org-master/program' }, { label: this.isEditMode ? 'Edit' : 'Add' }])
 
     this.proForm = this.fb.group({
       programName: ['', [Validators.required]],

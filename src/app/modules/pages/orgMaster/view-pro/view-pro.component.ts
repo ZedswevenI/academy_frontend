@@ -27,7 +27,7 @@ export class ViewProComponent {
     private alert: AlertService,
     private route: ActivatedRoute,
     private router: Router) {
-    this.breadcrump.set([{ label: 'Program', link: '/app/org-master/program' }, { label: 'View' }]);
+    this.breadcrump.set([{ label: 'Org Master' }, { label: 'Program', link: '/app/org-master/program' }, { label: 'View' }]);
 
     const navigation = history.state;
     this.rowData = navigation?.rowData;

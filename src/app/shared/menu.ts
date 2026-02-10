@@ -136,12 +136,22 @@ export const MENU_ITEMS: MenuItem[] = [
       {
         label: 'Topic',
         icon: 'fa-solid fa-book-open',
-        route: '/app/org-master/topic',
+        route: '/app/org-master/topics',
       },
       {
         label: 'Sub Topic',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-topic',
+      },
+       {
+        label: 'Category',
+        icon: 'fa-solid fa-book-open',
+        route: '/app/org-master/category',
+      },
+      {
+        label: 'Sub Category',
+        icon: 'fa-solid fa-book',
+        route: '/app/org-master/sub-category',
       },
       {
         label: 'CGPA Config',

@@ -56,7 +56,7 @@ export class DepartmentComponent {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private fb: FormBuilder) {
-    this.breadcrump.set([{ label: 'Department' }])
+    this.breadcrump.set([{ label: 'Org Master' }, { label: 'Department' }])
   }
 
   ngOnInit() {
