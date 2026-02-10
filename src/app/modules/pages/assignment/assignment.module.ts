@@ -8,18 +8,8 @@ import { AssCreateComponent } from './ass-create/ass-create.component';
 import { AssViewComponent } from './ass-view/ass-view.component';
 
 @NgModule({
-    declarations: [
-        AssignmentComponent,
-        AssCreateComponent,
-        AssViewComponent
-    ],
-    imports: [
-        CommonModule,
-        AssignmentRoutingModule,
-        UiElementsModule,
-        ReactiveFormsModule,
-        FormsModule
-    ],
-    exports: []
+  declarations: [AssignmentComponent, AssCreateComponent, AssViewComponent],
+  imports: [CommonModule, AssignmentRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
+  exports: []
 })
-export class AssignmentModule { }
+export class AssignmentModule {}
