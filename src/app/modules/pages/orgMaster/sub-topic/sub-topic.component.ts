@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
-import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import * as XLSX from 'xlsx';
 import { finalize } from 'rxjs/operators';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 @Component({
   selector: 'app-sub-topic',
@@ -13,7 +13,7 @@ import { finalize } from 'rxjs/operators';
   styleUrl: './sub-topic.component.scss'
 })
 export class SubTopicComponent {
-  moduleName = 'ims';
+   moduleName = 'ims';
   entiId = localStorage.getItem('tenantId');
   form!: FormGroup;
   classOptions = Array.from({ length: 8 }, (_, i) => ({
@@ -58,16 +58,12 @@ export class SubTopicComponent {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
       callback: (r: any) => this.edit(r),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
-      color: '#6B7280',
-      hoverColor: '#dc3545',
       callback: (r: any) => this.openDelete(r),
     },
   ];
@@ -76,13 +72,7 @@ export class SubTopicComponent {
     private fb: FormBuilder,
     private alert: AlertService,
     private api: CommonapiService,
-    private breadcrumb: BredcrumpService
-  ) {
-    this.breadcrumb.set([
-      { label: 'Org Master' },
-      { label: 'Sub Topics' },
-    ]);
-  }
+  ) {}
 
   ngOnInit(): void {
     this.initForm();
@@ -103,7 +93,11 @@ export class SubTopicComponent {
 
   private loadSubjects() {
     this.api
-      .fetchData({ entiId: this.entiId }, this.moduleName, `subject/list?list=full`)
+      .fetchData(
+        { entiId: this.entiId },
+        this.moduleName,
+        `subject/list?list=full`,
+      )
       .subscribe({
         next: (res: any) => {
           const rows = Array.isArray(res?.data) ? res.data : [];
@@ -117,8 +111,12 @@ export class SubTopicComponent {
           for (const s of rows) {
             const id = String(s._id || '');
             this.subjectById.set(id, s);
-            const nm = String(s.subjectName || '').trim().toUpperCase();
-            const cd = String(s.subjectCode || '').trim().toUpperCase();
+            const nm = String(s.subjectName || '')
+              .trim()
+              .toUpperCase();
+            const cd = String(s.subjectCode || '')
+              .trim()
+              .toUpperCase();
             if (nm) this.subjectNameToId.set(nm, id);
             if (cd) this.subjectCodeToId.set(cd, id);
           }
@@ -136,11 +134,14 @@ export class SubTopicComponent {
 
   private buildQueryParams(params: Record<string, any>) {
     const keys = Object.keys(params || {}).filter(
-      (k) => params[k] !== undefined && params[k] !== null && params[k] !== ''
+      (k) => params[k] !== undefined && params[k] !== null && params[k] !== '',
     );
     if (!keys.length) return '';
     const qs = keys
-      .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(String(params[k]))}`)
+      .map(
+        (k) =>
+          `${encodeURIComponent(k)}=${encodeURIComponent(String(params[k]))}`,
+      )
       .join('&');
     return `?${qs}`;
   }
@@ -175,8 +176,12 @@ export class SubTopicComponent {
           const byName = new Map<string, string>();
           const byCode = new Map<string, string>();
           for (const t of rows) {
-            const nm = String(t.topicName || '').trim().toUpperCase();
-            const cd = String(t.topicCode || '').trim().toUpperCase();
+            const nm = String(t.topicName || '')
+              .trim()
+              .toUpperCase();
+            const cd = String(t.topicCode || '')
+              .trim()
+              .toUpperCase();
             const id = String(t.topicId || '');
             if (nm && id) byName.set(nm, id);
             if (cd && id) byCode.set(cd, id);
@@ -232,8 +237,13 @@ export class SubTopicComponent {
           const rows = Array.isArray(res?.data) ? res.data : [];
           this.totalRecords = res?.count || 0;
           this.tableData = rows.map((x: any) => {
-            const subjObj = x?.subjectId && typeof x.subjectId === 'object' ? x.subjectId : null;
-            const subjectId = subjObj ? String(subjObj?._id || '') : String(x.subjectId || '');
+            const subjObj =
+              x?.subjectId && typeof x.subjectId === 'object'
+                ? x.subjectId
+                : null;
+            const subjectId = subjObj
+              ? String(subjObj?._id || '')
+              : String(x.subjectId || '');
             const subjectName =
               subjObj?.subjectName ||
               this.subjectById.get(subjectId)?.subjectName ||
@@ -245,7 +255,8 @@ export class SubTopicComponent {
               subjectId,
               subjectName,
               topicId: x.topicId.topicId,
-              topicName: x.topicId.topicName, subTopicName: x.subTopicName,
+              topicName: x.topicId.topicName,
+              subTopicName: x.subTopicName,
               subTopicCode: x.subTopicCode || '-',
               sortOrder: x.sortOrder ?? 0,
               _raw: x,
@@ -274,8 +285,11 @@ export class SubTopicComponent {
 
   edit(row: any) {
     const x = row?._raw || row;
-    const subjObj = x?.subjectId && typeof x.subjectId === 'object' ? x.subjectId : null;
-    const subjectId = subjObj ? String(subjObj?._id || '') : String(x.subjectId || '');
+    const subjObj =
+      x?.subjectId && typeof x.subjectId === 'object' ? x.subjectId : null;
+    const subjectId = subjObj
+      ? String(subjObj?._id || '')
+      : String(x.subjectId || '');
     this.formMode = 'edit';
     this.form.patchValue({
       classNo: x.classNo,
@@ -315,7 +329,8 @@ export class SubTopicComponent {
       subTopicCode: (v.subTopicCode || '').toString().trim() || null,
       sortOrder: Number(v.sortOrder || 0),
     };
-    const endpoint = this.formMode === 'create' ? 'subtopic/create' : 'subtopic/update';
+    const endpoint =
+      this.formMode === 'create' ? 'subtopic/create' : 'subtopic/update';
     if (this.formMode === 'edit') payload.subTopicId = v.subTopicId;
     this.saving = true;
     this.api
@@ -327,11 +342,16 @@ export class SubTopicComponent {
             this.alert.error(res?.message || 'Save failed');
             return;
           }
-          this.alert.success(this.formMode === 'create' ? 'Sub-topic created' : 'Sub-topic updated');
+          this.alert.success(
+            this.formMode === 'create'
+              ? 'Sub-topic created'
+              : 'Sub-topic updated',
+          );
           this.showForm = false;
           this.fetchTableData({ page: 1, pageSize: 10 });
         },
-        error: (err: any) => this.alert.error(err?.error?.message || 'Save failed'),
+        error: (err: any) =>
+          this.alert.error(err?.error?.message || 'Save failed'),
       });
   }
 
@@ -342,8 +362,11 @@ export class SubTopicComponent {
 
   openDelete(row: any) {
     const x = row?._raw || row;
-    const subjObj = x?.subjectId && typeof x.subjectId === 'object' ? x.subjectId : null;
-    const subjectId = subjObj ? String(subjObj?._id || '') : String(x.subjectId || '');
+    const subjObj =
+      x?.subjectId && typeof x.subjectId === 'object' ? x.subjectId : null;
+    const subjectId = subjObj
+      ? String(subjObj?._id || '')
+      : String(x.subjectId || '');
     this.deleteTarget = {
       classNo: x.classNo,
       subjectId: subjectId,
@@ -376,7 +399,8 @@ export class SubTopicComponent {
         this.alert.success('Sub-topic deleted');
         this.fetchTableData({ page: 1, pageSize: 10 });
       },
-      error: (err: any) => this.alert.error(err?.error?.message || 'Delete failed'),
+      error: (err: any) =>
+        this.alert.error(err?.error?.message || 'Delete failed'),
     });
 
     this.deleteTarget = null;
@@ -418,8 +442,12 @@ export class SubTopicComponent {
         const data = e.target.result;
         const wb = XLSX.read(data, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rawRows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' }) as any[];
-        const mapped = rawRows.map((r: any, idx: number) => this.mapExcelRow(r, idx + 2));
+        const rawRows: any[] = XLSX.utils.sheet_to_json(ws, {
+          defval: '',
+        }) as any[];
+        const mapped = rawRows.map((r: any, idx: number) =>
+          this.mapExcelRow(r, idx + 2),
+        );
         this.importPreviewRows = mapped;
         this.computeImportValidation();
       } catch (err) {
@@ -435,46 +463,86 @@ export class SubTopicComponent {
   private mapExcelRow(r: any, rowNo: number) {
     const get = (...keys: string[]) => {
       for (const k of keys) {
-        if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '') return String(r[k]).trim();
+        if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '')
+          return String(r[k]).trim();
       }
       return '';
     };
+
     const classRaw = get('Class', 'classNo', 'ClassNo');
     const classNo = Number(String(classRaw || '').trim());
+
     const subjectRaw = get('Subject', 'Subject Name', 'SubjectName', 'subject');
     const subjectCodeRaw = get('Subject Code', 'SubjectCode', 'subjectCode');
+
+    // ✅ Topic must be FULL TOPIC NAME only
     const topicRaw = get('Topic', 'Topic Name', 'TopicName', 'topic');
-    const topicCodeRaw = get('Topic Code', 'TopicCode', 'topicCode');
-    const subTopicNameRaw = get('Sub-Topic Name', 'SubTopicName', 'subTopicName');
-    const subTopicCode = get('Code', 'Sub-Topic Code', 'SubTopicCode', 'subTopicCode') || null;
+
+    const subTopicNameRaw = get(
+      'Sub-Topic Name',
+      'SubTopicName',
+      'subTopicName',
+    );
+    const subTopicCode =
+      get('Code', 'Sub-Topic Code', 'SubTopicCode', 'subTopicCode') || null;
+
     const sortRaw = get('Sort Order', 'SortOrder', 'sortOrder');
-    const sortOrder = sortRaw === '' || sortRaw === null || sortRaw === undefined ? 0 : Number(String(sortRaw).trim());
+    const sortOrder =
+      sortRaw === '' || sortRaw === null || sortRaw === undefined
+        ? 0
+        : Number(String(sortRaw).trim());
+
     const errors: string[] = [];
-    if (!Number.isFinite(classNo) || classNo < 6 || classNo > 13) errors.push('Invalid Class (6..13)');
-    const subjNameKey = String(subjectRaw || '').trim().toUpperCase();
-    const subjCodeKey = String(subjectCodeRaw || '').trim().toUpperCase();
+
+    if (!Number.isFinite(classNo) || classNo < 6 || classNo > 13)
+      errors.push('Invalid Class (6..13)');
+
+    const subjNameKey = String(subjectRaw || '')
+      .trim()
+      .toUpperCase();
+    const subjCodeKey = String(subjectCodeRaw || '')
+      .trim()
+      .toUpperCase();
+
     let subjectId: string | null = null;
-    if (subjCodeKey && this.subjectCodeToId.has(subjCodeKey)) subjectId = this.subjectCodeToId.get(subjCodeKey) || null;
-    else if (subjNameKey && this.subjectNameToId.has(subjNameKey)) subjectId = this.subjectNameToId.get(subjNameKey) || null;
+    if (subjCodeKey && this.subjectCodeToId.has(subjCodeKey))
+      subjectId = this.subjectCodeToId.get(subjCodeKey) || null;
+    else if (subjNameKey && this.subjectNameToId.has(subjNameKey))
+      subjectId = this.subjectNameToId.get(subjNameKey) || null;
+
     if (!subjectId) errors.push('Subject not found');
-    const topicNameKey = String(topicRaw || '').trim().toUpperCase();
-    const topicCodeKey = String(topicCodeRaw || '').trim().toUpperCase();
-    const topicLabel = (topicCodeKey ? topicCodeKey : '') || (topicNameKey ? topicNameKey : '') || '-';
-    if (!topicLabel || topicLabel === '-') errors.push('Topic required');
+
+    const topicNameKey = String(topicRaw || '')
+      .trim()
+      .toUpperCase();
+    const topicLabel = topicNameKey || '-';
+
+    if (!topicNameKey) errors.push('Topic required (full Topic Name)');
+
     const subTopicName = String(subTopicNameRaw || '').trim();
     if (!subTopicName) errors.push('Sub-Topic Name required');
-    if (sortOrder !== 0 && !Number.isFinite(sortOrder)) errors.push('Invalid Sort Order');
-    const subjectLabel = (subjCodeKey ? subjCodeKey : '') || (subjNameKey ? subjNameKey : '') || '-';
+
+    if (sortOrder !== 0 && !Number.isFinite(sortOrder))
+      errors.push('Invalid Sort Order');
+
+    const subjectLabel =
+      (subjCodeKey ? subjCodeKey : '') ||
+      (subjNameKey ? subjNameKey : '') ||
+      '-';
+
     return {
       _rowNo: rowNo,
       _valid: errors.length === 0,
       _errors: errors,
+
       classNo: Number.isFinite(classNo) ? classNo : classRaw,
       subjectId,
       subjectLabel,
+
+      // ✅ topic name key only
       topicNameKey,
-      topicCodeKey,
       topicLabel,
+
       subTopicName,
       subTopicCode: subTopicCode ? String(subTopicCode).trim() : null,
       sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
@@ -485,42 +553,48 @@ export class SubTopicComponent {
     const invalid = (this.importPreviewRows || []).filter((x) => !x._valid);
     this.importInvalidCount = invalid.length;
     this.importHasInvalidRows = invalid.length > 0;
+
     const groups = new Set<string>();
     for (const r of this.importPreviewRows || []) {
-      if (r._valid && r.subjectId) groups.add(`${r.classNo}::${r.subjectId}::${r.topicLabel}`);
+      if (r._valid && r.subjectId && r.topicLabel && r.topicLabel !== '-') {
+        groups.add(`${r.classNo}::${r.subjectId}::${r.topicLabel}`);
+      }
     }
     this.importGroupCount = groups.size;
   }
 
-  private ensureTopicsForGroup(classNo: number, subjectId: string, done: (ok: boolean) => void) {
+  private ensureTopicsForGroup(
+    classNo: number,
+    subjectId: string,
+    done: (ok: boolean) => void,
+  ) {
     const key = `${classNo}::${String(subjectId)}`;
     if (this.topicCache.has(key)) return done(true);
 
     const qp = this.buildQueryParams({ list: 'full', classNo, subjectId });
 
-    this.api.fetchData({ entiId: this.entiId }, this.moduleName, `topic/list${qp}`).subscribe({
-      next: (res: any) => {
-        const rows = Array.isArray(res?.data) ? res.data : [];
-        this.topicCache.set(key, rows);
+    this.api
+      .fetchData({ entiId: this.entiId }, this.moduleName, `topic/list${qp}`)
+      .subscribe({
+        next: (res: any) => {
+          const rows = Array.isArray(res?.data) ? res.data : [];
+          this.topicCache.set(key, rows);
 
-        const byName = new Map<string, string>();
-        const byCode = new Map<string, string>();
+          // ✅ only name map
+          const byName = new Map<string, string>();
+          for (const t of rows) {
+            const nm = String(t.topicName || '')
+              .trim()
+              .toUpperCase();
+            const id = String(t.topicId || '');
+            if (nm && id) byName.set(nm, id);
+          }
+          this.topicNameToIdByKey.set(key, byName);
 
-        for (const t of rows) {
-          const nm = String(t.topicName || '').trim().toUpperCase();
-          const cd = String(t.topicCode || '').trim().toUpperCase();
-          const id = String(t.topicId || '');
-          if (nm && id) byName.set(nm, id);
-          if (cd && id) byCode.set(cd, id);
-        }
-
-        this.topicNameToIdByKey.set(key, byName);
-        this.topicCodeToIdByKey.set(key, byCode);
-
-        done(true);
-      },
-      error: () => done(false),
-    });
+          done(true);
+        },
+        error: () => done(false),
+      });
   }
 
   confirmImport() {
@@ -535,16 +609,10 @@ export class SubTopicComponent {
       return;
     }
 
-    const userId = localStorage.getItem('userId') || '';
-
-    // group by classNo + subjectId + topicId (resolved)
-    const grouped = new Map<string, any[]>();
-
-    // we will process rows sequentially: for each unique (classNo, subjectId) ensure topics loaded, then resolve topicId and group.
     const rows = [...this.importPreviewRows];
 
     const uniqueCS = Array.from(
-      new Set(rows.map((r) => `${r.classNo}::${r.subjectId}`))
+      new Set(rows.map((r) => `${r.classNo}::${r.subjectId}`)),
     ).map((k) => {
       const [c, s] = k.split('::');
       return { classNo: Number(c), subjectId: String(s) };
@@ -552,23 +620,21 @@ export class SubTopicComponent {
 
     this.importing = true;
 
+    const grouped = new Map<string, any[]>();
+
     const processCS = (idx: number) => {
       if (idx >= uniqueCS.length) {
-        // after topic resolution, build grouped map
         for (const r of rows) {
           const keyCS = `${r.classNo}::${r.subjectId}`;
-          const byCode = this.topicCodeToIdByKey.get(keyCS);
           const byName = this.topicNameToIdByKey.get(keyCS);
 
-          const tid =
-            (r.topicCodeKey && byCode?.get(r.topicCodeKey)) ||
-            (r.topicNameKey && byName?.get(r.topicNameKey)) ||
-            null;
+          const tid = (r.topicNameKey && byName?.get(r.topicNameKey)) || null;
 
           if (!tid) {
-            // hard stop: topic missing in that class+subject
             this.importing = false;
-            this.alert.error(`Topic not found for row ${r._rowNo} (${r.topicLabel})`);
+            this.alert.error(
+              `Topic not found for row ${r._rowNo} (${r.topicLabel}). Use exact Topic Name.`,
+            );
             return;
           }
 
@@ -588,7 +654,9 @@ export class SubTopicComponent {
           if (gidx >= keys.length) {
             this.importing = false;
             this.alert.success('Import completed');
-            this.closeImport();
+            this.showImport = false;
+            this.resetImport();
+
             this.fetchTableData({ page: 1, pageSize: 10 });
             return;
           }
@@ -598,7 +666,6 @@ export class SubTopicComponent {
 
           const payload = {
             entiId: this.entiId,
-            userId,
             classNo: Number(classNoStr),
             subjectId,
             topicId,
@@ -608,27 +675,32 @@ export class SubTopicComponent {
               sortOrder: x.sortOrder,
             })),
           };
-
-          this.api.fetchData(payload, this.moduleName, 'subtopic/bulkupsert').subscribe({
-            next: (res: any) => {
-              if (res?.status === false) {
+          
+          this.api
+            .fetchData(payload, this.moduleName, 'subtopic/import')
+            .subscribe({
+              next: (res: any) => {
+                if (res?.status === false) {
+                  this.importing = false;
+                  this.alert.error(
+                    res?.message || `Import failed at group ${k}`,
+                  );
+                  return;
+                }
+                runNext(gidx + 1);
+              },
+              error: (err: any) => {
                 this.importing = false;
-                this.alert.error(res?.message || `Import failed at group ${k}`);
-                return;
-              }
-              runNext(gidx + 1);
-            },
-            error: (err: any) => {
-              this.importing = false;
-              this.alert.error(err?.error?.message || `Import failed at group ${k}`);
-            },
-          });
+                this.alert.error(
+                  err?.error?.message || `Import failed at group ${k}`,
+                );
+              },
+            });
         };
 
         runNext(0);
         return;
       }
-
       const cs = uniqueCS[idx];
       this.ensureTopicsForGroup(cs.classNo, cs.subjectId, (ok) => {
         if (!ok) {
@@ -648,7 +720,7 @@ export class SubTopicComponent {
       {
         Class: 6,
         Subject: 'MATH',
-        Topic: 'TRI', // can be Topic Code or Topic Name
+        Topic: 'Trigonometry',
         'Sub-Topic Name': 'Height & Distance',
         Code: 'HD01',
         'Sort Order': 1,
@@ -656,7 +728,7 @@ export class SubTopicComponent {
       {
         Class: 6,
         Subject: 'MATH',
-        Topic: 'TRI',
+        Topic: 'Trigonometry',
         'Sub-Topic Name': 'Trigonometric Identities',
         Code: 'TI01',
         'Sort Order': 2,
@@ -664,13 +736,12 @@ export class SubTopicComponent {
       {
         Class: 6,
         Subject: 'PHYSICS',
-        Topic: 'MOT',
+        Topic: 'Motion',
         'Sub-Topic Name': 'Uniform Motion',
         Code: 'UM01',
         'Sort Order': 1,
       },
     ];
-
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'SubTopics');

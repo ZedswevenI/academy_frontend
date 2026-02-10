@@ -136,7 +136,7 @@ export const MENU_ITEMS: MenuItem[] = [
       {
         label: 'Topic',
         icon: 'fa-solid fa-book-open',
-        route: '/app/org-master/topic',
+        route: '/app/org-master/topics',
       },
       {
         label: 'Sub Topic',

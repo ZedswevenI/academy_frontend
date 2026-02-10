@@ -31,7 +31,7 @@ const routes: Routes = [
     { path: 'department', component: DepartmentComponent, title: 'Org Master - DEPARTMENT'},
     { path: 'department/add', component: CreateDepComponent, title: 'Org Master - DEPARTMENT'},
 
-    { path: 'topic', component: TopicComponent, title: 'Org Master - TOPIC'},
+    { path: 'topics', component: TopicComponent, title: 'Org Master - TOPIC'},
     { path: 'sub-topic', component: SubTopicComponent, title: 'Org Master - SUB TOPIC'},
     { path: 'category', component: CategoryComponent, title: 'Org Master - CATEGORY'},
     { path: 'sub-category', component: SubCategoryComponent, title: 'Org Master - SUB CATEGORY'}
