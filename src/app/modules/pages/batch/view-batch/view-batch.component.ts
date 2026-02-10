@@ -1,15 +1,20 @@
-import { Component, ViewChild, ElementRef } from '@angular/core';
-import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
-import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
-import { AlertService } from '../../../../service/alert/alert.service';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import {
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  AbstractControl,
+} from '@angular/forms';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { AlertService } from '../../../../service/alert/alert.service';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 
 declare var bootstrap: any;
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
-
 
 @Component({
   selector: 'app-view-batch',
@@ -17,33 +22,34 @@ const safeTrim = (v: any) =>
   templateUrl: './view-batch.component.html',
   styleUrl: './view-batch.component.scss'
 })
-export class ViewBatchComponent {
-  facultyForm!: FormGroup;
-  showStudentPanel = false;
-  showFacultyPanel = false;
-  selectedCount = 0;
-
-  loading: boolean = false;
+export class ViewBatchComponent implements OnInit {
+  loading = false;
+  entiId: any;
+  private moduleName = 'batch';
   batchId = '';
   batch: any = null;
-
   activeTab: 'students' | 'faculty' = 'students';
   offcanvasMode: 'none' | 'edit' | 'staff' | 'assign' | 'shuffle' = 'none';
-
   studentRows: any[] = [];
   selected = new Set<string>();
-
   editForm!: FormGroup;
   staffForm!: FormGroup;
-
   eligibleRows: any[] = [];
   eligibleCount = 0;
   eligibleQuery = { page: 1, limit: 20, search: '' };
   eligibleSelected = new Set<string>();
   batchesFull: any[] = [];
   shuffleToBatchId = '';
-
-  // ✅ NEW: Lists for Dropdowns
+  editStatusOptions = [
+    { label: 'ACTIVE', value: 'ACTIVE' },
+    { label: 'DRAFT', value: 'DRAFT' },
+    { label: 'CLOSED', value: 'CLOSED' },
+    { label: 'INACTIVE', value: 'INACTIVE' },
+  ];
+  subjectsOptions: any[] = [{ label: '-- Select Subject --', value: '' }];
+  staffOptionsAll: any[] = [{ label: '-- Select Faculty --', value: '' }];
+  staffOptionsByRow: any[][] = [];
+  batchesFullOptions: any[] = [{ label: '-- Select --', value: '' }];
   subjectsList: any[] = [];
   staffList: any[] = [];
 
@@ -52,72 +58,41 @@ export class ViewBatchComponent {
     message: '',
     btnText: 'Confirm',
     btnClass: 'btn-danger',
-    action: () => { },
+    action: () => {},
   };
-
-
-  subject_options = [];
-  faculty_options = [];
-
-  columnsArray = [
-    { key: 'student.name', label: 'Student Name', sortable: false },
-    { key: 'admissionNo', label: 'Admission No.', sortable: false },
-    { key: 'registrationNumber', label: 'Reg No.', sortable: false },
-    { key: 'student.phone', label: 'Phone', sortable: false },
-    { key: 'student.parentPhone', label: 'Parent Phone', sortable: false }
-  ];
-  dataArray = [
-    {
-      name: 'Arun Kumar',
-      add: 'ADM2025001',
-      reg: 'REG-9A-001',
-      phone: '9876543210',
-      parent: '9876500001'
-    },
-    {
-      name: 'Priya Sharma',
-      add: 'ADM2025002',
-      reg: 'REG-9A-002',
-      phone: '9876543211',
-      parent: '9876500002'
-    },
-    {
-      name: 'S Charu Nethra',
-      add: 'ADM2025003',
-      reg: 'REG-9A-003',
-      phone: '9442611989',
-      parent: '9442611990'
-    }
-  ];
 
   @ViewChild('confirmModal') confirmModalRef!: ElementRef;
   private bsModal: any;
+  private allBatchesRaw: any[] = [];
 
   constructor(
-    private breadcrump: BredcrumpService,
-    private fb: FormBuilder,
-    private commonApi: CommonapiService,
-    private alert: AlertService,
     private route: ActivatedRoute,
-    private router: Router) {
-    this.breadcrump.set([{ label: 'Batch', link: '/app/batch' }, { label: 'View' }])
+    private router: Router,
+    private fb: FormBuilder,
+    private breadcrumb: BredcrumpService,
+    private alert: AlertService,
+    private commonApi: CommonapiService,
+  ) {
+    this.entiId = localStorage.getItem('tenantId');
   }
 
   ngOnInit(): void {
     this.batchId = safeTrim(this.route.snapshot.paramMap.get('batchId'));
     if (!this.batchId) {
       this.alert.error('Batch ID missing');
-      this.router.navigate(['/app/batch']);
+      this.router.navigate(['/app/batches']);
       return;
     }
 
-    this.facultyForm = this.fb.group({
-      subject: [''],
-      faculty: ['']
-    })
-
+    this.breadcrumb.set([
+      { label: 'Control Panel' },
+      { label: 'Masters' },
+      { label: 'Batches' },
+      { label: 'View' },
+    ]);
     this.initForms();
     this.loadBatch();
+    this.loadBatchesFullForShuffle();
   }
 
   initForms() {
@@ -136,73 +111,18 @@ export class ViewBatchComponent {
     });
   }
 
-  loadBatch() {
-    this.loading = true;
-    const payload = {
-      entiId: localStorage.getItem('tenantId'),
-      batchId: this.batchId,
-      includeStudents: true,
-    };
-    this.commonApi.fetchData(payload, 'batch', 'view').subscribe({
-      next: (res: any) => {
-        this.loading = false;
-        this.batch = res?.data || null;
-        this.studentRows = this.batch?.students || [];
-        this.selected.clear();
-
-        this.editForm.patchValue({
-          batchName: this.batch?.batchName,
-          batchCode: this.batch?.batchCode,
-          startDate: this.epochMsToDateInput(this.batch?.startDate),
-          endDate: this.epochMsToDateInput(this.batch?.endDate),
-          status: this.batch?.status || 'ACTIVE',
-          remarks: this.batch?.remarks || '',
-        });
-
-        this.staffFA.clear();
-        const sm = Array.isArray(this.batch?.staffMap)
-          ? this.batch.staffMap
-          : [];
-        sm.forEach((r: any) => this.staffFA.push(this.staffRowGroup(r)));
-      },
-      error: (err: any) => {
-        this.loading = false;
-        this.alert.error(err?.error?.message || 'Failed to load batch');
-      },
-    });
+  private userId() {
+    return (
+      localStorage.getItem('userId') || localStorage.getItem('userid') || null
+    );
   }
 
-  shuffleSelected() {
-    const ids = Array.from(this.selected);
-    if (!this.shuffleToBatchId) return;
-
-    this.loading = true;
-    this.commonApi
-      .fetchData(
-        {
-          entiId: localStorage.getItem('tenantId'),
-          userId: this.userId(),
-          fromBatchId: this.batchId,
-          toBatchId: this.shuffleToBatchId,
-          studentIds: ids,
-        },
-        'batch',
-        'students/shuffle',
-      )
-      .subscribe({
-        next: () => {
-          this.loading = false;
-          this.alert.success('Students shuffled');
-          this.closeOffcanvas();
-          this.loadBatch();
-        },
-        error: (err: any) => {
-          this.loading = false;
-          this.alert.error(err?.error?.message || 'Shuffle failed');
-        },
-      });
+  private dateToEpochMs(dateStr: any): number {
+    const s = safeTrim(dateStr);
+    if (!s) return 0;
+    const d = new Date(`${s}T00:00:00`);
+    return Number.isFinite(d.getTime()) ? d.getTime() : 0;
   }
-
 
   private epochMsToDateInput(ms: any): string {
     const n = Number(ms);
@@ -222,75 +142,262 @@ export class ViewBatchComponent {
     return this.staffForm.get('staffMap') as FormArray;
   }
 
-  allSubjectsSelected(): boolean {
-    return this.staffFA.controls.every(ctrl => !!ctrl.get('subjectId')?.value);
-  }
-
-  removeStaffRow(i: number) {
-    this.staffFA.removeAt(i);
-  }
-
   private staffRowGroup(x?: any): FormGroup {
     return this.fb.group({
       subjectId: [safeTrim(x?.subjectId), [Validators.required]],
-      subjectName: [safeTrim(x?.subjectName)], 
+      subjectName: [safeTrim(x?.subjectName)],
       staffId: [safeTrim(x?.staffId), [Validators.required]],
       staffName: [safeTrim(x?.staffName)],
     });
   }
 
-  
-  filteredStaffMap: { [index: number]: any[] } = {};
-
-  // onSubjectChange(index: number) {
-  //   const group = this.staffFA.at(index);
-  //   const subjId = group.get('subjectId')?.value;
-  //   const subj = this.subjectsList.find((s) => s.subjectId === subjId);
-  //   if (subj) {
-  //     group.patchValue({ subjectName: subj.subjectName || subj.subjectCode });
-  //   }
-  // }
   onSubjectChange(index: number) {
-    const group = this.staffFA.at(index);
-    const subjectId = group.get('subjectId')?.value;
-    console.log('Selected SubjectId:', subjectId);
-    this.filteredStaffMap[index] = this.staffList.filter(
-      staff => staff.subject === subjectId
+    const group = this.staffFA.at(index) as FormGroup;
+    const subjId = safeTrim(group.get('subjectId')?.value);
+    const subj = (this.subjectsList || []).find(
+      (s: any) => safeTrim(s?.subjectId) === subjId,
     );
+    group.patchValue(
+      { subjectName: safeTrim(subj?.subjectName || subj?.subjectCode || '') },
+      { emitEvent: false },
+    );
+    const filtered = (this.staffList || []).filter(
+      (st: any) => safeTrim(st?.subject) === subjId,
+    );
+    this.staffOptionsByRow[index] = [
+      { label: '-- Select Faculty --', value: '' },
+    ].concat(
+      filtered.map((s: any) => ({
+        label: `${s?.staffName || '-'} (${s?.staffCode || '-'})`,
+        value: safeTrim(s?.staffId || s?._id),
+        _raw: s,
+      })),
+    );
+    const curStaffId = safeTrim(group.get('staffId')?.value);
+    if (curStaffId) {
+      const ok = (this.staffOptionsByRow[index] || []).some(
+        (o: any) => safeTrim(o?.value) === curStaffId,
+      );
+      if (!ok)
+        group.patchValue({ staffId: '', staffName: '' }, { emitEvent: false });
+    }
+  }
 
-    console.log('Filtered Staff:', this.filteredStaffMap[index]);
-    group.patchValue({
-      staffId: '',
-      staffName: ''
+  onStaffChange(index: number) {
+    const group = this.staffFA.at(index) as FormGroup;
+    const sId = safeTrim(group.get('staffId')?.value);
+    const st = (this.staffList || []).find(
+      (s: any) => safeTrim(s?.staffId || s?._id) === sId,
+    );
+    if (st) {
+      group.patchValue(
+        { staffName: safeTrim(st?.staffName) },
+        { emitEvent: false },
+      );
+    } else {
+      group.patchValue({ staffName: '' }, { emitEvent: false });
+    }
+  }
+
+  loadBatch() {
+    this.loading = true;
+    const payload = {
+      entiId: this.entiId,
+      batchId: this.batchId,
+      includeStudents: true,
+    };
+    this.commonApi.fetchData(payload, this.moduleName, 'view').subscribe({
+      next: (res: any) => {
+        this.loading = false;
+        this.batch = res?.data || null;
+        this.rebuildShuffleTargets();
+        this.studentRows = this.batch?.students || [];
+        this.selected.clear();
+        this.editForm.patchValue({
+          batchName: this.batch?.batchName,
+          batchCode: this.batch?.batchCode,
+          startDate: this.epochMsToDateInput(this.batch?.startDate),
+          endDate: this.epochMsToDateInput(this.batch?.endDate),
+          status: this.batch?.status || 'ACTIVE',
+          remarks: this.batch?.remarks || '',
+        });
+        this.staffFA.clear();
+        const sm = Array.isArray(this.batch?.staffMap)
+          ? this.batch.staffMap
+          : [];
+        sm.forEach((r: any) => this.staffFA.push(this.staffRowGroup(r)));
+        const base = this.staffOptionsAll?.length
+          ? [...this.staffOptionsAll]
+          : [{ label: '-- Select Faculty --', value: '' }];
+        this.staffOptionsByRow = Array(this.staffFA.length)
+          .fill(null)
+          .map(() => [...base]);
+        if ((this.staffList || []).length) {
+          for (let i = 0; i < this.staffFA.length; i++) {
+            const g = this.staffFA.at(i) as FormGroup;
+            const sid = safeTrim(g.get('subjectId')?.value);
+            if (sid) this.onSubjectChange(i);
+          }
+        }
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(err?.error?.message || 'Failed to load batch');
+      },
     });
   }
 
-
-  // onStaffChange(index: number) {
-  //   const group = this.staffFA.at(index);
-  //   const sId = group.get('staffId')?.value;
-  //   const st = this.staffList.find((s) => s.staffId === sId);
-  //   if (st) {
-  //     group.patchValue({ staffName: st.staffName });
-  //   }
-  // }
-  onStaffChange(index: number) {
-    const group = this.staffFA.at(index);
-    const staffId = group.get('staffId')?.value;
-
-    const staff = this.staffList.find(
-      s => s.staffId === staffId
-    );
-
-    if (staff) {
-      group.patchValue({
-        staffName: staff.staffName
-      });
+  openOffcanvas(mode: 'edit' | 'staff' | 'assign' | 'shuffle') {
+    if (
+      this.isClosed() &&
+      (mode === 'edit' ||
+        mode === 'staff' ||
+        mode === 'assign' ||
+        mode === 'shuffle')
+    ) {
+      this.alert.error('Batch is CLOSED. No changes allowed.');
+      return;
     }
+    this.offcanvasMode = mode;
+    if (mode === 'staff') {
+      if (!this.subjectsList.length) {
+        this.commonApi
+          .fetchData(
+            { entiId: this.entiId, batchId: this.batchId },
+            this.moduleName,
+            'subjects',
+          )
+          .subscribe({
+            next: (res: any) => {
+              this.subjectsList = res?.data || [];
+              this.subjectsOptions = [
+                { label: '-- Select Subject --', value: '' },
+              ].concat(
+                this.subjectsList.map((s: any) => ({
+                  label: `${s?.subjectName || '-'} (${s?.subjectCode || '-'})`,
+                  value: safeTrim(s?.subjectId || s?._id),
+                  _raw: s,
+                })),
+              );
+            },
+          });
+      }
+      if (!this.staffList.length) {
+        this.commonApi
+          .fetchData({ entiId: this.entiId }, 'ims', 'staff/list?list=full')
+          .subscribe({
+            next: (res: any) => {
+              const all = res?.data || [];
+              this.staffList = (all || []).filter(
+                (s: any) =>
+                  safeTrim(s?.facultyType).toUpperCase() === 'TEACHING',
+              );
+              this.staffOptionsAll = [
+                { label: '-- Select Faculty --', value: '' },
+              ].concat(
+                this.staffList.map((s: any) => ({
+                  label: `${s?.staffName || '-'} (${s?.staffCode || '-'})`,
+                  value: safeTrim(s?.staffId || s?._id),
+                  _raw: s,
+                })),
+              );
+              this.staffOptionsByRow = Array(this.staffFA.length)
+                .fill(null)
+                .map(() => [...this.staffOptionsAll]);
+            },
+          });
+      }
+    }
+    if (mode === 'assign') {
+      this.eligibleSelected.clear();
+      this.eligibleQuery = { page: 1, limit: 20, search: '' };
+      this.loadEligible();
+    }
+    if (mode === 'shuffle') {
+      if (this.isClosed()) {
+        this.alert.error('Batch is CLOSED. No changes allowed.');
+        this.closeOffcanvas();
+        return;
+      }
+      const ids = Array.from(this.selected);
+      if (!ids.length) {
+        this.alert.error('Select students from the list first');
+        this.closeOffcanvas();
+        return;
+      }
+      this.shuffleToBatchId = '';
+      this.rebuildShuffleTargets();
+    }
+  }
+
+  closeOffcanvas() {
+    this.offcanvasMode = 'none';
+  }
+
+  toggleSelect(studentId: string, checked: boolean) {
+    const sid = safeTrim(studentId);
+    if (!sid) return;
+    checked ? this.selected.add(sid) : this.selected.delete(sid);
+  }
+
+  selectAllCurrent(checked: boolean) {
+    if (checked)
+      this.studentRows.forEach((s) => this.selected.add(safeTrim(s.studentId)));
+    else this.selected.clear();
+  }
+
+  saveBatch() {
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+    const v = this.editForm.value;
+    const startMs = this.dateToEpochMs(v.startDate);
+    const endMs = this.dateToEpochMs(v.endDate);
+
+    if (startMs >= endMs) {
+      this.alert.error('End Date must be after Start Date');
+      return;
+    }
+    const payload = {
+      entiId: this.entiId,
+      userId: this.userId(),
+      batchId: this.batchId,
+      batchName: safeTrim(v.batchName),
+      batchCode: safeTrim(v.batchCode),
+      startDate: startMs,
+      endDate: endMs,
+      status: safeTrim(v.status),
+      remarks: safeTrim(v.remarks) || null,
+    };
+    this.loading = true;
+    this.commonApi.fetchData(payload, this.moduleName, 'update').subscribe({
+      next: () => {
+        this.loading = false;
+        this.alert.success('Batch updated');
+        this.closeOffcanvas();
+        this.loadBatch();
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(err?.error?.message || 'Update failed');
+      },
+    });
   }
 
   addStaffRow() {
     this.staffFA.push(this.staffRowGroup());
+    this.staffOptionsByRow.push([
+      ...(this.staffOptionsAll || [
+        { label: '-- Select Faculty --', value: '' },
+      ]),
+    ]);
+  }
+
+  removeStaffRow(i: number) {
+    this.staffFA.removeAt(i);
+    if (i >= 0 && i < this.staffOptionsByRow.length)
+      this.staffOptionsByRow.splice(i, 1);
   }
 
   saveStaffMap() {
@@ -309,12 +416,12 @@ export class ViewBatchComponent {
     this.commonApi
       .fetchData(
         {
-          entiId: localStorage.getItem('tenantId'),
+          entiId: this.entiId,
           userId: this.userId(),
           batchId: this.batchId,
           staffMap,
         },
-        'batch',
+        this.moduleName,
         'staff/save',
       )
       .subscribe({
@@ -331,11 +438,6 @@ export class ViewBatchComponent {
       });
   }
 
-  // openStudent() {
-  //   this.showStudentPanel = true;
-  // }
-
-  // Assign Student
   loadEligible() {
     const qp =
       `?page=${this.eligibleQuery.page}&limit=${this.eligibleQuery.limit}` +
@@ -343,8 +445,8 @@ export class ViewBatchComponent {
     this.loading = true;
     this.commonApi
       .fetchData(
-        { entiId: localStorage.getItem('tenantId'), batchId: this.batchId },
-        'batch',
+        { entiId: this.entiId, batchId: this.batchId },
+        this.moduleName,
         `students/eligible${qp}`,
       )
       .subscribe({
@@ -355,62 +457,6 @@ export class ViewBatchComponent {
         },
         error: () => (this.loading = false),
       });
-  }
-
-  openStudent(mode: 'edit' | 'staff' | 'assign' | 'shuffle') {
-    this.showStudentPanel = true;
-    this.offcanvasMode = mode;
-
-    if (mode === 'staff') {
-      // Fetch Subjects
-      if (!this.subjectsList.length) {
-        this.commonApi
-          .fetchData(
-            { entiId: localStorage.getItem('tenantId'), batchId: this.batchId },
-            'batch',
-            'subjects',
-          )
-          .subscribe({
-            next: (res: any) => {
-              this.subjectsList = res?.data || [];
-              // this.subject_options = res?.data || [];
-            },
-          });
-      }
-      // Fetch Staff
-      if (!this.staffList.length) {
-        // Using tenant module for staff list as per your context (or wherever 'staff/list' points to)
-        this.commonApi
-          .fetchData({ entiId: localStorage.getItem('tenantId') }, 'ims/staff', 'list?list=full')
-          .subscribe({
-            next: (res: any) => {
-              this.staffList = res?.data || [];
-              // this.faculty_options = res?.datea || [];
-            },
-          });
-      }
-    }
-
-    if (mode === 'assign') {
-      this.eligibleSelected.clear();
-      this.eligibleQuery = { page: 1, limit: 20, search: '' };
-      this.loadEligible();
-    }
-
-    if (mode === 'shuffle') {
-      const ids = Array.from(this.selected);
-      if (!ids.length) {
-        this.alert.error('Select students from the list first');
-        this.closeOffcanvas();
-        return;
-      }
-      this.shuffleToBatchId = '';
-    }
-  }
-
-  closeOffcanvas() {
-    this.offcanvasMode = 'none';
-    this.showStudentPanel = false;
   }
 
   toggleEligible(id: string, checked: boolean) {
@@ -428,12 +474,12 @@ export class ViewBatchComponent {
     this.commonApi
       .fetchData(
         {
-          entiId: localStorage.getItem('tenantId'),
+          entiId: this.entiId,
           userId: this.userId(),
           batchId: this.batchId,
           studentIds: ids,
         },
-        'batch',
+        this.moduleName,
         'students/assign',
       )
       .subscribe({
@@ -450,8 +496,77 @@ export class ViewBatchComponent {
       });
   }
 
-  closeStudent() {
-    this.showStudentPanel = false;
+  loadBatchesFullForShuffle() {
+    this.commonApi
+      .fetchData({ entiId: this.entiId }, this.moduleName, 'list?list=full')
+      .subscribe({
+        next: (res: any) => {
+          this.allBatchesRaw = res?.data || [];
+          this.rebuildShuffleTargets();
+        },
+        error: () => {
+          this.allBatchesRaw = [];
+          this.batchesFull = [];
+        },
+      });
+  }
+
+  shuffleSelected() {
+    if (this.isClosed()) {
+      this.alert.error('Batch is CLOSED. No changes allowed.');
+      return;
+    }
+    const ids = Array.from(this.selected);
+    if (!ids.length) {
+      this.alert.error('Select students first');
+      return;
+    }
+    const toId = safeTrim(this.shuffleToBatchId);
+    if (!toId) {
+      this.alert.error('Select target batch');
+      return;
+    }
+    if (toId === safeTrim(this.batchId)) {
+      this.alert.error('Target batch cannot be same as current batch');
+      return;
+    }
+    const toBatch = this.getBatchByIdLocal(toId);
+    if (!toBatch) {
+      this.alert.error('Target batch not found');
+      return;
+    }
+    if (!this.isSameCore(this.batch, toBatch)) {
+      this.alert.error(
+        'Cannot shuffle to a batch with different Program / Academic Year / Center',
+      );
+      return;
+    }
+    this.loading = true;
+    this.commonApi
+      .fetchData(
+        {
+          entiId: this.entiId,
+          userId: this.userId(),
+          fromBatchId: this.batchId,
+          toBatchId: toId,
+          studentIds: ids,
+        },
+        this.moduleName,
+        'students/shuffle',
+      )
+      .subscribe({
+        next: () => {
+          this.loading = false;
+          this.alert.success('Students shuffled');
+          this.closeOffcanvas();
+          this.selected.clear();
+          this.loadBatch();
+        },
+        error: (err: any) => {
+          this.loading = false;
+          this.alert.error(err?.error?.message || 'Shuffle failed');
+        },
+      });
   }
 
   triggerConfirmation(type: 'closeBatch' | 'removeStudents') {
@@ -478,20 +593,24 @@ export class ViewBatchComponent {
         action: () => this.executeRemoveStudents(),
       };
     }
-
     if (!this.bsModal) {
       this.bsModal = new bootstrap.Modal(this.confirmModalRef.nativeElement);
     }
     this.bsModal.show();
   }
 
+  confirmAction() {
+    this.confirmData.action();
+    this.bsModal.hide();
+  }
+
   executeCloseBatch() {
     this.loading = true;
     this.commonApi
       .fetchData(
-        { entiId: localStorage.getItem('tenantId'), userId: this.userId(), batchId: this.batchId },
-        'batch',
-        'batch/close',
+        { entiId: this.entiId, userId: this.userId(), batchId: this.batchId },
+        this.moduleName,
+        'close',
       )
       .subscribe({
         next: () => {
@@ -511,8 +630,8 @@ export class ViewBatchComponent {
     this.loading = true;
     this.commonApi
       .fetchData(
-        { entiId: localStorage.getItem('tenantId'), userId: this.userId(), studentIds: ids },
-        'batch',
+        { entiId: this.entiId, userId: this.userId(), studentIds: ids },
+        this.moduleName,
         'students/remove',
       )
       .subscribe({
@@ -529,71 +648,74 @@ export class ViewBatchComponent {
       });
   }
 
-  onStudentToggle(event: Event) {
-    const checked = (event.target as HTMLInputElement).checked;
-    this.selectedCount += checked ? 1 : -1;
+  back() {
+    this.router.navigate(['/app/batches']);
   }
 
-  openFaculty() {
-    this.showFacultyPanel = true;
+  isClosed(): boolean {
+    return safeTrim(this.batch?.status).toUpperCase() === 'CLOSED';
   }
 
-  closeFaculty() {
-    this.showFacultyPanel = false;
+  canEditBatch(): boolean {
+    return !this.isClosed();
   }
 
-  saveBatch() {
-    if (this.editForm.invalid) {
-      this.editForm.markAllAsTouched();
-      return;
-    }
-    const v = this.editForm.value;
-    const startMs = this.dateToEpochMs(v.startDate);
-    const endMs = this.dateToEpochMs(v.endDate);
-
-    if (startMs >= endMs) {
-      this.alert.error('End Date must be after Start Date');
-      return;
-    }
-
-    const payload = {
-      entiId: localStorage.getItem('tenantId'),
-      userId: this.userId(),
-      batchId: this.batchId,
-      batchName: safeTrim(v.batchName),
-      batchCode: safeTrim(v.batchCode),
-      startDate: startMs,
-      endDate: endMs,
-      status: safeTrim(v.status),
-      remarks: safeTrim(v.remarks) || null,
-    };
-
-    this.loading = true;
-    this.commonApi.fetchData(payload, 'batch', 'update').subscribe({
-      next: () => {
-        this.loading = false;
-        this.alert.success('Batch updated');
-        this.closeOffcanvas();
-        this.loadBatch();
-      },
-      error: (err: any) => {
-        this.loading = false;
-        this.alert.error(err?.error?.message || 'Update failed');
-      },
-    });
+  canManageStudents(): boolean {
+    return !this.isClosed();
   }
 
-  private dateToEpochMs(dateStr: any): number {
-    const s = safeTrim(dateStr);
-    if (!s) return 0;
-    const d = new Date(`${s}T00:00:00`);
-    return Number.isFinite(d.getTime()) ? d.getTime() : 0;
+  canManageFaculty(): boolean {
+    return !this.isClosed();
   }
 
-  private userId() {
+  private getBatchByIdLocal(batchId: string) {
+    const id = safeTrim(batchId);
+    if (!id) return null;
     return (
-      localStorage.getItem('userId') || localStorage.getItem('userid') || null
+      (this.batchesFull || []).find((b: any) => this.pickBatchId(b) === id) ||
+      null
     );
   }
 
+  private isSameCore(a: any, b: any): boolean {
+    return (
+      safeTrim(a?.programId) === safeTrim(b?.programId) &&
+      safeTrim(a?.academicYear) === safeTrim(b?.academicYear) &&
+      safeTrim(a?.centerId) === safeTrim(b?.centerId)
+    );
+  }
+
+  private rebuildShuffleTargets() {
+    const cur = this.batch || null;
+    const curId = safeTrim(this.batchId);
+    const all = Array.isArray(this.allBatchesRaw) ? this.allBatchesRaw : [];
+    const list = all.filter((b: any) => {
+      const bid = this.pickBatchId(b);
+      if (!bid || bid === curId) return false;
+      if (!cur) return true;
+      const st = safeTrim(b?.status).toUpperCase();
+      if (st === 'CLOSED' || st === 'INACTIVE') return false;
+      return (
+        safeTrim(b?.programId) === safeTrim(cur?.programId) &&
+        safeTrim(b?.academicYear) === safeTrim(cur?.academicYear) &&
+        safeTrim(b?.centerId) === safeTrim(cur?.centerId)
+      );
+    });
+    this.batchesFull = list;
+    this.rebuildShuffleTargetOptions();
+  }
+
+  private pickBatchId(b: any): string {
+    return safeTrim(b?.batchId || b?._id || '');
+  }
+
+  private rebuildShuffleTargetOptions() {
+    this.batchesFullOptions = [{ label: '-- Select --', value: '' }].concat(
+      (this.batchesFull || []).map((b: any) => ({
+        label: `${safeTrim(b?.batchName || '-')} (${safeTrim(b?.batchCode || '-')})`,
+        value: this.pickBatchId(b),
+        _raw: b,
+      })),
+    );
+  }
 }

@@ -6,22 +6,25 @@
                 Create and manage batch, faculty mapping and student assignment.
             </div>
         </div>
-
         <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-secondary" (click)="refresh()">
+            <button class="btn btn-outline-secondary rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                (click)="toggleFilters()">
+                <i class="fa-solid fa-filter"></i>
+                {{ showFilters ? 'Hide Filters' : 'Filters' }}
+            </button>
+            <button class="btn btn-outline-primary rounded-pill me-1 mb-1 fs-16 fw-medium" (click)="refresh()">
                 <i class="fa-solid fa-rotate"></i> Refresh
             </button>
-            <button class="btn btn-sm btn-saffron" (click)="openCreate()">
+            <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" (click)="openCreate()">
                 <i class="fa-solid fa-plus"></i> Create Batch
             </button>
         </div>
     </div>
 </div>
-
 <div class="row g-3">
     <div class="col-12">
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-0">
+            <div class="card-header bg-white border-0" *ngIf="showFilters">
                 <form [formGroup]="filterForm" class="row g-2 align-items-end">
                     <div class="col-12 col-md-4">
                         <formfield label="Search" formControlName="search" [control]="filterForm.get('search')"
@@ -53,16 +56,15 @@
                     </div>
                 </form>
             </div>
-
-            <div class="card-body pt-0">
-                <custom-table [autoFitChars]="true" (requestData)="loadBatches($event)" [columns]="columns"
-                    [totalRecords]="totalRecords" [data]="batchRows" [actions]="actions" [showpageoptions]="true">
+            <div class="card-body pt-0 mt-3">
+                <custom-table [autoFitChars]="true" [showsearch]="false" (requestData)="loadBatches($event)"
+                    [columns]="columns" [totalRecords]="totalRecords" [data]="batchRows" [actions]="actions"
+                    [showpageoptions]="true">
                 </custom-table>
             </div>
         </div>
     </div>
 </div>
-
 <!-- CREATE MODAL -->
 <div class="modal-backdrop fade show" *ngIf="showEditorModal"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showEditorModal">
@@ -84,7 +86,6 @@
                             [control]="editorForm.get('batchCode')" placeholder="e.g., BAT-01">
                         </formfield>
                     </div>
-
                     <div class="col-12 col-md-4">
                         <selectbox label="Course Start Year" [required]="true" formControlName="courseStartYear"
                             [control]="editorForm.get('courseStartYear')" [options]="courseStartYearOptions"
@@ -116,7 +117,6 @@
                     </div>
                 </form>
             </div>
-
             <div class="modal-footer">
                 <button class="btn btn-sm btn-outline-secondary" (click)="closeEditorModal()">
                     Cancel
@@ -131,7 +131,6 @@
         </div>
     </div>
 </div>
-
 <!-- ASSIGN STUDENTS MODAL -->
 <div class="modal-backdrop fade show" *ngIf="showAssignModal"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showAssignModal">
@@ -192,7 +191,6 @@
         </div>
     </div>
 </div>
-
 <!-- STAFF MAP MODAL -->
 <div class="modal-backdrop fade show" *ngIf="showStaffModal"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showStaffModal">

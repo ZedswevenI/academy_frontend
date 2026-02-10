@@ -15,13 +15,11 @@ export class SidebarComponent {
   @Input() open = false;
   @Output() close = new EventEmitter<void>();
 
-  constructor(private router: Router){}
+  constructor(private router: Router) {}
 
-  logout(){
+  logout() {
     this.router.navigate(['/auth/login']);
   }
-
-
 
   toggleMenu(menu: any) {
     menu.expanded = !menu.expanded;

@@ -108,6 +108,10 @@ export class BatchComponent {
   eligibleSearch = '';
   staffOptionsAll: any[] = [{ label: 'Select', value: '' }];
   staffOptionsFiltered: any[] = [{ label: 'Select', value: '' }];
+  showFilters = false;
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
 
   constructor(
     private fb: FormBuilder,
