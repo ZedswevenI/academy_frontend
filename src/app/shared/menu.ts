@@ -64,7 +64,7 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/enableassignment'
   },
   {
-    label: 'Tests',
+    label: 'Assignment Manage',
     icon: 'fa-solid fa-file-pen',
     route: '/app/tests'
   },

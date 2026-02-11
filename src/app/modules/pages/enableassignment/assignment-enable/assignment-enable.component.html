@@ -31,33 +31,47 @@
             </div>
             <div class="col-12 d-flex justify-content-end gap-2 mt-1">
                 <button type="button" class="btn btn-sm btn-primary" (click)="loadTopics()"
-                    [disabled]="loading || !filterForm.get('batchId')?.value">
-                    <i class="fa-solid fa-list-check me-1"></i> Load Topics
+                    [disabled]="loading || topicsLoading || !filterForm.get('batchId')?.value">
+                    <i class="fa-solid fa-list-check me-1"></i>
+                    {{ topicsLoading ? 'Loading...' : 'Load Topics' }}
                 </button>
+            </div>
+            <div class="col-12" *ngIf="subjectsLoading || batchesLoading">
+                <div class="text-muted small d-flex align-items-center gap-2">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <span *ngIf="subjectsLoading">Loading subjects...</span>
+                    <span *ngIf="!subjectsLoading && batchesLoading">Loading batches...</span>
+                </div>
             </div>
         </form>
         <hr class="my-3" />
-        <div *ngIf="topics.length">
+        <div *ngIf="topicsLoading" class="text-center py-5">
+            <div class="spinner-border" role="status"></div>
+            <div class="text-muted small mt-2">Loading topics...</div>
+        </div>
+        <div *ngIf="!topicsLoading && topics.length">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="fw-semibold">
-                    Topics ({{ topics.length }})
-                </div>
+                <div class="fw-semibold">Topics ({{ topics.length }})</div>
                 <div class="text-muted small">
                     Batch: <span class="fw-semibold">{{ selectedBatchLabel || '-' }}</span>
                 </div>
             </div>
+
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
+                            <th>S.No</th>
                             <th>Topic</th>
                             <th style="width: 180px;">Topic Code</th>
                             <th style="width: 140px;" class="text-center">Status</th>
-                            <th style="width: 220px;" class="text-end pe-3">Action</th>
+                            <th style="width: 260px;" class="text-end pe-3">Action</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        <tr *ngFor="let t of topics">
+                        <tr *ngFor="let t of topics;let i=index">
+                            <td>{{i+1}}</td>
                             <td class="fw-semibold">{{ t?.topicName }}</td>
                             <td>{{ t?.topicCode || '-' }}</td>
                             <td class="text-center">
@@ -68,13 +82,19 @@
                             <td class="text-end pe-3">
                                 <button class="btn btn-sm btn-success" *ngIf="!t?.enabled" (click)="enableTopic(t)"
                                     [disabled]="loading || t?.enabling">
-                                    <i class="fa-solid fa-toggle-on me-1"></i>
                                     {{ t?.enabling ? 'Enabling...' : 'Enable' }}
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary" *ngIf="t?.enabled"
-                                    (click)="openTestsModal(t)" [disabled]="loading">
-                                    <i class="fa-regular fa-eye me-1"></i> View
-                                </button>
+                                <ng-container *ngIf="t?.enabled">
+                                    <button class="btn btn-sm btn-outline-secondary me-2" style="border: none;"
+                                        (click)="openTestsModal(t)" [disabled]="loading || modalLoading">
+                                        <i class="fa-regular fa-eye"
+                                            style="font-size: 18px;font-weight: 500;color: #000;"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" (click)="openDisableModal(t)"
+                                        [disabled]="loading || t?.disabling">
+                                        {{ t?.disabling ? 'Disabling...' : 'Disable' }}
+                                    </button>
+                                </ng-container>
                             </td>
                         </tr>
                         <tr *ngIf="!topics.length">
@@ -84,12 +104,14 @@
                 </table>
             </div>
         </div>
+
         <div *ngIf="!topics.length && topicsLoaded" class="text-center text-muted py-4">
             No topics loaded. Select Class/Subject/Batch and click <b>Load Topics</b>.
         </div>
     </div>
 </div>
 
+<!-- TESTS MODAL -->
 <div class="modal fade" #testsModal tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -97,25 +119,27 @@
                 <div>
                     <div class="fw-semibold">Enabled Tests</div>
                     <div class="text-muted small">
-                        Topic: <b>{{ modalTopic?.topicName || '-' }}</b> • Batch: <b>{{ selectedBatchLabel || '-' }}</b>
+                        Topic: <b>{{ modalTopic?.topicName || '-' }}</b>
+                        • Batch: <b>{{ selectedBatchLabel || '-' }}</b>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body">
                 <div *ngIf="modalLoading" class="text-center py-4">
                     <div class="spinner-border" role="status"></div>
                 </div>
+
                 <div *ngIf="!modalLoading" class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
                                 <th>Topic</th>
-                                <th>Topic Code</th>
-                                <th>SubTopic</th>
-                                <th>SubTopic Code</th>
-                                <th>Exam Category</th>
-                                <th>Exam SubCategory</th>
+                                <th>Topic code</th>
+                                <th>Subtopic</th>
+                                <th>Category</th>
+                                <th>SubCategory</th>
                                 <th style="width: 110px;">Test No</th>
                                 <th style="width: 120px;" class="text-end">View</th>
                             </tr>
@@ -125,9 +149,8 @@
                                 <td class="fw-semibold">{{ r?.topicName || '-' }}</td>
                                 <td>{{ r?.topicCode || '-' }}</td>
                                 <td class="fw-semibold">{{ r?.subTopicName || '-' }}</td>
-                                <td>{{ r?.subTopicCode || '-' }}</td>
-                                <td>{{ r?.categoryName || r?.categoryId || '-' }}</td>
-                                <td>{{ r?.subCategoryName || r?.subCategoryId || '-' }}</td>
+                                <td>{{ r?.examCategory || r?.categoryId || '-' }}</td>
+                                <td>{{ r?.examSubCategory || r?.subCategoryId || '-' }}</td>
                                 <td class="fw-semibold">{{ r?.testNo || '-' }}</td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary" (click)="viewTest(r)">
@@ -135,6 +158,7 @@
                                     </button>
                                 </td>
                             </tr>
+
                             <tr *ngIf="!modalRows.length">
                                 <td colspan="8" class="text-center text-muted py-4">No tests found.</td>
                             </tr>
@@ -142,8 +166,48 @@
                     </table>
                 </div>
             </div>
+
             <div class="modal-footer">
                 <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DISABLE CONFIRM MODAL -->
+<div class="modal fade" #disableModal tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <div class="fw-semibold text-danger">
+                    Disable Assignment Enablement?
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert-warning small mb-3">
+                    This will <b>disable all enabled tests</b> under
+                    <b>{{ disableTopicRef?.topicName || '-' }}</b> for this batch.
+                    <br />
+                    To confirm, type <b>disable</b> below.
+                </div>
+
+                <input type="text" class="form-control" [(ngModel)]="disableConfirmText"
+                    [ngModelOptions]="{ standalone: true }" placeholder="Type disable" />
+                <div class="text-muted small mt-2">
+                    Batch: <b>{{ selectedBatchLabel || '-' }}</b>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button class="btn btn-sm btn-danger" (click)="confirmDisable()"
+                    [disabled]="loading || disableConfirmText.toLowerCase() !== 'disable'">
+                    Disable Now
+                </button>
             </div>
         </div>
     </div>

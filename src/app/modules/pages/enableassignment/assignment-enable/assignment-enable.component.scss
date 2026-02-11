@@ -1,0 +1,23 @@
+.toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 10px;
+  gap: 8px;
+}
+
+.toggle-pill-success {
+  background: #eaf8ef;
+  color: #198754;
+  border: 1px solid #bfe6cc;
+}
+
+.toggle-pill-danger {
+  background: #fde8ea;
+  color: #dc3545;
+  border: 1px solid #f5b7bf;
+}
+
+.toggle-pill togglebtn .d-flex {
+  margin-bottom: 0 !important;
+}

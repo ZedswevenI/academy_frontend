@@ -35,20 +35,26 @@ export class AssignmentEnableComponent implements OnInit {
   batchesRaw: any[] = [];
   topics: any[] = [];
   topicsLoaded = false;
+  topicsLoading = false;
   selectedBatchLabel = '';
+  private moduleName = 'assignment';
   @ViewChild('testsModal') testsModalRef!: ElementRef;
   private bsTestsModal: any;
   modalLoading = false;
   modalTopic: any = null;
   modalRows: any[] = [];
-  private moduleName = 'assignment';
-  topicsLoading = false;
+  @ViewChild('disableModal') disableModalRef!: ElementRef;
+  private bsDisableModal: any;
+  disableTopicRef: any = null;
+  disableConfirmText = '';
+  subjectsLoading = false;
+  batchesLoading = false;
 
   constructor(
     private fb: FormBuilder,
     private alert: AlertService,
     private commonApi: CommonapiService,
-    private breadcrump : BredcrumpService
+    private breadcrump: BredcrumpService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.userId =
@@ -60,17 +66,25 @@ export class AssignmentEnableComponent implements OnInit {
     this.classOptions = this.classOptions.concat(
       [6, 7, 8, 9, 10, 11, 12, 13].map((c) => ({ label: String(c), value: c })),
     );
+
     this.filterForm = this.fb.group({
       classNo: ['', [Validators.required]],
       subjectId: ['', [Validators.required]],
       batchId: ['', [Validators.required]],
     });
+
     this.filterForm
       .get('classNo')
       ?.valueChanges.subscribe(() => this.onClassOrSubjectChanged());
     this.filterForm
       .get('subjectId')
       ?.valueChanges.subscribe(() => this.onClassOrSubjectChanged());
+    this.filterForm.get('batchId')?.valueChanges.subscribe(() => {
+      this.topics = [];
+      this.topicsLoaded = false;
+      this.selectedBatchLabel = this.getSelectedBatchLabel();
+    });
+
     this.loadSubjects();
   }
 
@@ -91,10 +105,12 @@ export class AssignmentEnableComponent implements OnInit {
   }
 
   loadSubjects() {
+    this.subjectsLoading = true;
     this.commonApi
       .fetchData({ entiId: this.entiId }, 'ims', 'subject/list?list=full')
       .subscribe({
         next: (res: any) => {
+          this.subjectsLoading = false;
           this.subjectsList = res?.data || [];
           this.subjectOptions = [
             { label: '-- Select Subject --', value: '' },
@@ -107,6 +123,7 @@ export class AssignmentEnableComponent implements OnInit {
           );
         },
         error: () => {
+          this.subjectsLoading = false;
           this.subjectsList = [];
           this.subjectOptions = [{ label: '-- Select Subject --', value: '' }];
         },
@@ -114,12 +131,9 @@ export class AssignmentEnableComponent implements OnInit {
   }
 
   loadBatches() {
-    if (!this.canShowBatch()) {
-      this.alert.error('Select class and subject');
-      return;
-    }
+    if (!this.canShowBatch()) return;
+    this.batchesLoading = true;
     const classNo = toNum(this.filterForm.get('classNo')?.value);
-    const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
     this.loading = true;
     this.commonApi
       .fetchData({ entiId: this.entiId }, 'batch', 'list?list=full')
@@ -133,7 +147,6 @@ export class AssignmentEnableComponent implements OnInit {
             if (toNum(b?.classNo) !== classNo) return false;
             return true;
           });
-          console.log('this.batchesRaw ', this.batchesRaw);
           this.batchOptions = [
             { label: '-- Select Batch --', value: '' },
           ].concat(
@@ -143,11 +156,10 @@ export class AssignmentEnableComponent implements OnInit {
               _raw: b,
             })),
           );
-          if (!this.batchesRaw.length) {
-            this.alert.success('No batches found for selected Class + Subject');
-          }
+          this.batchesLoading = false;
         },
         error: (err: any) => {
+          this.batchesLoading = false;
           this.loading = false;
           this.batchesRaw = [];
           this.batchOptions = [{ label: '-- Select Batch --', value: '' }];
@@ -156,21 +168,48 @@ export class AssignmentEnableComponent implements OnInit {
       });
   }
 
-  loadTopics() {
-    const classNo = Number(this.filterForm.get('classNo')?.value || 0);
+  private getSelectedBatchLabel(): string {
+    const bid = safeTrim(this.filterForm.get('batchId')?.value);
+    if (!bid) return '';
+    const opt = (this.batchOptions || []).find(
+      (o: any) => safeTrim(o?.value) === bid,
+    );
+    return safeTrim(opt?.label || '');
+  }
+
+  onClassOrSubjectChanged() {
+    this.filterForm.patchValue({ batchId: '' }, { emitEvent: false });
+    this.batchOptions = [{ label: '-- Select Batch --', value: '' }];
+    this.batchesRaw = [];
+    this.topics = [];
+    this.topicsLoaded = false;
+    this.selectedBatchLabel = '';
+    const classNo = toNum(this.filterForm.get('classNo')?.value);
     const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
-    if (!classNo || !subjectId) {
-      this.topics = [];
-      this.topicsLoaded = false;
+    if (!classNo || !subjectId) return;
+
+    this.loadBatches();
+  }
+
+  loadTopics() {
+    const classNo = toNum(this.filterForm.get('classNo')?.value);
+    const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
+    const batchId = safeTrim(this.filterForm.get('batchId')?.value);
+    if (!classNo || !subjectId || !batchId) {
+      this.alert.error('Select class, subject and batch');
       return;
     }
-    const qp =
-      `?list=full&classNo=${encodeURIComponent(String(classNo))}` +
-      `&subjectId=${encodeURIComponent(subjectId)}`;
+    this.selectedBatchLabel = this.getSelectedBatchLabel();
     this.topicsLoading = true;
     this.topicsLoaded = false;
+    this.topics = [];
+    const qp = `?classNo=${encodeURIComponent(String(classNo))}&subjectId=${encodeURIComponent(subjectId)}`;
     this.commonApi
-      .fetchData({ entiId: this.entiId }, 'ims/topic', `list${qp}`)
+      .fetchData(
+        { entiId: this.entiId, batchId },
+        this.moduleName,
+        `topic/enablestatus${qp}`,
+      )
       .subscribe({
         next: (res: any) => {
           this.topicsLoading = false;
@@ -180,7 +219,7 @@ export class AssignmentEnableComponent implements OnInit {
         error: (err: any) => {
           this.topicsLoading = false;
           this.topics = [];
-          this.topicsLoaded = false;
+          this.topicsLoaded = true;
           this.alert.error(err?.error?.message || 'Failed to load topics');
         },
       });
@@ -195,22 +234,23 @@ export class AssignmentEnableComponent implements OnInit {
     const classNo = toNum(this.filterForm.get('classNo')?.value);
     const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
     const batchId = safeTrim(this.filterForm.get('batchId')?.value);
+    const topicId = safeTrim(topic?.topicId);
+    if (!classNo || !subjectId || !batchId || !topicId) {
+      this.alert.error('Select class, subject, batch and topic');
+      return;
+    }
     topic.enabling = true;
+    const qp =
+      `?list=full` +
+      `&classNo=${encodeURIComponent(String(classNo))}` +
+      `&subjectId=${encodeURIComponent(subjectId)}` +
+      `&topicId=${encodeURIComponent(topicId)}`;
     this.commonApi
-      .fetchData(
-        {
-          entiId: this.entiId,
-          classNo,
-          subjectId,
-          topicId: safeTrim(topic?.topicId),
-        },
-        this.moduleName,
-        'tests/bytopic',
-      )
+      .fetchData({ entiId: this.entiId }, this.moduleName, `list${qp}`)
       .subscribe({
         next: (res: any) => {
-          const testsRaw = res?.data || [];
-          const tests = testsRaw
+          const rows = Array.isArray(res?.data) ? res.data : [];
+          const tests = rows
             .map((t: any) => ({
               testId: safeTrim(t?.testId),
               testNo:
@@ -229,14 +269,13 @@ export class AssignmentEnableComponent implements OnInit {
             .fetchData(
               {
                 entiId: this.entiId,
-                userId: this.userId,
                 batchId,
                 subjectId,
                 classNo,
                 tests,
               },
               this.moduleName,
-              'enable',
+              'enableto/batch',
             )
             .subscribe({
               next: () => {
@@ -259,44 +298,33 @@ export class AssignmentEnableComponent implements OnInit {
       });
   }
 
-  private markEnabledTopicsFromEnabledTests(
-    batchId: string,
-    subjectId: string,
-  ) {
-    this.commonApi
-      .fetchData(
-        { entiId: this.entiId, batchId, subjectId },
-        this.moduleName,
-        'enabled/list',
-      )
-      .subscribe({
-        next: () => {},
-        error: () => {},
-      });
-  }
-
   openTestsModal(topic: any) {
     if (!topic) return;
-    if (this.filterForm.invalid) {
-      this.alert.error('Select class, subject and batch');
+    const classNo = toNum(this.filterForm.get('classNo')?.value);
+    const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
+    const batchId = safeTrim(this.filterForm.get('batchId')?.value);
+    const topicId = safeTrim(topic?.topicId);
+    if (!classNo || !subjectId || !batchId || !topicId) {
+      this.alert.error('Select class, subject, batch and topic');
       return;
     }
     this.modalTopic = topic;
     this.modalRows = [];
     this.modalLoading = true;
-    const classNo = toNum(this.filterForm.get('classNo')?.value);
-    const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
-    const topicId = safeTrim(topic?.topicId);
+    const qp =
+      `?classNo=${encodeURIComponent(String(classNo))}` +
+      `&subjectId=${encodeURIComponent(subjectId)}` +
+      `&topicId=${encodeURIComponent(topicId)}`;
     this.commonApi
       .fetchData(
-        { entiId: this.entiId, classNo, subjectId, topicId },
+        { entiId: this.entiId, batchId },
         this.moduleName,
-        'tests/bytopic/full',
+        `enabled/tests/by-topic${qp}`,
       )
       .subscribe({
         next: (res: any) => {
           this.modalLoading = false;
-          this.modalRows = res?.data || [];
+          this.modalRows = Array.isArray(res?.data) ? res.data : [];
           this.showTestsModal();
         },
         error: (err: any) => {
@@ -317,15 +345,113 @@ export class AssignmentEnableComponent implements OnInit {
     this.alert.success(`View Test: ${row?.testNo || row?.testId || '-'}`);
   }
 
-  onClassOrSubjectChanged() {
-    this.filterForm.patchValue({ batchId: '' }, { emitEvent: false });
-    this.batchOptions = [{ label: '-- Select Batch --', value: '' }];
-    this.batchesRaw = [];
-    this.topics = [];
-    this.topicsLoaded = false;
-    const classNo = Number(this.filterForm.get('classNo')?.value || 0);
-    const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
-    if (!classNo || !subjectId) return;
-    this.loadBatches();
+  openDisableModal(topic: any) {
+    if (!topic) return;
+    const batchId = safeTrim(this.filterForm.get('batchId')?.value);
+    if (!batchId) {
+      this.alert.error('Select batch');
+      return;
+    }
+    this.disableTopicRef = topic;
+    this.disableConfirmText = '';
+    if (!this.bsDisableModal) {
+      this.bsDisableModal = new bootstrap.Modal(
+        this.disableModalRef.nativeElement,
+      );
+    }
+    this.bsDisableModal.show();
   }
+
+  confirmDisable() {
+    const txt = safeTrim(this.disableConfirmText).toLowerCase();
+    if (txt !== 'disable') {
+      this.alert.error('Type disable to confirm');
+      return;
+    }
+    const topic = this.disableTopicRef;
+    if (!topic) return;
+    const classNo = toNum(this.filterForm.get('classNo')?.value);
+    const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
+    const batchId = safeTrim(this.filterForm.get('batchId')?.value);
+    const topicId = safeTrim(topic?.topicId);
+    if (!classNo || !subjectId || !batchId || !topicId) {
+      this.alert.error('Select class, subject and batch');
+      return;
+    }
+    topic.disabling = true;
+    this.loading = true;
+    const qp =
+      `?classNo=${encodeURIComponent(String(classNo))}` +
+      `&subjectId=${encodeURIComponent(subjectId)}` +
+      `&topicId=${encodeURIComponent(topicId)}`;
+    this.commonApi
+      .fetchData(
+        { entiId: this.entiId, batchId },
+        this.moduleName,
+        `enabled/tests/by-topic${qp}`,
+      )
+      .subscribe({
+        next: (res: any) => {
+          const rows = Array.isArray(res?.data) ? res.data : [];
+          const testIds = rows
+            .map((r: any) => safeTrim(r?.testId))
+            .filter(Boolean);
+          if (!testIds.length) {
+            this.loading = false;
+            topic.disabling = false;
+            this.alert.success('No enabled tests found to disable');
+            try {
+              this.bsDisableModal?.hide();
+            } catch {}
+            topic.enabled = false;
+            return;
+          }
+          this.commonApi
+            .fetchData(
+              {
+                entiId: this.entiId,
+                userId: this.userId,
+                batchId,
+                subjectId,
+                testIds,
+              },
+              this.moduleName,
+              'disableto/batch',
+            )
+            .subscribe({
+              next: () => {
+                this.loading = false;
+                topic.disabling = false;
+                topic.enabled = false;
+                this.alert.success('Disabled successfully');
+                try {
+                  this.bsDisableModal?.hide();
+                } catch {}
+              },
+              error: (err: any) => {
+                this.loading = false;
+                topic.disabling = false;
+                this.alert.error(err?.error?.message || 'Disable failed');
+              },
+            });
+        },
+        error: (err: any) => {
+          this.loading = false;
+          topic.disabling = false;
+          this.alert.error(
+            err?.error?.message || 'Failed to load enabled tests for disable',
+          );
+        },
+      });
+  }
+
+  onTopicToggle(topic: any, nextVal: boolean) {
+  if (nextVal === true) {
+    topic.enabled = false;
+    this.enableTopic(topic);
+    return;
+  }
+  topic.enabled = true;
+  this.openDisableModal(topic);
+}
 }

@@ -387,7 +387,7 @@ export class SubTopicComponent {
       userId: localStorage.getItem('userId') || '',
       classNo: x.classNo,
       subjectId: x.subjectId,
-      topicId: x.topicId,
+      topicId: x.topicId.topicId,
       subTopicId: x.subTopicId,
     };
     this.api.fetchData(payload, this.moduleName, `subtopic/delete`).subscribe({
