@@ -151,8 +151,6 @@ export class TestimportComponent {
       this.alert.error('TenantId missing');
       return;
     }
-
-    // Convert observable to promise in your style (minimal)
     const p = (body: any, base: string, path: string) =>
       new Promise<any>((resolve, reject) => {
         this.commonApi.fetchData(body, base, path).subscribe({
@@ -160,9 +158,7 @@ export class TestimportComponent {
           error: (e: any) => reject(e)
         });
       });
-
     const body = { entiId: tenantId };
-
     const [subRes, topicRes, subTopicRes, catRes, subCatRes] = await Promise.all([
       p(body, 'ims/subject', 'list?list=full'),
       p(body, 'ims/topic', 'list?list=full'),
@@ -170,14 +166,11 @@ export class TestimportComponent {
       p(body, 'ims/exam/category', 'list?list=full'),
       p(body, 'ims/exam/subcategory', 'list?list=full')
     ]);
-
     this.subjects = subRes?.data || [];
     this.topics = topicRes?.data || [];
     this.subTopics = subTopicRes?.data || [];
     this.examCategories = catRes?.data || [];
     this.examSubCategories = subCatRes?.data || [];
-
-    // build lookup maps
     this.subjectByKey.clear();
     for (const s of this.subjects) {
       const id = String(s?._id || '').trim();
@@ -187,7 +180,6 @@ export class TestimportComponent {
       if (name) this.subjectByKey.set(name, s);
       if (id) this.subjectByKey.set(this.norm(id), s);
     }
-
     this.categoryByKey.clear();
     for (const c of this.examCategories) {
       const key1 = this.norm(c?.categoryId);
@@ -195,7 +187,6 @@ export class TestimportComponent {
       if (key1) this.categoryByKey.set(key1, c);
       if (key2) this.categoryByKey.set(key2, c);
     }
-
     this.subCategoryByKey.clear();
     for (const sc of this.examSubCategories) {
       const key1 = this.norm(sc?.subCategoryId);
@@ -203,28 +194,22 @@ export class TestimportComponent {
       if (key1) this.subCategoryByKey.set(key1, sc);
       if (key2) this.subCategoryByKey.set(key2, sc);
     }
-
-    // Topics + SubTopics must also match classNo + subject
-    // We'll use composite keys to avoid wrong matches
-    // topicKey: `${classNo}|${subjectObjectId}|${topicNameOrId}`
     this.topicByKey.clear();
     for (const t of this.topics) {
       const classNo = Number(t?.classNo || 0);
       const subjectObjId = this.norm(t?.subjectId?._id || t?.subjectId);
       const topicId = this.norm(t?.topicId);
-      const topicName = this.norm(t?.topicName);
+      const topicName = this.norm(t?.topicName.toUpperCase());
       if (classNo && subjectObjId) {
         if (topicId) this.topicByKey.set(`${classNo}|${subjectObjId}|${topicId}`, t);
         if (topicName) this.topicByKey.set(`${classNo}|${subjectObjId}|${topicName}`, t);
       }
     }
-
-    // subTopicKey: `${classNo}|${subjectObjectId}|${topicId}|${subTopicNameOrId}`
     this.subTopicByKey.clear();
     for (const st of this.subTopics) {
       const classNo = Number(st?.classNo || 0);
       const subjectObjId = this.norm(st?.subjectId?._id || st?.subjectId);
-      const topicId = this.norm(st?.topicId);
+      const topicId = this.norm(st?.topicId.topicId);
       const subTopicId = this.norm(st?.subTopicId);
       const subTopicName = this.norm(st?.subTopicName);
       if (classNo && subjectObjId && topicId) {
@@ -233,10 +218,6 @@ export class TestimportComponent {
       }
     }
   }
-
-  // -------------------------
-  // VALIDATE + MAP IDs
-  // -------------------------
   private validateAndMarkErrors() {
     this.rowErrors = [];
     this.validCount = 0;
@@ -273,8 +254,6 @@ export class TestimportComponent {
       if (cat && subCat && String(subCat?.categoryId || '') !== String(cat?.categoryId || '')) {
         r.__error += 'SubCategory not under Category. ';
       }
-
-      // topic/subtopic depends on class+subject
       if (subj && classNo) {
         const subjectObjId = this.norm(subj?._id);
         const t = this.topicByKey.get(`${classNo}|${subjectObjId}|${topicKey}`);
@@ -355,7 +334,6 @@ export class TestimportComponent {
           const inserted = res?.data?.inserted || 0;
           const upserted = res?.data?.upserted || 0;
           const modified = res?.data?.modified || 0;
-
           const rowErrors = Array.isArray(res?.rowErrors) ? res.rowErrors : [];
           if (rowErrors.length) {
             this.alert.error(`Imported with errors. Inserted:${inserted} Upserted:${upserted} Modified:${modified}`);
