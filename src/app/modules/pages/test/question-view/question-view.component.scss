@@ -1,0 +1,19 @@
+.question-html img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.option-box {
+  border: 1px solid #e0e0e0;
+  background: #f9f9f9;
+  transition: 0.2s;
+}
+
+.option-box:hover {
+  background: #f1f1f1;
+}
+
+.card-header {
+  background: #fafafa;
+}

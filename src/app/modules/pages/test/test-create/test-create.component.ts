@@ -100,7 +100,6 @@ export class TestCreateComponent {
       });
   }
   onTopicChange(topicId: any) {
-    console.log("Tets data ", topicId);
     this.subTopics = [];
     const body = {
       entiId: localStorage.getItem('tenantId')
@@ -109,7 +108,7 @@ export class TestCreateComponent {
       .subscribe({
         next: (res: any) => {
           this.subTopics = (res?.data || []).filter((s: any) =>
-            s.topicId === topicId
+            s.topicId.topicId === topicId
           );
         },
         error: () => this.alert.error('Error loading sub topics')

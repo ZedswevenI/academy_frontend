@@ -18,15 +18,22 @@ export class TestComponent implements OnInit {
 
   private routerSub!: Subscription;
 
+  lastTableParams: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    sortKey?: string;
+    sortDirection?: string;
+  } | null = null;
 
   /* ================= TABLE COLUMNS ================= */
   columnsArray = [
     { key: 'testNumber', label: 'Test No', sortable: true },
-    { key: 'testCode', label: 'Test Code', sortable: true },
-    { key: 'testId', label: 'Test ID', sortable: true },
+    // { key: 'testCode', label: 'Test Code', sortable: true },
+    // { key: 'testId', label: 'Test ID', sortable: true },
     { key: 'classNo', label: 'Class', sortable: true },
     { key: 'subject', label: 'Subject', sortable: true },
-    // { key: 'numberOfQuestions', label: 'No of questions', sortable: true },
+    { key: 'numberOfQuestions', label: 'No of questions', sortable: false },
 
   ];
 
@@ -145,12 +152,42 @@ export class TestComponent implements OnInit {
   }
 
   deleteTest(row: any) {
-    if (!confirm(`Delete test ${row.testCode}?`)) return;
-    console.log('Delete test', row);
+    if (!confirm('Are you sure you want to delete this test?')) {
+      return;
+    }
+
+    const body = {
+      entiId: localStorage.getItem('tenantId'),
+      testId: row.testId,
+    };
+
+    this.commonApi
+      .fetchData(body, 'assignment', 'delete')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+
+            this.alert.success('Deleted successfully');
+
+            // 🔥 Reload table with previous params
+            if (this.lastTableParams) {
+              this.fetchTableData(this.lastTableParams);
+            }
+          }
+        },
+        error: () => {
+          this.alert.error('Error deleting question');
+        }
+      });
   }
 
   viewQuestions(row: any) {
     console.log('View questions', row);
+    this.router.navigate(['/app/tests/question-view'], {
+      state: {
+        questions: row,
+      }
+    })
   }
 
   editTest(row: any) {
@@ -158,11 +195,21 @@ export class TestComponent implements OnInit {
   }
 
   importQuestions(row: any) {
-    this.router.navigate(['/app/tests/question-import'])
+    console.log("Rome came ", row);
+
+    this.router.navigate(['/app/tests/question-import'], {
+      state: {
+        questions: row,
+      }
+    })
   }
 
   addQuestions(row: any) {
-    this.router.navigate(['/app/tests/question-create'])
+    this.router.navigate(['/app/tests/question-create'], {
+      state: {
+        question: row,
+      }
+    })
   }
 
 
@@ -190,6 +237,7 @@ export class TestComponent implements OnInit {
     sortKey?: string;
     sortDirection?: string;
   }) {
+    this.lastTableParams = { ...params };
 
     this.loading = true;
 

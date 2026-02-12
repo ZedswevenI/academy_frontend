@@ -1,5 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators, ValueChangeEvent } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
+import { Router } from '@angular/router';
 
 interface QuestionOption {
   optionHtml: string;
@@ -20,30 +24,50 @@ interface MatrixPair {
 export class QuestionCreatorComponent implements OnInit {
   questionForm!: FormGroup;
   showPassagePopup = false;
+  testId = ''
+
+  isEditMode = false;
+  recId: string = '';
+  entiId: string;
+
 
 
   questionTypes = [
-    { value: 'mcq-single', label: 'MCQ (Single Answer)' },
-    { value: 'mcq-multiple', label: 'MCQ (Multiple Answers)' },
-    { value: 'subjective', label: 'Subjective Type' },
-    { value: 'true-false', label: 'True/False' },
-    { value: 'text-based', label: 'Text Based' },
+    { value: 'mcq_single', label: 'MCQ (Single Answer)' },
+    { value: 'mcq_multiple', label: 'MCQ (Multiple Answers)' },
+    { value: 'sub_ective', label: 'Subjective Type' },
+    { value: 'true_false', label: 'True/False' },
+    { value: 'passage_qns', label: 'Text Based' },
     { value: 'matrix', label: 'Matrix Type (Match the Questions)' }
   ];
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private commonApi: CommonapiService, private alert: AlertService, private router: Router) {
+    this.initializeForm();
+
+    // const navigation = this.router.getCurrentNavigation();
+    const state: any = history.state;
+    this.entiId = localStorage.getItem('tenantId') || '';
+    this.testId = state.question.testId;
+    console.log("State came ", state.question);
+
+    if (state?.question?.recId) {
+      this.isEditMode = true;
+      this.recId = state?.question?.recId;
+    }
+  }
+  initializeForm() {
     this.questionForm = this.fb.group({
       enablePassage: [false],
       enableInstruction: [false],
       enableSolution: [false],
-      questionType: ['mcq-single', Validators.required],
+      questionType: ['mcq_single', Validators.required],
       questionText: ['', Validators.required],
       positiveMarks: [1, [Validators.required, Validators.min(0)]],
       negativeMarks: [1, [Validators.required, Validators.min(0)]],
       difficulty: ['medium'],
       questionOptions: this.fb.array([]),
-      passageId: [null],          // selected passage ID
-      passageText: [''],          // display-only content
+      passageId: [null],
+      passageText: [''],
       instruction: [''],
       solution: [''],
       trueFalseAnswer: [null],
@@ -55,20 +79,133 @@ export class QuestionCreatorComponent implements OnInit {
 
 
   ngOnInit(): void {
-    // Initialize with default options for MCQ
-    this.addOption();
-    this.addOption();
-    this.addOption();
-    this.addOption();
+
+    if (this.isEditMode) {
+      this.loadQuestionForEdit();
+    } else {
+      this.addOption();
+      this.addOption();
+      this.addOption();
+      this.addOption();
+    }
+
     this.handleOptionalToggles();
 
-
-    // Listen to question type changes
     this.questionForm.get('questionType')?.valueChanges.subscribe(type => {
       this.onQuestionTypeChange(type);
     });
   }
 
+  async replaceDownloadUrls(html: string): Promise<string> {
+
+    if (!html || !html.includes('<img')) return html;
+
+    const imgRegex = /<img[^>]+src="([^"]+)"/g;
+    const matches = [...html.matchAll(imgRegex)];
+
+    let updatedHtml = html;
+
+    for (const match of matches) {
+
+      const originalUrl = match[1];
+
+      try {
+        const downloadRes: any = await firstValueFrom(
+          this.commonApi.fetchData(
+            { url: originalUrl },
+            'assignment/question/image',
+            'download'
+          )
+        );
+
+        if (downloadRes?.status) {
+          updatedHtml = updatedHtml.replace(originalUrl, downloadRes.url);
+        }
+
+      } catch (err) {
+        console.error('Image download error:', err);
+      }
+    }
+
+    return updatedHtml;
+  }
+
+  async loadQuestionForEdit() {
+
+    const body = {
+      entiId: this.entiId,
+      recId: this.recId
+    };
+
+    try {
+      const res: any = await firstValueFrom(
+        this.commonApi.fetchData(body, 'assignment/question', 'view')
+      );
+
+      if (res?.status) {
+
+        const q = res.data;
+
+        // 🔥 Replace image URLs
+        const questionHtml = await this.replaceDownloadUrls(q.questionHtml);
+        const instructionHtml = await this.replaceDownloadUrls(q.instructionHtml);
+        const solutionHtml = await this.replaceDownloadUrls(q.solutionHtml);
+
+        this.questionForm.patchValue({
+          questionType: q.questionType,
+          questionText: questionHtml,
+          positiveMarks: q.positiveMarks,
+          negativeMarks: q.negativeMarks,
+          difficulty: q.difficulty,
+          instruction: instructionHtml,
+          solution: solutionHtml
+        });
+
+        // 🔥 Inject into editor
+        setTimeout(() => {
+
+          const questionEditor = document.getElementById('questionEditor');
+          if (questionEditor) {
+            questionEditor.innerHTML = questionHtml || '';
+          }
+
+        }, 0);
+
+        // 🔥 Load options
+        if (q.questionOptions?.length) {
+
+          this.options.clear();
+
+          const correctArray = q.correctAnswer?.split(';') || [];
+
+          for (let i = 0; i < q.questionOptions.length; i++) {
+
+            const opt = q.questionOptions[i];
+            const processedOptionHtml = await this.replaceDownloadUrls(opt.textHtml);
+
+            const letter = String.fromCharCode(97 + i);
+
+            this.options.push(
+              this.fb.group({
+                text: processedOptionHtml,
+                isCorrect: correctArray.includes(letter)
+              })
+            );
+
+            setTimeout(() => {
+              const optionEditor = document.getElementById('optionEditor-' + i);
+              if (optionEditor) {
+                optionEditor.innerHTML = processedOptionHtml || '';
+              }
+            }, 0);
+          }
+        }
+      }
+
+    } catch (err) {
+      console.error(err);
+    }
+  }
   handleOptionalToggles(): void {
 
     // Passage
@@ -147,7 +284,7 @@ export class QuestionCreatorComponent implements OnInit {
         this.addMatrixPair();
         this.addMatrixPair();
       }
-    } else if (type === 'mcq-single' || type === 'mcq-multiple') {
+    } else if (type === 'mcq_single' || type === 'mcq_multiple') {
       this.matrixLeft.clear();
       this.matrixRight.clear();
       if (this.options.length === 0) {
@@ -194,17 +331,63 @@ export class QuestionCreatorComponent implements OnInit {
   }
 
   onSubmit(): void {
-    this.logInvalidControls(this.questionForm);
-    if (this.questionForm.valid) {
-      // const questionData = this.prepareQuestionData();
-      this.prepareQuestionData().then(payload => {
-        console.log('Question Data:', payload);
-      });
-      // Here you would typically send this data to your backend
-      alert('Question saved successfully!');
-    } else {
+
+    if (!this.questionForm.valid) {
       alert('Please fill all required fields');
+      return;
     }
+
+
+    this.prepareQuestionData().then(payload => {
+
+      const finalPayload = {
+        entiId: this.entiId,
+        testId: this.testId,
+        ...payload
+      };
+
+      // console.log("Payload came", finalPayload)
+      // return
+
+      if (this.isEditMode) {
+
+        finalPayload['recId'] = this.recId;
+
+        this.commonApi.fetchData(
+          finalPayload,
+          'assignment/question',
+          'update'
+        ).subscribe({
+          next: (res: any) => {
+            if (res?.status) {
+              this.alert.success('Question updated successfully');
+              this.router.navigate(['/app/tests']);
+            }
+          },
+          error: (err) => {
+            this.alert.error(err.error?.message || 'Update failed');
+          }
+        });
+
+      } else {
+
+        this.commonApi.fetchData(
+          finalPayload,
+          'assignment/question',
+          'create'
+        ).subscribe({
+          next: (res: any) => {
+            if (res?.status) {
+              this.alert.success('Question created successfully');
+              this.router.navigate(['/app/tests']);
+            }
+          },
+          error: (err) => {
+            this.alert.error(err.error?.message || 'Create failed');
+          }
+        });
+      }
+    });
   }
 
   execCommandFor(editorId: string, command: string, value: string | null = null) {
@@ -266,27 +449,96 @@ export class QuestionCreatorComponent implements OnInit {
     return { images, cleanedHtml };
   }
 
-  // uploadImage(base64: string): Promise<string> {
-  // return this.http
-  //   .post<{ url: string }>('/api/upload-image', { image: base64 })
-  //   .toPromise()
-  //   .then(res => res.url);
-// }
+
+  async prepareFile(base64: string): Promise<File> {
+
+    const compressed = await this.compressBase64Image(base64, 20);
+
+    const arr = compressed.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+
+    return new File([u8arr], `img-${Date.now()}.jpg`, { type: mime });
+  }
+
+  base64SizeKB(base64: string): number {
+    const stringLength = base64.length - 'data:image/jpeg;base64,'.length;
+    const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.5624896334383812;
+    return sizeInBytes / 1024;
+  }
+
+  compressBase64Image(base64: string, maxSizeKB = 20): Promise<string> {
+    return new Promise((resolve) => {
+
+      const img = new Image();
+      img.src = base64;
+
+      img.onload = () => {
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d')!;
+
+        // Resize (important for size reduction)
+        const maxWidth = 800; // adjust if needed
+        const scale = maxWidth / img.width;
+
+        canvas.width = maxWidth;
+        canvas.height = img.height * scale;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        let quality = 0.7;
+        let compressed = canvas.toDataURL('image/jpeg', quality);
+
+        // Reduce quality until size < maxSizeKB
+        while (this.base64SizeKB(compressed) > maxSizeKB && quality > 0.1) {
+          quality -= 0.1;
+          compressed = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        resolve(compressed);
+      };
+    });
+  }
+
+  async uploadImage(base64: string): Promise<string | null> {
+    // const payload = { image: base64 };
+    try {
+      const file = await this.prepareFile(base64);
+
+      const formData = new FormData();
+      formData.append('files', file); // important: key must match backend
+      const res: any = await firstValueFrom(
+        this.commonApi.uploadImage(formData, 'assignment/question/image', 'upload')
+      );
+      if (res?.status && res?.files?.length) {
+        return res.files[0].s3Url;
+      }
+      return null;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }
 
   async replaceImagesWithUrls(html: string): Promise<string> {
     const { images } = this.extractBase64Images(html);
     let updatedHtml = html;
     for (const base64 of images) {
-      // const imageUrl = await this.uploadImage(base64);
+      const imageUrl = await this.uploadImage(base64);
       updatedHtml = updatedHtml.replace(
         base64,
-        ""
+        imageUrl || ''
       );
     }
-
     return updatedHtml;
   }
-
 
   async prepareQuestionData(): Promise<any> {
     const formValue = this.questionForm.value;
@@ -303,8 +555,8 @@ export class QuestionCreatorComponent implements OnInit {
       enableSolution: formValue.enableSolution,
       questionType: questionType,
       instruction,
-      solution,
-      questionHtml : questionText,
+      solutionHtml: solution,
+      questionHtml: questionText,
       positiveMarks: formValue.positiveMarks,
       negativeMarks: formValue.negativeMarks,
       difficulty: formValue.difficulty
@@ -313,26 +565,28 @@ export class QuestionCreatorComponent implements OnInit {
     switch (questionType) {
 
       /* ================= MCQ ================= */
-      case 'mcq-single':
-      case 'mcq-multiple': {
+      case 'mcq_single':
+      case 'mcq_multiple': {
         const processedOptions = await Promise.all(
-          formValue.questionOptions.map(async (opt: QuestionOption) => ({
+          formValue.questionOptions.map(async (opt: any) => ({
             ...opt,
-            textHtml: await this.replaceImagesWithUrls(opt.optionHtml) // ✅ option images handled
+            textHtml: await this.replaceImagesWithUrls(opt.text) // ✅ option images handled
           }))
         );
+
+        const correctLetters = processedOptions
+          .map((opt, idx) => opt.isCorrect ? String.fromCharCode(97 + idx) : null)
+          .filter(letter => letter !== null);
 
         return {
           ...baseData,
           questionOptions: processedOptions,
-          correctAnswers: processedOptions
-            .map((opt, idx) => opt.isCorrect ? idx : null)
-            .filter((idx: number | null) => idx !== null)
+          correctAnswer: correctLetters.join(';')  // 🔥 "a;b"
         };
       }
 
       /* ================= TRUE / FALSE ================= */
-      case 'true-false':
+      case 'true_false':
         return {
           ...baseData,
           correctAnswer: formValue.trueFalseAnswer
@@ -349,7 +603,7 @@ export class QuestionCreatorComponent implements OnInit {
       }
 
       /* ================= TEXT BASED ================= */
-      case 'text-based':
+      case 'passage_qns':
         return {
           ...baseData
         };

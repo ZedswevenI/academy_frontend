@@ -1,6 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import JSZip from 'jszip';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { firstValueFrom } from 'rxjs';
+import { AlertService } from '../../../../service/alert/alert.service';
+import { Router } from '@angular/router';
 
 interface ParsedQuestion {
   id: number;
@@ -24,8 +28,11 @@ interface ParsedQuestion {
 })
 export class QuestionImportComponent implements OnInit {
   questionForm!: FormGroup;
+  testId = ''
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+
+  }
 
   selectedFile: File | null = null;
   parsedQuestions: ParsedQuestion[] = [];
@@ -33,7 +40,14 @@ export class QuestionImportComponent implements OnInit {
   isProcessing = false;
   currentStep: 'upload' | 'preview' | 'success' = 'upload';
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private commonApi: CommonapiService, private alert: AlertService, private router: Router,
+  ) {
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation?.extras?.state as any;
+
+    if (state) {
+      this.testId = state.questions.testId
+    }
     this.questionForm = this.fb.group({
       questionType: ['mcq-single', Validators.required],
       questionText: ['', Validators.required],
@@ -387,10 +401,30 @@ export class QuestionImportComponent implements OnInit {
 
   /* ================= UI ================= */
 
-  submitAllQuestions() {
+  async submitAllQuestions() {
     const payload = this.buildBulkQuestionPayload();
-    console.log('Submitting payload:', payload);
+    console.log('Submitting payload:', await payload);
+    const entiId = localStorage.getItem('tenantId');
 
+    const newPlaylod = {
+      entiId: entiId,
+      testId: this.testId,
+      ...await payload
+    }
+    this.commonApi.fetchData(newPlaylod, 'assignment/question', 'bulkcreate')
+      .subscribe({
+        next: (res: any) => {
+          console.log("Question respos. ", res);
+
+          if (res?.status) {
+                this.alert.success(res.message);
+            this.router.navigate(['/app/tests']);
+          } else {
+            this.alert.success("Error importing questions");
+          }
+        },
+        error: (e) => this.alert.error(e.error.message)
+      });
     // Here you would call your API
     // this.http.post('/api/questions/bulk', payload).subscribe(...)
 
@@ -420,6 +454,63 @@ export class QuestionImportComponent implements OnInit {
     return this.questionForm.get('matrixRight') as FormArray;
   }
 
+  async prepareFile(base64: string): Promise<File> {
+
+    const compressed = await this.compressBase64Image(base64, 20);
+
+    const arr = compressed.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+
+    return new File([u8arr], `img-${Date.now()}.jpg`, { type: mime });
+  }
+
+  base64SizeKB(base64: string): number {
+    const stringLength = base64.length - 'data:image/jpeg;base64,'.length;
+    const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.5624896334383812;
+    return sizeInBytes / 1024;
+  }
+
+  compressBase64Image(base64: string, maxSizeKB = 20): Promise<string> {
+    return new Promise((resolve) => {
+
+      const img = new Image();
+      img.src = base64;
+
+      img.onload = () => {
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d')!;
+
+        // Resize (important for size reduction)
+        const maxWidth = 800; // adjust if needed
+        const scale = maxWidth / img.width;
+
+        canvas.width = maxWidth;
+        canvas.height = img.height * scale;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        let quality = 0.7;
+        let compressed = canvas.toDataURL('image/jpeg', quality);
+
+        // Reduce quality until size < maxSizeKB
+        while (this.base64SizeKB(compressed) > maxSizeKB && quality > 0.1) {
+          quality -= 0.1;
+          compressed = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        resolve(compressed);
+      };
+    });
+  }
+
   extractBase64Images(html: string): { images: string[]; cleanedHtml: string } {
     const images: string[] = [];
     let cleanedHtml = html;
@@ -434,17 +525,36 @@ export class QuestionImportComponent implements OnInit {
     return { images, cleanedHtml };
   }
 
+  async uploadImage(base64: string): Promise<string | null> {
+    // const payload = { image: base64 };
+    try {
+      const file = await this.prepareFile(base64);
+    
+      const formData = new FormData();
+      formData.append('files', file); // important: key must match backend
+      const res: any = await firstValueFrom(
+        this.commonApi.uploadImage(formData, 'assignment/question/image', 'upload')
+      );
+      if (res?.status && res?.files?.length) {
+        return res.files[0].s3Url;
+      }
+      return null;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }
+
   async replaceImagesWithUrls(html: string): Promise<string> {
     const { images } = this.extractBase64Images(html);
     let updatedHtml = html;
     for (const base64 of images) {
-      // const imageUrl = await this.uploadImage(base64);
+      const imageUrl = await this.uploadImage(base64);
       updatedHtml = updatedHtml.replace(
         base64,
-        ""
+        imageUrl || ''
       );
     }
-
     return updatedHtml;
   }
 
@@ -473,11 +583,12 @@ export class QuestionImportComponent implements OnInit {
         return {
           questionType: q.qtype,
           questionHtml,
+          correctAnswer: q.answer,
           difficulty: q.difficulty,
           positiveMarks: q.positiveMarks,
           negativeMarks: q.negativeMarks,
           questionOptions: processedOptions,
-          solution: solutionHtml
+          solutionHtml: solutionHtml
         };
       })
     );
