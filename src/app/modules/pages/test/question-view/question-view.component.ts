@@ -6,8 +6,8 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
-declare var katex: any; // For KaTeX
-declare var renderMathInElement: any; // For KaTeX auto-render
+declare var katex: any;
+declare var renderMathInElement: any;
 
 interface QuestionOption {
   optionHtml: string;
@@ -59,7 +59,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   async loadQuestions() {
-
     this.loading = true;
 
     const body = {
@@ -76,34 +75,39 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         const rawQuestions = res.data[0].questions;
         this.questions = await this.processQuestions(rawQuestions);
         
-        // Trigger change detection and render math after view updates
         this.cdr.detectChanges();
-        setTimeout(() => this.renderMathContent(), 200);
+        setTimeout(() => this.renderMathContent(), 300);
       }
 
     } catch (err) {
-      console.error(err);
+      console.error('Error loading questions:', err);
     }
 
     this.loading = false;
   }
 
   async processQuestions(questions: any[]) {
-
     return Promise.all(
       questions.map(async (q, index) => {
-
-        const questionHtml = await this.replaceDownloadUrls(q.questionHtml);
-        const solutionHtml = q.solutionHtml
+        let questionHtml = await this.replaceDownloadUrls(q.questionHtml);
+        let solutionHtml = q.solutionHtml
           ? await this.replaceDownloadUrls(q.solutionHtml)
           : '';
 
+        // Convert \( \) delimiters to $ $ for consistent rendering
+        questionHtml = this.normalizeDelimiters(questionHtml);
+        solutionHtml = this.normalizeDelimiters(solutionHtml);
+
         const options = q.questionOptions?.length
           ? await Promise.all(
-            q.questionOptions.map(async (opt: any) => ({
-              ...opt,
-              textHtml: await this.replaceDownloadUrls(opt.textHtml)
-            }))
+            q.questionOptions.map(async (opt: any) => {
+              let textHtml = await this.replaceDownloadUrls(opt.textHtml);
+              textHtml = this.normalizeDelimiters(textHtml);
+              return {
+                ...opt,
+                textHtml: textHtml
+              };
+            })
           )
           : [];
 
@@ -121,8 +125,34 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     );
   }
 
-  async replaceDownloadUrls(html: string): Promise<string> {
+  /**
+   * Normalize math delimiters
+   * Converts \(...\) to $...$ and \[...\] to $$...$$
+   * Handles escaped backslashes from JSON
+   */
+  private normalizeDelimiters(html: string): string {
+    if (!html) return html;
 
+    // First, fix escaped backslashes: \\( becomes \(
+    let normalized = html.replace(/\\\(/g, '\\(');
+    normalized = normalized.replace(/\\\)/g, '\\)');
+    normalized = normalized.replace(/\\\[/g, '\\[');
+    normalized = normalized.replace(/\\\]/g, '\\]');
+
+    // Convert \(...\) to $...$  (inline math)
+    normalized = normalized.replace(/\\\((.*?)\\\)/gs, (match, content) => {
+      return `$${content}$`;
+    });
+
+    // Convert \[...\] to $$...$$ (display math)
+    normalized = normalized.replace(/\\\[(.*?)\\\]/gs, (match, content) => {
+      return `$$${content}$$`;
+    });
+
+    return normalized;
+  }
+
+  async replaceDownloadUrls(html: string): Promise<string> {
     if (!html || !html.includes('<img')) return html;
 
     const imgRegex = /<img[^>]+src="([^"]+)"/g;
@@ -131,7 +161,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     let updatedHtml = html;
 
     for (const match of matches) {
-
       const originalUrl = match[1];
 
       try {
@@ -160,42 +189,50 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Renders LaTeX/Math content using KaTeX with auto-render
-   * This method preserves HTML structure (images, links, etc.)
-   * Supports both inline ($...$) and display ($$...$$) math
+   * Render LaTeX math content
    */
   renderMathContent(): void {
     try {
-      // Check if KaTeX auto-render is available
       if (typeof renderMathInElement === 'undefined') {
-        console.warn('KaTeX auto-render not loaded. Loading fallback...');
+        console.warn('KaTeX auto-render not loaded');
         this.renderMathFallback();
         return;
       }
 
-      // Render all question elements
-      this.questionElements.forEach(element => {
-        this.renderMathInElement(element.nativeElement);
+      // Render question elements
+      this.questionElements.forEach((element, idx) => {
+        try {
+          this.renderMathInElement(element.nativeElement);
+        } catch (err) {
+          console.error(`Error rendering question ${idx}:`, err);
+        }
       });
 
-      // Render all option elements
-      this.optionElements.forEach(element => {
-        this.renderMathInElement(element.nativeElement);
+      // Render option elements
+      this.optionElements.forEach((element, idx) => {
+        try {
+          this.renderMathInElement(element.nativeElement);
+        } catch (err) {
+          console.error(`Error rendering option ${idx}:`, err);
+        }
       });
 
-      // Render all solution elements
-      this.solutionElements.forEach(element => {
-        this.renderMathInElement(element.nativeElement);
+      // Render solution elements
+      this.solutionElements.forEach((element, idx) => {
+        try {
+          this.renderMathInElement(element.nativeElement);
+        } catch (err) {
+          console.error(`Error rendering solution ${idx}:`, err);
+        }
       });
 
     } catch (err) {
-      console.error('Error rendering math content:', err);
+      console.error('Error in renderMathContent:', err);
     }
   }
 
   /**
-   * Uses KaTeX's renderMathInElement for smart DOM processing
-   * This preserves HTML elements like images
+   * Render math in a single element
    */
   private renderMathInElement(element: HTMLElement): void {
     if (!element) return;
@@ -203,12 +240,17 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     try {
       renderMathInElement(element, {
         delimiters: [
-          { left: '$$', right: '$$', display: true },   // Display math
-          { left: '$', right: '$', display: false }     // Inline math
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true }
         ],
         throwOnError: false,
         strict: false,
-        trust: true
+        trust: true,
+        macros: {
+          "\\f": "#1f(#2)",
+        }
       });
     } catch (err) {
       console.error('renderMathInElement error:', err);
@@ -216,8 +258,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   /**
-   * Fallback method if auto-render not available
-   * Manually finds and renders math expressions
+   * Fallback rendering method
    */
   private renderMathFallback(): void {
     if (!katex) {
@@ -232,24 +273,25 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     ];
 
     allElements.forEach(refElement => {
-      const element = refElement.nativeElement;
-      this.processElementForMath(element);
+      try {
+        const element = refElement.nativeElement;
+        this.processElementForMath(element);
+      } catch (err) {
+        console.error('Fallback rendering error:', err);
+      }
     });
   }
 
   /**
-   * Processes element's text nodes to find and render math
-   * Preserves HTML structure (images, etc.)
+   * Process text nodes for math rendering
    */
   private processElementForMath(element: HTMLElement): void {
     if (!katex) return;
 
     const walk = (node: Node) => {
-      // Only process text nodes
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
         
-        // Check if text contains math delimiters
         if (!text.includes('$')) {
           return;
         }
@@ -257,59 +299,58 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         const fragment = document.createDocumentFragment();
         let lastIndex = 0;
 
-        // Find all math expressions
-        const mathRegex = /\$\$([^\$]+?)\$\$|\$([^\$]+?)\$/g;
+        // Match $ delimiters
+        const mathRegex = /\$\$([^\$][\s\S]*?)\$\$|\$([^\$][\s\S]*?)\$/g;
         let match;
 
         while ((match = mathRegex.exec(text)) !== null) {
-          // Add text before math
           if (match.index > lastIndex) {
             fragment.appendChild(
               document.createTextNode(text.substring(lastIndex, match.index))
             );
           }
 
-          // Render math
           const mathText = match[1] || match[2];
           const isDisplay = !!match[1];
 
           try {
-            const mathHtml = katex.renderToString(mathText, {
+            let processedMath = mathText.trim();
+            processedMath = processedMath.replace(/\\\\/g, '\\');
+
+            const mathHtml = katex.renderToString(processedMath, {
               throwOnError: false,
-              displayMode: isDisplay
+              displayMode: isDisplay,
+              strict: 'ignore'
             });
 
             const mathContainer = document.createElement(isDisplay ? 'div' : 'span');
             mathContainer.innerHTML = mathHtml;
+            mathContainer.className = isDisplay ? 'katex-display-custom' : 'katex-inline-custom';
             fragment.appendChild(mathContainer);
           } catch (err) {
-            console.error('KaTeX error:', err);
-            // If rendering fails, keep original text
+            console.error('KaTeX rendering error:', err);
             fragment.appendChild(document.createTextNode(match[0]));
           }
 
           lastIndex = match.index + match[0].length;
         }
 
-        // Add remaining text
         if (lastIndex < text.length) {
           fragment.appendChild(
             document.createTextNode(text.substring(lastIndex))
           );
         }
 
-        // Replace node with fragment
         if (lastIndex > 0) {
           node.parentNode?.replaceChild(fragment, node);
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
-        // Skip script, style, and image elements
         const element = node as HTMLElement;
-        if (['SCRIPT', 'STYLE', 'IMG', 'IFRAME'].includes(element.tagName)) {
+        
+        if (['SCRIPT', 'STYLE', 'IMG', 'IFRAME', 'CODE', 'PRE'].includes(element.tagName)) {
           return;
         }
 
-        // Recursively process child nodes
         const children = Array.from(node.childNodes);
         children.forEach(child => walk(child));
       }
@@ -319,7 +360,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   formatQuestionType(type: string): string {
-
     switch (type) {
       case 'mcq_single':
         return 'MCQ (Single)';
@@ -347,14 +387,12 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
             testId: question.testId,
             recId: question._id
           }
-
         }
       }
     );
   }
 
   deleteQuestion(question: any) {
-
     if (!confirm('Are you sure you want to delete this question?')) {
       return;
     }
