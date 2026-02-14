@@ -88,7 +88,7 @@
 
   <div class="text-end mt-4">
     <button type="button" class="btn btn-primary" [disabled]="testForm.invalid" (click)="submitTest()">
-      Create Test
+        {{ isEditMode ? 'Update Test' : 'Create Test' }}
     </button>
   </div>
 

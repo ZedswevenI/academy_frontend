@@ -2,7 +2,21 @@
   font-size: 1rem;
   line-height: 1.6;
   word-wrap: break-word;
-  
+
+  // Image styling
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 15px 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    
+    &:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+
   // KaTeX math styling
   .katex {
     margin: 0 2px;
@@ -11,9 +25,65 @@
 
   // Display mode math ($$...$$)
   .katex-display {
-    margin: 1rem 0;
+    margin: 1.5rem 0;
     overflow-x: auto;
     overflow-y: hidden;
+    padding: 0.5rem 0;
+  }
+
+  // Inline math within text
+  .katex-html {
+    display: inline;
+  }
+
+  // Tables in content
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 15px 0;
+    
+    td, th {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+  }
+
+  // Code blocks
+  code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+  }
+
+  // Lists
+  ol, ul {
+    margin-left: 20px;
+    margin-top: 10px;
+    
+    li {
+      margin-bottom: 8px;
+    }
+  }
+
+  // Paragraph spacing
+  p {
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // Line breaks
+  br {
+    line-height: 1.2;
   }
 }
 
@@ -26,40 +96,180 @@
     background-color: #e7f1ff;
   }
 
-  // KaTeX styling within options
-  .katex {
-    margin: 0 2px;
+  .option-content {
+    flex: 1;
+
+    // Images in options
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 10px 0;
+      border-radius: 3px;
+      max-height: 300px;
+    }
+
+    // KaTeX in options
+    .katex {
+      margin: 0 2px;
+    }
+
+    .katex-display {
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+
+    // Tables in options
+    table {
+      font-size: 0.95em;
+      margin: 10px 0;
+    }
   }
 }
 
 .solution-section {
   background-color: #f0f8ff;
-  padding: 1rem;
+  padding: 15px;
   border-radius: 0.5rem;
   margin-top: 1.5rem;
+  border-left: 4px solid #17a2b8;
 
   strong {
     color: #0c5460;
   }
 
-  // KaTeX in solution
-  .katex {
-    margin: 0 2px;
-  }
+  .solution-content {
+    margin-top: 10px;
 
-  .katex-display {
-    margin: 1rem 0;
-    padding: 0.5rem 0;
+    // Images in solution
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 15px 0;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    // KaTeX in solution
+    .katex {
+      margin: 0 2px;
+    }
+
+    .katex-display {
+      margin: 1rem 0;
+      padding: 0.5rem 0;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 3px;
+      padding-left: 10px;
+    }
+
+    // Tables in solution
+    table {
+      margin: 15px 0;
+    }
+
+    // Lists in solution
+    ol, ul {
+      margin-left: 20px;
+
+      li {
+        margin-bottom: 8px;
+      }
+    }
+
+    p {
+      margin-bottom: 10px;
+    }
   }
 }
 
-// Responsive math rendering
+// Responsive adjustments for mobile
 @media (max-width: 768px) {
-  .question-html,
-  .option-box {
+  .question-html {
+    font-size: 0.95rem;
+
+    img {
+      margin: 12px 0;
+      max-height: 250px;
+    }
+
     .katex-display {
       font-size: 0.9em;
-      margin: 0.8rem 0;
+      margin: 1rem 0;
+      overflow-x: auto;
+      padding: 0.5rem;
+    }
+
+    table {
+      font-size: 0.9em;
+
+      td, th {
+        padding: 6px 8px;
+      }
+    }
+  }
+
+  .option-box {
+    .option-content {
+      img {
+        max-height: 200px;
+      }
+
+      .katex-display {
+        font-size: 0.85em;
+      }
+    }
+  }
+
+  .solution-section {
+    .solution-content {
+      img {
+        max-height: 250px;
+      }
+
+      .katex-display {
+        font-size: 0.85em;
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .question-html,
+  .option-box,
+  .solution-section {
+    img {
+      display: block;
+      page-break-inside: avoid;
+    }
+
+    .katex-display {
+      page-break-inside: avoid;
+    }
+  }
+}
+
+// Dark mode support (optional)
+@media (prefers-color-scheme: dark) {
+  .question-html {
+    img {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    code {
+      background-color: #2d2d2d;
+      color: #f8f8f2;
+    }
+  }
+
+  .solution-section {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-left-color: #17a2b8;
+
+    .katex-display {
+      background-color: rgba(255, 255, 255, 0.05);
     }
   }
 }

@@ -77,20 +77,30 @@
     <!-- Card Body -->
     <div class="card-body">
 
-      <!-- Question with LaTeX support -->
-      <div class="mb-3 question-html" #mathContent [innerHTML]="q.questionHtml">
+      <!-- Question with LaTeX support and Images -->
+      <div 
+        class="mb-3 question-html" 
+        #questionContent
+        [innerHTML]="q.questionHtml">
       </div>
 
       <!-- Options -->
       <div *ngIf="q.questionOptions?.length">
 
-        <div *ngFor="let opt of q.questionOptions; let j = index" class="option-box p-2 mb-2 rounded">
+        <div 
+          *ngFor="let opt of q.questionOptions; let j = index" 
+          class="option-box p-2 mb-2 rounded">
 
           <div class="d-flex align-items-start">
             <div class="me-2 fw-bold">
               {{ j + 1 }}.
             </div>
-            <div #mathContent [innerHTML]="opt.textHtml"></div>
+            <!-- Option text with LaTeX support and Images -->
+            <div 
+              class="option-content"
+              #optionContent
+              [innerHTML]="opt.textHtml">
+            </div>
           </div>
 
         </div>
@@ -108,10 +118,14 @@
 
       </div>
 
-      <!-- Solution Display (if available) -->
+      <!-- Solution Display (if available) with LaTeX and Images -->
       <div *ngIf="q.solutionHtml" class="mt-3 border-top pt-3 solution-section">
         <strong>Solution:</strong>
-        <div class="mt-2" #mathContent [innerHTML]="q.solutionHtml"></div>
+        <div 
+          class="mt-2 solution-content"
+          #solutionContent
+          [innerHTML]="q.solutionHtml">
+        </div>
       </div>
 
     </div>

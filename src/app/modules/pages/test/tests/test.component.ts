@@ -191,7 +191,12 @@ export class TestComponent implements OnInit {
   }
 
   editTest(row: any) {
-    console.log('Edit test', row);
+     console.log('View questions', row);
+    this.router.navigate(['/app/tests/create'], {
+      state: {
+        test: row,
+      }
+    })
   }
 
   importQuestions(row: any) {
