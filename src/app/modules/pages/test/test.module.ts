@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { CommonModule, NgFor, NgIf } from '@angular/common';
+import { CommonModule, NgClass, NgFor, NgIf } from '@angular/common';
 import { TestRoutingModule } from './test.routing.module';
 import { TestComponent } from './tests/test.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
@@ -10,10 +10,11 @@ import { QuestionCreatorComponent } from './question-create/question-creator.com
 import { QuestionImportComponent } from './question-import/question-import.component';
 import { PassageSelectorComponent } from './passage-selector/passage-selector.component';
 import { TestimportComponent } from './testimport/testimport.component';
+import { QuestionViewComponent } from './question-view/question-view.component';
 
 @NgModule({
-  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent],
-  imports: [CommonModule, TestRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor],
+  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent],
+  imports: [CommonModule, TestRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass],
   exports: []
 })
 export class TestModule {}

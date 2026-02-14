@@ -56,4 +56,9 @@ headers = new HttpHeaders().set('Content-Type', 'application/json');
     window.alert(errorMessage);
     return errorMessage;
   }
+
+  uploadImage(payload: any, module: string, endpoint: string): Observable<any> {
+    return this.http
+      .post(`${environment.baseURL}/${module}/${endpoint}`, payload);
+  }
 }

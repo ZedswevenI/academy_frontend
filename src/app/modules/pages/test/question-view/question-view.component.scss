@@ -1,0 +1,65 @@
+.question-html {
+  font-size: 1rem;
+  line-height: 1.6;
+  word-wrap: break-word;
+  
+  // KaTeX math styling
+  .katex {
+    margin: 0 2px;
+    font-size: 1em;
+  }
+
+  // Display mode math ($$...$$)
+  .katex-display {
+    margin: 1rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
+
+.option-box {
+  background-color: #f8f9fa;
+  border-left: 3px solid #0d6efd;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #e7f1ff;
+  }
+
+  // KaTeX styling within options
+  .katex {
+    margin: 0 2px;
+  }
+}
+
+.solution-section {
+  background-color: #f0f8ff;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-top: 1.5rem;
+
+  strong {
+    color: #0c5460;
+  }
+
+  // KaTeX in solution
+  .katex {
+    margin: 0 2px;
+  }
+
+  .katex-display {
+    margin: 1rem 0;
+    padding: 0.5rem 0;
+  }
+}
+
+// Responsive math rendering
+@media (max-width: 768px) {
+  .question-html,
+  .option-box {
+    .katex-display {
+      font-size: 0.9em;
+      margin: 0.8rem 0;
+    }
+  }
+}
