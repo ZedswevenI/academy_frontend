@@ -93,8 +93,7 @@ export class TestComponent implements OnInit, OnDestroy {
 
   /* ================= INIT ================= */
   ngOnInit(): void {
-    this.breadcrumb.set([{ label: 'Tests' }]);
-
+    this.breadcrumb.set([{ label: 'Assignment' }]);
     this.initFilterForm();
 
     this.filterForm.get('classNo')?.valueChanges.subscribe(classId => {

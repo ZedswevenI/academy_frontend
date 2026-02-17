@@ -8,8 +8,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
   styleUrl: './test-view.component.scss'
 })
 export class TestViewComponent {
-
-  constructor(private breadcrump: BredcrumpService){
-    this.breadcrump.set([{ label: 'Test', link: '/app/test'}, { label: 'View'}])
+  constructor(private breadcrump: BredcrumpService) {
+    this.breadcrump.set([{ label: 'Assignments', link: '/app/test' }, { label: 'View' }]);
   }
 }

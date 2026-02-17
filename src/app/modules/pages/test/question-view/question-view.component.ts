@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChildren, QueryList, ElementRef, AfterViewInit, 
 import { FormArray, FormBuilder, FormGroup, Validators, ValueChangeEvent } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -28,10 +29,8 @@ interface MatrixPair {
 export class QuestionViewComponent implements OnInit, AfterViewInit {
   questions: any[] = [];
   loading = false;
-
   entiId!: string;
   testId!: string;
-
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
@@ -40,8 +39,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     private commonApi: CommonapiService,
     private sanitizer: DomSanitizer,
     private router: Router,
-    private cdr: ChangeDetectorRef
-  ) { }
+    private cdr: ChangeDetectorRef,
+    private breadcrump : BredcrumpService
+  ) {this.breadcrump.set([{ label: 'Assignments', link: '/app/tests' }, { label: 'View' }]); }
 
   ngOnInit(): void {
     const state: any = history.state;
