@@ -134,8 +134,6 @@ export class TestCreateComponent implements OnInit {
         this.loadAllSubTopics(),
         this.loadAllExamSubCategories()
       ]);
-
-      console.log("Data cma ",this.editData);
       
       // If edit mode, populate form with existing data
       if (this.isEditMode && this.editData) {
@@ -383,8 +381,6 @@ export class TestCreateComponent implements OnInit {
         : t.subjectId;
       return topicSubjectId === subjectId && t.classNo === selectedClass;
     });
-
-    console.log('Topics filtered for subject:', subjectId, 'Count:', this.topics.length);
   }
 
   /**

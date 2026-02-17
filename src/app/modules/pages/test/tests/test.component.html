@@ -7,11 +7,11 @@
                         <i class="fa-solid fa-file-lines me-2"></i>Tests
                     </h1>
                     <div class="d-flex">
-                        <!-- <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
-                            routerLink="/app/tests/question-import">
-                            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
-                            Import Questions</button> -->
-                        <!-- <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button" routerLink="/app/tests/question-create"> -->
+                        <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium  me-2" type="button"
+                            (click)="toggleFilters()">
+                            <i class="fa-solid fa-filter"></i>
+                            {{ showFilters ? 'Hide Filters' : 'Filters' }}
+                        </button>
                         <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
                             routerLink="/app/tests/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
@@ -21,7 +21,55 @@
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Import Assignments</button>
                     </div>
+                </div>
+                <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+                    <div class="card-header bg-white border-0">
+                        <form [formGroup]="filterForm" class="row g-3 align-items-end">
 
+                            <!-- Class -->
+
+
+                            <div class="col-6 col-md-2">
+                                <selectbox label="Class" formControlName="classNo" [control]="filterForm.get('classNo')"
+                                    [options]="classOptions" optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <div class="col-6 col-md-2">
+                                <selectbox label="Subject" formControlName="subjectId"
+                                    [control]="filterForm.get('subjectId')" [options]="subjectOptions" optionLabel="label"
+                                    optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Topic -->
+                            <div class="col-6 col-md-2">
+                                <selectbox label="Topic" formControlName="topicId" [control]="filterForm.get('topicId')"
+                                    [options]="topicOptions" optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Subtopic -->
+                            <div class="col-6 col-md-2">
+                                <selectbox label="Subtopic" formControlName="subtopicId"
+                                    [control]="filterForm.get('subtopicId')" [options]="subtopicOptions"
+                                    optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="col-md-2 d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+                                    Clear
+                                </button>
+
+                                <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">
+                                    Search
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
