@@ -13,31 +13,23 @@
 
         <div class="mt-3">
             <form [formGroup]="phaseForm">
-                <filter label1="Class" label2="Batch" label3="Subject" [required]="true" [options1]="class_options"
-                    [options2]="batch_options" [options3]="subject_options" [placeholder]="'Select'"
-                    formControlName="filter" [control]="phaseForm.get('filter')"></filter>
-                <!-- <div class="row g-3">
+                <div class="row g-3">
                     <div class="col-md-4">
-                        <selectbox label="Batch" [options]="batch_options" formControlName="batch"
-                            [control]="phaseForm.get('batch')" [required]="true">
-                        </selectbox>
-                    </div>
-                    <div class="col-md-4">
-                        <selectbox label="Class" [options]="class_options" formControlName="class"
+                        <selectbox label="Class" placeholder="Select Class" [options]="class_options"
                             [control]="phaseForm.get('class')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-4">
-                        <selectbox label="Subject" [options]="subject_options" formControlName="subject"
-                            [control]="phaseForm.get('subject')" [required]="true">
+                        <selectbox label="Subject" placeholder="Select Class" [options]="subject_options"
+                            [optionLabel]="'subjectName'" [optionValue]="'_id'" [control]="phaseForm.get('subject')"
+                            [required]="true">
                         </selectbox>
                     </div>
-                </div> -->
-
+                </div>
                 <div class="col-12 text-end mt-3">
                     <button class="btn submitbutton px-4" [disabled]="phaseForm.invalid" (click)="onProceed()"
                         style="border-radius: 30px;">
-                        Proceed
+                        Load Phase Plans
                     </button>
                 </div>
             </form>
@@ -45,11 +37,8 @@
 
         <div class="mt-3" *ngIf="isProceed">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
-                [success]="'Yes'" [danger]="'No'" [totalRecords]="totalRecords" (requestData)="loadTableData($event)"
+                [success]="'Yes'" [danger]="'No'" [totalRecords]="totalRecords"
                 [searchPlaceholder]="'Search Faculty Name, Program Code...'"></custom-table>
-            <!-- <div class="d-flex justify-content-end mt-5">
-                <button type="button" class="btn submitbutton px-4">Submit</button>
-            </div> -->
         </div>
     </div>
 </div>
