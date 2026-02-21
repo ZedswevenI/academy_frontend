@@ -11,10 +11,12 @@ import { QuestionImportComponent } from './question-import/question-import.compo
 import { PassageSelectorComponent } from './passage-selector/passage-selector.component';
 import { TestimportComponent } from './testimport/testimport.component';
 import { QuestionViewComponent } from './question-view/question-view.component';
+import { QuestionArrangementComponent } from './question-arrange/question-arange.component';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @NgModule({
-  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent],
-  imports: [CommonModule, TestRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass],
+  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent,QuestionArrangementComponent],
+  imports: [CommonModule, TestRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass,DragDropModule],
   exports: []
 })
 export class TestModule {}

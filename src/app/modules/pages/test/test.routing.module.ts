@@ -7,6 +7,7 @@ import { QuestionCreatorComponent } from './question-create/question-creator.com
 import { QuestionImportComponent } from './question-import/question-import.component';
 import { TestimportComponent } from './testimport/testimport.component';
 import { QuestionViewComponent } from './question-view/question-view.component';
+import { QuestionArrangementComponent } from './question-arrange/question-arange.component';
 
 const routes: Routes = [
   { path: '', component: TestComponent, title: 'Test' },
@@ -14,6 +15,7 @@ const routes: Routes = [
   { path: 'import', component: TestimportComponent, title: 'Test-Create' },
   { path: 'question-create', component: QuestionCreatorComponent, title: 'Question-Create' },
   { path: 'question-view', component: QuestionViewComponent, title: 'Question-Create' },
+  { path: 'question-rearrange', component: QuestionArrangementComponent, title: 'Question-Create' },
   { path: 'question-import', component: QuestionImportComponent, title: 'Question-Import' },
   { path: 'view', component: TestViewComponent, title: 'Test-View' }
 ];

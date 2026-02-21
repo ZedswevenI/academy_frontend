@@ -72,6 +72,7 @@ export class TestComponent implements OnInit, OnDestroy {
       dropdown: [
         { text: 'Edit Test', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.editTest(row) },
         { text: 'View Questions', icon: 'fa-regular fa-eye', callback: (row: any) => this.viewQuestions(row) },
+        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
         { text: 'Add Question', icon: 'fa-solid fa-file-import', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', callback: (row: any) => this.importQuestions(row) },
         { text: 'Print Test', icon: 'fa-solid fa-print', callback: (row: any) => this.printTest(row) },
@@ -180,7 +181,7 @@ export class TestComponent implements OnInit, OnDestroy {
           if (res?.status) {
             const selectedClass = Number(this.filterForm.get('classNo')?.value);
             this.topicOptions = res.data
-              .filter((t: any) => t.subjectId?._id === subjectId &&  t.classNo === selectedClass)
+              .filter((t: any) => t.subjectId?._id === subjectId && t.classNo === selectedClass)
               .map((t: any) => ({
                 label: t.topicName,
                 value: t.topicId
@@ -317,6 +318,10 @@ export class TestComponent implements OnInit, OnDestroy {
 
   viewQuestions(row: any) {
     this.router.navigate(['/app/tests/question-view'], { state: { questions: row } });
+  }
+
+  rearrange(row: any) {
+    this.router.navigate(['/app/tests/question-rearrange'], { state: { questions: row } });
   }
 
   editTest(row: any) {

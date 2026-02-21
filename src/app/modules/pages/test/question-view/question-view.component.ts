@@ -10,16 +10,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 declare var katex: any;
 declare var renderMathInElement: any;
 
-interface QuestionOption {
-  optionHtml: string;
-  isCorrect: boolean;
-}
-
-interface MatrixPair {
-  left: string;
-  right: string;
-}
-
 @Component({
   selector: 'app-question-creator',
   standalone: false,
@@ -125,11 +115,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     );
   }
 
-  /**
-   * Normalize math delimiters
-   * Converts \(...\) to $...$ and \[...\] to $$...$$
-   * Handles escaped backslashes from JSON
-   */
   private normalizeDelimiters(html: string): string {
     if (!html) return html;
 
@@ -188,9 +173,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
-  /**
-   * Render LaTeX math content
-   */
   renderMathContent(): void {
     try {
       if (typeof renderMathInElement === 'undefined') {
@@ -231,9 +213,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     }
   }
 
-  /**
-   * Render math in a single element
-   */
   private renderMathInElement(element: HTMLElement): void {
     if (!element) return;
 
@@ -281,10 +260,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       }
     });
   }
-
-  /**
-   * Process text nodes for math rendering
-   */
+ 
   private processElementForMath(element: HTMLElement): void {
     if (!katex) return;
 
