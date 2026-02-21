@@ -21,6 +21,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   loading = false;
   entiId!: string;
   testId!: string;
+  questionData!: any;
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
@@ -30,14 +31,17 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     private sanitizer: DomSanitizer,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private breadcrump : BredcrumpService
-  ) {this.breadcrump.set([{ label: 'Assignments', link: '/app/tests' }, { label: 'View' }]); }
+    private breadcrump: BredcrumpService
+  ) { this.breadcrump.set([{ label: 'Assignments', link: '/app/tests' }, { label: 'View' }]); }
 
   ngOnInit(): void {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
     this.entiId = ent || '';
     this.testId = state.questions.testId;
+    this.questionData = state.questions
+
+    console.log("questisns ", state.questions);
 
     if (this.testId) {
       this.loadQuestions();
@@ -64,7 +68,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       if (res?.status && res?.data?.length) {
         const rawQuestions = res.data[0].questions;
         this.questions = await this.processQuestions(rawQuestions);
-        
+
         this.cdr.detectChanges();
         setTimeout(() => this.renderMathContent(), 300);
       }
@@ -260,14 +264,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       }
     });
   }
- 
+
   private processElementForMath(element: HTMLElement): void {
     if (!katex) return;
 
     const walk = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
-        
+
         if (!text.includes('$')) {
           return;
         }
@@ -322,7 +326,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as HTMLElement;
-        
+
         if (['SCRIPT', 'STYLE', 'IMG', 'IFRAME', 'CODE', 'PRE'].includes(element.tagName)) {
           return;
         }
@@ -391,4 +395,275 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         error: () => alert('Error deleting question')
       });
   }
+
+  printQuestions(withAnswer: boolean): void {
+    setTimeout(() => {
+      const printWindow = window.open('', '_blank', 'width=900,height=700');
+      if (!printWindow) return;
+
+      const questionsHtml = this.questions.map((q, i) => {
+        const qEl = this.questionElements.toArray()[i]?.nativeElement;
+        const questionHtml = qEl ? qEl.innerHTML : '';
+
+        // Build options — 2 per row (A,B on row1 | C,D on row2)
+        const opts = q.questionOptions || [];
+        let optionsHtml = '';
+
+        if (opts.length) {
+          const rows: string[] = [];
+
+          for (let j = 0; j < opts.length; j += 2) {
+            const cells = [j, j + 1]
+              .filter(k => k < opts.length)
+              .map(k => {
+                const label = String.fromCharCode(65 + k);
+                const flatIndex = this.questions
+                  .slice(0, i)
+                  .reduce((acc: number, pq: any) => acc + (pq.questionOptions?.length || 0), 0) + k;
+                const optEl = this.optionElements.toArray()[flatIndex];
+                const optHtml = optEl
+                  ? optEl.nativeElement.innerHTML
+                  : (typeof opts[k].textHtml === 'string' ? opts[k].textHtml : '');
+
+                const isCorrect = withAnswer && opts[k].isCorrect;
+
+                return `<td class="opt-cell ${isCorrect ? 'correct-opt' : ''}">
+                        <span class="opt-label">(${label})</span>
+                        <span class="opt-text">${optHtml}</span>
+                      </td>`;
+              }).join('<td class="opt-divider"></td>');
+
+            rows.push(`<tr>${cells}</tr>`);
+          }
+
+          optionsHtml = `
+          <table class="options-table">
+            ${rows.join('')}
+          </table>`;
+        }
+
+        const answerRow = withAnswer
+          ? `<div class="answer-box">
+             <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
+           </div>`
+          : `<div class="answer-box">
+             
+           </div>`;
+
+        return `
+        <div class="question-card">
+          <div class="question-number">Q${i + 1}.
+            <span class="meta-right">
+              [${this.formatQuestionType(q.questionType)}] &nbsp;
+            </span>
+          </div>
+          <div class="question-body">${questionHtml}</div>
+          ${optionsHtml}
+          ${answerRow}
+        </div>`;
+      }).join('');
+
+      const docTitle = withAnswer ? 'ANSWER KEY' : 'ASSIGNMENT';
+
+      printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${docTitle}</title>
+        <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+          crossorigin="anonymous">
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+
+          body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            color: #000;
+            background: #fff;
+            padding: 30px 40px;
+          }
+
+          /* ── Page Header ── */
+          .page-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+          }
+          .page-header h1 { font-size: 18pt; letter-spacing: 2px; }
+          .page-header .subtitle {
+            font-size: 10pt;
+            margin-top: 3px;
+            font-style: italic;
+          }
+          .page-meta {
+            display: table;
+            width: 100%;
+            margin-top: 8px;
+            font-size: 10.5pt;
+          }
+          .page-meta td { width: 25%; text-align: center; }
+
+          /* ── Student Info ── */
+          .student-info {
+            display: ${withAnswer ? 'none' : 'table'};
+            width: 100%;
+            margin-bottom: 14px;
+            font-size: 11pt;
+            border-collapse: collapse;
+          }
+          .student-info td { padding: 0 10px 0 0; white-space: nowrap; }
+          .student-info .fill-line {
+            border-bottom: 1px solid #000;
+            width: 100%;
+            display: inline-block;
+          }
+
+          /* ── Instructions ── */
+          .instructions {
+            display: ${withAnswer ? 'none' : 'block'};
+            font-size: 10pt;
+            border: 1px solid #000;
+            padding: 6px 12px;
+            margin-bottom: 16px;
+            line-height: 1.6;
+          }
+          .instructions ol { margin-left: 18px; }
+          .instructions li { margin-bottom: 2px; }
+
+          /* ── Question Card ── */
+          .question-card {
+            margin-bottom: 22px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #555;
+            page-break-inside: avoid;
+          }
+
+          /* ── Question Number Row ── */
+          .question-number {
+            font-weight: bold;
+            font-size: 11.5pt;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+          }
+          .meta-right {
+            font-weight: normal;
+            font-style: italic;
+            font-size: 9.5pt;
+            color: #000;
+          }
+
+          /* ── Question Body ── */
+          .question-body {
+            padding: 4px 18px 10px 18px;
+            line-height: 1.8;
+            font-size: 12pt;
+          }
+
+          /* ── Options Grid (2 per row) ── */
+          .options-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 18px 10px 18px;
+            width: calc(100% - 36px);
+          }
+          .options-table tr { vertical-align: top; }
+          .opt-cell {
+            width: 48%;
+            padding: 3px 6px;
+            vertical-align: top;
+          }
+          .opt-divider { width: 4%; }
+          .opt-label {
+            font-weight: bold;
+            font-size: 11pt;
+            margin-right: 6px;
+            white-space: nowrap;
+          }
+          .opt-text {
+            font-size: 11.5pt;
+            line-height: 1.6;
+            vertical-align: top;
+          }
+          .correct-opt .opt-text {
+            font-weight: bold;
+            text-decoration: underline;
+          }
+          .page-header .meta {
+            font-size: 11pt;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+          }
+      .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5pt;
+      margin-top: 8px;
+      }
+      .meta-table td {
+      padding: 3px 6px;
+      }
+          /* ── Answer Box ── */
+          .answer-box {
+            margin: 6px 18px 0 18px;
+            font-size: 11pt;
+            padding-top: 4px;
+            border-top: 1px solid #ccc;
+          }
+          .answer-table { width: 100%; border-collapse: collapse; }
+          .answer-table td { padding: 0; }
+          .marks-box { text-align: right; white-space: nowrap; }
+
+          /* ── KaTeX ── */
+          .katex { font-size: 1em; }
+          img { max-width: 100%; height: auto; display: block; margin: 4px 0; }
+
+          /* ── Print ── */
+          @media print {
+            body { padding: 10px 20px; }
+            .question-card { page-break-inside: avoid; }
+            @page { margin: 12mm 15mm; }
+          }
+        </style>
+      </head>
+      <body>
+
+        <!-- Header -->
+        <div class="page-header">
+          
+          <table class="meta-table">
+    <tr>
+      <td style="width:25%;text-align:left"><strong>Class:</strong> ${this.questionData.classNo}</td>
+      <td style="width:25%"><strong>Subject:</strong> ${this.questionData.subject}</td>
+      <td style="width:50%;text-align:right"><strong>Sub Topic:</strong> ${this.questionData.subTopicName}</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="width:70%;text-align:left"><strong>Topic:</strong> ${this.questionData.topicName}</td>
+      <td style="width:30%;text-align:right"><strong>Test No:</strong> ${this.questionData.testNo}</td>
+    </tr>
+  </table>
+        </div> 
+
+        <!-- Questions -->
+        ${questionsHtml}
+
+        <script>window.onload = () => window.print();<\/script>
+      </body>
+      </html>
+    `);
+
+      printWindow.document.close();
+    }, 500);
+  }
 }
+
+//  <div class="question-number">Q${i + 1}.
+//             <span class="meta-right">
+//               [${this.formatQuestionType(q.questionType)}] &nbsp;|&nbsp;
+//               Marks: +${q.positiveMarks} / –${q.negativeMarks}
+//             </span>
+//           </div>

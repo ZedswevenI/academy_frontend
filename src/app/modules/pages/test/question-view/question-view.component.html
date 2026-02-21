@@ -9,11 +9,30 @@
         </small>
       </div>
 
+
       <div class="col-md-6 text-end">
         <button class="btn closebutton" routerLink="/app/tests">Back</button>
-      <button class="btn btn-primary btn-sm" routerLink="/app/tests/question-create">
-        + Add Question
-      </button>
+        <div class="btn-group me-2">
+          <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            🖨️ Print
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" (click)="printQuestions(false)">
+                📄 Without Answer <small class="text-muted">(for students)</small>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" (click)="printQuestions(true)">
+                📄 With Answer <small class="text-muted">(answer key)</small>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <button class="btn btn-primary btn-sm" routerLink="/app/tests/question-create">
+          + Add Question
+        </button>
       </div>
     </div>
   </div>

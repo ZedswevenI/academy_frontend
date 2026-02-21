@@ -1,92 +1,164 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
-import { Router } from '@angular/router';
-import { AbstractControl } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 @Component({
   selector: 'app-phase-list',
   standalone: false,
   templateUrl: './phase-list.component.html',
-  styleUrl: './phase-list.component.scss',
+  styleUrl: './phase-list.component.scss'
 })
-export class PhaseListComponent {
+export class PhaseListComponent implements OnInit {
+
+  tenantId: string = '';
+  isProceed = false;
+  loading = false;
+
   phaseForm!: FormGroup;
-  isProceed: boolean = false;
-  loading: boolean = false;
-  dataArray: any[] = [];
-  originalData: any[] = [];
-  totalRecords = 0;
 
   class_options = [
-    { label: '6', value: 6 },
-    { label: '7', value: 7 },
-    { label: '8', value: 8 },
-    { label: '9', value: 9 },
-    { label: ' 10', value: 10 },
-    { label: '11', value: 11 },
-    { label: '12', value: 12 },
-  ];
-  subject_options = [];
-  columnsArray = [
-    { key: 'phase', label: 'Phase', sortable: false },
-    { key: 'chap', label: 'Chapter', sortable: false },
+    { label: '6th',       value: 6  },
+    { label: '7th',       value: 7  },
+    { label: '8th',       value: 8  },
+    { label: '9th',       value: 9  },
+    { label: '10th',      value: 10 },
+    { label: '11th',      value: 11 },
+    { label: '12th',      value: 12 },
+    { label: '12th Pass', value: 13 }
   ];
 
+  subject_options: any[] = [];
+
+  dataArray: any[]   = [];
+  totalRecords       = 0;
+
+  columnsArray = [
+    { key: 'phaseName',  label: 'Phase Name' , sortable: true },
+    { key: 'sortOrder',  label: 'Sort Order' , sortable: true },
+    { key: 'topicCount', label: 'No. of Topics', sortable: true },
+    { key: 'totalHours', label: 'Total Est. Hours' , sortable: false},
+  ];
+
+  
+
   actions = [
-    {
+     {
       type: 'icon',
-      icon: 'fa-regular fa-eye',
+      icon: 'fa fa-eye',
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.viewPerf(row),
+    },
+      {
+      type: 'icon',
+      icon: 'fa-solid fa-pen-to-square',
+      tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+    },
+      {
+      type: 'icon',
+      icon: 'fa-solid fa-trash',
+      tooltip: 'Delete',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
     },
   ];
+
   constructor(
-    private breadcrump: BredcrumpService,
     private fb: FormBuilder,
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private breadcrump: BredcrumpService
   ) {
-    this.breadcrump.set([{ label: 'Phase Part' }]);
+    this.tenantId = localStorage.getItem('tenantId') || '';
+    this.breadcrump.set([{ label: 'Phase Plan', link: '/app/phase' }]);
   }
 
   ngOnInit(): void {
-    this.phaseForm = this.fb.group({});
+    this.initForm();
     this.loadSubjects();
   }
 
-  loadSubjects() {
-    const entiId = localStorage.getItem('tenantId');
+  private initForm(): void {
+    this.phaseForm = this.fb.group({
+      class:   [null, Validators.required],
+      subject: ['',   Validators.required]
+    });
+  }
+
+  private loadSubjects(): void {
+    const body = { entiId: this.tenantId };
+    this.commonApi.fetchData(body, 'ims/subject', 'list?list=full')
+      .subscribe({
+        next: (res: any) => { this.subject_options = res?.data || []; },
+        error: () => this.alert.error('Error loading subjects')
+      });
+  }
+
+  onProceed(): void {
+    
+    if (this.phaseForm.invalid) return;
+
+    const { class: classNo, subject: subjectId } = this.phaseForm.value;
     this.loading = true;
-    this.commonApi.fetchData(
-      { entiId },
-      'ims',
-      'subject/list?list=full',
-    ).subscribe({
-      next: (res: any) => {
-        this.subject_options = res.data
-      },
-      error : (err : any) =>{}
-    })
+    this.isProceed = false;
+
+    const body = { tenantId: this.tenantId };
+
+    this.commonApi.fetchData(body, 'batch/phase', `list?classNo=${classNo}&subjectId=${subjectId}`)
+      .subscribe({
+        next: (res: any) => {
+          const raw: any[] = res?.data || [];
+
+          // Flatten for table display
+          this.dataArray = raw.map((p: any) => ({
+            ...p,
+            topicCount: p.topics?.length || 0,
+            totalHours: p.topics?.reduce((sum: number, t: any) => sum + (t.estHours || 0), 0) || 0
+          }));
+
+          this.totalRecords = res?.count || this.dataArray.length;
+          this.isProceed    = true;
+          this.loading      = false;
+        },
+        error: () => {
+          this.alert.error('Error loading phase plans');
+          this.loading = false;
+        }
+      });
   }
 
-  onProceed() {
-    this.isProceed = true;
-  }
+  onAction(event: any): void {
+    const { action, row } = event;
 
-  filterValidator(control: AbstractControl) {
-    const val = control.value;
-    if (!val || !val.value1 || !val.value2 || !val.value3) {
-      return { required: true };
+    if (action === 'view') {
+      this.router.navigate(['/app/phase/view', row.phaseId], { state: { phase: row } });
     }
-    return null;
-  }
 
-  viewPerf(row: any) {}
+    if (action === 'edit') {
+      this.router.navigate(['/app/phase/edit', row.phaseId], { state: { phase: row } });
+    }
+
+    if (action === 'delete') {
+      if (!confirm(`Delete "${row.phaseName}"?`)) return;
+
+      const body = { tenantId: this.tenantId, phaseId: row.phaseId };
+      this.commonApi.fetchData(body, 'batch/phase', 'delete')
+        .subscribe({
+          next: (res: any) => {
+            if (res?.status) {
+              this.alert.success('Phase plan deleted');
+              this.dataArray    = this.dataArray.filter(d => d.phaseId !== row.phaseId);
+              this.totalRecords = this.dataArray.length;
+            }
+          },
+          error: () => this.alert.error('Error deleting phase plan')
+        });
+    }
+  }
 }

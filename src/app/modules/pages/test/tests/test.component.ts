@@ -75,8 +75,8 @@ export class TestComponent implements OnInit, OnDestroy {
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
         { text: 'Add Question', icon: 'fa-solid fa-file-import', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', callback: (row: any) => this.importQuestions(row) },
-        { text: 'Print Test', icon: 'fa-solid fa-print', callback: (row: any) => this.printTest(row) },
-        { text: 'Student Feedbacks', icon: 'fa-solid fa-comments', callback: (row: any) => this.studentFeedbacks(row) },
+        // { text: 'Print Test', icon: 'fa-solid fa-print', callback: (row: any) => this.printTest(row) },
+        // { text: 'Student Feedbacks', icon: 'fa-solid fa-comments', callback: (row: any) => this.studentFeedbacks(row) },
         { text: 'Report', icon: 'fa-solid fa-chart-line', callback: (row: any) => this.report(row) },
         { text: 'Update Ans/Solutions', icon: 'fa-solid fa-pen', callback: (row: any) => this.updateAnswers(row) },
         { text: 'Delete', icon: 'fa-regular fa-trash-can', callback: (row: any) => this.deleteTest(row) }

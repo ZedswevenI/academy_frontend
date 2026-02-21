@@ -5,17 +5,19 @@ import { PhaseRoutingModule } from './phase.routing.module';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PhaseListComponent } from './phase-list/phase-list.component';
+import { PhaseCreateComponent } from './phase-create/phase-create.component';
 
 @NgModule({
   declarations: [
-    PhaseListComponent
+    PhaseListComponent,
+    PhaseCreateComponent
   ],
   imports: [
     CommonModule, 
     PhaseRoutingModule,
     UiElementsModule,
     ReactiveFormsModule,
-    FormsModule
+    FormsModule,
   ],
   exports: []
 })

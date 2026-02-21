@@ -88,6 +88,7 @@ export class QuestionArrangementComponent implements OnInit {
         // 7. Initialize rearranged questions with order
         this.rearrangedQuestions = this.questions.map((q, index) => ({
           ...q,
+          isView: false,
           order: index,
         }));
 
@@ -228,7 +229,11 @@ export class QuestionArrangementComponent implements OnInit {
    */
   previewQuestion(question: any): void {
     this.selectedQuestion = question;
-    this.previewOpen = true;
+    this.selectedQuestion.questionView = !this.selectedQuestion.questionView
+    this.cdr.detectChanges();
+    setTimeout(() => this.renderMathContent(), 300);
+
+    // this.previewOpen = true;
   }
 
   /**
@@ -254,9 +259,44 @@ export class QuestionArrangementComponent implements OnInit {
   /**
    * Save new order
    */
-  saveNewOrder(): void {
+  async saveNewOrder() {
     this.saveOrder.emit(this.rearrangedQuestions);
-    this.showToast('Order saved successfully!', 'success');
+    const payload = this.getAllQuestion();
+    const entiId = localStorage.getItem('tenantId');
+
+    const newPlaylod = {
+      entiId: entiId,
+      testId: this.testId,
+      questions: payload
+    }
+    console.log("Reorder ", newPlaylod);
+    this.commonApi.fetchData(
+      newPlaylod,
+      'assignment/question',
+      'sortorder'
+    ).subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.showToast('Order saved successfully!', 'success');
+          this.router.navigate(['/app/tests']);
+        }
+      },
+      error: (err) => {
+        this.showToast(err.error?.message, 'success');
+      }
+    });
+  }
+
+  getAllQuestion(): any[] {
+    const arr: any[] = [];
+    this.rearrangedQuestions.forEach(q => {
+      arr.push({
+        sortOrder: q.order + 1,
+        qId: q._id,
+      });
+    });
+
+    return arr;
   }
 
   /**
