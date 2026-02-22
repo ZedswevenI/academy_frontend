@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
-  // baseURL: 'http://143.110.182.180:3012/api/crm'
+  baseURL: 'http://143.110.182.180:3012/api/crm'
   // baseURL: 'http://143.110.191.245:3012/api/crm'
   // baseURL: 'http://localhost:3012/api/crm'
-  baseURL: 'http://192.168.1.161:3012/api/crm'
+  // baseURL: 'http://192.168.1.161:3012/api/crm'
 };

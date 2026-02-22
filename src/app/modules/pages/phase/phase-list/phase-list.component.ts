@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+
 
 @Component({
   selector: 'app-phase-list',
@@ -17,54 +18,58 @@ export class PhaseListComponent implements OnInit {
   isProceed = false;
   loading = false;
 
+  selectedPhase: any = null;
   phaseForm!: FormGroup;
 
   class_options = [
-    { label: '6th',       value: 6  },
-    { label: '7th',       value: 7  },
-    { label: '8th',       value: 8  },
-    { label: '9th',       value: 9  },
-    { label: '10th',      value: 10 },
-    { label: '11th',      value: 11 },
-    { label: '12th',      value: 12 },
+    { label: '6th', value: 6 },
+    { label: '7th', value: 7 },
+    { label: '8th', value: 8 },
+    { label: '9th', value: 9 },
+    { label: '10th', value: 10 },
+    { label: '11th', value: 11 },
+    { label: '12th', value: 12 },
     { label: '12th Pass', value: 13 }
   ];
 
   subject_options: any[] = [];
 
-  dataArray: any[]   = [];
-  totalRecords       = 0;
+  dataArray: any[] = [];
+  totalRecords = 0;
 
   columnsArray = [
-    { key: 'phaseName',  label: 'Phase Name' , sortable: true },
-    { key: 'sortOrder',  label: 'Sort Order' , sortable: true },
+    { key: 'phaseName', label: 'Phase Name', sortable: true },
+    { key: 'sortOrder', label: 'Sort Order', sortable: true },
     { key: 'topicCount', label: 'No. of Topics', sortable: true },
-    { key: 'totalHours', label: 'Total Est. Hours' , sortable: false},
+    { key: 'totalHours', label: 'Total Est. Hours', sortable: false },
   ];
 
-  
+
 
   actions = [
-     {
+    {
       type: 'icon',
       icon: 'fa fa-eye',
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      callback: (row: any) => this.onView(row),
     },
-      {
+    {
       type: 'icon',
       icon: 'fa-solid fa-pen-to-square',
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      callback: (row: any) => this.onEdit(row),
     },
-      {
+    {
       type: 'icon',
       icon: 'fa-solid fa-trash',
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      callback: (row: any) => this.onDelte(row),
     },
   ];
 
@@ -86,8 +91,8 @@ export class PhaseListComponent implements OnInit {
 
   private initForm(): void {
     this.phaseForm = this.fb.group({
-      class:   [null, Validators.required],
-      subject: ['',   Validators.required]
+      class: [null, Validators.required],
+      subject: ['', Validators.required]
     });
   }
 
@@ -101,7 +106,7 @@ export class PhaseListComponent implements OnInit {
   }
 
   onProceed(): void {
-    
+
     if (this.phaseForm.invalid) return;
 
     const { class: classNo, subject: subjectId } = this.phaseForm.value;
@@ -123,8 +128,8 @@ export class PhaseListComponent implements OnInit {
           }));
 
           this.totalRecords = res?.count || this.dataArray.length;
-          this.isProceed    = true;
-          this.loading      = false;
+          this.isProceed = true;
+          this.loading = false;
         },
         error: () => {
           this.alert.error('Error loading phase plans');
@@ -133,32 +138,52 @@ export class PhaseListComponent implements OnInit {
       });
   }
 
-  onAction(event: any): void {
-    const { action, row } = event;
+  onEdit(row: any) {
+    this.router.navigate(['/app/phase/create'], { state: { phase: row } });
+  }
 
-    if (action === 'view') {
-      this.router.navigate(['/app/phase/view', row.phaseId], { state: { phase: row } });
+  onView(row: any) {
+    this.selectedPhase = {
+      ...row,
+      topics: [...(row.topics || [])].sort((a, b) => a.sortOrder - b.sortOrder)
+    };
+
+    // Trigger Bootstrap modal
+    const modalEl = document.getElementById('phaseViewModal');
+    if (modalEl) {
+      const modal = new (window as any).bootstrap.Modal(modalEl);
+      modal.show();
     }
+  }
 
-    if (action === 'edit') {
-      this.router.navigate(['/app/phase/edit', row.phaseId], { state: { phase: row } });
-    }
+  onDelte(row: any) {
+    if (!confirm(`Delete "${row.phaseName}"?`)) return;
 
-    if (action === 'delete') {
-      if (!confirm(`Delete "${row.phaseName}"?`)) return;
+    const body = { tenantId: this.tenantId, phaseId: row.phaseId };
+    this.commonApi.fetchData(body, 'batch/phase', 'delete')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success('Phase plan deleted');
+            this.dataArray = this.dataArray.filter(d => d.phaseId !== row.phaseId);
+            this.totalRecords = this.dataArray.length;
+          }
+        },
+        error: () => this.alert.error('Error deleting phase plan')
+      });
+  }
 
-      const body = { tenantId: this.tenantId, phaseId: row.phaseId };
-      this.commonApi.fetchData(body, 'batch/phase', 'delete')
-        .subscribe({
-          next: (res: any) => {
-            if (res?.status) {
-              this.alert.success('Phase plan deleted');
-              this.dataArray    = this.dataArray.filter(d => d.phaseId !== row.phaseId);
-              this.totalRecords = this.dataArray.length;
-            }
-          },
-          error: () => this.alert.error('Error deleting phase plan')
-        });
-    }
+
+
+  getTotalHours(): number {
+    return (this.selectedPhase?.topics || [])
+      .reduce((sum: number, t: any) => sum + (t.estHours || 0), 0);
+  }
+
+  getAvgHours(): string {
+    const topics = this.selectedPhase?.topics || [];
+    if (topics.length === 0) return '0';
+    const avg = this.getTotalHours() / topics.length;
+    return avg.toFixed(1);
   }
 }

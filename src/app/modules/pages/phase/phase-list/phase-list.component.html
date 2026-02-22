@@ -67,10 +67,114 @@
                 [success]="'Active'"
                 [danger]="'Inactive'"
                 [totalRecords]="totalRecords"
-                [searchPlaceholder]="'Search Phase Name...'"
-                (actionClicked)="onAction($event)">
+                [searchPlaceholder]="'Search Phase Name...'">
             </custom-table>
         </div>
 
     </div>
+</div>
+
+<!-- View Modal -->
+<div class="modal fade" id="phaseViewModal" tabindex="-1" aria-labelledby="phaseViewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-4" *ngIf="selectedPhase">
+
+      <!-- Header -->
+      <div class="modal-header border-bottom pb-3">
+        <div>
+          <h5 class="modal-title fw-bold mb-0" id="phaseViewModalLabel">
+            <i class="fa-solid fa-hourglass-half me-2 text-primary"></i>
+            {{ selectedPhase.phaseName }}
+          </h5>
+          <div class="d-flex gap-3 mt-1">
+            <small class="text-muted">
+              <i class="fa-solid fa-graduation-cap me-1"></i>Class {{ selectedPhase.classNo }}
+            </small>
+            <small class="text-muted">
+              <i class="fa-solid fa-book me-1"></i>Sort Order: {{ selectedPhase.sortOrder }}
+            </small>
+            <span class="badge" [class.bg-success]="selectedPhase.status === 'Active'" 
+              [class.bg-danger]="selectedPhase.status !== 'Active'">
+              {{ selectedPhase.status }}
+            </span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+
+        <!-- Summary Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-4">
+            <div class="rounded-3 p-3 text-center" style="background: #f0f4ff;">
+              <div class="fw-bold fs-4 text-primary">{{ selectedPhase.topics.length }}</div>
+              <div class="text-muted small">Total Topics</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="rounded-3 p-3 text-center" style="background: #f0fff4;">
+              <div class="fw-bold fs-4 text-success">
+                {{ getTotalHours()}}
+              </div>
+              <div class="text-muted small">Total Est. Hours</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="rounded-3 p-3 text-center" style="background: #fff7f0;">
+              <div class="fw-bold fs-4 text-warning">
+                {{ getAvgHours() }}
+              </div>
+              <div class="text-muted small">Avg Hours / Topic</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Topics Table -->
+        <table class="table table-bordered align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 60px;">Order</th>
+              <th>Topic Name</th>
+              <th style="width: 140px;" class="text-center">Est. Hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let topic of selectedPhase.topics">
+              <td class="text-center">
+                <span class="badge bg-secondary rounded-pill">{{ topic.sortOrder }}</span>
+              </td>
+              <td class="fw-medium">{{ topic.topicName }}</td>
+              <td class="text-center">
+                <span class="badge bg-primary rounded-pill px-3">{{ topic.estHours }} hrs</span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="2" class="text-end fw-semibold">Total</td>
+              <td class="text-center fw-bold text-primary">
+                {{ getAvgHours() }} hrs
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer border-top pt-3">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+          Close
+        </button>
+        <button type="button" class="btn btn-primary rounded-pill px-4"
+          data-bs-dismiss="modal"
+          (click)="onEdit(selectedPhase)">
+          <i class="fa-solid fa-pen-to-square me-2"></i>Edit
+        </button>
+      </div>
+
+    </div>
+  </div>
 </div>
