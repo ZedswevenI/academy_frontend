@@ -3,14 +3,10 @@ import { RouterModule, Routes } from '@angular/router';
 import { PhaseListComponent } from './phase-list/phase-list.component';
 import { PhaseCreateComponent } from './phase-create/phase-create.component';
 
-const routes: Routes = [
-  { path: 'create', component: PhaseCreateComponent, title: 'Dashboard' },
-  { path: '', component: PhaseListComponent, title: 'Dashboard' }
-
-];
+const routes: Routes = [{ path: 'create', component: PhaseCreateComponent, title: 'Phase Plan' }, { path: '', component: PhaseListComponent, title: 'Phase Plan' }];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
+  exports: [RouterModule]
 })
-export class PhaseRoutingModule { }
+export class PhaseRoutingModule {}
