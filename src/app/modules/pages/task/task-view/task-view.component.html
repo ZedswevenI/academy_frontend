@@ -20,7 +20,9 @@
                                 Task Name
                             </label>
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-                            <div class="col-sm-7 pt-2"><strong>ENR2001</strong></div>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ taskData.taskName }}</strong>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-12 mb-3">
@@ -29,7 +31,9 @@
                                 Faculty Name
                             </label>
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-                            <div class="col-sm-7 pt-2"><strong>Dr. Rajesh Kumar</strong></div>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ taskData.staffId }}</strong>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-12 mb-3">
@@ -38,7 +42,9 @@
                                 Due Date
                             </label>
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-                            <div class="col-sm-7 pt-2"><strong>20-01-2026</strong></div>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ formatDate(taskData.dueDate) }}</strong>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-12 mb-3">
@@ -47,7 +53,24 @@
                                 Description
                             </label>
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-                            <div class="col-sm-7 pt-2"><strong>Prepare project documentation</strong></div>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ taskData.description }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3" *ngIf="taskData.attachmentUrl?.length">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label">
+                                Attachments
+                            </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2">
+                                <div *ngFor="let file of taskData.attachmentUrl">
+                                    <a [href]="file.url" target="_blank" class="text-primary">
+                                        {{ file.url.split('/').pop() }}
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <!-- <div class="col-lg-6 col-md-12 mb-3">
@@ -65,6 +88,10 @@
                 <div class="col-12 text-end mt-3">
                     <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/task">
                         Back
+                    </button>
+                    <button *ngIf="taskData?.status === 'Pending'" class="btn btn-warning px-4 me-2"
+                        style="border-radius: 30px;" (click)="markInProgress()">
+                        Mark In Progress
                     </button>
                     <button class="btn submitbutton px-4" style="border-radius: 30px;" (click)="onAct()">
                         Update Status

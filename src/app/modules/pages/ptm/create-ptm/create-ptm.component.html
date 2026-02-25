@@ -1,11 +1,13 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <!-- Header -->
         <div class="d-flex flex-column gap-4">
-            <!-- Header Section -->
             <div class="d-flex flex-column gap-4">
                 <div class="d-flex align-items-center justify-content-between">
                     <h1 class="fw-bold mb-0" style="font-size: 30px;">
-                        <i class="fa-solid fa-people-group me-2"></i>Create PTM
+                        <i class="fa-solid fa-people-group me-2"></i>
+                        {{ isEditMode ? 'Edit PTM' : 'Create PTM' }}
                     </h1>
                 </div>
             </div>
@@ -14,47 +16,129 @@
         <div class="mt-3">
             <form [formGroup]="createPtm">
                 <div class="row g-3">
+
+                    <!-- Scope -->
                     <div class="col-md-6">
-                        <formfield label="Date" formControlName="date" [control]="createPtm.get('date')"
-                            placeholder="Enter Date" [required]="true">
+                        <selectbox
+                            label="Scope"
+                            [options]="scope_options"
+                            formControlName="scope"
+                            [control]="createPtm.get('scope')"
+                            [required]="true">
+                        </selectbox>
+                    </div>
+
+                    <!-- Target (dynamic based on scope) -->
+                    <div class="col-md-6" *ngIf="createPtm.get('scope')?.value">
+                        
+
+                             <multiselect label="Students" [placeholder]="target_label" [options]="target_options"
+                        formControlName="targetIds" [control]="createPtm.get('targetIds')">
+                    </multiselect>
+                    </div>
+
+                    <!-- PTM Date -->
+                    <div class="col-md-6">
+                        <formfield
+                            label="PTM Date"
+                            type="date"
+                            formControlName="ptmDate"
+                            [control]="createPtm.get('ptmDate')"
+                            placeholder="Select Date"
+                            [required]="true">
                         </formfield>
                     </div>
+
+                    <!-- Start Time -->
                     <div class="col-md-6">
-                        <selectbox label="Class" [options]="class_options" formControlName="class"
-                            [control]="createPtm.get('class')" [required]="true">
-                        </selectbox>
-                    </div>
-                    <div class="col-md-6">
-                        <formfield label="Time" formControlName="time" [control]="createPtm.get('time')"
-                            placeholder="Enter Time" [required]="true">
+                        <formfield
+                            label="Start Time"
+                            type="datetime-local"
+                            formControlName="startTime"
+                            [control]="createPtm.get('startTime')"
+                            placeholder="Select Start Time"
+                            [required]="true">
                         </formfield>
                     </div>
+
+                    <!-- End Time -->
                     <div class="col-md-6">
-                        <selectbox label="Teacher" [options]="staff_options" formControlName="teacher"
-                            [control]="createPtm.get('teacher')" [required]="true">
+                        <formfield
+                            label="End Time"
+                            type="datetime-local"
+                            formControlName="endTime"
+                            [control]="createPtm.get('endTime')"
+                            placeholder="Select End Time"
+                            [required]="true">
+                        </formfield>
+                    </div>
+
+                    <!-- Duration -->
+                    <div class="col-md-6">
+                        <formfield
+                            label="Duration (mins)"
+                            type="number"
+                            formControlName="durationMins"
+                            [control]="createPtm.get('durationMins')"
+                            placeholder="e.g. 15"
+                            [required]="true">
+                        </formfield>
+                    </div>
+
+                    <!-- Meeting Mode -->
+                    <div class="col-md-6">
+                        <selectbox
+                            label="Meeting Mode"
+                            [options]="mode_options"
+                            formControlName="meetingMode"
+                            [control]="createPtm.get('meetingMode')"
+                            [required]="true">
                         </selectbox>
                     </div>
+
+                    <!-- Venue -->
                     <div class="col-md-6">
-                        <selectbox label="Mode" [options]="mode_options" formControlName="mode"
-                            [control]="createPtm.get('mode')" [required]="true">
-                        </selectbox>
+                        <formfield
+                            label="Venue"
+                            formControlName="venue"
+                            [control]="createPtm.get('venue')"
+                            placeholder="Enter Venue"
+                            [required]="true">
+                        </formfield>
                     </div>
-                    <div class="col-md-6">
-                        <selectbox label="Status" [options]="staff_options" formControlName="status"
-                            [control]="createPtm.get('status')" [required]="true">
-                        </selectbox>
+
+                    <!-- Content -->
+                    <div class="col-md-12">
+                        <description
+                            label="Content"
+                            formControlName="content"
+                            [control]="createPtm.get('content')"
+                            placeholder="Enter meeting agenda or notes..."
+                            [required]="true">
+                        </description>
                     </div>
+
                 </div>
 
+                <!-- Actions -->
                 <div class="col-12 text-end mt-3">
-                    <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/ptm">
+                    <button
+                        type="button"
+                        class="btn closebutton px-4 me-2"
+                        style="border-radius: 30px;"
+                        (click)="cancel()">
                         Back
                     </button>
-                    <button class="btn submitbutton px-4" [disabled]="createPtm.invalid" (click)="addPTM()"
+                    <button
+                        type="button"
+                        class="btn submitbutton px-4"
+                        
+                        (click)="addPTM()"
                         style="border-radius: 30px;">
-                        Submit
+                        {{ isEditMode ? 'Update' : 'Submit' }}
                     </button>
                 </div>
+                <!-- [disabled]="createPtm.invalid" -->
 
             </form>
         </div>
