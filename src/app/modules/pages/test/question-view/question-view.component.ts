@@ -32,7 +32,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private breadcrump: BredcrumpService
-  ) { this.breadcrump.set([{ label: 'Assignments', link: '/app/tests' }, { label: 'View' }]); }
+  ) { this.breadcrump.set([{ label: 'Assignments', link: '/app/assignment' }, { label: 'View' }]); }
 
   ngOnInit(): void {
     const state: any = history.state;
@@ -360,7 +360,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
 
   editQuestion(question: any) {
     this.router.navigate(
-      ['/app/tests/question-create'],
+      ['/app/assignment/question-create'],
       {
         state: {
           question: {

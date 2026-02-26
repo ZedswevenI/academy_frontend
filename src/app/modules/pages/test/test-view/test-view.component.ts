@@ -9,6 +9,6 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 })
 export class TestViewComponent {
   constructor(private breadcrump: BredcrumpService) {
-    this.breadcrump.set([{ label: 'Assignments', link: '/app/test' }, { label: 'View' }]);
+    this.breadcrump.set([{ label: 'Assignments', link: '/app/assignment' }, { label: 'View' }]);
   }
 }

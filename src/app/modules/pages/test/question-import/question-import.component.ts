@@ -418,7 +418,7 @@ export class QuestionImportComponent implements OnInit {
 
           if (res?.status) {
                 this.alert.success(res.message);
-            this.router.navigate(['/app/tests']);
+            this.router.navigate(['/app/assignment']);
           } else {
             this.alert.success("Error importing questions");
           }

@@ -60,9 +60,9 @@ export class TestCreateComponent implements OnInit {
       this.isEditMode = true;
       this.testId = state.test.testId || state.test;
       this.editData = state.test;
-      this.breadcrump.set([{ label: 'Assignment', link: '/app/tests' }, { label: 'Edit' }]);
+      this.breadcrump.set([{ label: 'Assignment', link: '/app/assignment' }, { label: 'Edit' }]);
     } else {
-      this.breadcrump.set([{ label: 'Assignment', link: '/app/tests' }, { label: 'Create' }]);
+      this.breadcrump.set([{ label: 'Assignment', link: '/app/assignment' }, { label: 'Create' }]);
     }
   }
 
@@ -469,7 +469,7 @@ export class TestCreateComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Assignment created successfully');
-            this.router.navigate(['/app/tests']);
+            this.router.navigate(['/app/assignment']);
           }
         },
         error: () => this.alert.error('Error creating assignment')
@@ -492,7 +492,7 @@ export class TestCreateComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Assignment updated successfully');
-            this.router.navigate(['/app/tests']);
+            this.router.navigate(['/app/assignment']);
           }
         },
         error: () => this.alert.error('Error updating assignment')

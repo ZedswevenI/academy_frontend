@@ -88,7 +88,7 @@ export class CenterviewComponent implements OnInit {
   }
 
   back() {
-    this.router.navigate(['/app/admin/masters/centers']);
+    this.router.navigate(['/app/org-master/center']);
   }
 
   loadCenter() {

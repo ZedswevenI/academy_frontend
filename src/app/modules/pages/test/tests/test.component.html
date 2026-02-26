@@ -13,11 +13,11 @@
                             {{ showFilters ? 'Hide Filters' : 'Filters' }}
                         </button>
                         <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
-                            routerLink="/app/tests/create">
+                            routerLink="/app/assignment/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Add Assignment</button>
                         <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
-                            routerLink="/app/tests/import">
+                            routerLink="/app/assignment/import">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Import Assignments</button>
                     </div>
@@ -37,8 +37,8 @@
 
                             <div class="col-6 col-md-2">
                                 <selectbox label="Subject" formControlName="subjectId"
-                                    [control]="filterForm.get('subjectId')" [options]="subjectOptions" optionLabel="label"
-                                    optionValue="value">
+                                    [control]="filterForm.get('subjectId')" [options]="subjectOptions"
+                                    optionLabel="label" optionValue="value">
                                 </selectbox>
                             </div>
 
