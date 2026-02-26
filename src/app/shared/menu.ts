@@ -49,16 +49,6 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/student'
   },
   {
-    label: 'Chat',
-    icon: 'fa-solid fa-comments',
-    route: '/app/chat'
-  },
-  {
-    label: 'Communication',
-    icon: 'fa-solid fa-comments',
-    route: '/app/communication'
-  },
-  {
     label: 'Assignments',
     icon: 'fa-solid fa-file-pen',
     route: '/app/assignment'
@@ -74,6 +64,36 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/activity'
   },
   {
+    label: 'Student Performance',
+    icon: 'fa-solid fa-chart-column',
+    route: '/app/performance'
+  },
+  {
+    label: 'Tasks',
+    icon: 'fa-solid fa-list-check',
+    route: '/app/task'
+  },
+  {
+    label: 'PTM',
+    icon: 'fa-solid fa-people-group',
+    route: '/app/ptm'
+  },
+  {
+    label: 'Knowledge Base',
+    icon: 'fa-solid fa-book-open',
+    route: '/app/knowledge'
+  },
+  {
+    label: 'Package',
+    icon: 'fa-solid fa-box-open',
+    route: '/app/package'
+  },
+  {
+    label: 'Circular',
+    icon: 'fa-solid fa-bullhorn',
+    route: '/app/circular'
+  },
+  {
     label: 'Feedback',
     icon: 'fa-solid fa-award',
     route: '/app/feedback'
@@ -84,39 +104,19 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/support'
   },
   {
-    label: 'Student Performance',
-    icon: 'fa-solid fa-chart-column',
-    route: '/app/performance'
-  },
-  {
-    label: 'PTM',
-    icon: 'fa-solid fa-people-group',
-    route: '/app/ptm'
-  },
-  {
-    label: 'Package',
-    icon: 'fa-solid fa-box-open',
-    route: '/app/package'
-  },
-  {
-    label: 'Knowledge Base',
-    icon: 'fa-solid fa-book-open',
-    route: '/app/knowledge'
-  },
-  {
-    label: 'Tasks',
-    icon: 'fa-solid fa-list-check',
-    route: '/app/task'
-  },
-  {
     label: 'Report',
     icon: 'fa-solid fa-chart-line',
     route: '/app/report'
   },
   {
-    label: 'Circular',
-    icon: 'fa-solid fa-bullhorn',
-    route: '/app/circular'
+    label: 'Chat',
+    icon: 'fa-solid fa-comments',
+    route: '/app/chat'
+  },
+  {
+    label: 'Communication',
+    icon: 'fa-solid fa-comments',
+    route: '/app/communication'
   },
   {
     label: 'Org Masters',
@@ -131,6 +131,11 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Center',
         icon: 'fa-solid fa-landmark',
         route: '/app/org-master/center'
+      },
+      {
+        label: 'Staff',
+        icon: 'fa-solid fa-users',
+        route: '/app/org-master/staff'
       },
       {
         label: 'Program',

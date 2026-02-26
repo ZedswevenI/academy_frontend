@@ -14,7 +14,6 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
   styleUrl: './center.component.scss'
 })
 export class CenterComponent implements OnInit {
-
   centerForm!: FormGroup;
   formMode: 'create' | 'edit' = 'create';
   showForm = false;
@@ -26,16 +25,6 @@ export class CenterComponent implements OnInit {
   totalRecords = 0;
   centerData: any[] = [];
   entiId: any;
-  institutes = [
-    { id: 1, name: 'Z7i Institute - Main' },
-    { id: 2, name: 'Z7i Institute - Chennai' }
-  ];
-
-  instituteOptions = this.institutes.map(i => ({
-    label: i.name,
-    value: i.id
-  }));
-
   columns = [
     { key: 'centerName', label: 'Center Name', sortable: false },
     { key: 'centerCode', label: 'Code', sortable: false },
@@ -266,6 +255,6 @@ export class CenterComponent implements OnInit {
   view(row: any) {
   const id = row?._id || row?.recId;
   if (!id) return;
-  this.router.navigate(['/app/admin/masters/centers/view', id]);
+  this.router.navigate(['/app/org-master/center/view', id]);
 }
 }

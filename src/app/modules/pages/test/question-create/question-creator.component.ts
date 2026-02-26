@@ -377,7 +377,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question updated successfully');
-              this.router.navigate(['/app/tests']);
+              this.router.navigate(['/app/assignment']);
             }
           },
           error: (err) => {
@@ -395,7 +395,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question created successfully');
-              this.router.navigate(['/app/tests']);
+              this.router.navigate(['/app/assignment']);
             }
           },
           error: (err) => {

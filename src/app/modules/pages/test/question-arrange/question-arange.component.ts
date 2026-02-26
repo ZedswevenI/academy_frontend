@@ -278,7 +278,7 @@ export class QuestionArrangementComponent implements OnInit {
       next: (res: any) => {
         if (res?.status) {
           this.showToast('Order saved successfully!', 'success');
-          this.router.navigate(['/app/tests']);
+          this.router.navigate(['/app/assignment']);
         }
       },
       error: (err) => {

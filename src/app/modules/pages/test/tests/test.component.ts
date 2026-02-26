@@ -32,7 +32,9 @@ columnsArray = [
   { key: 'testNumber', label: 'Test No', sortable: true },
   { key: 'classNo', label: 'Class', sortable: true },
   { key: 'subject', label: 'Subject', sortable: true },
-  { key: 'numberOfQuestions', label: 'No of questions', sortable: false },
+  { key: 'topicName', label: 'Topic', sortable: true },
+  { key: 'subTopicName', label: 'Subtopc', sortable: true },
+  { key: 'level', label: 'Level', sortable: true }
 ];
 
 dataArray: any[] = [];
@@ -317,23 +319,23 @@ deleteTest(row: any) {
 }
 
 viewQuestions(row: any) {
-  this.router.navigate(['/app/tests/question-view'], { state: { questions: row } });
+  this.router.navigate(['/app/assignment/question-view'], { state: { questions: row } });
 }
 
 rearrange(row: any) {
-  this.router.navigate(['/app/tests/question-rearrange'], { state: { questions: row } });
+  this.router.navigate(['/app/assignment/question-rearrange'], { state: { questions: row } });
 }
 
 editTest(row: any) {
-  this.router.navigate(['/app/tests/create'], { state: { test: row } });
+  this.router.navigate(['/app/assignment/create'], { state: { test: row } });
 }
 
 importQuestions(row: any) {
-  this.router.navigate(['/app/tests/question-import'], { state: { questions: row } });
+  this.router.navigate(['/app/assignment/question-import'], { state: { questions: row } });
 }
 
 addQuestions(row: any) {
-  this.router.navigate(['/app/tests/question-create'], { state: { question: row } });
+  this.router.navigate(['/app/assignment/question-create'], { state: { question: row } });
 }
 
 printTest(row: any) { }
