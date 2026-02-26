@@ -18,41 +18,42 @@
             <form [formGroup]="taskForm">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <formfield label="Task" formControlName="task" [control]="taskForm.get('task')"
+                        <formfield label="Task" formControlName="taskName" [control]="taskForm.get('taskName')"
                             placeholder="Enter Task" [required]="true">
                         </formfield>
                     </div>
                     <div class="col-md-6">
-                        <selectbox label="Faculty" [options]="faculty_options" formControlName="faculty"
-                            [control]="taskForm.get('faculty')" [required]="true">
+                        <selectbox label="Faculty" [options]="faculty_options" formControlName="staffId"
+                            [control]="taskForm.get('staffId')" [required]="true">
                         </selectbox>
                     </div>
                     <div class="col-md-6">
-                        <formfield label="Due Date" formControlName="due" [control]="taskForm.get('due')"
-                            placeholder="Enter Due date" [required]="true">
+                        <formfield label="Due Date" type="date" formControlName="dueDate"
+                            [control]="taskForm.get('dueDate')" [required]="true">
                         </formfield>
                     </div>
                     <div class="col-md-6">
-                        <importfiles label="Upload" [multiple]="true" formControlName="file" [required]="true"
-                            [control]="taskForm.get('file')" (filesChanged)="onFilesSelected($event)">
-                        </importfiles>
+                         <importfiles label="Upload Material" [multiple]="false" formControlName="file"
+                        (filesChanged)="onFilesSelected($event)">
+                    </importfiles>
                     </div>
                     <div class="col-md-6">
-                        <description label="Description" placeholder="Type here...." formControlName="desc"
-                            [control]="taskForm.get('desc')">
+                        <description label="Description" placeholder="Type here...." formControlName="description"
+                            [control]="taskForm.get('description')">
                         </description>
                     </div>
                 </div>
 
-                 <div class="col-12 text-end mt-3">
+                <div class="col-12 text-end mt-3">
                     <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/task">
                         Back
                     </button>
-                    <button class="btn submitbutton px-4" [disabled]="taskForm.invalid" (click)="addTask()" style="border-radius: 30px;">
-                        Submit
+                    <button class="btn submitbutton px-4" [disabled]="taskForm.invalid" (click)="submitTask()"
+                        style="border-radius: 30px;">
+                        {{ isEditMode ? 'Update Task' : 'Submit' }}
                     </button>
                 </div>
-                
+
             </form>
         </div>
     </div>

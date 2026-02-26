@@ -1,11 +1,24 @@
-import { Component, Input, Output, EventEmitter, forwardRef } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, AbstractControl } from '@angular/forms';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  forwardRef,
+  Optional,
+  Self
+} from '@angular/core';
+
+import {
+  ControlValueAccessor,
+  NG_VALUE_ACCESSOR,
+  NgControl
+} from '@angular/forms';
 
 @Component({
   selector: 'importfiles',
   standalone: false,
   templateUrl: './importfile.component.html',
-  styleUrl: './importfile.component.scss',
+  styleUrls: ['./importfile.component.scss'],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -15,45 +28,29 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, AbstractControl } from '@angul
   ]
 })
 export class ImportfileComponent implements ControlValueAccessor {
+
+  // ==========================
+  // Inputs (UNCHANGED)
+  // ==========================
   @Input() label: string = '';
   @Input() required: boolean = false;
   @Input() multiple: boolean = false;
   @Input() accept: string = '*/*';
-  @Input() control: AbstractControl | null = null;
   @Input() id: string = 'fileInput';
 
+  // ==========================
+  // Output (UNCHANGED)
+  // ==========================
   @Output() filesChanged = new EventEmitter<File[]>();
 
+  // ==========================
+  // Internal State (UNCHANGED)
+  // ==========================
   files: File[] = [];
 
-  onChange = (_: any) => { };
-  onTouched = () => { };
+  maxFileSize = 20 * 1024 * 1024; // 20MB
 
-  writeValue(obj: any): void {
-    this.files = Array.isArray(obj) ? obj : [];
-  }
-  registerOnChange(fn: any): void {
-    this.onChange = fn;
-  }
-  registerOnTouched(fn: any): void {
-    this.onTouched = fn;
-  }
-
-  // onFileChange(event: any) {
-  //   const selectedFiles: FileList = event.target.files;
-  //   this.files = Array.from(selectedFiles);
-  //   this.onChange(this.multiple ? this.files : this.files[0]);
-  //   this.filesChanged.emit(selectedFiles);
-  //   this.onTouched();
-  // }
-
-  // removeFile(index: number) {
-  //   this.files.splice(index, 1);
-  //   this.onChange(this.multiple ? this.files : this.files[0] || null);
-  // }
-
-  maxFileSize = 20 * 1024 * 1024; // 20MB in bytes
-  allowedExtensions = [
+  allowedExtensions: string[] = [
     '.pdf',
     '.jpg',
     '.jpeg',
@@ -66,63 +63,116 @@ export class ImportfileComponent implements ControlValueAccessor {
     '.ppt',
     '.pptx'
   ];
-  onFilesSelected(event: any) {
-    const file: File = event.target.files[0];
 
-    if (!file) return;
+  // ==========================
+  // ControlValueAccessor
+  // ==========================
+  onChange: any = () => {};
+  onTouched: any = () => {};
 
-    // ✅ Check by extension
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!this.allowedExtensions.includes(fileExtension)) {
-      alert(`Invalid file format: ${fileExtension}. Allowed formats: ${this.allowedExtensions.join(', ')}`);
-      return;
+  constructor(
+    @Optional() @Self() public ngControl: NgControl
+  ) {
+    if (this.ngControl) {
+      this.ngControl.valueAccessor = this;
     }
-
-    // ✅ Check by MIME type
-    if (!this.allowedExtensions.includes(file.type)) {
-      alert(`Invalid MIME type: ${file.type}`);
-      return;
-    }
-
-    console.log('Valid file:', file);
   }
 
-  onFileChange(event: Event) {
+  // ==========================
+  // Validation Getter
+  // ==========================
+  get isInvalid(): boolean {
+    return !!(
+      this.ngControl?.control &&
+      this.ngControl.control.invalid &&
+      (this.ngControl.control.touched ||
+       this.ngControl.control.dirty)
+    );
+  }
+
+  writeValue(value: any): void {
+    if (Array.isArray(value)) {
+      this.files = value;
+    } else if (value) {
+      this.files = [value];
+    } else {
+      this.files = [];
+    }
+  }
+
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  // ==========================
+  // File Selection
+  // ==========================
+  onFileChange(event: Event): void {
+
     const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
+
+    if (!input.files || input.files.length === 0) {
+      return;
+    }
 
     const selectedFiles: File[] = Array.from(input.files);
     const validFiles: File[] = [];
 
     for (let file of selectedFiles) {
+
       const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+
       if (!this.allowedExtensions.includes(ext)) {
         alert(`❌ Invalid file format: ${file.name}`);
         continue;
       }
+
       if (file.size > this.maxFileSize) {
-        alert(`❌ File too large (max 20MB): ${file.name}`);
+        alert(`❌ File too large (Max 20MB): ${file.name}`);
         continue;
       }
+
       validFiles.push(file);
     }
 
-    this.files = this.multiple ? [...this.files, ...validFiles] : validFiles.slice(0, 1);
+    if (!validFiles.length) return;
 
-    // Update form control
-    const valueToEmit = this.multiple ? this.files : this.files[0] || null;
-    if (this.control) {
-      this.control.setValue(valueToEmit);
-      this.control.markAsTouched();
-    }
+    // Single vs Multiple handling
+    this.files = this.multiple
+      ? [...this.files, ...validFiles]
+      : [validFiles[0]];
+
+    const valueToEmit = this.multiple
+      ? this.files
+      : this.files[0];
+
+    // Update Angular form
+    this.onChange(valueToEmit);
+    this.onTouched();
+
+    // Emit to parent
+    this.filesChanged.emit(this.files);
+
+    // Reset input so same file can be selected again
+    input.value = '';
+  }
+
+  // ==========================
+  // Remove File
+  // ==========================
+  removeFile(index: number): void {
+
+    this.files.splice(index, 1);
+
+    const valueToEmit = this.multiple
+      ? this.files
+      : this.files[0] || null;
 
     this.onChange(valueToEmit);
     this.filesChanged.emit(this.files);
-    this.onTouched();
-  }
-
-  removeFile(index: number) {
-    this.files.splice(index, 1);
-    if (this.control) this.control.setValue(this.files);
   }
 }

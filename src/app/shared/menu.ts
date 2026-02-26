@@ -59,7 +59,7 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/communication'
   },
   {
-    label: 'Assignment',
+    label: 'Assignments',
     icon: 'fa-solid fa-file-pen',
     route: '/app/assignment'
   },
@@ -67,11 +67,6 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Enable Assignment',
     icon: 'fa-solid fa-file-pen',
     route: '/app/enableassignment'
-  },
-  {
-    label: 'Assignment Manage',
-    icon: 'fa-solid fa-file-pen',
-    route: '/app/tests'
   },
   {
     label: 'Activities',

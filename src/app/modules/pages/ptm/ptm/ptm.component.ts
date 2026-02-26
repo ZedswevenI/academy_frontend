@@ -1,7 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { AbstractControl } from '@angular/forms';
+import { Router } from '@angular/router';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-ptm',
@@ -9,43 +12,32 @@ import { AbstractControl } from '@angular/forms';
   templateUrl: './ptm.component.html',
   styleUrl: './ptm.component.scss'
 })
-export class PtmComponent {
+export class PtmComponent implements OnInit {
+
   ptmForm!: FormGroup;
-  isProceed: boolean = false;
+  isProceed = false;
+  loading = false;
+  tenantId: any;
 
   dataArray: any[] = [];
-  originalData: any[] = [];
   totalRecords = 0;
 
-  class_options = [
-    { label: 'Class 6', value: 'Class 6' },
-    { label: 'Class 7', value: 'Class 7' },
-    { label: 'Class 8', value: 'Class 8' },
-    { label: 'Class 9', value: 'Class 9' },
-    { label: 'Class 10', value: 'Class 10' },
-    { label: 'Class 11', value: 'Class 11' },
-    { label: 'Class 12', value: 'Class 12' }
-  ];
-  batch_options = [
-    { label: 'Batch A', value: 'Batch A' },
-    { label: 'Batch B', value: 'Batch B' },
-    { label: 'Batch C', value: 'Batch C' }
-  ]
-  student_options = [
-    { label: 'Arun Kumar', value: 'Arun Kumar' },
-    { label: 'Divya Sharma', value: 'Divya Sharma' },
-    { label: 'Rahul Verma', value: 'Rahul Verma' },
-    { label: 'Sneha Patel', value: 'Sneha Patel' },
-    { label: 'Karthik R', value: 'Karthik R' }
+  // Dropdown options
+  batch_options: any[] = [];
+  status_options = [
+    { label: 'Scheduled', value: 'SCHEDULED' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'Cancelled', value: 'CANCELLED' }
   ];
 
   columnsArray = [
-    { key: 'date', label: 'Date', sortable: true },
-    { key: 'class', label: 'Class', sortable: true },
-    { key: 'time', label: 'Timing', sortable: false },
-    { key: 'teacher', label: 'Incharge', sortable: true },
-    { key: 'mode', label: 'Mode', sortable: false },
-    { key: 'status', label: 'Status', sortable: false },
+    { key: 'ptmDateFormatted', label: 'PTM Date', sortable: true },
+    { key: 'startFormatted', label: 'Start Time', sortable: false },
+    { key: 'endFormatted', label: 'End Time', sortable: false },
+    { key: 'durationMins', label: 'Duration (min)', sortable: false },
+    { key: 'meetingMode', label: 'Mode', sortable: false },
+    { key: 'venue', label: 'Venue', sortable: false },
+    { key: 'status', label: 'Status', sortable: false }
   ];
 
   actions = [
@@ -55,31 +47,148 @@ export class PtmComponent {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.viewptm(row)
+      callback: (row: any) => this.onView(row)
     },
-  ]
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-pen-to-square',
+      tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#16A34A',
+      callback: (row: any) => this.router.navigate(['/app/ptm/create'], { state: { ptm: row } })
+    },
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-trash-can',
+      tooltip: 'Delete',
+      color: '#6B7280',
+      hoverColor: '#DC2626',
+      callback: (row: any) => this.openDeleteModal(row)
+    }
+  ];
 
-  constructor(private breadcrump: BredcrumpService, private fb: FormBuilder) {
-    this.breadcrump.set([{ label: 'Ptm' }])
+  isDragging = false;
+  fileName = '';
+  importLoading = false;
+  parsedRows: any[] = [];
+  errorRows: any[] = [];
+
+  requiredColumns = [
+    'CCode', 'Batch Code', 'Eno', 'Student Name',
+    'PTM Date', 'PTM Start Time', 'PTM End Time',
+    'Duration', 'Content', 'Venue'
+  ];
+
+  previewColumns = [
+    { field: 'CCode', header: 'C.Code' },
+    { field: 'Batch Code', header: 'Batch' },
+    { field: 'Eno', header: 'Enroll No' },
+    { field: 'Student Name', header: 'Student' },
+    { field: 'PTM Date', header: 'Date' },
+    { field: 'PTM Start Time', header: 'Start' },
+    { field: 'PTM End Time', header: 'End' },
+    { field: 'Duration', header: 'Dur.(min)' },
+    { field: 'Content', header: 'Content' },
+    { field: 'Venue', header: 'Venue' }
+  ];
+
+
+  openDeleteModal(row: any): void {
+    this.ptmToDelete = row;
+    const modalEl = document.getElementById('ptmDeleteModal');
+    if (modalEl) {
+      const modal = new (window as any).bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  }
+
+  // Delete modal state
+  ptmToDelete: any = null;
+
+  constructor(
+    private breadcrump: BredcrumpService,
+    private fb: FormBuilder,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService
+  ) {
+    this.tenantId = localStorage.getItem('tenantId');
+    this.breadcrump.set([{ label: 'PTM' }]);
   }
 
   ngOnInit(): void {
     this.ptmForm = this.fb.group({
-      filter: [null, [this.filterValidator]]
+      batchCode: ['', Validators.required],
+      status: ['', Validators.required]
     });
 
-    this.originalData = [
-      { date: '10-Jan-2026', class: '6th', time: '10:00am  - 4:00pm', teacher: 'Mr. R. Kumar', mode: 'Offline', status: 'Completed' },
-      { date: '12-Jan-2026', class: '7th', time: '10:00am  - 4:00pm', teacher: 'Mr. R. Kumar', mode: 'Offline', status: 'Completed' },
-      { date: '14-Jan-2026', class: '8th', time: '10:00am  - 4:00pm', teacher: 'Ms. Anitha', mode: 'Online', status: 'Completed' },
-      { date: '15-Jan-2026', class: '9th', time: '10:00am  - 4:00pm', teacher: 'Ms. Anitha', mode: 'Offline', status: 'Completed' },
-      { date: '18-Jan-2026', class: '10th', time: '10:00am  - 4:00pm', teacher: 'Mr. Prakash', mode: 'Offline', status: 'Completed' },
-      { date: '20-Jan-2026', class: '11th', time: '10:00am  - 4:00pm', teacher: 'Mr. Prakash', mode: 'Online', status: 'Completed' },
-      { date: '22-Jan-2026', class: '12th', time: '10:00am  - 4:00pm', teacher: 'Ms. Revathi', mode: 'Offline', status: 'Scheduled' },
-    ];
-
-    this.loadTableData({ page: 1, pageSize: 5 });
+    this.loadBatches();
   }
+
+  // ====================================================
+  // LOAD BATCHES
+  // ====================================================
+
+  private loadBatches(): void {
+    this.commonApi.fetchData(
+      { entiId: this.tenantId },
+      'batch',
+      'list?list=full'
+    ).subscribe({
+      next: (res: any) => {
+        this.batch_options = (res?.data || []).map((b: any) => ({
+          label: b.batchName,
+          value: b.batchCode
+        }));
+      },
+      error: () => this.alert.error('Error loading batches')
+    });
+  }
+
+  // ====================================================
+  // PROCEED — fetch PTM list
+  // ====================================================
+
+  onProceed(): void {
+    if (this.ptmForm.invalid) return;
+
+    this.isProceed = true;
+    this.fetchPTMList(1, 10);
+  }
+
+  fetchPTMList(page: number, limit: number, search?: string): void {
+    const { batchCode, status } = this.ptmForm.value;
+
+    this.loading = true;
+
+    const body = { tenantId: this.tenantId };
+    const query = `list?batchCode=${batchCode}&status=${status}&page=${page}&limit=${limit}${search ? '&search=' + search : ''}`;
+
+    this.commonApi.fetchData(body, 'ims/ptm', query)
+      .subscribe({
+        next: (res: any) => {
+          const raw: any[] = res?.data || [];
+
+          this.dataArray = raw.map((p: any) => ({
+            ...p,
+            ptmDateFormatted: this.formatDate(p.ptmDate),
+            startFormatted: this.formatTime(p.startTime),
+            endFormatted: this.formatTime(p.endTime)
+          }));
+
+          this.totalRecords = res?.count || this.dataArray.length;
+          this.loading = false;
+        },
+        error: () => {
+          this.alert.error('Error loading PTM list');
+          this.loading = false;
+        }
+      });
+  }
+
+  // ====================================================
+  // TABLE EVENTS
+  // ====================================================
 
   loadTableData(req: {
     page: number;
@@ -87,48 +196,230 @@ export class PtmComponent {
     search?: string;
     sortKey?: string;
     sortDirection?: 'asc' | 'desc';
-  }) {
-    let filtered = [...this.originalData];
+  }): void {
+    if (!this.isProceed) return;
+    this.fetchPTMList(req.page, req.pageSize, req.search);
+  }
 
-    // SEARCH
-    if (req.search) {
-      const value = req.search.toLowerCase();
-      filtered = filtered.filter(row =>
-        Object.values(row).some(v =>
-          String(v).toLowerCase().includes(value)
-        )
-      );
+  // ====================================================
+  // ACTIONS
+  // ====================================================
+
+  onAction(event: { action: string; row: any }): void {
+    const { action, row } = event;
+
+    if (action === 'view') {
+      this.onView(row);
     }
 
-    // SORT
-    if (req.sortKey) {
-      filtered.sort((a, b) => {
-        const x = a[req.sortKey!];
-        const y = b[req.sortKey!];
-        return req.sortDirection === 'asc'
-          ? String(x).localeCompare(String(y))
-          : String(y).localeCompare(String(x));
+    if (action === 'edit') {
+      this.router.navigate(['/app/ptm/create'], { state: { ptm: row } });
+    }
+
+    if (action === 'delete') {
+      this.ptmToDelete = row;
+      const modalEl = document.getElementById('ptmDeleteModal');
+      if (modalEl) {
+        const modal = new (window as any).bootstrap.Modal(modalEl);
+        modal.show();
+      }
+    }
+  }
+
+  confirmDelete(): void {
+    if (!this.ptmToDelete) return;
+
+    const body = {
+      tenantId: this.tenantId,
+      ptmId: this.ptmToDelete.ptmId
+    };
+
+    this.commonApi.fetchData(body, 'ims/ptm', 'remove')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success('PTM deleted successfully');
+            this.dataArray = this.dataArray.filter(d => d.ptmId !== this.ptmToDelete.ptmId);
+            this.totalRecords = this.dataArray.length;
+            this.ptmToDelete = null;
+          }
+        },
+        error: () => this.alert.error('Error deleting PTM')
       });
+  }
+
+  // View — show details modal
+  selectedPtm: any = null;
+
+  onView(row: any): void {
+    this.selectedPtm = row;
+    const modalEl = document.getElementById('ptmViewModal');
+    if (modalEl) {
+      const modal = new (window as any).bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  }
+
+  // ====================================================
+  // HELPERS
+  // ====================================================
+
+  private formatDate(ts: number): string {
+    if (!ts) return '-';
+    return new Date(ts).toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  }
+
+  private formatTime(ts: number): string {
+    if (!ts) return '-';
+    return new Date(ts).toLocaleTimeString('en-IN', {
+      hour: '2-digit', minute: '2-digit', hour12: true
+    });
+  }
+
+  openImportModal(): void {
+    this.resetImport();
+    this.openModal('ptmImportModal');
+  }
+
+  resetImport(): void {
+    this.fileName      = '';
+    this.parsedRows    = [];
+    this.errorRows     = [];
+    this.isDragging    = false;
+    this.importLoading = false;
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging = true;
+  }
+
+  onDragLeave(): void {
+    this.isDragging = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) this.processFile(file);
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file  = input.files?.[0];
+    if (file) this.processFile(file);
+    input.value = '';
+  }
+
+  private processFile(file: File): void {
+    if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+      this.alert.error('Only .xlsx, .xls or .csv files are allowed');
+      return;
     }
 
-    // PAGINATION
-    this.totalRecords = filtered.length;
-    const start = (req.page - 1) * req.pageSize;
-    const end = start + req.pageSize;
-    this.dataArray = filtered.slice(start, end);
+    this.fileName   = file.name;
+    this.parsedRows = [];
+    this.errorRows  = [];
+
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      try {
+        const data        = new Uint8Array(e.target.result);
+        const workbook    = XLSX.read(data, { type: 'array' });
+        const sheet       = workbook.Sheets[workbook.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (rows.length === 0) {
+          this.alert.error('File is empty');
+          this.fileName = '';
+          return;
+        }
+
+        const missing = this.requiredColumns.filter(c => !Object.keys(rows[0]).includes(c));
+        if (missing.length > 0) {
+          this.alert.error(`Missing columns: ${missing.join(', ')}`);
+          this.fileName = '';
+          return;
+        }
+
+        this.parsedRows = rows;
+        this.validateRows();
+      } catch {
+        this.alert.error('Error reading file');
+        this.fileName = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
   }
 
-  onProceed() {
-    this.isProceed = true;
+  private validateRows(): void {
+    this.errorRows = [];
+    this.parsedRows.forEach((row, i) => {
+      const missing = this.requiredColumns.filter(col => !row[col]?.toString().trim());
+      if (missing.length > 0) {
+        this.errorRows.push({ rowNo: i + 2, missing: missing.join(', ') });
+      }
+    });
   }
 
-  filterValidator(control: AbstractControl) {
-    const val = control.value;
-    if (!val || !val.value1 || !val.value2 || !val.value3) {
-      return { required: true };
-    }
-    return null;
+  submitImport(): void {
+    if (!this.parsedRows.length || this.errorRows.length > 0) return;
+
+    this.importLoading = true;
+    const payload = { tenantId: this.tenantId, rows: this.parsedRows };
+
+    this.commonApi.fetchData(payload, 'ims/ptm/schedule', 'import')
+      .subscribe({
+        next: (res: any) => {
+          this.importLoading = false;
+          if (res?.status) {
+            this.alert.success(`${this.parsedRows.length} PTM(s) imported successfully`);
+            this.closeModal('ptmImportModal');
+            this.resetImport();
+            if (this.isProceed) this.fetchPTMList(1, 10);
+          } else {
+            this.alert.error(res?.message || 'Import failed');
+          }
+        },
+        error: () => {
+          this.importLoading = false;
+          this.alert.error('Error importing PTM data');
+        }
+      });
   }
 
-  viewptm(row: any) { }
+  downloadTemplate(): void {
+    const sample = [{
+      'CCode': '64', 'Batch Code': 'COIFR259A01', 'Eno': '902164259005',
+      'Student Name': 'Rajesh', 'PTM Date': '2026-03-01',
+      'PTM Start Time': '10:00:00', 'PTM End Time': '10:15:00',
+      'Duration': '15', 'Content': 'Maths & Physics focus', 'Venue': 'Room 10'
+    }];
+    const ws = XLSX.utils.json_to_sheet(sample);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'PTM Import');
+    XLSX.writeFile(wb, 'ptm_import_template.xlsx');
+  }
+
+  // ====================================================
+  // HELPERS
+  // ====================================================
+
+  isRowError(rowNo: number): boolean {
+    return this.errorRows.some(e => e.rowNo === rowNo);
+  }
+
+  private openModal(id: string): void {
+    const el = document.getElementById(id);
+    if (el) new (window as any).bootstrap.Modal(el).show();
+  }
+
+  private closeModal(id: string): void {
+    const el = document.getElementById(id);
+    if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
+  }
+
 }
