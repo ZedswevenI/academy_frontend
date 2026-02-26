@@ -5,10 +5,12 @@ import { ActivityRoutingModule } from './activity.routing.module';
 import { ActivityComponent } from './activity/activity.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { createActivityComponent } from './create-activity/create-activity.component';
 
 @NgModule({
     declarations: [
-        ActivityComponent
+        ActivityComponent,
+        createActivityComponent
     ],
     imports: [
         CommonModule,

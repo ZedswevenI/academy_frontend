@@ -1,0 +1,110 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <!-- Header -->
+        <div class="d-flex flex-column gap-4">
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-calendar-check me-2"></i>
+                        {{ isEditMode ? 'Edit Activity' : 'Create Activity' }}
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <form [formGroup]="activityForm">
+                <div class="row g-3">
+
+                    <!-- Batch -->
+                    <div class="col-md-6">
+                        <selectbox label="Batch" placeholder="Select Batch" [options]="batch_options"
+                            formControlName="batchCode" [control]="activityForm.get('batchCode')"
+                            [required]="true">
+                        </selectbox>
+                    </div>
+
+                    <!-- Center -->
+                    <div class="col-md-6">
+                        <selectbox label="Center" placeholder="Select Center" [options]="center_options"
+                            formControlName="centerCode" [control]="activityForm.get('centerCode')"
+                            [required]="true">
+                        </selectbox>
+                    </div>
+
+                    <!-- Activity Name -->
+                    <div class="col-md-6">
+                        <formfield label="Activity Name" formControlName="activityName"
+                            [control]="activityForm.get('activityName')"
+                            placeholder="Enter Activity Name" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="col-md-6">
+                        <formfield label="Start Date" type="date" formControlName="startDate"
+                            [control]="activityForm.get('startDate')"
+                            placeholder="Select Start Date" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="col-md-6">
+                        <formfield label="End Date" type="date" formControlName="endDate"
+                            [control]="activityForm.get('endDate')"
+                            placeholder="Select End Date" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <!-- Actual Start Date (edit only) -->
+                    <div class="col-md-6" *ngIf="isEditMode">
+                        <formfield label="Actual Start Date" type="date" formControlName="actualStartDate"
+                            [control]="activityForm.get('actualStartDate')"
+                            placeholder="Select Actual Start Date">
+                        </formfield>
+                    </div>
+
+                    <!-- Actual End Date (edit only) -->
+                    <div class="col-md-6" *ngIf="isEditMode">
+                        <formfield label="Actual End Date" type="date" formControlName="actualEndDate"
+                            [control]="activityForm.get('actualEndDate')"
+                            placeholder="Select Actual End Date">
+                        </formfield>
+                    </div>
+
+                    <!-- Status (edit only) -->
+                    <div class="col-md-6" *ngIf="isEditMode">
+                        <selectbox label="Status" placeholder="Select Status" [options]="status_options"
+                            formControlName="status" [control]="activityForm.get('status')">
+                        </selectbox>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="col-md-12">
+                        <description label="Remarks" formControlName="remarks"
+                            [control]="activityForm.get('remarks')"
+                            placeholder="Enter remarks (optional)">
+                        </description>
+                    </div>
+
+                </div>
+
+                <!-- Actions -->
+                <div class="col-12 text-end mt-4">
+                    <button type="button" class="btn closebutton px-4 me-2"
+                        style="border-radius: 30px;" (click)="cancel()">
+                        Back
+                    </button>
+                    <button type="button" class="btn submitbutton px-4"
+                        [disabled]="activityForm.invalid || loading"
+                        (click)="submit()" style="border-radius: 30px;">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Submit') }}
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>

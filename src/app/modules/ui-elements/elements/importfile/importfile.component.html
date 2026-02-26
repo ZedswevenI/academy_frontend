@@ -5,33 +5,32 @@
     <span *ngIf="required" class="text-danger">*</span>
   </label>
 
-  <input type="file" class="form-control form-control-lg" [id]="id" [attr.multiple]="multiple ? '' : null"
-    [attr.accept]="accept" (change)="onFileChange($event)" (blur)="onTouched()" [ngClass]="{
-      'is-invalid':
-        ngControl.control?.invalid &&
-        (ngControl.control?.touched || ngControl.control?.dirty)
+  <input type="file" class="form-control form-control-lg" [id]="id"
+    [attr.multiple]="multiple ? '' : null"
+    [attr.accept]="accept"
+    (change)="onFileChange($event)"
+    (blur)="onTouched()"
+    [ngClass]="{
+      'is-invalid': ngControl?.control?.invalid &&
+        (ngControl?.control?.touched || ngControl?.control?.dirty)
     }" />
 
   <ul class="list-unstyled mt-2" *ngIf="files.length">
     <li *ngFor="let file of files; let i = index" class="d-flex align-items-center">
       <span class="me-2">
         {{ file.name }}
-        <small>
-          ({{ file.size / 1024 | number:'1.0-1' }} KB)
-        </small>
+        <small>({{ file.size / 1024 | number:'1.0-1' }} KB)</small>
       </span>
-
-      <button *ngIf="multiple" type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeFile(i)">
+      <button *ngIf="multiple" type="button" class="btn btn-sm btn-outline-danger ms-2"
+        (click)="removeFile(i)">
         <i class="fa fa-times"></i>
       </button>
     </li>
   </ul>
 
-  <div *ngIf="
-        ngControl.control?.invalid &&
-        (ngControl.control?.touched || ngControl.control?.dirty)
-      ">
-    <small class="text-danger" *ngIf="ngControl.control?.errors?.['required']">
+  <div *ngIf="ngControl?.control?.invalid &&
+              (ngControl?.control?.touched || ngControl?.control?.dirty)">
+    <small class="text-danger" *ngIf="ngControl?.control?.errors?.['required']">
       File is required.
     </small>
   </div>

@@ -40,6 +40,77 @@ export class PtmComponent implements OnInit {
     { key: 'status', label: 'Status', sortable: false }
   ];
 
+  // Column map: Excel header → API payload key
+  columnMap: { [excelCol: string]: string } = {
+    'CCode': 'CCode',
+    'Batch Code': 'Batch Code',
+    'Eno': 'Eno',
+    'Student Name': 'Student Name',
+    'PTM Date': 'PTM Date',
+    'PTM Start Time': 'PTM Start Time',
+    'PTM End Time': 'PTM End Time',
+    'Duration': 'Duration',
+    'Content': 'Content',
+    'Venue': 'Venue'
+  };
+
+  // For display in the modal
+  columnMapDisplay = Object.keys(this.columnMap).map(k => ({
+    excel: k,
+    api: this.columnMap[k]
+  }));
+
+  requiredColumns = Object.keys(this.columnMap);
+
+  onImportFileSelected(files: File[]): void {
+    const file = files?.[0];
+    if (!file) return;
+    this.processFile(file);  // ← call processFile directly, not readExcelFile
+  }
+
+  private readExcelFile(file: File): void {
+    const reader = new FileReader();
+
+    reader.onload = (e: any) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = (window as any).XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawRows: any[] = (window as any).XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (!rawRows.length) {
+          this.alert.error('File is empty');
+          return;
+        }
+
+        // Check for missing columns
+        const fileColumns = Object.keys(rawRows[0]);
+        const missing = this.requiredColumns.filter(c => !fileColumns.includes(c));
+        if (missing.length > 0) {
+          this.alert.error(`Missing columns: ${missing.join(', ')}`);
+          this.fileName = '';
+          return;
+        }
+
+        // Map Excel columns → API keys
+        this.parsedRows = rawRows.map((row: any) => {
+          const mapped: any = {};
+          Object.keys(this.columnMap).forEach(excelCol => {
+            mapped[this.columnMap[excelCol]] = row[excelCol]?.toString().trim() || '';
+          });
+          return mapped;
+        });
+
+        this.validateRows();
+      } catch {
+        this.alert.error('Error reading file. Please check the format.');
+        this.fileName = '';
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+  }
+
   actions = [
     {
       type: 'icon',
@@ -73,11 +144,11 @@ export class PtmComponent implements OnInit {
   parsedRows: any[] = [];
   errorRows: any[] = [];
 
-  requiredColumns = [
-    'CCode', 'Batch Code', 'Eno', 'Student Name',
-    'PTM Date', 'PTM Start Time', 'PTM End Time',
-    'Duration', 'Content', 'Venue'
-  ];
+  // requiredColumns = [
+  //   'CCode', 'Batch Code', 'Eno', 'Student Name',
+  //   'PTM Date', 'PTM Start Time', 'PTM End Time',
+  //   'Duration', 'Content', 'Venue'
+  // ];
 
   previewColumns = [
     { field: 'CCode', header: 'C.Code' },
@@ -284,10 +355,10 @@ export class PtmComponent implements OnInit {
   }
 
   resetImport(): void {
-    this.fileName      = '';
-    this.parsedRows    = [];
-    this.errorRows     = [];
-    this.isDragging    = false;
+    this.fileName = '';
+    this.parsedRows = [];
+    this.errorRows = [];
+    this.isDragging = false;
     this.importLoading = false;
   }
 
@@ -309,7 +380,7 @@ export class PtmComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file  = input.files?.[0];
+    const file = input.files?.[0];
     if (file) this.processFile(file);
     input.value = '';
   }
@@ -320,17 +391,24 @@ export class PtmComponent implements OnInit {
       return;
     }
 
-    this.fileName   = file.name;
+    this.fileName = file.name;
     this.parsedRows = [];
-    this.errorRows  = [];
+    this.errorRows = [];
 
     const reader = new FileReader();
+
     reader.onload = (e: any) => {
       try {
-        const data        = new Uint8Array(e.target.result);
-        const workbook    = XLSX.read(data, { type: 'array' });
-        const sheet       = workbook.Sheets[workbook.SheetNames[0]];
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        // ✅ Log what's coming from the file
+        console.log('Total rows parsed:', rows.length);
+        console.log('First row:', rows[0]);
+        console.log('Column keys found:', rows[0] ? Object.keys(rows[0]) : 'no rows');
+        console.log('Required columns:', this.requiredColumns);
 
         if (rows.length === 0) {
           this.alert.error('File is empty');
@@ -338,7 +416,11 @@ export class PtmComponent implements OnInit {
           return;
         }
 
-        const missing = this.requiredColumns.filter(c => !Object.keys(rows[0]).includes(c));
+        const fileColumns = Object.keys(rows[0]);
+        const missing = this.requiredColumns.filter(c => !fileColumns.includes(c));
+
+        console.log('Missing columns:', missing);
+
         if (missing.length > 0) {
           this.alert.error(`Missing columns: ${missing.join(', ')}`);
           this.fileName = '';
@@ -347,11 +429,20 @@ export class PtmComponent implements OnInit {
 
         this.parsedRows = rows;
         this.validateRows();
-      } catch {
-        this.alert.error('Error reading file');
+
+      } catch (err: any) {
+        // ✅ Show real error
+        console.error('Full parse error:', err);
+        this.alert.error('Parse error: ' + (err?.message ?? JSON.stringify(err)));
         this.fileName = '';
       }
     };
+
+    reader.onerror = (err) => {
+      console.error('FileReader failed:', err);
+      this.alert.error('Could not read file');
+    };
+
     reader.readAsArrayBuffer(file);
   }
 
