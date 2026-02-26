@@ -1,69 +1,112 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-        <div class="d-flex flex-column gap-4">
-            <!-- Header Section -->
-            <div class="d-flex flex-column gap-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
-                        <i class="fa-solid fa-book-open me-2"></i>Create Knowledge Base
-                    </h1>
+
+        <!-- ================= HEADER ================= -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                <i class="fa-solid fa-book-open me-2"></i>
+                {{ isEditMode ? 'Edit Knowledge Base' : 'Create Knowledge Base' }}
+            </h1>
+        </div>
+
+        <!-- ================= FORM ================= -->
+        <form [formGroup]="knowledgeForm" (ngSubmit)="addKnowledge()">
+
+            <div class="row g-3">
+
+                <!-- Title -->
+                <div class="col-md-6">
+                    <formfield label="Title" placeholder="Enter Title" formControlName="title"
+                        [control]="knowledgeForm.get('title')" [required]="true">
+                    </formfield>
                 </div>
+
+                <!-- Class -->
+                <div class="col-md-6">
+                    <selectbox label="Class" [options]="class_options" formControlName="classNo"
+                        [control]="knowledgeForm.get('classNo')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- Subject -->
+                <div class="col-md-6">
+                    <selectbox label="Subject" [options]="subjects" formControlName="subjectId"
+                        [control]="knowledgeForm.get('subjectId')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- Topic -->
+                <div class="col-md-6">
+                    <selectbox label="Topic" [options]="topics" formControlName="topicId"
+                        [control]="knowledgeForm.get('topicId')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- SubTopic -->
+                <div class="col-md-6">
+                    <selectbox label="Sub Topic" [options]="subTopics" formControlName="subTopicId"
+                        [control]="knowledgeForm.get('subTopicId')">
+                    </selectbox>
+                </div>
+
+                <!-- Batch -->
+                <div class="col-md-6">
+                    <selectbox label="Batch" [options]="batch_options" formControlName="batchId"
+                        [control]="knowledgeForm.get('batchId')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- Students -->
+                <div class="col-md-6">
+                    <multiselect label="Students" placeholder="Select Students (Optional)" [options]="studentOptions"
+                        formControlName="studentIds" [control]="knowledgeForm.get('studentIds')">
+                    </multiselect>
+                </div>
+
+                <!-- Available From -->
+                <div class="col-md-6">
+                    <formfield label="Available From" type="date" formControlName="availableFrom"
+                        [control]="knowledgeForm.get('availableFrom')" [required]="true">
+                    </formfield>
+                </div>
+
+                <!-- Available Until -->
+                <div class="col-md-6">
+                    <formfield label="Available Until" type="date" formControlName="availableUntil"
+                        [control]="knowledgeForm.get('availableUntil')" [required]="true">
+                    </formfield>
+                </div>
+
+                <!-- Upload -->
+                <div class="col-md-6">
+                    <importfiles label="Upload Material" [multiple]="false" formControlName="attachmentUrl"
+                        (filesChanged)="onFilesSelected($event)">
+                    </importfiles>
+                </div>
+
+                <!-- Description -->
+                <div class="col-md-12">
+                    <description label="Description" placeholder="Type here..." formControlName="description"
+                        [control]="knowledgeForm.get('description')">
+                    </description>
+                </div>
+
             </div>
-        </div>
 
-        <div class="mt-3">
-            <form [formGroup]="knowledgeForm">
-                <div class="row g-3">
+            <!-- ================= ACTION BUTTONS ================= -->
+            <div class="col-12 text-end mt-4">
+                <button type="button" class="btn closebutton px-4 me-2" style="border-radius: 30px;"
+                    routerLink="/app/knowledge">
+                    Back
+                </button>
 
-                    <div class="col-md-6">
-                        <formfield label="Title" formControlName="title" [control]="knowledgeForm.get('title')"
-                            placeholder="Enter Title" [required]="true">
-                        </formfield>
-                    </div>
+                <button type="submit" class="btn submitbutton px-4" [disabled]="knowledgeForm.invalid"
+                    style="border-radius: 30px;">
+                    {{ isEditMode ? 'Update' : 'Submit' }}
+                </button>
+            </div>
 
-                    <div class="col-md-6">
-                        <formfield label="Due date" formControlName="date" [control]="knowledgeForm.get('date')"
-                            placeholder="Enter Due date" [required]="true">
-                        </formfield>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <selectbox label="Class" [options]="class_options" formControlName="class"
-                            [control]="knowledgeForm.get('class')" [required]="true">
-                        </selectbox>
-                    </div>
+        </form>
 
-                    <div class="col-md-6">
-                        <multiselect label="Batch" placeholder="Select Batch" [options]="batch_options"
-                            formControlName="batch" [control]="knowledgeForm.get('batch')" [required]="true">
-                        </multiselect>
-                    </div>
-
-                    <div class="col-md-6">
-                        <importfiles label="Upload" [multiple]="true" formControlName="file"
-                            [control]="knowledgeForm.get('file')" (filesChanged)="onFilesSelected($event)">
-                        </importfiles>
-                    </div>
-
-                    <div class="col-md-6">
-                        <description label="Description" placeholder="Type here...." formControlName="desc"
-                            [control]="knowledgeForm.get('desc')">
-                        </description>
-                    </div>
-
-                </div>
-
-                <div class="col-12 text-end mt-3">
-                    <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/knowledge">
-                        Back
-                    </button>
-                    <button class="btn submitbutton px-4" [disabled]="knowledgeForm.invalid" (click)="addKnowledge()" style="border-radius: 30px;">
-                        Submit
-                    </button>
-                </div>
-
-            </form>
-
-        </div>
     </div>
 </div>

@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 @Component({
   selector: 'app-task',
@@ -8,17 +10,18 @@ import { Router } from '@angular/router';
   templateUrl: './task.component.html',
   styleUrl: './task.component.scss'
 })
-export class TaskComponent {
+export class TaskComponent implements OnInit {
+
+  tenantId = localStorage.getItem('tenantId');
 
   columnsArray = [
-    { key: 'task', label: 'Task Name', sortable: true },
-    { key: 'assign', label: 'Assigned Date', sortable: true },
-    { key: 'due', label: 'Due Date', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
+    { key: 'taskName', label: 'Task Name', sortable: false },
+    { key: 'assignedDate', label: 'Assigned Date', sortable: false },
+    { key: 'dueDate', label: 'Due Date', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
   ];
 
   dataArray: any[] = [];
-  originalData: any[] = [];
   totalRecords = 0;
 
   actions = [
@@ -30,28 +33,32 @@ export class TaskComponent {
       hoverColor: '#0066FF',
       callback: (row: any) => this.viewTask(row)
     },
-  ]
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-pen-to-square',
+      tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#16A34A',
+      callback: (row: any) => this.editTask(row)
+    }
+  ];
 
-  constructor(private breadcrump: BredcrumpService, private router: Router) {
-    this.breadcrump.set([{ label: 'Task' }])
+  constructor(
+    private breadcrump: BredcrumpService,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService
+  ) {
+    this.breadcrump.set([{ label: 'Task' }]);
   }
 
   ngOnInit(): void {
-    this.originalData = [
-      { task: 'Prepare Lesson Plan', assign: '2025-01-01', due: '2025-01-05', status: 'Completed' },
-      { task: 'Upload Study Materials', assign: '2025-01-02', due: '2025-01-06', status: 'In Progress' },
-      { task: 'Evaluate Assignments', assign: '2025-01-03', due: '2025-01-08', status: 'Pending' },
-      { task: 'Conduct Unit Test', assign: '2025-01-04', due: '2025-01-10', status: 'Not Completed' },
-      { task: 'Submit Attendance Report', assign: '2025-01-05', due: '2025-01-07', status: 'Completed' },
-      { task: 'Prepare Question Bank', assign: '2025-01-06', due: '2025-01-12', status: 'In Progress' },
-      { task: 'Parent Meeting Preparation', assign: '2025-01-07', due: '2025-01-11', status: 'Pending' },
-      { task: 'Update Student Performance', assign: '2025-01-08', due: '2025-01-13', status: 'In Progress' },
-      { task: 'Curriculum Review', assign: '2025-01-09', due: '2025-01-15', status: 'Pending' },
-      { task: 'Final Exam Paper Setting', assign: '2025-01-10', due: '2025-01-18', status: 'Completed' }
-    ];
-
-    this.loadTableData({ page: 1, pageSize: 5 });
+    // this.loadTableData({ page: 1, pageSize: 10 });
   }
+
+  // ================================
+  // LOAD TASK LIST FROM API
+  // ================================
 
   loadTableData(req: {
     page: number;
@@ -60,37 +67,80 @@ export class TaskComponent {
     sortKey?: string;
     sortDirection?: 'asc' | 'desc';
   }) {
-    let filtered = [...this.originalData];
 
-    // SEARCH
-    if (req.search) {
-      const value = req.search.toLowerCase();
-      filtered = filtered.filter(row =>
-        Object.values(row).some(v =>
-          String(v).toLowerCase().includes(value)
-        )
-      );
-    }
+    const endpoint = `list?page=${req.page}&limit=${req.pageSize}&search=${req.search}`;
 
-    // SORT
-    if (req.sortKey) {
-      filtered.sort((a, b) => {
-        const x = a[req.sortKey!];
-        const y = b[req.sortKey!];
-        return req.sortDirection === 'asc'
-          ? String(x).localeCompare(String(y))
-          : String(y).localeCompare(String(x));
-      });
-    }
+    this.commonApi.fetchData(
+      { entiId: this.tenantId },
+      'teacher/task',
+      endpoint
+    ).subscribe({
+      next: (res: any) => {
+        if (res.status) {
 
-    // PAGINATION
-    this.totalRecords = filtered.length;
-    const start = (req.page - 1) * req.pageSize;
-    const end = start + req.pageSize;
-    this.dataArray = filtered.slice(start, end);
+          this.totalRecords = res.count;
+
+          this.dataArray = res.data.map((task: any) => ({
+            ...task,
+            taskName: task.taskName,
+            assignedDate: this.formatDate(task.createdAt),
+            dueDate: this.formatDate(task.dueDate),
+            status: this.formatStatus(task.status)
+          }));
+
+        }
+      },
+      error: () => {
+        this.alert.error('Failed to load task list');
+      }
+    });
   }
 
+  // ================================
+  // FORMAT DATE
+  // ================================
+
+  formatDate(date: any): string {
+    if (!date) return '-';
+    return new Date(date).toISOString().split('T')[0];
+  }
+
+  // ================================
+  // FORMAT STATUS (Optional Styling)
+  // ================================
+
+  formatStatus(status: string): string {
+    switch (status) {
+      case 'PENDING':
+        return 'Pending';
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      case 'COMPLETED':
+        return 'Completed';
+      default:
+        return status;
+    }
+  }
+
+  // ================================
+  // VIEW TASK
+  // ================================
   viewTask(row: any) {
-    this.router.navigate(['/app/task/view'])
+    console.log("row cav",row);
+    
+    this.router.navigate(['/app/task/view'], {
+      state: { taskData: row }
+    });
   }
+
+  // ================================
+  // EDIT TASK
+  // ================================
+
+  editTask(row: any) {
+    this.router.navigate(['/app/task/create'], {
+      state: { taskData: row }
+    });
+  }
+
 }

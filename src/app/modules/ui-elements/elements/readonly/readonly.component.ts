@@ -1,13 +1,14 @@
+// readonly.component.ts
 import { Component, forwardRef, Input } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AbstractControl } from '@angular/forms';
 
 @Component({
-  selector: 'readonly',
+  selector: 'appreadonly',
   standalone: false,
   templateUrl: './readonly.component.html',
-  styleUrl: './readonly.component.scss',
+  styleUrls: ['./readonly.component.scss'],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -39,8 +40,8 @@ export class ReadonlyComponent implements ControlValueAccessor {
     this.updateDisplayValue();
   }
 
-  registerOnChange(_: any): void { }
-  registerOnTouched(_: any): void { }
+  registerOnChange(_: any): void {}
+  registerOnTouched(_: any): void {}
 
   setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;

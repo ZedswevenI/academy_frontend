@@ -40,9 +40,9 @@
                     </div>
 
                     <div class="col-md-6">
-                        <importfiles label="Upload" [multiple]="true" formControlName="file"
-                            [control]="packCreateForm.get('file')" (filesChanged)="onFilesSelected($event)">
-                        </importfiles>
+                             <importfiles label="Upload Material" [multiple]="false" formControlName="file"
+                        (filesChanged)="onFilesSelected($event)">
+                    </importfiles>
                     </div>
 
                     <div class="col-md-6">

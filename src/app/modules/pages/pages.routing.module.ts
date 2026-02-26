@@ -19,7 +19,7 @@ const routes: Routes = [
     loadChildren: () => import('../pages/attendance/attendance.module').then(m => m.AttendanceModule)
   },
   {
-    path: 'tests',
+    path: 'assignment',
     loadChildren: () => import('../pages/test/test.module').then(m => m.TestModule)
   },
   {
@@ -42,10 +42,10 @@ const routes: Routes = [
     path: 'communication',
     loadChildren: () => import('../pages/communication/communication.module').then(m => m.CommunicationModule)
   },
-  {
-    path: 'assignment',
-    loadChildren: () => import('../pages/assignment/assignment.module').then(m => m.AssignmentModule)
-  },
+  // {
+  //   path: 'assignment',
+  //   loadChildren: () => import('../pages/assignment/assignment.module').then(m => m.AssignmentModule)
+  // },
   {
     path: 'enableassignment',
     loadChildren: () => import('../pages/enableassignment/enableassignment.module').then(m => m.EnableassignmentModule)
@@ -82,9 +82,13 @@ const routes: Routes = [
     path: 'task',
     loadChildren: () => import('../pages/task/task.module').then(m => m.TaskModule)
   },
-  {
+  // {
+  //   path: 'org-master',
+  //   loadChildren: () => import('../pages/orgMaster/orgMaster.module').then(m => m.OrgMasterModule)
+  // },
+    {
     path: 'org-master',
-    loadChildren: () => import('../pages/orgMaster/orgMaster.module').then(m => m.OrgMasterModule)
+    loadChildren: () => import('../pages/orgmasters/orgmasters.module').then(m => m.OrgmastersModule)
   },
   {
     path: 'phase',
