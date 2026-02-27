@@ -645,6 +645,10 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       <td colspan="2" style="width:70%;text-align:left"><strong>Topic:</strong> ${this.questionData.topicName}</td>
       <td style="width:30%;text-align:right"><strong>Test No:</strong> ${this.questionData.testNo}</td>
     </tr>
+      <tr>
+      <td colspan="2" style="width:70%;text-align:left"><strong>Category:</strong> ${this.questionData.categoryName}</td>
+      <td style="width:30%;text-align:right"><strong>Sub category:</strong> ${this.questionData.subCategoryName}</td>
+    </tr>
   </table>
         </div> 
 
