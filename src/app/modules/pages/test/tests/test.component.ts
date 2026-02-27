@@ -507,18 +507,13 @@ export class TestComponent implements OnInit, OnDestroy {
           optionsHtml = `<table class="options-table">${rows.join('')}</table>`;
         }
 
-        const answerRow = withAnswer
+          const answerRow = withAnswer
           ? `<div class="answer-box">
-               <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
-             </div>`
+             <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
+           </div>`
           : `<div class="answer-box">
-               <table class="answer-table">
-                 <tr>
-                   <td><strong>Answer:</strong>&nbsp;_____________</td>
-                   <td class="marks-box">Marks Obtained: _________ / ${q.positiveMarks}</td>
-                 </tr>
-               </table>
-             </div>`;
+             
+           </div>`;
 
         return `
           <div class="question-card">
