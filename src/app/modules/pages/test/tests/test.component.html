@@ -27,7 +27,7 @@
                         <form [formGroup]="filterForm" class="row g-3 align-items-end">
 
                             <!-- Class -->
-
+                          
 
                             <div class="col-6 col-md-2">
                                 <selectbox label="Class" formControlName="classNo" [control]="filterForm.get('classNo')"
@@ -58,7 +58,25 @@
                             </div>
 
                             <!-- Buttons -->
-                            <div class="col-md-2 d-flex justify-content-end gap-2">
+                            <div class="col-md-2 d-flex justify-content-end gap-2 ms-2">
+                                  <div class="btn-group me-2">
+                                <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    🖨️ Print
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" (click)="printAllFilteredTests(false)">
+                                            📄 Without Answer <small class="text-muted">(for students)</small>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" (click)="printAllFilteredTests(true)">
+                                            📄 With Answer <small class="text-muted">(answer key)</small>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
                                     Clear
                                 </button>
@@ -79,4 +97,26 @@
         </custom-table>
 
     </div>
+</div>
+<!-- Print Modal -->
+<div *ngIf="showPrintModal" class="print-modal-overlay">
+  <div class="print-modal-box">
+    <h6 class="mb-1">Print Test</h6>
+    <p class="text-muted mb-3" style="font-size:12px">
+      Test No: <strong>{{ selectedRow?.testNumber }}</strong> &nbsp;|&nbsp;
+      {{ selectedRow?.subject }} &nbsp;|&nbsp;
+      {{ selectedRow?.topicName }}
+    </p>
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-outline-dark btn-sm" (click)="printQuestions(false)">
+        📄 Without Answer &nbsp;<small class="text-muted">(Student Copy)</small>
+      </button>
+      <button class="btn btn-outline-dark btn-sm" (click)="printQuestions(true)">
+        📋 With Answer &nbsp;<small class="text-muted">(Answer Key)</small>
+      </button>
+    </div>
+    <button class="btn btn-link btn-sm text-danger mt-2 p-0" (click)="closePrintModal()">
+      Cancel
+    </button>
+  </div>
 </div>
