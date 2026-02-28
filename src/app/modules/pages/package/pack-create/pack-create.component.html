@@ -1,69 +1,94 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <!-- Header -->
         <div class="d-flex flex-column gap-4">
-            <!-- Header Section -->
-            <div class="d-flex flex-column gap-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
-                        <i class="fa-solid fa-book-open me-2"></i>Create Package
-                    </h1>
-                </div>
+            <div class="d-flex align-items-center justify-content-between">
+                <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                    <i class="fa-solid fa-box-open me-2"></i>
+                    {{ isEditMode ? 'Edit Package' : 'Create Package' }}
+                </h1>
             </div>
         </div>
 
-        <div class="mt-3">
-            <form [formGroup]="packCreateForm">
+        <div class="mt-4">
+            <form [formGroup]="packageForm">
                 <div class="row g-3">
 
+                    <!-- Package Code -->
                     <div class="col-md-6">
-                        <formfield label="Title" formControlName="title" [control]="packCreateForm.get('title')"
-                            placeholder="Enter Title" [required]="true">
+                        <formfield label="Package Code" formControlName="packageCode"
+                            [control]="packageForm.get('packageCode')"
+                            placeholder="e.g. PKG-PHY-9-01" [required]="!isEditMode">
                         </formfield>
                     </div>
 
+                    <!-- Class -->
                     <div class="col-md-6">
-                        <formfield label="Due date" formControlName="date" [control]="packCreateForm.get('date')"
-                            placeholder="Enter Due date" [required]="true">
-                        </formfield>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <selectbox label="Class" [options]="class_options" formControlName="class"
-                            [control]="packCreateForm.get('class')" [required]="true">
+                        <selectbox label="Class" placeholder="Select Class" [options]="class_options"
+                            formControlName="classNo" [control]="packageForm.get('classNo')"
+                            [required]="!isEditMode">
                         </selectbox>
                     </div>
 
+                    <!-- Subject -->
                     <div class="col-md-6">
-                        <multiselect label="Batch" placeholder="Select Batch" [options]="batch_options"
-                            formControlName="batch" [control]="packCreateForm.get('batch')" [required]="true">
-                        </multiselect>
+                        <selectbox label="Subject" placeholder="Select Subject" [options]="subject_options"
+                            formControlName="subjectId" [control]="packageForm.get('subjectId')"
+                            [required]="!isEditMode">
+                        </selectbox>
                     </div>
 
+                    <!-- Title -->
                     <div class="col-md-6">
-                             <importfiles label="Upload Material" [multiple]="false" formControlName="file"
-                        (filesChanged)="onFilesSelected($event)">
-                    </importfiles>
+                        <formfield label="Title" formControlName="title"
+                            [control]="packageForm.get('title')"
+                            placeholder="Enter Package Title" [required]="true">
+                        </formfield>
                     </div>
 
-                    <div class="col-md-6">
-                        <description label="Description" placeholder="Type here...." formControlName="desc"
-                            [control]="packCreateForm.get('desc')">
+                    <!-- Description (create only) -->
+                    <div class="col-md-12" *ngIf="!isEditMode">
+                        <description label="Description" formControlName="description"
+                            [control]="packageForm.get('description')"
+                            placeholder="Enter description (optional)">
                         </description>
+                    </div>
+
+                    <!-- File Upload -->
+                    <div class="col-md-6">
+                        <importfiles label="Attachment" [required]="false" [multiple]="false"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                            (filesChanged)="onFileSelected($event)">
+                        </importfiles>
+                        <div *ngIf="uploading" class="text-muted small mt-1">
+                            <span class="spinner-border spinner-border-sm me-1"></span>Uploading...
+                        </div>
+                        <div *ngIf="attachmentUrl && !uploading" class="mt-2">
+                            <a [href]="attachmentUrl" target="_blank" class="small text-primary">
+                                <i class="fa-solid fa-paperclip me-1"></i>View Attachment
+                            </a>
+                        </div>
                     </div>
 
                 </div>
 
-                <div class="col-12 text-end mt-3">
-                    <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/package">
+                <!-- Actions -->
+                <div class="col-12 text-end mt-4">
+                    <button type="button" class="btn closebutton px-4 me-2"
+                        style="border-radius: 30px;" (click)="cancel()">
                         Back
                     </button>
-                    <button class="btn submitbutton px-4" [disabled]="packCreateForm.invalid" (click)="addKnowledge()" style="border-radius: 30px;">
-                        Submit
+                    <button type="button" class="btn submitbutton px-4"
+                        [disabled]="packageForm.invalid || loading || uploading"
+                        (click)="submit()" style="border-radius: 30px;">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Submit') }}
                     </button>
                 </div>
 
             </form>
-
         </div>
+
     </div>
 </div>

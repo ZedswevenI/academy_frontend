@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AbstractControl } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 @Component({
   selector: 'app-support',
@@ -10,113 +10,374 @@ import { AbstractControl } from '@angular/forms';
   templateUrl: './support.component.html',
   styleUrl: './support.component.scss'
 })
-export class SupportComponent {
-  supportForm!: FormGroup;
-  isProceed: boolean = false;
-  isUnassign: boolean = false;
-  confirmAssign: boolean = false;
+export class SupportComponent implements OnInit {
 
-  isUpdate: boolean = false;
-  isForward: boolean = false;
+  tenantId: any;
+  loading = false;
+
+  filterForm!: FormGroup;
+  isProceed = false;
+
+  dataArray: any[] = [];
+  totalRecords = 0;
+
+  // 'FEES', 'TIMETABLE', 'PTM', 'BOOKS_AND_STUDY', 'EXAMINATION', 'ACADEMICS', 'TAB', 'GENERAL']
+
+  area_options = [
+    { label: 'Fees', value: 'FEES' },
+    { label: 'Timebale', value: 'TIMETABLE' },
+    { label: 'PTM', value: 'PTM' },
+    { label: 'Books and study', value: 'BOOKS_AND_STUDY' },
+    { label: 'Examination', value: 'EXAMINATION' },
+    { label: 'Academics', value: 'ACADEMICS' },
+    { label: 'Tab', value: 'TAB' },
+    { label: 'General', value: 'GENERAL' },
+    
+  ];
+
+  status_options = [
+    { label: 'Open', value: 'OPEN' },
+    { label: 'In Progress', value: 'IN_PROGRESS' },
+    { label: 'Resolved', value: 'RESOLVED' },
+    { label: 'Closed', value: 'CLOSED' }
+  ];
+
+  priority_options = [
+    { label: 'Low', value: 'LOW' },
+    { label: 'Medium', value: 'MEDIUM' },
+    { label: 'High', value: 'HIGH' },
+    { label: 'Urgent', value: 'URGENT' }
+  ];
 
   columnsArray = [
-    { key: 'ticket', label: 'Ticket NO', sortable: true },
+    { key: 'studentNo', label: 'Student No', sortable: false },
     { key: 'area', label: 'Area', sortable: false },
-    { key: 'subject', label: 'Subject', sortable: false },
-    { key: 'detail', label: 'Details', sortable: false }
+    { key: 'issueSubject', label: 'Issue', sortable: false },
+    { key: 'priority', label: 'Priority', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
+    { key: 'requestedAtFormatted', label: 'Raised On', sortable: false }
   ];
-  dataArray = [
-    { ticket: 1002345, area: 'Technical Support', subject: 'Login Issue', detail: 'User unable to login to portal' },
-    { ticket: 1002346, area: 'Academic Support', subject: 'Course Material', detail: 'Request for semester syllabus' },
-    { ticket: 1002347, area: 'Fee Related', subject: 'Payment Error', detail: 'Unable to process tuition fee payment' },
-    { ticket: 1002348, area: 'General Inquiry', subject: 'Holiday Schedule', detail: 'Query about upcoming holidays' },
-    { ticket: 1002349, area: 'Other', subject: 'Feedback', detail: 'Suggestion for improving portal interface' }
-  ];
-  action = [
+
+  actions = [
     {
       type: 'icon',
       icon: 'fa-regular fa-eye',
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.viewSupport(row)
+      callback: (row: any) => this.onView(row)
     },
-  ]
-
-  employee_options = [
-    { label: 'Arun Kumar', value: 'Arun Kumar' },
-    { label: 'Priya Sharma', value: 'Priya Sharma' },
-    { label: 'Suresh Reddy', value: 'Suresh Reddy' },
-    { label: 'Kavya Nair', value: 'Kavya Nair' },
-    { label: 'Rahul Verma', value: 'Rahul Verma' }
+    {
+      type: 'icon',
+      icon: 'fa-solid fa-user-check',
+      tooltip: 'Assign Staff',
+      color: '#6B7280',
+      hoverColor: '#16A34A',
+      callback: (row: any) => this.openAssignModal(row)
+    },
+    {
+      type: 'icon',
+      icon: 'fa-solid fa-flag',
+      tooltip: 'Update Priority',
+      color: '#6B7280',
+      hoverColor: '#D97706',
+      callback: (row: any) => this.openPriorityModal(row)
+    },
+    {
+      type: 'icon',
+      icon: 'fa-solid fa-circle-check',
+      tooltip: 'Update Status',
+      color: '#6B7280',
+      hoverColor: '#7C3AED',
+      callback: (row: any) => this.openStatusModal(row)
+    }
   ];
 
-  constructor(private breadcrump: BredcrumpService, private fb: FormBuilder, private router: Router) {
-    this.breadcrump.set([{ label: 'Support' }])
+  // ── View ─────────────────────────────────────────────
+  selectedTicket: any = null;
+
+  // ── Assign modal ──────────────────────────────────────
+  assignTicket: any = null;
+  assignForm!: FormGroup;
+  staffList: any[] = [];
+  staffLoading = false;
+  staffSearch = '';
+  assignLoading = false;
+
+  // ── Priority modal ────────────────────────────────────
+  priorityTicket: any = null;
+  priorityForm!: FormGroup;
+  priorityLoading = false;
+
+  // ── Status modal ──────────────────────────────────────
+  statusTicket: any = null;
+  statusForm!: FormGroup;
+  statusLoading = false;
+
+  constructor(
+    private breadcrump: BredcrumpService,
+    private fb: FormBuilder,
+    private commonApi: CommonapiService,
+    private alert: AlertService
+  ) {
+    this.tenantId = localStorage.getItem('tenantId');
+    this.breadcrump.set([{ label: 'Support Tickets' }]);
   }
 
   ngOnInit(): void {
-    this.supportForm = this.fb.group({
-      employee: ['', Validators.required],
-      complete: [''],
-      notComplete: [''],
-      forward: ['']
+    this.filterForm = this.fb.group({
+      area: [''],
+      status: ['']
     });
 
-    const controls = ['complete', 'notComplete', 'forward'];
+    this.assignForm = this.fb.group({
+      assignedStaffId: ['', Validators.required]
+    });
 
-    controls.forEach(ctrl => {
-      this.supportForm.get(ctrl)?.valueChanges.subscribe(val => {
-        if (val) {
-          controls.forEach(other => {
-            if (other !== ctrl) {
-              this.supportForm.get(other)?.setValue(false, { emitEvent: false });
-            }
-          });
+    this.priorityForm = this.fb.group({
+      priority: ['', Validators.required]
+    });
+
+    this.statusForm = this.fb.group({
+      status: ['', Validators.required],
+      feedback: ['']
+    });
+  }
+
+  // ====================================================
+  // LIST
+  // ====================================================
+
+  onProceed(): void {
+    if (this.filterForm.invalid) return;
+    this.isProceed = true;
+    this.fetchList(1, 10);
+  }
+
+  fetchList(page: number, limit: number, search?: string): void {
+    const { area, status } = this.filterForm.value;
+    this.loading = true;
+
+    let query = `list?area=${area}&page=${page}&limit=${limit}`;
+    if (status) query += `&status=${status}`;
+    if (search) query += `&search=${search}`;
+
+    this.commonApi.fetchData({ tenantId: this.tenantId }, 'institue/support', query)
+      .subscribe({
+        next: (res: any) => {
+          this.dataArray = (res?.data || []).map((t: any) => ({
+            ...t,
+            requestedAtFormatted: this.formatDate(t.requestedAt)
+          }));
+          this.totalRecords = res?.count || this.dataArray.length;
+          this.loading = false;
+        },
+        error: () => {
+          this.alert.error('Error loading tickets');
+          this.loading = false;
         }
       });
+  }
+
+  loadTableData(req: { page: number; pageSize: number; search?: string }): void {
+    if (!this.isProceed) return;
+    this.fetchList(req.page, req.pageSize, req.search);
+  }
+
+  // ====================================================
+  // VIEW
+  // ====================================================
+
+  onView(row: any): void {
+    this.selectedTicket = row;
+    this.openModal('ticketViewModal');
+  }
+
+  // ====================================================
+  // ASSIGN STAFF
+  // ====================================================
+
+  openAssignModal(row: any): void {
+    this.assignTicket = row;
+    this.staffList = [];
+    this.staffSearch = '';
+    this.assignForm.reset();
+    this.openModal('ticketAssignModal');
+  }
+
+  searchStaff(): void {
+    if (!this.staffSearch.trim()) return;
+    this.staffLoading = true;
+
+    this.commonApi.fetchData(
+      { tenantId: this.tenantId },
+      'ims/staff',
+      `list?page=1&limit=10&search=${this.staffSearch.trim()}`
+    ).subscribe({
+      next: (res: any) => {
+        this.staffList = res?.data || [];
+        this.staffLoading = false;
+      },
+      error: () => {
+        this.staffLoading = false;
+        this.alert.error('Error searching staff');
+      }
     });
-
   }
 
-  viewSupport(row: any) {
-    this.isUnassign = true;
+  onStaffSearchKey(event: KeyboardEvent): void {
+    if (event.key === 'Enter') this.searchStaff();
   }
 
-  onClose() {
-    this.isUnassign = false;
-    this.isUpdate = false;
+  selectStaff(staff: any): void {
+    this.assignForm.patchValue({ assignedStaffId: staff.staffId });
   }
 
-  onUpdate() {
-    this.isUnassign = false;
-    this.isUpdate = true;
-  }
-  closeUpdate() {
-    this.isUpdate = false;
+  getSelectedStaffName(): string {
+    const id = this.assignForm.get('assignedStaffId')?.value;
+    const staff = this.staffList.find(s => s.staffId === id);
+    return staff ? staff.staffName : '';
   }
 
-  forward() {
-    this.isUpdate = false;
-    this.isForward = true;
-  }
-  closeForward() {
-    this.isForward = false;
-  }
-
-  onSubmit() {
-    const { complete, notComplete, forward } = this.supportForm.value;
-
-    if (forward) {
-      this.isForward = true;
-      this.isUpdate = false;
-      this.supportForm.patchValue({ complete: false, notComplete: false });
-    } else if (complete) {
-      this.isUpdate = false;
-    } else if (notComplete) {
-      this.isUpdate = false;
-    } else {
-      alert('Please select one option');
+  submitAssign(): void {
+    if (this.assignForm.invalid) {
+      this.alert.error('Please select a staff member');
+      return;
     }
+
+    const payload = {
+      tenantId: this.tenantId,
+      ticketId: this.assignTicket.ticketId,
+      assignedStaffId: this.assignForm.value.assignedStaffId
+    };
+
+    this.assignLoading = true;
+    this.commonApi.fetchData(payload, 'institue/support', 'assign')
+      .subscribe({
+        next: (res: any) => {
+          this.assignLoading = false;
+          if (res?.status) {
+            this.alert.success('Ticket assigned successfully');
+            this.closeModal('ticketAssignModal');
+            this.fetchList(1, 10);
+          }
+        },
+        error: () => {
+          this.assignLoading = false;
+          this.alert.error('Error assigning ticket');
+        }
+      });
+  }
+
+  // ====================================================
+  // PRIORITY UPDATE
+  // ====================================================
+
+  openPriorityModal(row: any): void {
+    this.priorityTicket = row;
+    this.priorityForm.patchValue({ priority: row.priority });
+    this.openModal('ticketPriorityModal');
+  }
+
+  submitPriority(): void {
+    if (this.priorityForm.invalid) return;
+
+    const payload = {
+      tenantId: this.tenantId,
+      ticketId: this.priorityTicket.ticketId,
+      priority: this.priorityForm.value.priority
+    };
+
+    this.priorityLoading = true;
+    this.commonApi.fetchData(payload, 'institue/support/priority', 'update')
+      .subscribe({
+        next: (res: any) => {
+          this.priorityLoading = false;
+          if (res?.status) {
+            this.alert.success('Priority updated successfully');
+            this.closeModal('ticketPriorityModal');
+            this.fetchList(1, 10);
+          }
+        },
+        error: () => {
+          this.priorityLoading = false;
+          this.alert.error('Error updating priority');
+        }
+      });
+  }
+
+  // ====================================================
+  // STATUS UPDATE
+  // ====================================================
+
+  openStatusModal(row: any): void {
+    this.statusTicket = row;
+    this.statusForm.patchValue({ status: row.status, feedback: row.feedback || '' });
+    this.openModal('ticketStatusModal');
+  }
+
+  submitStatus(): void {
+    if (this.statusForm.invalid) return;
+
+    const payload = {
+      tenantId: this.tenantId,
+      ticketId: this.statusTicket.ticketId,
+      status: this.statusForm.value.status,
+      feedback: this.statusForm.value.feedback || ''
+    };
+
+    this.statusLoading = true;
+    this.commonApi.fetchData(payload, 'institue/support/status', 'update')
+      .subscribe({
+        next: (res: any) => {
+          this.statusLoading = false;
+          if (res?.status) {
+            this.alert.success('Status updated successfully');
+            this.closeModal('ticketStatusModal');
+            this.fetchList(1, 10);
+          }
+        },
+        error: () => {
+          this.statusLoading = false;
+          this.alert.error('Error updating status');
+        }
+      });
+  }
+
+  // ====================================================
+  // HELPERS
+  // ====================================================
+
+  getPriorityClass(priority: string): string {
+    const map: any = {
+      LOW: 'bg-secondary', MEDIUM: 'bg-info',
+      HIGH: 'bg-warning', URGENT: 'bg-danger'
+    };
+    return map[priority] || 'bg-secondary';
+  }
+
+  getStatusClass(status: string): string {
+    const map: any = {
+      OPEN: 'bg-primary', IN_PROGRESS: 'bg-warning',
+      RESOLVED: 'bg-success', CLOSED: 'bg-secondary'
+    };
+    return map[status] || 'bg-secondary';
+  }
+
+  private formatDate(ts: number): string {
+    if (!ts) return '-';
+    return new Date(ts).toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  }
+
+  private openModal(id: string): void {
+    const el = document.getElementById(id);
+    if (el) new (window as any).bootstrap.Modal(el).show();
+  }
+
+  private closeModal(id: string): void {
+    const el = document.getElementById(id);
+    if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
 }
