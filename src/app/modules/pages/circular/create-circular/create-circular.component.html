@@ -1,61 +1,163 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-        <div class="d-flex flex-column gap-4">
-            <!-- Header Section -->
-            <div class="d-flex flex-column gap-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
-                        <i class="fa-solid fa-layer-group me-2"></i>Create Circular
-                    </h1>
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                <i class="fa-solid fa-bullhorn me-2"></i>
+                {{ isEditMode ? 'Edit Circular' : 'Create Circular' }}
+            </h1>
+        </div>
+
+        <form [formGroup]="circularForm">
+            <div class="row g-3">
+
+                <!-- Scope -->
+                <div class="col-md-4">
+                    <selectbox label="Scope" placeholder="Select Scope" [options]="scope_options"
+                        formControlName="scope" [control]="circularForm.get('scope')"
+                        [required]="true">
+                    </selectbox>
                 </div>
+
+                <!-- Category -->
+                <div class="col-md-4">
+                    <selectbox label="Category" placeholder="Select Category"
+                        [options]="category_options" formControlName="category"
+                        [control]="circularForm.get('category')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- Status -->
+                <div class="col-md-4">
+                    <selectbox label="Status" placeholder="Select Status" [options]="status_options"
+                        formControlName="status" [control]="circularForm.get('status')"
+                        [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- ── CENTER multi-select ───────────────────── -->
+                <div class="col-12" *ngIf="currentScope === 'CENTER'">
+                    <label class="form-label fw-medium">
+                        Centers <span class="text-danger">*</span>
+                        <span class="badge bg-primary ms-2">{{ selectedCenterCodes.length }} selected</span>
+                    </label>
+                    <div class="border rounded-3 p-2" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Select All -->
+                        <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                            <input type="checkbox" class="form-check-input me-2"
+                                [checked]="selectAllCenters"
+                                (change)="toggleAllCenters($any($event.target).checked)" />
+                            <span class="fw-semibold small">Select All</span>
+                            <span class="text-muted small ms-auto">{{ centers.length }} total</span>
+                        </div>
+                        <div *ngFor="let c of centers"
+                            class="d-flex align-items-center px-2 py-1 rounded" style="cursor:pointer;">
+                            <input type="checkbox" class="form-check-input me-2"
+                                [checked]="isCenterSelected(c.centerCode)"
+                                (change)="toggleCenter(c.centerCode, $any($event.target).checked)" />
+                            <span class="small">{{ c.centerName }}</span>
+                            <span class="text-muted small ms-auto">{{ c.centerCode }}</span>
+                        </div>
+                        <div *ngIf="centers.length === 0"
+                            class="text-muted small text-center py-2">No centers found</div>
+                    </div>
+                </div>
+
+                <!-- ── BATCH multi-select ────────────────────── -->
+                <div class="col-12" *ngIf="currentScope === 'BATCH'">
+                    <label class="form-label fw-medium">
+                        Batches <span class="text-danger">*</span>
+                        <span class="badge bg-primary ms-2">{{ selectedBatchCodes.length }} selected</span>
+                    </label>
+                    <div class="border rounded-3 p-2" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Select All -->
+                        <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                            <input type="checkbox" class="form-check-input me-2"
+                                [checked]="selectAllBatches"
+                                (change)="toggleAllBatches($any($event.target).checked)" />
+                            <span class="fw-semibold small">Select All</span>
+                            <span class="text-muted small ms-auto">{{ batches.length }} total</span>
+                        </div>
+                        <div *ngFor="let b of batches"
+                            class="d-flex align-items-center px-2 py-1 rounded" style="cursor:pointer;">
+                            <input type="checkbox" class="form-check-input me-2"
+                                [checked]="isBatchSelected(b.batchCode)"
+                                (change)="toggleBatch(b.batchCode, $any($event.target).checked)" />
+                            <span class="small">{{ b.batchName }}</span>
+                            <span class="text-muted small ms-auto">{{ b.batchCode }}</span>
+                        </div>
+                        <div *ngIf="batches.length === 0"
+                            class="text-muted small text-center py-2">No batches found</div>
+                    </div>
+                </div>
+
+                <!-- INSTITUTE info banner -->
+                <div class="col-12" *ngIf="currentScope === 'INSTITUTE'">
+                    <div class="alert alert-info rounded-3 py-2 small mb-0">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        This circular will be sent to the <strong>entire institute</strong>.
+                    </div>
+                </div>
+
+                <!-- Subject -->
+                <div class="col-12">
+                    <formfield label="Subject" formControlName="subject"
+                        [control]="circularForm.get('subject')"
+                        placeholder="Enter circular subject" [required]="true">
+                    </formfield>
+                </div>
+
+                <!-- Details -->
+                <div class="col-12">
+                    <description label="Details" formControlName="details"
+                        [control]="circularForm.get('details')"
+                        placeholder="Enter circular details..." [required]="true">
+                    </description>
+                </div>
+
+                <!-- File Upload -->
+                <div class="col-12">
+                    <label class="form-label fw-medium">Attachments</label>
+                    <importfiles label="" [required]="false" [multiple]="false"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        (filesChanged)="onFileSelected($event)">
+                    </importfiles>
+                    <div *ngIf="uploading" class="text-muted small mt-1">
+                        <span class="spinner-border spinner-border-sm me-1"></span>Uploading...
+                    </div>
+
+                    <!-- Uploaded files list -->
+                    <div *ngIf="uploadedFiles.length > 0" class="mt-2">
+                        <div *ngFor="let f of uploadedFiles; let i = index"
+                            class="d-flex align-items-center justify-content-between border rounded-3 px-3 py-2 mb-1">
+                            <a [href]="f.url" target="_blank" class="small text-primary text-decoration-none">
+                                <i class="fa-solid fa-paperclip me-1"></i>{{ f.name || 'Attachment ' + (i+1) }}
+                            </a>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                                (click)="removeFile(i)">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-        </div>
 
-        <div class="mt-3">
-            <form [formGroup]="circularForm">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <selectbox label="Class" placeholder="Select Class" [options]="class_options"
-                            formControlName="class" [required]="true" [control]="circularForm.get('class')">
-                        </selectbox>
-                    </div>
-                    <div class="col-md-6">
-                        <formfield label="Title" formControlName="title" [control]="circularForm.get('title')"
-                            placeholder="Enter Title" [required]="true"></formfield>
-                    </div>
-                    <div class="col-md-6">
-                        <selectbox label="Type" placeholder="Select Type" [options]="type_options"
-                            formControlName="type" [required]="true" [control]="circularForm.get('type')">
-                        </selectbox>
-                    </div>
-                    <div class="col-md-6">
-                        <selectbox label="Issued For" placeholder="Select" [options]="issued_options"
-                            formControlName="issue" [required]="true" [control]="circularForm.get('issue')">
-                        </selectbox>
-                    </div>
-                    <div class="col-md-6">
-                        <formfield label="Date" formControlName="date" [control]="circularForm.get('date')"
-                            placeholder="Enter Date" [required]="true"></formfield>
-                    </div>
-                    <div class="col-md-6">
-                        <description label="Description" placeholder="Add description here..."
-                            [control]="circularForm.get('des')" formControlName="des" [required]="true">
-                        </description>
-                    </div>
-                </div>
+            <!-- Actions -->
+            <div class="col-12 text-end mt-4">
+                <button type="button" class="btn closebutton px-4 me-2"
+                    style="border-radius: 30px;" (click)="cancel()">
+                    Back
+                </button>
+                <button type="button" class="btn submitbutton px-4"
+                    [disabled]="circularForm.invalid || loading || uploading"
+                    (click)="submit()" style="border-radius: 30px;">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Submit') }}
+                </button>
+            </div>
 
-                <div class="col-12 text-end mt-3">
-                    <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/circular">
-                        Back
-                    </button>
-                    <button class="btn submitbutton px-4" [disabled]="circularForm.invalid" (click)="addCircular()"
-                        style="border-radius: 30px;">
-                        Submit
-                    </button>
-                </div>
-
-            </form>
-        </div>
-
+        </form>
     </div>
 </div>
