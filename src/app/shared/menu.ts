@@ -181,6 +181,14 @@ export const MENU_ITEMS: MenuItem[] = [
   }
 ];
 
+export const MENU_ASSIGNMENT: MenuItem[] = [
+  {
+    label: 'Assignments',
+    icon: 'fa-solid fa-file-pen',
+    route: '/app/assignment'
+  },
+];
+
 export const NAV_ITEMS: NavItem[] = [
   {
     label: 'Report',

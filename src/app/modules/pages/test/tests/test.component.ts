@@ -5,6 +5,7 @@ import { firstValueFrom, Subscription } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 @Component({
   selector: 'app-tests',
@@ -101,8 +102,14 @@ export class TestComponent implements OnInit, OnDestroy {
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
-    private fb: FormBuilder
-  ) { }
+    private fb: FormBuilder,
+    public authService: AuthService
+  ) { 
+
+    if(this.authService.assignmentRole()) {
+      this.actions.pop(); 
+    }
+  }
 
   /* ================= INIT ================= */
   ngOnInit(): void {

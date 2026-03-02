@@ -12,11 +12,11 @@
                             <i class="fa-solid fa-filter"></i>
                             {{ showFilters ? 'Hide Filters' : 'Filters' }}
                         </button>
-                        <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                        <button *ngIf="!authService.assignmentRole()" class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
                             routerLink="/app/assignment/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Add Assignment</button>
-                        <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                        <button *ngIf="!authService.assignmentRole()" class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
                             routerLink="/app/assignment/import">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Import Assignments</button>
