@@ -6,6 +6,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -31,7 +32,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     private sanitizer: DomSanitizer,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private breadcrump: BredcrumpService
+    private breadcrump: BredcrumpService,
+    public authService: AuthService
   ) { this.breadcrump.set([{ label: 'Assignments', link: '/app/assignment' }, { label: 'View' }]); }
 
   ngOnInit(): void {

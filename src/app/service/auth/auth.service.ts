@@ -20,7 +20,7 @@ export class AuthService {
   formReset$ = this.formResetSubject.asObservable();
   private loggedIn$ = new BehaviorSubject<boolean>(this.hasToken());
   isLoggedIn$ = this.loggedIn$.asObservable();
-  constructor(private http: HttpClient, private router: Router, private ngZone: NgZone, private alert: AlertService) {}
+  constructor(private http: HttpClient, private router: Router, private ngZone: NgZone, private alert: AlertService) { }
 
   signIn(payload: any, module: any, endpoint: any) {
     return this.http.post(`${environment.baseURL}/${module}/${endpoint}`, payload, { withCredentials: true }).subscribe({
@@ -120,5 +120,9 @@ export class AuthService {
   hasAnyRole(roles: UserRole[]): boolean {
     const current = this.getRole();
     return roles.includes(current);
+  }
+
+  assignmentRole(): boolean {
+    return localStorage.getItem('email') == 'maheswari@z7i.in' || localStorage.getItem('email') == 'edp1@z7i.in';
   }
 }
