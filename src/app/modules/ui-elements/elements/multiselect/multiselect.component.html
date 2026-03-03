@@ -8,17 +8,7 @@
       <span *ngIf="selectedItems.length === 0">{{ placeholder }}</span>
       <span *ngIf="selectedItems.length > 0">{{ getSelectedLabels() }}</span>
     </button>
-
-    <!-- <ul class="dropdown-menu w-100 p-2" style="max-height: 220px; overflow-y: auto;">
-      <li *ngFor="let opt of options">
-        <label class="dropdown-item d-flex align-items-center">
-          <input type="checkbox" class="form-check-input me-2"
-                 [checked]="isSelected(opt)"
-                 (change)="toggleSelection(opt)">
-          {{ opt[optionLabel] }}
-        </label>
-      </li>
-    </ul> -->
+    
     <ul class="dropdown-menu w-100 p-2" style="max-height: 220px; overflow-y: auto;" (click)="$event.stopPropagation()">
       <li *ngFor="let opt of options">
         <label class="dropdown-item d-flex align-items-center" (click)="$event.stopPropagation()">

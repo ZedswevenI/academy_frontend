@@ -286,7 +286,7 @@ export class KnowledgeCreateComponent implements OnInit {
     formData.append('file', files[0]);
     formData.append('tenantId', this.tenantId);
 
-    this.commonApi.uploadImage(formData, 'teacher/library', 'upload')
+    this.commonApi.uploadImage(formData, 'institue/library', 'upload')
       .subscribe((res: any) => {
         if (res?.status) {
           this.uploadedFiles = [{ url: res.data.attachmentUrl }];
@@ -315,72 +315,85 @@ export class KnowledgeCreateComponent implements OnInit {
 
   private async patchEditData(d: any): Promise<void> {
 
-    this.uploadedFiles = d.attachmentUrl || [];
+  this.uploadedFiles = d.attachmentUrl || [];
 
-    console.log("Availbe ",d.availableUntil);
-        console.log("Availbe ",d.availableFrom);
+  // ✅ Extract IDs from nested objects
+  const subjectId  = typeof d.subjectId === 'object' ? d.subjectId._id        : d.subjectId;
+  const topicId    = typeof d.topicId   === 'object' ? d.topicId.topicId      : d.topicId;
+  const subTopicId = typeof d.subTopicId === 'object' ? d.subTopicId?.subTopicId : d.subTopicId;
 
-    
-    // Step 1 — patch all fields except topic/subtopic, suppress events
-    this.knowledgeForm.patchValue({
-      title: d.title,
-      description: d.description,
-      classNo: d.classNo,
-      subjectId: d.subjectId,
-      availableUntil: this.formatDate(d.availableUntil),
-      batchId: d.batchIds?.[0] || '',
-      availableFrom: this.formatDate(d.availableFrom),
-      attachmentUrl: d.attachmentUrl || []
-    }, { emitEvent: false });
+  // Step 1 — patch base fields
+  this.knowledgeForm.patchValue({
+    title:          d.title,
+    description:    d.description,
+    classNo:        d.classNo,
+    subjectId:      subjectId,       // ✅ plain string _id
+    availableFrom:  this.formatDate(d.availableFrom),
+    availableUntil: this.formatDate(d.availableUntil),
+    batchId:        d.batchIds?.[0] || '',
+    attachmentUrl:  d.attachmentUrl || []
+  }, { emitEvent: false });
 
-    // Step 2 — manually filter topics (classNo + subjectId now set)
-    this.onSubjectChange(d.subjectId);
+  // Step 2 — filter topics using extracted subjectId
+  this.onSubjectChange(subjectId);
 
-    // Step 3 — patch topic after topics array is populated
-    this.knowledgeForm.patchValue({ topicId: d.topicId }, { emitEvent: false });
+  // Step 3 — patch topicId (UUID string, not _id)
+  this.knowledgeForm.patchValue({ topicId: topicId }, { emitEvent: false });
 
-    // Step 4 — manually filter subtopics
-    this.onTopicChange(d.topicId);
+  // Step 4 — filter subtopics
+  this.onTopicChange(topicId);
 
-    // Step 5 — patch subtopic
-    this.knowledgeForm.patchValue({ subTopicId: d.subTopicId }, { emitEvent: false });
+  // Step 5 — patch subTopicId
+  this.knowledgeForm.patchValue({ subTopicId: subTopicId || '' }, { emitEvent: false });
 
-    // Step 6 — load students for the selected batch, then patch studentIds
-    await this.loadStudentsForEdit(d.batchIds?.[0], d.studentIds);
-  }
+  // Step 6 — load students then patch
+  await this.loadStudentsForEdit(d.batchIds?.[0], d.studentIds);
+}
 
   private loadStudentsForEdit(batchId: string, selectedStudentIds: string[]): Promise<void> {
+  return new Promise<void>(resolve => {
+    if (!batchId) {
+      resolve();
+      return;
+    }
 
-    return new Promise<void>(resolve => {
+    this.commonApi.fetchData(
+      { entiId: this.tenantId },
+      'student',
+      `list?list=full&batchCode=${batchId}`
+    ).subscribe((res: any) => {
+      if (res?.status) {
 
-      if (!batchId) {
+        // ✅ Build student options
+        this.studentOptions = res.data.map((s: any) => ({
+          label: `${s.student.name} (${s.admissionNo})`,
+          value: s.studentId   // plain UUID string
+        }));
+
+        console.log('Student options:', this.studentOptions.map(s => s.value));
+        console.log('Incoming studentIds:', selectedStudentIds);
+
+        // ✅ Filter only IDs that exist in the loaded options
+        const validIds = (selectedStudentIds || []).filter(id =>
+          this.studentOptions.some(opt => opt.value === id)
+        );
+
+        console.log('Matched studentIds:', validIds);
+
+        // ✅ Patch after a tick so multiselect has rendered with options
+        setTimeout(() => {
+          this.knowledgeForm.patchValue(
+            { studentIds: validIds },
+            { emitEvent: false }
+          );
+          resolve();
+        }, 0);
+      } else {
         resolve();
-        return;
       }
-
-      this.commonApi.fetchData(
-        { entiId: this.tenantId },
-        'student',
-        `list?list=full&batchCode=${batchId}`
-      ).subscribe((res: any) => {
-
-        if (res?.status) {
-          this.studentOptions = res.data.map((s: any) => ({
-            label: `${s.student.name} (${s.admissionNo})`,
-            value: s.studentId
-          }));
-
-          console.log("Stduent ",selectedStudentIds);
-          
-          this.knowledgeForm.patchValue({
-            studentIds: selectedStudentIds || []
-          }, { emitEvent: false });
-        }
-
-        resolve();
-      });
     });
-  }
+  });
+}
 
   // ====================================================
   // SUBMIT
@@ -418,7 +431,7 @@ export class KnowledgeCreateComponent implements OnInit {
 
     const endpoint = this.isEditMode ? 'edit' : 'create';
 
-    this.commonApi.fetchData(payload, 'teacher/library', endpoint)
+    this.commonApi.fetchData(payload, 'institue/library', endpoint)
       .subscribe((res: any) => {
         if (res?.status) {
           this.router.navigate(['/app/knowledge']);

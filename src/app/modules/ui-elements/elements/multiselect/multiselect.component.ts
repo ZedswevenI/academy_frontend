@@ -28,41 +28,58 @@ export class MultiselectComponent implements ControlValueAccessor {
   value: any = [];
   onChange = (_: any) => { };
   onTouched = () => { };
-
-  writeValue(value: any): void {
-    if (value) {
-      this.selectedItems = value;
-      this.value = value;
-    } else {
-      this.selectedItems = [];
-      this.value = [];
-    }
-  }
-
-  getSelectedLabels(): string {
-    return this.selectedItems.map(item => item[this.optionLabel]).join(', ');
-  }
+ 
   registerOnChange(fn: any): void {
     this.onChange = fn;
   }
 
   registerOnTouched(fn: any): void {
     this.onTouched = fn;
+  } 
+
+  writeValue(value: any): void {
+  if (value && Array.isArray(value)) {
+    // ✅ Normalize — store as plain value array (strings/numbers)
+    this.value = value.map((v: any) =>
+      typeof v === 'object' ? v[this.optionValue] : v
+    );
+    this.selectedItems = this.value;
+  } else {
+    this.selectedItems = [];
+    this.value = [];
+  }
+}
+
+isSelected(option: any): boolean {
+  // ✅ Compare by optionValue field, not object reference
+  return this.selectedItems.some(
+    item => item === option[this.optionValue]
+  );
+}
+
+toggleSelection(option: any): void {
+  const val = option[this.optionValue];
+  const index = this.selectedItems.indexOf(val);
+
+  if (index === -1) {
+    this.selectedItems = [...this.selectedItems, val];
+  } else {
+    this.selectedItems = this.selectedItems.filter(v => v !== val);
   }
 
-  toggleSelection(option: any) {
-    const index = this.selectedItems.indexOf(option);
-    if (index === -1) {
-      this.selectedItems.push(option);
-    } else {
-      this.selectedItems.splice(index, 1);
-    }
-    this.value = [...this.selectedItems];
-    this.onChange(this.value);
-    this.selectionChange.emit(this.value);
-  }
+  this.value = [...this.selectedItems];
+  this.onChange(this.value);
+  this.onTouched();
+  this.selectionChange.emit(this.value);
+}
 
-  isSelected(option: any) {
-    return this.selectedItems.includes(option);
-  }
+getSelectedLabels(): string {
+  // ✅ Find labels by matching optionValue
+  return this.selectedItems
+    .map(val => {
+      const found = this.options.find(o => o[this.optionValue] === val);
+      return found ? found[this.optionLabel] : val;
+    })
+    .join(', ');
+}
 }
