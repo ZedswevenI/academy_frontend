@@ -29,10 +29,15 @@
                         <div class="fw-semibold" *ngIf="viewMode !== 'range'">
                             {{ timetable.wkStartOn | date: "mediumDate" }}
                         </div>
-                        <div class="fw-semibold" *ngIf="viewMode === 'range'">
+                        <!-- <div class="fw-semibold" *ngIf="viewMode === 'range'">
                             {{ fromDateStr | date:'mediumDate' }}
                             <span class="text-muted mx-1">→</span>
                             {{ (toDateStr || fromDateStr) | date:'mediumDate' }}
+                        </div> -->
+                        <div class="fw-semibold" *ngIf="viewMode === 'range'">
+                            {{ fromDateMs | date:'mediumDate' }}
+                            <span class="text-muted mx-1">→</span>
+                            {{ toDateMs | date:'mediumDate' }}
                         </div>
                     </div>
                 </div>

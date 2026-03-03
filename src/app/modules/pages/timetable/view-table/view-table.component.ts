@@ -139,6 +139,16 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  get fromDateMs(): number {
+    const ms = this.toStartOfDayMs(this.fromDateStr);
+    return ms || 0;
+  }
+
+  get toDateMs(): number {
+    const ms = this.toStartOfDayMs(this.toDateStr);
+    return ms || this.fromDateMs || 0;
+  }
+
   private loadLookupsAndTimetable() {
     this.loading = true;
     const tenantId = this.tenantId;
@@ -212,18 +222,38 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return c?.centerName || centerCode || '-';
   }
 
+  // resolveFacultyLabel(p: any) {
+  //   const name = safeTrim(p?.facultyName);
+  //   if (name) return name;
+  //   const idOrCode = safeTrim(p?.facultyId);
+  //   if (!idOrCode) return '';
+  //   return `${this.staffByCode?.[idOrCode]?.staffName} - ${idOrCode}`;
+  // }
+
   resolveFacultyLabel(p: any) {
     const name = safeTrim(p?.facultyName);
     if (name) return name;
     const idOrCode = safeTrim(p?.facultyId);
     if (!idOrCode) return '';
-    return `${this.staffByCode?.[idOrCode]?.staffName} - ${idOrCode}`;
+    const s =
+      this.staffByCode?.[idOrCode] || this.staffById?.[idOrCode] || null;
+    if (s?.staffName) return `${safeTrim(s.staffName)} (${idOrCode})`;
+    return idOrCode;
   }
+
+  // resolveSubjectLabel(p: any) {
+  //   const code = safeTrim(p?.subjectCode);
+  //   const name = safeTrim(p?.subjectName);
+  //   return `${name} - ${code} ` || '';
+  // }
 
   resolveSubjectLabel(p: any) {
     const code = safeTrim(p?.subjectCode);
     const name = safeTrim(p?.subjectName);
-    return `${name} - ${code} ` || '';
+    if (name && code) return `${name} - ${code}`;
+    if (name) return name;
+    if (code) return code;
+    return '';
   }
 
   loadTimetable() {
