@@ -104,7 +104,7 @@ export class KnowledgeCreateComponent implements OnInit {
       studentIds: [[]],
       availableFrom: ['', Validators.required],
       availableUntil: ['', Validators.required],
-      attachmentUrl: [[]]
+      attachmentUrl: [[], Validators.required]
     });
   }
 

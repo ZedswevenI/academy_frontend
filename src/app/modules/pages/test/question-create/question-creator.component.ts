@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 interface QuestionOption {
   optionHtml: string;
@@ -41,18 +42,24 @@ export class QuestionCreatorComponent implements OnInit {
     { value: 'matrix', label: 'Matrix Type (Match the Questions)' }
   ];
 
-  constructor(private fb: FormBuilder, private commonApi: CommonapiService, private alert: AlertService, private router: Router) {
+  constructor(private fb: FormBuilder,    private breadcrump: BredcrumpService,
+   private commonApi: CommonapiService, private alert: AlertService, private router: Router) {
     this.initializeForm();
 
     // const navigation = this.router.getCurrentNavigation();
     const state: any = history.state;
     this.entiId = localStorage.getItem('tenantId') || '';
     this.testId = state.question.testId;
+    
 
     if (state?.question?.recId) {
       this.isEditMode = true;
       this.recId = state?.question?.recId;
+      this.breadcrump.set([{ label: 'Assignment', link: '/app/assignment' }, { label: 'Edit' }]);
+    } else {
+      this.breadcrump.set([{ label: 'Assignment', link: '/app/assignment' }, { label: 'Create' }]);
     }
+  
   }
   initializeForm() {
     this.questionForm = this.fb.group({

@@ -126,7 +126,7 @@ export class KnowledgeListComponent implements OnInit {
     pageSize: number;
   }) {
 
-    if (this.filterForm.invalid) return;
+    // if (this.filterForm.invalid) return;
 
     const f = this.filterForm.value;
 

@@ -40,7 +40,10 @@
           </div>
 
           <!-- Process Button -->
-          <div class="text-center mt-2">
+          <div class="d-flex justify-content-center gap-3 mt-2">
+            <button class="btn btn-outline-secondary btn-lg" routerLink="/app/assignment">
+              <i class="fas fa-times me-2"></i>Cancel
+            </button>
             <button class="btn btn-success btn-lg" [disabled]="!selectedFile || isProcessing" (click)="processDocx()">
               <span *ngIf="!isProcessing">
                 <i class="fas fa-cogs me-2"></i>Process Document
@@ -50,8 +53,7 @@
                 Processing...
               </span>
             </button>
-          </div>
-          <div class="alert alert-info mt-2">
+          </div>          <div class="alert alert-info mt-2">
             <h5><i class="fas fa-info-circle"></i> Import Instructions</h5>
             <p class="mb-2">Upload a .docx file with questions in the following format:</p>
             <ul class="mb-0">
@@ -108,12 +110,10 @@
                       <ng-container *ngIf="question.negativeMarks > 0; else onlyPositive">
                         +{{ question.positiveMarks }} / −{{ question.negativeMarks }}
                       </ng-container>
-
                       <ng-template #onlyPositive>
                         +{{ question.positiveMarks }}
                       </ng-template>
                     </span>
-
                   </div>
                 </div>
               </div>
@@ -124,8 +124,7 @@
                   <label class="fw-bold text-primary mb-2">
                     <i class="fas fa-question-circle me-2"></i>Question:
                   </label>
-                  <div class="question-content p-3 bg-light rounded" [innerHTML]="question.questionHtml">
-                  </div>
+                  <div class="question-content p-3 bg-light rounded" [innerHTML]="question.questionHtml"></div>
                 </div>
 
                 <!-- Options -->
@@ -146,8 +145,7 @@
                           <i *ngIf="question.answer.includes(option.label)"
                             class="fas fa-check-circle text-success ms-2"></i>
                         </div>
-                        <div class="option-content flex-grow-1" [innerHTML]="option.html">
-                        </div>
+                        <div class="option-content flex-grow-1" [innerHTML]="option.html"></div>
                       </div>
                     </div>
                   </div>
@@ -168,19 +166,22 @@
                   <label class="fw-bold text-info mb-2">
                     <i class="fas fa-lightbulb me-2"></i>Solution:
                   </label>
-                  <div class="solution-content p-3 bg-info-subtle rounded" [innerHTML]="question.solutionHtml">
-                  </div>
+                  <div class="solution-content p-3 bg-info-subtle rounded" [innerHTML]="question.solutionHtml"></div>
                 </div>
-
               </div>
             </div>
           </div>
 
           <!-- Action Buttons -->
           <div class="d-flex justify-content-between mt-4">
-            <button class="btn btn-outline-secondary" (click)="reset()">
-              <i class="fas fa-arrow-left me-2"></i>Back to Upload
-            </button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary" (click)="reset()">
+                <i class="fas fa-arrow-left me-2"></i>Back to Upload
+              </button>
+              <button class="btn btn-outline-danger" routerLink="/app/assignment">
+                <i class="fas fa-times me-2"></i>Cancel
+              </button>
+            </div>
             <button class="btn btn-success btn-lg" [disabled]="isProcessing" (click)="submitAllQuestions()">
               <span *ngIf="!isProcessing">
                 <i class="fas fa-paper-plane me-2"></i>Submit All Questions
@@ -210,8 +211,8 @@
             <button class="btn btn-primary" (click)="reset()">
               <i class="fas fa-plus me-2"></i>Import More Questions
             </button>
-            <button class="btn btn-outline-secondary">
-              <i class="fas fa-list me-2"></i>View Question Bank
+            <button class="btn btn-outline-secondary" routerLink="/app/assignment">
+              <i class="fas fa-list me-2"></i>View Assignments
             </button>
           </div>
         </div>

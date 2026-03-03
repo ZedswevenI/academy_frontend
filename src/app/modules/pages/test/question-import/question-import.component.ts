@@ -5,6 +5,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { firstValueFrom } from 'rxjs';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 interface ParsedQuestion {
   id: number;
@@ -40,7 +41,7 @@ export class QuestionImportComponent implements OnInit {
   isProcessing = false;
   currentStep: 'upload' | 'preview' | 'success' = 'upload';
 
-  constructor(private fb: FormBuilder, private commonApi: CommonapiService, private alert: AlertService, private router: Router,
+  constructor(private fb: FormBuilder,  private breadcrump: BredcrumpService,private commonApi: CommonapiService, private alert: AlertService, private router: Router,
   ) {
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state as any;
@@ -48,6 +49,7 @@ export class QuestionImportComponent implements OnInit {
     if (state) {
       this.testId = state.questions.testId
     }
+    this.breadcrump.set([{ label: 'Assignment', link: '/app/assignment' }, { label: 'Import' }]);
     this.questionForm = this.fb.group({
       questionType: ['mcq-single', Validators.required],
       questionText: ['', Validators.required],
