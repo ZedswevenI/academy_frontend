@@ -140,7 +140,7 @@ export class KnowledgeListComponent implements OnInit {
 
     this.commonApi.fetchData(
       { tenantId: this.tenantId },
-      'teacher/library',
+      'institue/library',
       endpoint
     ).subscribe((res: any) => {
 
@@ -179,7 +179,7 @@ export class KnowledgeListComponent implements OnInit {
 
     this.commonApi.fetchData(
       payload,
-      'teacher/library',
+      'institue/library',
       'delete'
     ).subscribe((res: any) => {
 

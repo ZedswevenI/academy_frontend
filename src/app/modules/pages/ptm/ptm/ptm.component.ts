@@ -120,14 +120,14 @@ export class PtmComponent implements OnInit {
       hoverColor: '#0066FF',
       callback: (row: any) => this.onView(row)
     },
-    {
-      type: 'icon',
-      icon: 'fa-regular fa-pen-to-square',
-      tooltip: 'Edit',
-      color: '#6B7280',
-      hoverColor: '#16A34A',
-      callback: (row: any) => this.router.navigate(['/app/ptm/create'], { state: { ptm: row } })
-    },
+    // {
+    //   type: 'icon',
+    //   icon: 'fa-regular fa-pen-to-square',
+    //   tooltip: 'Edit',
+    //   color: '#6B7280',
+    //   hoverColor: '#16A34A',
+    //   callback: (row: any) => this.router.navigate(['/app/ptm/create'], { state: { ptm: row } })
+    // },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
