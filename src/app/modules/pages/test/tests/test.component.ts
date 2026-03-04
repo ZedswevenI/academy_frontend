@@ -80,6 +80,22 @@ export class TestComponent implements OnInit, OnDestroy {
       callback: (row: any) => this.viewQuestions(row)
     },
     {
+      type: 'icon',
+      icon: 'fa fa-file-import',
+      tooltip: 'Import Questions',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.importQuestions(row)
+    },
+    {
+      type: 'icon',
+      icon: 'fa fa-plus',
+      tooltip: 'Add Question',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.addQuestions(row)
+    },
+    {
       type: 'dropdown',
       text: 'Actions',
       icon: 'fa-solid fa-ellipsis-vertical',
