@@ -4,18 +4,17 @@ import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 @Component({
   selector: 'app-student-list',
   standalone: false,
   templateUrl: './student-list.component.html',
-  styleUrl: './student-list.component.scss'
+  styleUrl: './student-list.component.scss',
 })
 export class StudentListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private readonly moduleName = 'attendance';
-
-  // ---- Context passed from attendance list via router state ----
   batchCode = '';
   timetableId = '';
   periodNo = 0;
@@ -27,6 +26,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
   timeLabel = '';
   mode = '';
   periodType = '';
+
   students: any[] = [];
   loading = false;
   submitting = false;
@@ -37,13 +37,13 @@ export class StudentListComponent implements OnInit, OnDestroy {
   showSummary = false;
   presentCount = 0;
   absentCount = 0;
-  absentStudents: string[] = [];
-  presentStudents: string[] = [];
+  lateCount = 0;
 
   constructor(
     private breadcrumb: BredcrumpService,
     public router: Router,
-    private commonApi: CommonapiService
+    private commonApi: CommonapiService,
+    private alert: AlertService,
   ) {
     this.breadcrumb.set([
       { label: 'Attendance', link: '/app/attendance' },
@@ -96,51 +96,77 @@ export class StudentListComponent implements OnInit, OnDestroy {
           this.topicTaught = res?.existingTopicTaught || '';
           this.feedback = res?.existingFeedback || '';
           this.students = (Array.isArray(res?.data) ? res.data : []).map(
-            (s: any) => ({
-              ...s,
-            }),
+            (s: any) => ({ ...s }),
           );
           this.recalcSelectAll();
         },
         error: () => {
           this.loading = false;
+          this.alert.error('Failed to load students');
         },
       });
   }
 
   toggleAttendance(student: any): void {
-    if (student.status === 'PRESENT') {
-      student.status = 'ABSENT';
-    } else {
+    if (student.status === 'NOT_MARKED') {
       student.status = 'PRESENT';
+    } else if (student.status === 'PRESENT') {
+      student.status = 'ABSENT';
+    } else if (student.status === 'ABSENT') {
+      student.status = 'PRESENT';
+    } else if (student.status === 'LATE') {
+      student.status = 'ABSENT';
     }
     this.recalcSelectAll();
   }
 
   toggleSelectAll(): void {
     this.students.forEach((s) => {
-      s.status = this.selectAll ? 'PRESENT' : 'ABSENT';
+      if (s.status !== 'LATE') {
+        s.status = this.selectAll ? 'PRESENT' : 'ABSENT';
+      }
     });
   }
 
   recalcSelectAll(): void {
+    const nonLate = this.students.filter((s) => s.status !== 'LATE');
     this.selectAll =
-      this.students.length > 0 &&
-      this.students.every((s) => s.status === 'PRESENT');
+      nonLate.length > 0 && nonLate.every((s) => s.status === 'PRESENT');
   }
 
   submitAttendance(): void {
-    const present = this.students.filter((s) => s.status === 'PRESENT');
-    const absent = this.students.filter((s) => s.status !== 'PRESENT');
-    this.presentCount = present.length;
-    this.absentCount = absent.length;
-    this.presentStudents = present.map((s) => s.name);
-    this.absentStudents = absent.map((s) => s.name);
+    const unmarked = this.students.filter((s) => s.status === 'NOT_MARKED');
+    if (unmarked.length > 0) {
+      this.alert.warning(
+        `${unmarked.length} student(s) not marked yet. Please mark all students before submitting.`,
+      );
+      return;
+    }
+    this.presentCount = this.students.filter(
+      (s) => s.status === 'PRESENT',
+    ).length;
+    this.absentCount = this.students.filter(
+      (s) => s.status === 'ABSENT',
+    ).length;
+    this.lateCount = this.students.filter((s) => s.status === 'LATE').length;
     this.showSummary = true;
   }
 
   onConfirm(): void {
     this.showSummary = false;
+    const validStudents = this.students
+      .filter(
+        (s) =>
+          s.status === 'PRESENT' ||
+          s.status === 'ABSENT' ||
+          s.status === 'LATE',
+      )
+      .map((s) => ({
+        studentId: s.studentId,
+        admissionNo: s.admissionNo,
+        status: s.status,
+        remarks: s.remarks || null,
+      }));
     const tenantId = localStorage.getItem('tenantId');
     const payload = {
       tenantId,
@@ -152,12 +178,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
       subjectId: this.subjectId,
       topicTaught: this.topicTaught,
       feedback: this.feedback,
-      students: this.students.map((s) => ({
-        studentId: s.studentId,
-        admissionNo: s.admissionNo,
-        status: s.status,
-        remarks: s.remarks || null,
-      })),
+      students: validStudents,
     };
     this.submitting = true;
     this.commonApi
@@ -166,11 +187,15 @@ export class StudentListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.submitting = false;
+          this.alert.success('Attendance submitted successfully');
           this.router.navigate(['/app/attendance']);
         },
         error: (err: any) => {
           this.submitting = false;
-          console.error('Failed to mark attendance', err);
+          this.alert.error(
+            err?.error?.message ||
+              'Failed to submit attendance. Please try again.',
+          );
         },
       });
   }

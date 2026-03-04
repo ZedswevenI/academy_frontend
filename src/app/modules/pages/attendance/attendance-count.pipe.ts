@@ -10,7 +10,7 @@ export class PresentCountPipe implements PipeTransform {
 @Pipe({ name: 'absentCount', standalone: false })
 export class AbsentCountPipe implements PipeTransform {
   transform(students: any[]): number {
-    return (students || []).filter(s => s.status !== 'PRESENT').length;
+    return (students || []).filter(s => s.status === 'ABSENT').length;
   }
 }
 
@@ -21,5 +21,9 @@ export class AbsentStudentsFilterPipe implements PipeTransform {
   }
 }
 
-// Register all three in your AttendanceModule declarations:
-// declarations: [ ..., PresentCountPipe, AbsentCountPipe, AbsentStudentsFilterPipe ]
+@Pipe({ name: 'notMarkedCount', standalone: false })
+export class NotMarkedCountPipe implements PipeTransform {
+  transform(students: any[]): number {
+    return (students || []).filter(s => s.status === 'NOT_MARKED').length;
+  }
+}
