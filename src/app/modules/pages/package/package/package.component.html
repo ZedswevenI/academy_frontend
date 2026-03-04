@@ -63,7 +63,7 @@
                     </div>
                     <div class="col-12" *ngIf="selectedPackage.attachmentUrl">
                         <div class="text-muted small mb-1">Attachment</div>
-                        <a [href]="selectedPackage.attachmentUrl" target="_blank"
+                        <a  (click)="downloadFile(selectedPackage.attachmentUrl)" target="_blank"
                             class="btn btn-sm btn-outline-primary rounded-pill">
                             <i class="fa-solid fa-download me-1"></i>Download
                         </a>

@@ -74,9 +74,9 @@ export class KnowledgeListComponent implements OnInit {
   ngOnInit(): void {
 
     this.filterForm = this.fb.group({
-      classNo: ['', Validators.required],
-      subjectId: ['', Validators.required],
-      batchId: ['', Validators.required]
+      classNo: [''],
+      subjectId: [''],
+      batchId: ['']
     });
 
     this.loadSubjects();

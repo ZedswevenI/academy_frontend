@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 
 @Component({
   selector: 'app-knowledge-view',
@@ -13,6 +14,7 @@ export class KnowledgeViewComponent implements OnInit {
   material: any = null;
 
   constructor(
+    private commonApi: CommonapiService,
     private breadcrumb: BredcrumpService,
     private router: Router
   ) {
@@ -57,5 +59,19 @@ export class KnowledgeViewComponent implements OnInit {
 
   getAttachmentUrl(): string {
     return this.material?.attachmentUrl?.[0]?.url || '';
+  }
+
+
+  downloadFile(url: string): void {
+    this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
+      next: (res: any) => {
+        const fileName = url.split('/').pop() || 'download';
+        const a = document.createElement('a');
+        const objectUrl = URL.createObjectURL(res);
+        a.href = objectUrl;
+        a.download = fileName;
+        a.click();
+      },
+    });
   }
 }

@@ -65,7 +65,7 @@
                             <span class="spinner-border spinner-border-sm me-1"></span>Uploading...
                         </div>
                         <div *ngIf="attachmentUrl && !uploading" class="mt-2">
-                            <a [href]="attachmentUrl" target="_blank" class="small text-primary">
+                            <a (click)="downloadFile(attachmentUrl)" target="_blank" class="small text-primary">
                                 <i class="fa-solid fa-paperclip me-1"></i>View Attachment
                             </a>
                         </div>

@@ -43,7 +43,7 @@
         </div>
 
         <!-- Table -->
-        <div class="mt-3" *ngIf="isProceed">
+        <div class="mt-3" >
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray"
                 [actions]="actions" success="RESOLVED" primary="OPEN" warning="IN_PROGRESS"
                 danger="URGENT" [totalRecords]="totalRecords"
@@ -101,7 +101,7 @@
                     </div>
                     <div class="col-6" *ngIf="selectedTicket.assignedStaffId">
                         <div class="text-muted small">Assigned Staff ID</div>
-                        <div class="fw-semibold">{{ selectedTicket.assignedStaffId }}</div>
+                        <div class="fw-semibold">{{ selectedTicket.assignedStaffId?.staffName }}</div>
                     </div>
                     <div class="col-12" *ngIf="selectedTicket.feedback">
                         <div class="text-muted small">Feedback</div>

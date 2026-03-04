@@ -223,6 +223,20 @@ export class PackCreateComponent implements OnInit {
       });
   }
 
+   downloadFile(url: string): void {
+    this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
+      next: (res: any) => {
+        const fileName  = url.split('/').pop() || 'download';
+        const a         = document.createElement('a');
+        const objectUrl = URL.createObjectURL(res);
+        a.href     = objectUrl;
+        a.download = fileName;
+        a.click();
+      },
+      error: () => this.alert.error('Error downloading file')
+    });
+  }
+
   private updatePackage(f: any): void {
     const payload: any = {
       tenantId:  this.tenantId,

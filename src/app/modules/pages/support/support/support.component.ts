@@ -180,7 +180,7 @@ export class SupportComponent implements OnInit {
   }
 
   loadTableData(req: { page: number; pageSize: number; search?: string }): void {
-    if (!this.isProceed) return;
+    // if (!this.isProceed) return;
     this.fetchList(req.page, req.pageSize, req.search);
   }
 

@@ -359,6 +359,20 @@ export class PackageComponent implements OnInit {
     this.selectedStudentIds = checked ? this.students.map(s => s.value) : [];
   }
 
+   downloadFile(url: string): void {
+    this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
+      next: (res: any) => {
+        const fileName  = url.split('/').pop() || 'download';
+        const a         = document.createElement('a');
+        const objectUrl = URL.createObjectURL(res);
+        a.href     = objectUrl;
+        a.download = fileName;
+        a.click();
+      },
+      error: () => this.alert.error('Error downloading file')
+    });
+  }
+
   isStudentSelected(value: string): boolean {
     return this.selectedStudentIds.includes(value);
   }
