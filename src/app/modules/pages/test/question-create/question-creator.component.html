@@ -346,27 +346,9 @@
             </div>
 
             <!-- Subjective Answer -->
-            <div *ngIf="getSelectedQuestionType() === 'subjective'" class="mb-4">
-              <label class="form-label fw-bold">Sample/Expected Answer</label>
+            <div *ngIf="getSelectedQuestionType() === 'subjective' || getSelectedQuestionType() === 'integer' || getSelectedQuestionType() === 'numeric'" class="mb-4">
+              <label class="form-label fw-bold">Expected Answer</label>
               <div class="editor-container border rounded">
-                <div class="editor-toolbar bg-light border-bottom p-2">
-                  <div class="btn-toolbar" role="toolbar">
-                    <div class="btn-group btn-group-sm me-2" role="group">
-                      <button type="button" class="btn btn-outline-secondary" onclick="subjectiveExecCommand('bold');"
-                        title="Bold">
-                        <i class="fas fa-bold"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-secondary" onclick="subjectiveExecCommand('italic');"
-                        title="Italic">
-                        <i class="fas fa-italic"></i>
-                      </button>
-                      <button type="button" class="btn btn-outline-secondary" onclick="subjectiveInsertLatex();"
-                        title="Insert LaTeX">
-                        <i class="fas fa-superscript"></i> TeX
-                      </button>
-                    </div>
-                  </div>
-                </div>
                 <div id="subjectiveEditor" class="editor-content p-3" contenteditable="true"
                   (input)="onEditorInput($event, 'subjectiveAnswer')" style="min-height: 100px;">
                 </div>

@@ -30,7 +30,7 @@
             </li>
           </ul>
         </div>
-        <button  *ngIf="!authService.assignmentRole()" class="btn btn-primary btn-sm" routerLink="/app/assignment/question-create">
+        <button  *ngIf="!authService.assignmentRole()" class="btn btn-primary btn-sm" (click)="addNewQuestion()">
           + Add Question
         </button>
       </div>

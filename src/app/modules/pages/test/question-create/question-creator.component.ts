@@ -36,9 +36,11 @@ export class QuestionCreatorComponent implements OnInit {
   questionTypes = [
     { value: 'mcq_single', label: 'MCQ (Single Answer)' },
     { value: 'mcq_multiple', label: 'MCQ (Multiple Answers)' },
-    { value: 'sub_ective', label: 'Subjective Type' },
+    { value: 'integer', label: 'Integer' },
+    { value: 'numeric', label: 'Numerical' },
+    { value: 'subjective', label: 'Subjective Type' },
     { value: 'true_false', label: 'True/False' },
-    { value: 'passage_qns', label: 'Text Based' },
+    { value: 'passae_qns', label: 'Text Based' },
     { value: 'matrix', label: 'Matrix Type (Match the Questions)' }
   ];
 
@@ -715,12 +717,14 @@ export class QuestionCreatorComponent implements OnInit {
         };
 
       /* ================= SUBJECTIVE ================= */
+      case 'integer':
+      case 'numeric':
       case 'subjective': {
         const sampleAnswer = await this.replaceImagesWithUrls(formValue.subjectiveAnswer);
 
         return {
           ...baseData,
-          sampleAnswer
+          correctAnswer :sampleAnswer
         };
       }
 
