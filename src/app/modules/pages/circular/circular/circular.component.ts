@@ -24,7 +24,7 @@ export class CircularComponent implements OnInit {
 
   // Last used filter — stored in memory only, used to re-fetch after modal actions
   private lastFilter: { filterType: string; filterValue: string; status: string; page: number; pageSize: number } = {
-    filterType: 'batchCode', filterValue: '', status: '', page: 1, pageSize: 10
+    filterType: 'batchCode', filterValue: '', status: '', page: 1, pageSize: 5
   };
 
   batch_options:  any[] = [];
@@ -161,8 +161,8 @@ export class CircularComponent implements OnInit {
   onProceed(): void {
     this.isProceed = true;
     const { filterType, filterValue, status } = this.filterForm.value;
-    this.lastFilter = { filterType, filterValue, status, page: 1, pageSize: 10 };
-    this.fetchList(1, 10);
+    this.lastFilter = { filterType, filterValue, status, page: 1, pageSize: 5 };
+    this.fetchList(1, 5);
   }
 
   fetchList(page: number, limit: number, search?: string): void {
@@ -211,11 +211,7 @@ export class CircularComponent implements OnInit {
       error: () => this.alert.error('Error downloading file')
     });
   }
-
-  // ====================================================
-  // VIEW
-  // ====================================================
-
+ 
   onView(row: any): void {
     this.selectedCircular = row;
     this.openModal('circularViewModal');
@@ -268,7 +264,8 @@ export class CircularComponent implements OnInit {
         if (res?.status) {
           this.alert.success('Circular deleted successfully');
           this.dataArray    = this.dataArray.filter(d => d.circularId !== this.circularToDelete.circularId);
-          this.totalRecords = this.dataArray.length;
+          this.loadTableData(this.lastFilter);
+
           this.circularToDelete = null;
         }
       },

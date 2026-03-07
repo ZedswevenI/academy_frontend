@@ -52,10 +52,14 @@
     </div>
 
     <!-- Table -->
-    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+     <div  class="mt-5">
+
+  <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
       success="PUBLISHED" primary="DRAFT" [totalRecords]="totalRecords"
       [searchPlaceholder]="'Search subject, category...'" (requestData)="loadTableData($event)">
     </custom-table>
+     </div>
+  
 
   </div>
 </div>

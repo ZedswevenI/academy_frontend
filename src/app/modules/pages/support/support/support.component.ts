@@ -21,41 +21,43 @@ export class SupportComponent implements OnInit {
   dataArray: any[] = [];
   totalRecords = 0;
 
-  // 'FEES', 'TIMETABLE', 'PTM', 'BOOKS_AND_STUDY', 'EXAMINATION', 'ACADEMICS', 'TAB', 'GENERAL']
+  // Last used pagination — kept in memory so modal actions reload same page
+  private lastPage     = 1;
+  private lastLimit    = 10;
+  private lastSearch?: string;
 
   area_options = [
-    { label: 'Fees', value: 'FEES' },
-    { label: 'Timebale', value: 'TIMETABLE' },
-    { label: 'PTM', value: 'PTM' },
-    { label: 'Books and study', value: 'BOOKS_AND_STUDY' },
-    { label: 'Examination', value: 'EXAMINATION' },
-    { label: 'Academics', value: 'ACADEMICS' },
-    { label: 'Tab', value: 'TAB' },
-    { label: 'General', value: 'GENERAL' },
-    
+    { label: 'Fees',             value: 'FEES'            },
+    { label: 'Timetable',        value: 'TIMETABLE'       },
+    { label: 'PTM',              value: 'PTM'             },
+    { label: 'Books and study',  value: 'BOOKS_AND_STUDY' },
+    { label: 'Examination',      value: 'EXAMINATION'     },
+    { label: 'Academics',        value: 'ACADEMICS'       },
+    { label: 'Tab',              value: 'TAB'             },
+    { label: 'General',          value: 'GENERAL'         },
   ];
 
   status_options = [
-    { label: 'Open', value: 'OPEN' },
+    { label: 'Open',        value: 'OPEN'        },
     { label: 'In Progress', value: 'IN_PROGRESS' },
-    { label: 'Resolved', value: 'RESOLVED' },
-    { label: 'Closed', value: 'CLOSED' }
+    { label: 'Resolved',    value: 'RESOLVED'    },
+    { label: 'Closed',      value: 'CLOSED'      }
   ];
 
   priority_options = [
-    { label: 'Low', value: 'LOW' },
+    { label: 'Low',    value: 'LOW'    },
     { label: 'Medium', value: 'MEDIUM' },
-    { label: 'High', value: 'HIGH' },
+    { label: 'High',   value: 'HIGH'   },
     { label: 'Urgent', value: 'URGENT' }
   ];
 
   columnsArray = [
-    { key: 'studentNo', label: 'Student No', sortable: false },
-    { key: 'area', label: 'Area', sortable: false },
-    { key: 'issueSubject', label: 'Issue', sortable: false },
-    { key: 'priority', label: 'Priority', sortable: false },
-    { key: 'status', label: 'Status', sortable: false },
-    { key: 'requestedAtFormatted', label: 'Raised On', sortable: false }
+    { key: 'studentNo',             label: 'Student No', sortable: false },
+    { key: 'area',                  label: 'Area',       sortable: false },
+    { key: 'issueSubject',          label: 'Issue',      sortable: false },
+    { key: 'priority',              label: 'Priority',   sortable: false },
+    { key: 'status',                label: 'Status',     sortable: false },
+    { key: 'requestedAtFormatted',  label: 'Raised On',  sortable: false }
   ];
 
   actions = [
@@ -73,7 +75,12 @@ export class SupportComponent implements OnInit {
       tooltip: 'Assign Staff',
       color: '#6B7280',
       hoverColor: '#16A34A',
-      callback: (row: any) => this.openAssignModal(row)
+      // disabled when ticket is CLOSED — grays out the icon in custom-table
+      disabled: (row: any) => row.status === 'CLOSED',
+      callback: (row: any) => {
+        if (row.status === 'CLOSED') return;
+        this.openAssignModal(row);
+      }
     },
     {
       type: 'icon',
@@ -81,7 +88,11 @@ export class SupportComponent implements OnInit {
       tooltip: 'Update Priority',
       color: '#6B7280',
       hoverColor: '#D97706',
-      callback: (row: any) => this.openPriorityModal(row)
+      disabled: (row: any) => row.status === 'CLOSED',
+      callback: (row: any) => {
+        if (row.status === 'CLOSED') return;
+        this.openPriorityModal(row);
+      }
     },
     {
       type: 'icon',
@@ -89,36 +100,40 @@ export class SupportComponent implements OnInit {
       tooltip: 'Update Status',
       color: '#6B7280',
       hoverColor: '#7C3AED',
-      callback: (row: any) => this.openStatusModal(row)
+      disabled: (row: any) => row.status === 'CLOSED',
+      callback: (row: any) => {
+        if (row.status === 'CLOSED') return;
+        this.openStatusModal(row);
+      }
     }
   ];
 
-  // ── View ─────────────────────────────────────────────
+  // ── View ──────────────────────────────────────────────
   selectedTicket: any = null;
 
-  // ── Assign modal ──────────────────────────────────────
-  assignTicket: any = null;
-  assignForm!: FormGroup;
-  staffList: any[] = [];
-  staffLoading = false;
-  staffSearch = '';
-  assignLoading = false;
+  // ── Assign modal ───────────────────────────────────────
+  assignTicket:  any = null;
+  assignForm!:   FormGroup;
+  staffList:     any[] = [];
+  staffLoading   = false;
+  staffSearch    = '';
+  assignLoading  = false;
 
-  // ── Priority modal ────────────────────────────────────
-  priorityTicket: any = null;
-  priorityForm!: FormGroup;
-  priorityLoading = false;
+  // ── Priority modal ─────────────────────────────────────
+  priorityTicket:  any = null;
+  priorityForm!:   FormGroup;
+  priorityLoading  = false;
 
-  // ── Status modal ──────────────────────────────────────
-  statusTicket: any = null;
-  statusForm!: FormGroup;
-  statusLoading = false;
+  // ── Status modal ───────────────────────────────────────
+  statusTicket:  any = null;
+  statusForm!:   FormGroup;
+  statusLoading  = false;
 
   constructor(
     private breadcrump: BredcrumpService,
-    private fb: FormBuilder,
-    private commonApi: CommonapiService,
-    private alert: AlertService
+    private fb:         FormBuilder,
+    private commonApi:  CommonapiService,
+    private alert:      AlertService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Support Tickets' }]);
@@ -126,7 +141,7 @@ export class SupportComponent implements OnInit {
 
   ngOnInit(): void {
     this.filterForm = this.fb.group({
-      area: [''],
+      area:   [''],
       status: ['']
     });
 
@@ -139,7 +154,7 @@ export class SupportComponent implements OnInit {
     });
 
     this.statusForm = this.fb.group({
-      status: ['', Validators.required],
+      status:   ['', Validators.required],
       feedback: ['']
     });
   }
@@ -155,10 +170,16 @@ export class SupportComponent implements OnInit {
   }
 
   fetchList(page: number, limit: number, search?: string): void {
+    // Persist so modal-triggered reloads use the same page/filters
+    this.lastPage   = page;
+    this.lastLimit  = limit;
+    this.lastSearch = search;
+
     const { area, status } = this.filterForm.value;
     this.loading = true;
 
-    let query = `list?area=${area}&page=${page}&limit=${limit}`;
+    let query = `list?page=${page}&limit=${limit}`;
+    if (area)   query += `&area=${area}`;
     if (status) query += `&status=${status}`;
     if (search) query += `&search=${search}`;
 
@@ -180,8 +201,11 @@ export class SupportComponent implements OnInit {
   }
 
   loadTableData(req: { page: number; pageSize: number; search?: string }): void {
-    // if (!this.isProceed) return;
     this.fetchList(req.page, req.pageSize, req.search);
+  }
+
+  private reloadCurrentPage(): void {
+    this.fetchList(this.lastPage, this.lastLimit, this.lastSearch);
   }
 
   // ====================================================
@@ -199,8 +223,8 @@ export class SupportComponent implements OnInit {
 
   openAssignModal(row: any): void {
     this.assignTicket = row;
-    this.staffList = [];
-    this.staffSearch = '';
+    this.staffList    = [];
+    this.staffSearch  = '';
     this.assignForm.reset();
     this.openModal('ticketAssignModal');
   }
@@ -210,18 +234,11 @@ export class SupportComponent implements OnInit {
     this.staffLoading = true;
 
     this.commonApi.fetchData(
-      { tenantId: this.tenantId },
-      'ims/staff',
+      { tenantId: this.tenantId }, 'ims/staff',
       `list?page=1&limit=10&search=${this.staffSearch.trim()}`
     ).subscribe({
-      next: (res: any) => {
-        this.staffList = res?.data || [];
-        this.staffLoading = false;
-      },
-      error: () => {
-        this.staffLoading = false;
-        this.alert.error('Error searching staff');
-      }
+      next:  (res: any) => { this.staffList = res?.data || []; this.staffLoading = false; },
+      error: ()         => { this.staffLoading = false; this.alert.error('Error searching staff'); }
     });
   }
 
@@ -234,39 +251,32 @@ export class SupportComponent implements OnInit {
   }
 
   getSelectedStaffName(): string {
-    const id = this.assignForm.get('assignedStaffId')?.value;
+    const id    = this.assignForm.get('assignedStaffId')?.value;
     const staff = this.staffList.find(s => s.staffId === id);
     return staff ? staff.staffName : '';
   }
 
   submitAssign(): void {
-    if (this.assignForm.invalid) {
-      this.alert.error('Please select a staff member');
-      return;
-    }
+    if (this.assignForm.invalid) { this.alert.error('Please select a staff member'); return; }
 
     const payload = {
-      tenantId: this.tenantId,
-      ticketId: this.assignTicket.ticketId,
+      tenantId:        this.tenantId,
+      ticketId:        this.assignTicket.ticketId,
       assignedStaffId: this.assignForm.value.assignedStaffId
     };
 
     this.assignLoading = true;
-    this.commonApi.fetchData(payload, 'institue/support', 'assign')
-      .subscribe({
-        next: (res: any) => {
-          this.assignLoading = false;
-          if (res?.status) {
-            this.alert.success('Ticket assigned successfully');
-            this.closeModal('ticketAssignModal');
-            this.fetchList(1, 10);
-          }
-        },
-        error: () => {
-          this.assignLoading = false;
-          this.alert.error('Error assigning ticket');
+    this.commonApi.fetchData(payload, 'institue/support', 'assign').subscribe({
+      next: (res: any) => {
+        this.assignLoading = false;
+        if (res?.status) {
+          this.alert.success('Ticket assigned successfully');
+          this.closeModal('ticketAssignModal');
+          this.reloadCurrentPage();
         }
-      });
+      },
+      error: () => { this.assignLoading = false; this.alert.error('Error assigning ticket'); }
+    });
   }
 
   // ====================================================
@@ -289,21 +299,17 @@ export class SupportComponent implements OnInit {
     };
 
     this.priorityLoading = true;
-    this.commonApi.fetchData(payload, 'institue/support/priority', 'update')
-      .subscribe({
-        next: (res: any) => {
-          this.priorityLoading = false;
-          if (res?.status) {
-            this.alert.success('Priority updated successfully');
-            this.closeModal('ticketPriorityModal');
-            this.fetchList(1, 10);
-          }
-        },
-        error: () => {
-          this.priorityLoading = false;
-          this.alert.error('Error updating priority');
+    this.commonApi.fetchData(payload, 'institue/support/priority', 'update').subscribe({
+      next: (res: any) => {
+        this.priorityLoading = false;
+        if (res?.status) {
+          this.alert.success('Priority updated successfully');
+          this.closeModal('ticketPriorityModal');
+          this.reloadCurrentPage();
         }
-      });
+      },
+      error: () => { this.priorityLoading = false; this.alert.error('Error updating priority'); }
+    });
   }
 
   // ====================================================
@@ -322,26 +328,22 @@ export class SupportComponent implements OnInit {
     const payload = {
       tenantId: this.tenantId,
       ticketId: this.statusTicket.ticketId,
-      status: this.statusForm.value.status,
+      status:   this.statusForm.value.status,
       feedback: this.statusForm.value.feedback || ''
     };
 
     this.statusLoading = true;
-    this.commonApi.fetchData(payload, 'institue/support/status', 'update')
-      .subscribe({
-        next: (res: any) => {
-          this.statusLoading = false;
-          if (res?.status) {
-            this.alert.success('Status updated successfully');
-            this.closeModal('ticketStatusModal');
-            this.fetchList(1, 10);
-          }
-        },
-        error: () => {
-          this.statusLoading = false;
-          this.alert.error('Error updating status');
+    this.commonApi.fetchData(payload, 'institue/support/status', 'update').subscribe({
+      next: (res: any) => {
+        this.statusLoading = false;
+        if (res?.status) {
+          this.alert.success('Status updated successfully');
+          this.closeModal('ticketStatusModal');
+          this.reloadCurrentPage();
         }
-      });
+      },
+      error: () => { this.statusLoading = false; this.alert.error('Error updating status'); }
+    });
   }
 
   // ====================================================
@@ -349,26 +351,18 @@ export class SupportComponent implements OnInit {
   // ====================================================
 
   getPriorityClass(priority: string): string {
-    const map: any = {
-      LOW: 'bg-secondary', MEDIUM: 'bg-info',
-      HIGH: 'bg-warning', URGENT: 'bg-danger'
-    };
+    const map: any = { LOW: 'bg-secondary', MEDIUM: 'bg-info', HIGH: 'bg-warning', URGENT: 'bg-danger' };
     return map[priority] || 'bg-secondary';
   }
 
   getStatusClass(status: string): string {
-    const map: any = {
-      OPEN: 'bg-primary', IN_PROGRESS: 'bg-warning',
-      RESOLVED: 'bg-success', CLOSED: 'bg-secondary'
-    };
+    const map: any = { OPEN: 'bg-primary', IN_PROGRESS: 'bg-warning', RESOLVED: 'bg-success', CLOSED: 'bg-secondary' };
     return map[status] || 'bg-secondary';
   }
 
   private formatDate(ts: number): string {
     if (!ts) return '-';
-    return new Date(ts).toLocaleDateString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    });
+    return new Date(ts).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   private openModal(id: string): void {

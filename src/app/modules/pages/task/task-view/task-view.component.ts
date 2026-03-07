@@ -153,4 +153,20 @@ export class TaskViewComponent implements OnInit {
     });
   }
 
+   downloadAttachment(url: string): void {
+    this.commonApi.downloadByUrl({ url }, 'ims', 'download')
+      .subscribe({
+        next: (blob: Blob) => {
+          const fileName  = url;
+          const objectUrl = URL.createObjectURL(blob);
+          const a         = document.createElement('a');
+          a.href          = objectUrl;
+          a.download      = fileName;
+          a.click();
+          URL.revokeObjectURL(objectUrl);
+        },
+        error: () => console.error('Download failed')
+      });
+  }
+
 }

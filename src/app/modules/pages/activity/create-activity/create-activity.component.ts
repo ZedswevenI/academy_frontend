@@ -177,7 +177,7 @@ export class createActivityComponent implements OnInit {
     };
 
     this.loading = true;
-    this.commonApi.fetchData(payload, 'batch/activity', 'create')
+    this.commonApi.fetchData(payload, 'institue/activity', 'create')
       .subscribe({
         next: (res: any) => {
           this.loading = false;
@@ -212,7 +212,7 @@ export class createActivityComponent implements OnInit {
     }
 
     this.loading = true;
-    this.commonApi.fetchData(payload, 'batch/activity', 'update')
+    this.commonApi.fetchData(payload, 'institue/activity', 'update')
       .subscribe({
         next: (res: any) => {
           this.loading = false;

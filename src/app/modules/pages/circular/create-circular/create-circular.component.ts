@@ -145,6 +145,20 @@ export class CreateCircularComponent implements OnInit {
     });
   }
 
+   downloadFile(url: string): void {
+    this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
+      next: (res: any) => {
+        const fileName  = url.split('/').pop() || 'download';
+        const a         = document.createElement('a');
+        const objectUrl = URL.createObjectURL(res);
+        a.href     = objectUrl;
+        a.download = fileName;
+        a.click();
+      },
+      error: () => this.alert.error('Error downloading file')
+    });
+  }
+
   // ====================================================
   // PATCH EDIT
   // ====================================================

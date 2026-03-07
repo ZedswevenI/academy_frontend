@@ -15,19 +15,56 @@
         (ngControl?.control?.touched || ngControl?.control?.dirty)
     }" />
 
-  <ul class="list-unstyled mt-2" *ngIf="files.length">
-    <li *ngFor="let file of files; let i = index" class="d-flex align-items-center">
-      <span class="me-2">
+  <!-- Newly selected files -->
+  <ul class="list-unstyled mt-2 mb-0" *ngIf="files.length">
+    <li *ngFor="let file of files; let i = index"
+        class="d-flex align-items-center py-1">
+      <i class="fa-solid fa-file me-2 text-secondary"></i>
+      <span class="me-2 text-truncate" style="max-width: 260px;">
         {{ file.name }}
-        <small>({{ file.size / 1024 | number:'1.0-1' }} KB)</small>
+        <small class="text-muted">({{ file.size / 1024 | number:'1.0-1' }} KB)</small>
       </span>
-      <button *ngIf="multiple" type="button" class="btn btn-sm btn-outline-danger ms-2"
-        (click)="removeFile(i)">
+      <button *ngIf="multiple" type="button"
+              class="btn btn-sm btn-outline-danger ms-auto"
+              (click)="removeFile(i)">
         <i class="fa fa-times"></i>
       </button>
     </li>
   </ul>
 
+  <!-- Existing attachments (edit mode) -->
+  <div *ngIf="existingFiles?.length" class="mt-2">
+    <p class="text-muted mb-1" style="font-size: 12px;">Current attachment:</p>
+
+    <div *ngFor="let file of existingFiles; let i = index"
+         class="d-flex align-items-center justify-content-between
+                px-3 py-2 border rounded-3 bg-light mb-1">
+
+      <!-- Icon + filename -->
+      <div class="d-flex align-items-center gap-2 overflow-hidden">
+        <i class="fa-solid fa-file-pdf text-danger" style="font-size: 18px; flex-shrink: 0;"></i>
+        <span class="text-truncate" style="font-size: 13px; max-width: 220px;">
+          {{ getFileName(file.url) }}
+        </span>
+      </div>
+
+      <!-- Download button -->
+      <button type="button"
+              class="btn btn-sm btn-outline-primary ms-2 d-flex align-items-center gap-1"
+              style="flex-shrink: 0; border-radius: 20px; font-size: 12px;"
+              [disabled]="downloadingIndex === i"
+              (click)="downloadFile(file.url, i)">
+        <span *ngIf="downloadingIndex !== i">
+          <i class="fa-solid fa-download" style="font-size: 11px;"></i> Download
+        </span>
+        <span *ngIf="downloadingIndex === i">
+          <span class="spinner-border spinner-border-sm me-1"></span> Downloading...
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Validation -->
   <div *ngIf="ngControl?.control?.invalid &&
               (ngControl?.control?.touched || ngControl?.control?.dirty)">
     <small class="text-danger" *ngIf="ngControl?.control?.errors?.['required']">
