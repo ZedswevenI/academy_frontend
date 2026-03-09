@@ -101,7 +101,7 @@ export class TestComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       dropdown: [
-        { text: 'Edit Test', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.editTest(row) },
+        { text: 'Edit Assignment', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.editTest(row) },
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
         { text: 'Add Question', icon: 'fa-solid fa-file-import', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', callback: (row: any) => this.importQuestions(row) },

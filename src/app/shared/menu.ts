@@ -34,19 +34,14 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/attendance'
   },
   {
-    label: 'Phase Plan',
-    icon: 'fa-solid fa-hourglass-half',
-    route: '/app/phase'
+    label: 'Students',
+    icon: 'fa-solid fa-user-graduate',
+    route: '/app/student'
   },
   {
     label: 'Teachers',
     icon: 'fa-solid fa-chalkboard-user',
     route: '/app/teacher'
-  },
-  {
-    label: 'Students',
-    icon: 'fa-solid fa-user-graduate',
-    route: '/app/student'
   },
   {
     label: 'Assignments',
@@ -57,6 +52,11 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Enable Assignment',
     icon: 'fa-solid fa-file-pen',
     route: '/app/enableassignment'
+  },
+  {
+    label: 'Phase Plan',
+    icon: 'fa-solid fa-hourglass-half',
+    route: '/app/phase'
   },
   {
     label: 'Activities',
@@ -186,7 +186,7 @@ export const MENU_ASSIGNMENT: MenuItem[] = [
     label: 'Assignments',
     icon: 'fa-solid fa-file-pen',
     route: '/app/assignment'
-  },
+  }
 ];
 
 export const NAV_ITEMS: NavItem[] = [

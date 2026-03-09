@@ -9,7 +9,16 @@ import { Output, EventEmitter } from '@angular/core';
   styleUrl: './header.component.scss'
 })
 export class HeaderComponent {
-  constructor(private router: Router) { }
+  username: any = '';
+  userole: any = '';
+  useremail: any = '';
+
+  constructor(private router: Router) {
+    this.username = localStorage.getItem('name');
+    this.useremail = localStorage.getItem('email');
+    this.userole = localStorage.getItem('userRole');
+  }
+
   logout() {
     localStorage.clear();
     sessionStorage.clear();
@@ -21,6 +30,4 @@ export class HeaderComponent {
   toggle() {
     this.menuToggle.emit();
   }
-
-
 }

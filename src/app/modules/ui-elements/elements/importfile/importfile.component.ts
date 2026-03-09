@@ -17,21 +17,15 @@ export class ImportfileComponent implements ControlValueAccessor {
   @Input() multiple: boolean = false;
   @Input() accept: string = '*/*';
   @Input() id: string = 'fileInput';
-
-  /** Pass existing attachment URLs for edit mode: [{ url: '...' }] */
   @Input() existingFiles: { url: string }[] = [];
-
   @Output() filesChanged = new EventEmitter<File[]>();
-
   files: File[] = [];
   maxFileSize = 20 * 1024 * 1024;
   downloadingIndex: number | null = null;
-
   allowedExtensions: string[] = [
     '.pdf', '.jpg', '.jpeg', '.png', '.svg',
     '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'
   ];
-
   onChange:  any = () => {};
   onTouched: any = () => {};
 
@@ -45,32 +39,26 @@ export class ImportfileComponent implements ControlValueAccessor {
   }
 
   get isInvalid(): boolean {
-    const c = this.ngControl?.control;
-    return !!(c && c.invalid && (c.touched || c.dirty));
-  }
+  const c = this.ngControl?.control;
+  return !!(c && c.invalid && (c.touched || c.dirty));
+}
 
   writeValue(value: any): void {
     if (!value || (Array.isArray(value) && value.length === 0)) {
       this.files = [];
       return;
     }
-
     const arr = Array.isArray(value) ? value : [value];
-
-    // Separate real File objects from uploaded URL objects { url: '...' }
-    // After upload the parent patches with [{ url }] — these are NOT File objects
     const realFiles  = arr.filter((v: any) => v instanceof File);
     const urlObjects = arr.filter((v: any) => !(v instanceof File) && v?.url);
-
     this.files = realFiles;
-
-    // URL objects from a fresh upload — show in the existing files section
     if (urlObjects.length) {
       this.existingFiles = urlObjects;
     }
   }
 
-  registerOnChange(fn: any): void  { this.onChange  = fn; }
+  registerOnChange(fn: any): void  { this.onChange = fn; }
+  
   registerOnTouched(fn: any): void { this.onTouched = fn; }
 
   onFileChange(event: Event): void {
@@ -83,21 +71,16 @@ export class ImportfileComponent implements ControlValueAccessor {
     for (const file of selectedFiles) {
       const ext = '.' + file.name.split('.').pop()?.toLowerCase();
       if (!this.allowedExtensions.includes(ext)) {
-        alert(`❌ Invalid file format: ${file.name}`); continue;
+        alert(`Invalid file format: ${file.name}`); continue;
       }
       if (file.size > this.maxFileSize) {
-        alert(`❌ File too large (Max 20MB): ${file.name}`); continue;
+        alert(`File too large (Max 20MB): ${file.name}`); continue;
       }
       validFiles.push(file);
     }
-
     if (!validFiles.length) return;
-
     this.files = this.multiple ? [...this.files, ...validFiles] : [validFiles[0]];
-
-    // Clear any previously uploaded URL when user picks a fresh file
     if (!this.multiple) this.existingFiles = [];
-
     this.onChange(this.multiple ? this.files : this.files[0]);
     this.onTouched();
     this.filesChanged.emit(this.files);

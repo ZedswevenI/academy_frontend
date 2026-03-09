@@ -10,14 +10,14 @@ import { QuestionViewComponent } from './question-view/question-view.component';
 import { QuestionArrangementComponent } from './question-arrange/question-arange.component';
 
 const routes: Routes = [
-  { path: '', component: TestComponent, title: 'Test' },
-  { path: 'create', component: TestCreateComponent, title: 'Test-Create' },
-  { path: 'import', component: TestimportComponent, title: 'Test-Create' },
-  { path: 'question-create', component: QuestionCreatorComponent, title: 'Question-Create' },
-  { path: 'question-view', component: QuestionViewComponent, title: 'Question-Create' },
-  { path: 'question-rearrange', component: QuestionArrangementComponent, title: 'Question-Create' },
-  { path: 'question-import', component: QuestionImportComponent, title: 'Question-Import' },
-  { path: 'view', component: TestViewComponent, title: 'Test-View' }
+  { path: '', component: TestComponent, title: 'Assignments' },
+  { path: 'create', component: TestCreateComponent, title: 'Assignment-Create' },
+  { path: 'import', component: TestimportComponent, title: 'Assignment-Import' },
+  { path: 'question-create', component: QuestionCreatorComponent, title: 'Assignment-Question-Create' },
+  { path: 'question-view', component: QuestionViewComponent, title: 'Assignment-Question-View' },
+  { path: 'question-rearrange', component: QuestionArrangementComponent, title: 'Assignment-Question-rearrangeOrder' },
+  { path: 'question-import', component: QuestionImportComponent, title: 'Assignment-Question-Import' },
+  { path: 'view', component: TestViewComponent, title: 'Assignment-View' }
 ];
 
 @NgModule({

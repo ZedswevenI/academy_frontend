@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 
@@ -13,16 +14,20 @@ import { AlertService } from '../../../../service/alert/alert.service';
 export class LoginComponent {
   showPassword = false;
   loading = false;
-  form!: FormGroup
+  submitted = false;
+  serverError = '';
+  form!: FormGroup;
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     public service: AuthService,
-    private alert: AlertService) {
-
+    private alert: AlertService
+  ) {
     this.service.formReset$.subscribe(() => {
       this.loading = false;
+      this.submitted = false;
+      this.serverError = '';
       this.form.reset();
     });
 
@@ -30,7 +35,6 @@ export class LoginComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
-
   }
 
   get f() {
@@ -38,20 +42,40 @@ export class LoginComponent {
   }
 
   togglePassword() {
+    if (this.loading) return;
     this.showPassword = !this.showPassword;
   }
 
   onSubmit() {
-    // if (this.form.invalid) {
-    //   this.form.markAllAsTouched();
-    //   return;
-    // }
-
-    // const email = this.form.value.email;
-    // const password = this.form.value.password;
-
-    // this.router.navigate(['/app/dashboard']);
+    if (this.loading) return;
+    this.submitted = true;
+    this.serverError = '';
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.alert.error('Please enter valid email & password.');
+      return;
+    }
+    const payload = {
+      email: String(this.form.value.email || '').trim().toLowerCase(),
+      password: String(this.form.value.password || '').trim()
+    };
     this.loading = true;
-    this.service.signIn(this.form.value, 'ims/user', 'login');
+    this.service
+      .signIn(payload, 'ims/user', 'login')
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
+        next: (_res) => {
+        },
+        error: (err) => {
+          const msg =
+            err?.error?.message ||
+            err?.error?.error ||
+            err?.message ||
+            'Login Failed. Please enter correct Email/Password';
+
+          this.serverError = msg;
+          this.alert.error(msg);
+        }
+      });
   }
 }
