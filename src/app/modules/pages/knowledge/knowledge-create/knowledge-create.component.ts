@@ -16,7 +16,7 @@ export class KnowledgeCreateComponent implements OnInit {
 
   tenantId: any;
   materialId: string | null = null;
-  isEditMode    = false;
+  isEditMode = false;
   editMaterial: any = null;
 
   uploadedFiles: any[] = [];
@@ -25,29 +25,29 @@ export class KnowledgeCreateComponent implements OnInit {
     label: (i + 6).toString(), value: i + 6
   }));
 
-  batch_options:   any[] = [];
-  subjects:        any[] = [];
-  topics:          any[] = [];
-  subTopics:       any[] = [];
-  studentOptions:  any[] = [];
-  allBatches:      any[] = [];
-  allTopics:       any[] = [];
-  allSubTopics:    any[] = [];
+  batch_options: any[] = [];
+  subjects: any[] = [];
+  topics: any[] = [];
+  subTopics: any[] = [];
+  studentOptions: any[] = [];
+  allBatches: any[] = [];
+  allTopics: any[] = [];
+  allSubTopics: any[] = [];
 
   constructor(
     private breadcrumb: BredcrumpService,
-    private fb:         FormBuilder,
-    private router:     Router,
-    private commonApi:  CommonapiService
+    private fb: FormBuilder,
+    private router: Router,
+    private commonApi: CommonapiService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
 
-    const nav           = this.router.getCurrentNavigation();
+    const nav = this.router.getCurrentNavigation();
     const stateMaterial = nav?.extras?.state?.['material'];
 
     if (stateMaterial) {
-      this.isEditMode   = true;
-      this.materialId   = stateMaterial.materialId;
+      this.isEditMode = true;
+      this.materialId = stateMaterial.materialId;
       this.editMaterial = stateMaterial;
       this.breadcrumb.set([{ label: 'Knowledge Base', link: '/app/knowledge' }, { label: 'Edit' }]);
     } else {
@@ -74,17 +74,17 @@ export class KnowledgeCreateComponent implements OnInit {
 
   private buildForm(): void {
     this.knowledgeForm = this.fb.group({
-      title:          ['', Validators.required],
-      classNo:        ['', Validators.required],
-      subjectId:      ['', Validators.required],
-      topicId:        ['', Validators.required],
-      subTopicId:     [''],
-      description:    [''],
-      batchId:        ['', Validators.required],
-      studentIds:     [[]],
-      availableFrom:  ['', Validators.required],
+      title: ['', Validators.required],
+      classNo: ['', Validators.required],
+      subjectId: ['', Validators.required],
+      topicId: ['', Validators.required],
+      subTopicId: [''],
+      description: [''],
+      batchId: ['', Validators.required],
+      studentIds: [[]],
+      availableFrom: ['', Validators.required],
       availableUntil: ['', Validators.required],
-      attachmentUrl:  [[], Validators.required]
+      attachmentUrl: [[], Validators.required]
     });
   }
 
@@ -111,7 +111,7 @@ export class KnowledgeCreateComponent implements OnInit {
     // Only reset topicId if it's currently a UUID from the old subject's list
     // Never wipe a manually-typed string or an already-empty value
     const currentTopic = this.knowledgeForm.get('topicId')?.value;
-    const isUuidMatch  = currentTopic && this.allTopics.some(t => t.topicId === currentTopic);
+    const isUuidMatch = currentTopic && this.allTopics.some(t => t.topicId === currentTopic);
     if (isUuidMatch) {
       this.knowledgeForm.patchValue({ topicId: '', subTopicId: '' }, { emitEvent: false });
       this.subTopics = [];
@@ -129,7 +129,7 @@ export class KnowledgeCreateComponent implements OnInit {
       .map(s => ({ label: s.subTopicName, value: s.subTopicId }));
 
     // Only reset subTopicId if it was a UUID from the old topic
-    const currentSub  = this.knowledgeForm.get('subTopicId')?.value;
+    const currentSub = this.knowledgeForm.get('subTopicId')?.value;
     const isUuidMatch = this.allSubTopics.some(s => s.subTopicId === currentSub);
     if (isUuidMatch) {
       this.knowledgeForm.patchValue({ subTopicId: '' }, { emitEvent: false });
@@ -162,7 +162,7 @@ export class KnowledgeCreateComponent implements OnInit {
       this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full')
         .subscribe((res: any) => {
           if (res?.status) {
-            this.allBatches   = res.data;
+            this.allBatches = res.data;
             this.batch_options = res.data.map((b: any) => ({ label: b.batchName, value: b.batchCode }));
           }
           resolve();
@@ -199,7 +199,7 @@ export class KnowledgeCreateComponent implements OnInit {
   onFilesSelected(files: File[]): void {
     if (!files?.length) return;
     const formData = new FormData();
-    formData.append('file',     files[0]);
+    formData.append('file', files[0]);
     formData.append('tenantId', this.tenantId);
 
     this.commonApi.uploadImage(formData, 'institue/library', 'upload').subscribe((res: any) => {
@@ -222,39 +222,32 @@ export class KnowledgeCreateComponent implements OnInit {
   private async patchEditData(d: any): Promise<void> {
     this.uploadedFiles = d.attachmentUrl || [];
 
-    const subjectId  = typeof d.subjectId  === 'object' ? d.subjectId?._id            : d.subjectId;
-    // topicId may be null, a plain string UUID, or a nested object
-    const topicId    = !d.topicId
-      ? ''
-      : typeof d.topicId === 'object'
-        ? (d.topicId?.topicId || '')
-        : d.topicId;
-    // subTopicId same pattern
-    const subTopicId = !d.subTopicId
-      ? ''
-      : typeof d.subTopicId === 'object'
-        ? (d.subTopicId?.subTopicId || '')
-        : d.subTopicId;
+    const subjectId = typeof d.subjectId === 'object' ? d.subjectId?._id : d.subjectId;
+
+    // API returns text names (topicName / subTopicName) — use them directly.
+    // Fall back to topicId/subTopicId fields for older records.
+    const topicText = d.topicName || d.topicId || '';
+    const subTopicText = d.subTopicName || d.subTopicId || '';
 
     this.knowledgeForm.patchValue({
-      title:          d.title,
-      description:    d.description,
-      classNo:        d.classNo,
+      title: d.title,
+      description: d.description,
+      classNo: d.classNo,
       subjectId,
-      availableFrom:  this.formatDate(d.availableFrom),
+      availableFrom: this.formatDate(d.availableFrom),
       availableUntil: this.formatDate(d.availableUntil),
-      batchId:        d.batchIds?.[0] || '',
-      attachmentUrl:  d.attachmentUrl || []
+      batchId: d.batchIds?.[0] || '',
+      attachmentUrl: d.attachmentUrl || [],
+      topicId: topicText,      // text name → select-or-input auto-switches to manual if no UUID match
+      subTopicId: subTopicText    // text name → same behaviour
     }, { emitEvent: false });
 
-    // Build topics/subtopics from cache
+    // Build topics dropdown for reference (user can still switch to select mode)
     this.onSubjectChange(subjectId);
-    this.knowledgeForm.patchValue({ topicId }, { emitEvent: false });
-    this.onTopicChange(topicId);
-    this.knowledgeForm.patchValue({ subTopicId: subTopicId || '' }, { emitEvent: false });
 
     await this.loadStudentsForEdit(d.batchIds?.[0], d.studentIds);
   }
+
 
   private loadStudentsForEdit(batchId: string, selectedStudentIds: string[]): Promise<void> {
     return new Promise(resolve => {
@@ -287,30 +280,40 @@ export class KnowledgeCreateComponent implements OnInit {
   addKnowledge(): void {
     if (this.knowledgeForm.invalid) { this.knowledgeForm.markAllAsTouched(); return; }
 
+
     const f = this.knowledgeForm.value;
 
+    const topicText = this.allTopics.find(t => t.topicId === f.topicId)?.topicName || f.topicId || '';
+    const subTopicText = this.allSubTopics.find(s => s.subTopicId === f.subTopicId)?.subTopicName || f.subTopicId || '';
+
+
+
     const payload: any = {
-      tenantId:       this.tenantId,
-      title:          f.title,
-      description:    f.description,
-      classNo:        f.classNo,
-      subjectId:      f.subjectId,
-      topicId:        f.topicId,        // UUID string or free-text name
-      subTopicId:     f.subTopicId,     // UUID string or free-text name
-      batchIds:       f.batchId ? [f.batchId] : [],
-      studentIds:     (f.studentIds || []).map((s: any) => typeof s === 'string' ? s : s.value),
-      availableFrom:  new Date(f.availableFrom).getTime(),
+      tenantId: this.tenantId,
+      title: f.title,
+      description: f.description,
+      classNo: f.classNo,
+      subjectId: f.subjectId,
+      topicId: topicText,        // UUID string or free-text name
+      subTopicId: subTopicText,     // UUID string or free-text name
+      batchIds: f.batchId ? [f.batchId] : [],
+      studentIds: (f.studentIds || []).map((s: any) => typeof s === 'string' ? s : s.value),
+      availableFrom: new Date(f.availableFrom).getTime(),
       availableUntil: new Date(f.availableUntil).getTime(),
-      attachmentUrl:  f.attachmentUrl,
-      status:         'Active'
+      attachmentUrl: f.attachmentUrl,
+      status: 'Active'
     };
 
-    if (this.isEditMode) payload.materialId = this.materialId;
 
-    this.commonApi.fetchData(payload, 'institue/library', this.isEditMode ? 'edit' : 'create')
-      .subscribe((res: any) => {
-        if (res?.status) this.router.navigate(['/app/knowledge']);
-      });
+    console.log("Data came ", payload);
+
+
+    // if (this.isEditMode) payload.materialId = this.materialId;
+
+    // this.commonApi.fetchData(payload, 'institue/library', this.isEditMode ? 'edit' : 'create')
+    //   .subscribe((res: any) => {
+    //     if (res?.status) this.router.navigate(['/app/knowledge']);
+    //   });
   }
 
   getFileName(url: string): string {
