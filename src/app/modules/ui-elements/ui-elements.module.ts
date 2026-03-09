@@ -23,6 +23,7 @@ import { EditTableComponent } from './elements/edit-table/edit-table.component';
 import { ViewTableComponent } from './elements/view-table/view-table.component';
 import { FilterComponent } from './elements/filter/filter.component';
 import { RichTextEditorComponent } from './elements/rich-text-editor/rich-text-editor.component';
+import { SelectOrInputComponent } from './elements/select-or-input/select-or-input.component';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,8 @@ import { RichTextEditorComponent } from './elements/rich-text-editor/rich-text-e
     EditTableComponent,
     ViewTableComponent,
     FilterComponent,
-    RichTextEditorComponent
+    RichTextEditorComponent,
+    SelectOrInputComponent
   ],
   imports: [
     CommonModule,
@@ -74,7 +76,8 @@ import { RichTextEditorComponent } from './elements/rich-text-editor/rich-text-e
     EditTableComponent,
     ViewTableComponent,
     FilterComponent,
-    RichTextEditorComponent
+    RichTextEditorComponent,
+    SelectOrInputComponent
   ]
 })
 export class UiElementsModule {}

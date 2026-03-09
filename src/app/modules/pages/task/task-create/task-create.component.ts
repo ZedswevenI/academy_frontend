@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 
@@ -15,268 +15,200 @@ export class TaskCreateComponent implements OnInit {
 
   taskForm!: FormGroup;
 
-  faculty_options: any[] = [];
+  faculty_options:     any[] = [];
   uploadedAttachments: any[] = [];
+  isUploading = false;
 
   tenantId: string | null = localStorage.getItem('tenantId');
-  userId: string | null = localStorage.getItem('userid');
+  userId:   string | null = localStorage.getItem('userid');
 
-  isEditMode: boolean = false;
-  taskId: string = '';
+  isEditMode = false;
+  taskId     = '';
+  editData:  any = null;
 
   constructor(
     private breadcrump: BredcrumpService,
-    private fb: FormBuilder,
-    private router: Router,
-    private route: ActivatedRoute,
-    private commonApi: CommonapiService,
-    private alert: AlertService
+    private fb:         FormBuilder,
+    private router:     Router,
+    private commonApi:  CommonapiService,
+    private alert:      AlertService,
+    private cdr:        ChangeDetectorRef
   ) {
-
     this.taskForm = this.fb.group({
-      taskName: ['', Validators.required],
-      staffId: ['', Validators.required],
-      dueDate: ['', Validators.required],
-      file: [null],
+      taskName:    ['', Validators.required],
+      staffId:     ['', Validators.required],
+      dueDate:     ['', Validators.required],
+      file:        [null],
       description: ['']
     });
 
     const navigation = this.router.getCurrentNavigation();
-    const stateData = navigation?.extras?.state as any;
+    const stateData  = navigation?.extras?.state as any;
 
     if (stateData?.taskData) {
-      this.breadcrump.set([
-        { label: 'Task', link: '/app/task' },
-        { label: this.isEditMode ? 'Edit' : 'Create' }
-      ]);
       this.isEditMode = true;
-      this.bindEditData(stateData.taskData);
+      this.editData   = stateData.taskData;
+      this.breadcrump.set([{ label: 'Task', link: '/app/task' }, { label: 'Edit' }]);
     } else {
-      this.breadcrump.set([
-        { label: 'Task', link: '/app/task' },
-        { label: 'Create' }
-      ]);
+      this.breadcrump.set([{ label: 'Task', link: '/app/task' }, { label: 'Create' }]);
     }
-
-
   }
 
   ngOnInit(): void {
-
-
-    this.getStaffList();
-
-
-
-
-    // Check Edit Mode
-    // this.route.queryParams.subscribe(params => {
-    //   if (params['taskId']) {
-    //     this.isEditMode = true;
-    //     this.taskId = params['taskId'];
-    //     this.loadTaskDetails(this.taskId);
-    //   }
-    // });
-  }
-
-  // ==============================
-  // GET STAFF LIST
-  // ==============================
-
-  bindEditData(data: any) {
-
-    this.taskId = data.taskId;
-
-    this.taskForm.patchValue({
-      taskName: data.taskName,
-      staffId: data.staffId,
-      dueDate: new Date(data.dueDate).toISOString().split('T')[0],
-      description: data.description
-    });
-
-    this.uploadedAttachments = data.attachmentUrl || [];
-    this.taskForm.patchValue({
-      file: this.uploadedAttachments
-    });
-  }
-
-  getStaffList() {
-    this.commonApi.fetchData(
-      { tenantId: this.tenantId },
-      'ims/user',
-      'list?list=full'
-    ).subscribe({
-      next: (res: any) => {
-        if (res.status) {
-          this.faculty_options = res.data
-            .filter((u: any) => u.staffId) // Only staff users
-            .map((u: any) => ({
-              label: `${u.name} (${u.roleLabel})`,
-              value: u.staffId
-            }));
-        }
-      },
-      error: () => {
-        this.alert.error('Error loading staff list');
+    this.getStaffList().then(() => {
+      if (this.isEditMode && this.editData) {
+        this.bindEditData(this.editData);
       }
     });
   }
 
-  // ==============================
-  // FILE UPLOAD
-  // ==============================
+  // ── Bind edit data ─────────────────────────────────────────────────────────
 
-  onFilesSelected(files: File[]) {
+  bindEditData(data: any): void {
+    this.taskId = data.taskId;
 
-    if (!files || !files.length) return;
+    // staffId may arrive as plain string or nested object { staffId, name, ... }
+    const staffId = typeof data.staffId === 'object'
+      ? (data.staffId?.staffId || data.staffId?._id || '')
+      : data.staffId;
 
-    files.forEach(file => {
+    // Verify this staffId actually exists in the loaded options — log if not
+    const matched = this.faculty_options.find(o => o.value === staffId);
+    if (!matched) {
+      console.warn('⚠️ staffId not found in faculty_options:', staffId,
+        '\nAvailable values:', this.faculty_options.map(o => o.value));
+    }
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('tenantId', this.tenantId!);
+    // attachmentUrl may be [{ url }] or [string] — normalise to [{ url }]
+    const rawAttachments = data.attachmentUrl || data.attachment || [];
+    this.uploadedAttachments = rawAttachments.map((a: any) =>
+      typeof a === 'string' ? { url: a } : a
+    );
 
-      // this.commonApi.fileUpload(
-      //   formData,
-      //   'teacher/task',
-      //   'upload'
-      // ).subscribe({
-      //   next: (res: any) => {
-      //     if (res.status) {
-      //       this.uploadedAttachments.push({
-      //         url: res.data.attachmentUrl
-      //       });
-      //       this.alert.success('File uploaded successfully');
-      //     }
-      //   },
-      //   error: () => {
-      //     this.alert.error('File upload failed');
-      //   }
-      // });
+    // Patch all non-dependent fields
+    this.taskForm.patchValue({
+      taskName:    data.taskName,
+      dueDate:     new Date(data.dueDate).toISOString().split('T')[0],
+      description: data.description,
+      file:        this.uploadedAttachments
+    });
 
+    // Patch staffId separately after detectChanges so selectbox
+    // re-evaluates its options with the new value
+    this.cdr.detectChanges();
+    this.taskForm.patchValue({ staffId });
+    this.cdr.detectChanges();
+  }
+
+  // ── Staff list ─────────────────────────────────────────────────────────────
+
+  getStaffList(): Promise<void> {
+    return new Promise(resolve => {
+      this.commonApi.fetchData(
+        { tenantId: this.tenantId }, 'ims/user', 'list?list=full'
+      ).subscribe({
+        next: (res: any) => {
+          if (res.status) {
+            this.faculty_options = res.data
+              .filter((u: any) => u.staffId)
+              .map((u: any) => ({
+                label: `${u.name} (${u.roleLabel})`,
+                value: u.staffId
+              }));
+          }
+          resolve();
+        },
+        error: () => {
+          this.alert.error('Error loading staff list');
+          resolve();
+        }
+      });
     });
   }
 
-  // ==============================
-  // CREATE TASK
-  // ==============================
+  // ── File upload ────────────────────────────────────────────────────────────
 
-  addTask() {
+  onFilesSelected(files: File[]): void {
+    if (!files?.length) return;
 
+    this.isUploading = true;
+
+    const formData = new FormData();
+    formData.append('file',     files[0]);
+    formData.append('tenantId', this.tenantId!);
+
+    this.commonApi.uploadImage(formData, 'teacher/task', 'upload').subscribe({
+      next: (res: any) => {
+        this.isUploading = false;
+        if (res?.status) {
+          // API may return attachmentUrl or url — handle both
+          const url = res.data?.attachmentUrl || res.data?.url || '';
+          this.uploadedAttachments = [{ url }];
+          this.taskForm.patchValue({ file: this.uploadedAttachments });
+          this.alert.success('File uploaded successfully');
+        } else {
+          this.alert.error('Upload failed');
+        }
+      },
+      error: () => {
+        this.isUploading = false;
+        this.alert.error('File upload failed');
+      }
+    });
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+
+  submitTask(): void {
     if (this.taskForm.invalid) {
       this.alert.error('Please fill all required fields');
+      this.taskForm.markAllAsTouched();
       return;
     }
+    this.isEditMode ? this.updateTask() : this.addTask();
+  }
 
-    const formValue = this.taskForm.value;
-
+  private addTask(): void {
+    const f = this.taskForm.value;
     const payload = {
-      tenantId: this.tenantId,
-      taskName: formValue.taskName,
-      description: formValue.description,
-      staffId: formValue.staffId,
-      dueDate: new Date(formValue.dueDate).getTime(),
-      attachment: this.uploadedAttachments
+      tenantId:      this.tenantId,
+      taskName:      f.taskName,
+      description:   f.description,
+      staffId:       f.staffId,
+      dueDate:       new Date(f.dueDate).getTime(),
+      attachment:    this.uploadedAttachments  
     };
 
-    this.commonApi.fetchData(
-      payload,
-      'teacher/task',
-      'create'
-    ).subscribe({
+    this.commonApi.fetchData(payload, 'teacher/task', 'create').subscribe({
       next: (res: any) => {
         if (res.status) {
           this.alert.success('Task created successfully');
           this.router.navigate(['/app/task']);
         }
       },
-      error: () => {
-        this.alert.error('Failed to create task');
-      }
+      error: () => this.alert.error('Failed to create task')
     });
   }
 
-  // ==============================
-  // UPDATE TASK
-  // ==============================
-
-  updateTask() {
-
-    if (this.taskForm.invalid) {
-      this.alert.error('Please fill all required fields');
-      return;
-    }
-
-    const formValue = this.taskForm.value;
-
+  private updateTask(): void {
+    const f = this.taskForm.value;
     const payload = {
-      tenantId: this.tenantId,
-      taskId: this.taskId,
-      userId: this.userId,
-      dueDate: new Date(formValue.dueDate).getTime(),
-      description: formValue.description,
-      attachmentUrl: this.uploadedAttachments
+      tenantId:      this.tenantId,
+      taskId:        this.taskId,
+      userId:        this.userId,
+      dueDate:       new Date(f.dueDate).getTime(),
+      description:   f.description,
+      attachmentUrl: this.uploadedAttachments   // edit endpoint uses "attachmentUrl"
     };
 
-    this.commonApi.fetchData(
-      payload,
-      'teacher/task',
-      'edit'
-    ).subscribe({
+    this.commonApi.fetchData(payload, 'teacher/task', 'edit').subscribe({
       next: (res: any) => {
         if (res.status) {
           this.alert.success('Task updated successfully');
           this.router.navigate(['/app/task']);
         }
       },
-      error: () => {
-        this.alert.error('Failed to update task');
-      }
+      error: () => this.alert.error('Failed to update task')
     });
   }
-
-  // ==============================
-  // LOAD TASK DETAILS (EDIT MODE)
-  // ==============================
-
-  loadTaskDetails(taskId: string) {
-
-    this.commonApi.fetchData(
-      { tenantId: this.tenantId, taskId: taskId },
-      'teacher/task',
-      'view'
-    ).subscribe({
-      next: (res: any) => {
-        if (res.status) {
-
-          const data = res.data;
-
-          this.taskForm.patchValue({
-            taskName: data.taskName,
-            staffId: data.staffId,
-            dueDate: new Date(data.dueDate),
-            description: data.description
-          });
-
-          this.uploadedAttachments = data.attachmentUrl || [];
-        }
-      },
-      error: () => {
-        this.alert.error('Failed to load task details');
-      }
-    });
-  }
-
-  // ==============================
-  // SUBMIT BUTTON HANDLER
-  // ==============================
-
-  submitTask() {
-    if (this.isEditMode) {
-      this.updateTask();
-    } else {
-      this.addTask();
-    }
-  }
-
 }

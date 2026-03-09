@@ -26,34 +26,43 @@
         <!-- Filter Form -->
         <div class="mt-3">
             <form [formGroup]="ptmForm">
-                <div class="row g-3">
 
-                    <div class="col-md-4">
+                <div class="row align-items-end g-3">
+
+                    <!-- Batch -->
+                    <div class="col-md-4 col-sm-12">
                         <selectbox label="Batch" placeholder="Select Batch" [options]="batch_options"
-                            formControlName="batchCode" [control]="ptmForm.get('batchCode')" [required]="true">
+                            formControlName="batchCode" [control]="ptmForm.get('batchCode')">
                         </selectbox>
                     </div>
 
-                    <div class="col-md-4">
+                    <!-- Status -->
+                    <div class="col-md-4 col-sm-12">
                         <selectbox label="Status" placeholder="Select Status" [options]="status_options"
-                            formControlName="status" [control]="ptmForm.get('status')" [required]="true">
+                            formControlName="status" [control]="ptmForm.get('status')">
                         </selectbox>
+                    </div>
+
+                    <!-- Button -->
+                    <div class="col-md-4 col-sm-12 text-start">
+                        <button class="btn submitbutton px-4" [disabled]="loading" (click)="onProceed()"
+                            style="border-radius: 30px; min-width:140px;">
+
+                            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status">
+                            </span>
+
+                            {{ loading ? 'Loading...' : 'Proceed' }}
+
+                        </button>
                     </div>
 
                 </div>
 
-                <div class="col-12 text-end mt-3">
-                    <button class="btn submitbutton px-4" [disabled]="ptmForm.invalid || loading" (click)="onProceed()"
-                        style="border-radius: 30px;">
-                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                        {{ loading ? 'Loading...' : 'Proceed' }}
-                    </button>
-                </div>
             </form>
         </div>
 
         <!-- Table -->
-        <div class="mt-3" *ngIf="isProceed">
+        <div class="mt-5">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="true"
                 success="Completed" primary="Scheduled" [totalRecords]="totalRecords"
                 (requestData)="loadTableData($event)" [actions]="actions"

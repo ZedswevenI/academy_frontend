@@ -1,30 +1,81 @@
 <div class="mb-3">
-  <label class="form-label">
+  <label class="form-label" *ngIf="label">
     {{ label }} <span *ngIf="required" style="color: red">*</span>
   </label>
 
-  <div class="dropdown w-100">
-    <button class="btn btn-light border w-100 text-start" type="button" data-bs-toggle="dropdown">
-      <span *ngIf="selectedItems.length === 0">{{ placeholder }}</span>
-      <span *ngIf="selectedItems.length > 0">{{ getSelectedLabels() }}</span>
+  <!-- Wrapper — position:relative is the anchor for the menu -->
+  <div class="multiselect-wrapper" (clickOutside)="close()">
+
+    <!-- Trigger button — NO data-bs-toggle, we control open/close manually -->
+    <button
+      type="button"
+      class="btn btn-light border w-100 text-start d-flex justify-content-between align-items-center"
+      (click)="toggleOpen()">
+      <span class="text-truncate me-2">
+        <span *ngIf="selectedItems.length === 0" class="text-muted">{{ placeholder }}</span>
+        <span *ngIf="selectedItems.length > 0">{{ getSelectedLabels() }}</span>
+      </span>
+      <i class="fas fa-chevron-down text-muted"
+         style="font-size: 11px; flex-shrink: 0; transition: transform .2s;"
+         [style.transform]="isOpen ? 'rotate(180deg)' : 'rotate(0deg)'"></i>
     </button>
-    
-    <ul class="dropdown-menu w-100 p-2" style="max-height: 220px; overflow-y: auto;" (click)="$event.stopPropagation()">
-      <li *ngFor="let opt of options">
-        <label class="dropdown-item d-flex align-items-center" (click)="$event.stopPropagation()">
 
-          <input type="checkbox" class="form-check-input me-2" [checked]="isSelected(opt)"
-            (click)="$event.stopPropagation()" (change)="toggleSelection(opt)">
+    <!-- Menu — absolutely positioned inside wrapper, NO Bootstrap JS touching it -->
+    <div
+      *ngIf="isOpen"
+      class="multiselect-menu border rounded shadow-sm bg-white"
+      (click)="$event.stopPropagation()">
 
-          {{ opt[optionLabel] }}
+      <!-- Empty state -->
+      <div *ngIf="options.length === 0" class="px-3 py-2 text-muted fst-italic" style="font-size:13px;">
+        No options available
+      </div>
+
+      <ng-container *ngIf="options.length > 0">
+        <!-- Select All -->
+        <label class="multiselect-item fw-semibold border-bottom" (click)="$event.stopPropagation()">
+          <input
+            type="checkbox"
+            class="form-check-input flex-shrink-0 mt-0"
+            [checked]="isAllSelected()"
+            [indeterminate]="isIndeterminate()"
+            (click)="$event.stopPropagation()"
+            (change)="toggleSelectAll()">
+          <span>Select All</span>
+          <span class="ms-auto text-muted fw-normal" style="font-size:11px;">
+            {{ selectedItems.length }}/{{ options.length }}
+          </span>
         </label>
-      </li>
-    </ul>
 
+        <!-- Options -->
+        <label
+          *ngFor="let opt of options"
+          class="multiselect-item"
+          (click)="$event.stopPropagation()">
+          <input
+            type="checkbox"
+            class="form-check-input flex-shrink-0 mt-0"
+            [checked]="isSelected(opt)"
+            (click)="$event.stopPropagation()"
+            (change)="toggleSelection(opt)">
+          <span style="word-break: break-word;">{{ opt[optionLabel] }}</span>
+        </label>
+      </ng-container>
+    </div>
   </div>
 
-  <div *ngIf="control?.invalid && (control?.touched || control?.dirty)" class="text-danger mt-1"
-    style="font-size: 13px;">
+  <!-- Selected count + clear -->
+  <div *ngIf="selectedItems.length > 0" class="mt-1 d-flex align-items-center gap-2">
+    <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:11px;">
+      {{ selectedItems.length }} selected
+    </span>
+    <span class="text-danger" style="font-size:11px; cursor:pointer;" (click)="clearAll()">
+      Clear all
+    </span>
+  </div>
+
+  <div *ngIf="control?.invalid && (control?.touched || control?.dirty)"
+       class="text-danger mt-1" style="font-size:13px;">
     <span *ngIf="control?.errors?.['required']">{{ label }} is required.</span>
   </div>
 </div>

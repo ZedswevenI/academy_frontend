@@ -297,9 +297,7 @@ export class CreatePTMComponent implements OnInit {
             this.router.navigate(['/app/ptm']);
           }
         },
-        error: () => this.alert.error(
-          this.isEditMode ? 'Error updating PTM' : 'Error scheduling PTM'
-        )
+        error: (err : any) => this.alert.error(err?.error?.message)
       });
   }
 

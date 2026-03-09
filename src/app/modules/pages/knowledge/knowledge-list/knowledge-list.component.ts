@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-knowledge-list',
@@ -19,196 +19,174 @@ export class KnowledgeListComponent implements OnInit {
   deleteMessage = '';
 
   columnsArray = [
-    { key: 'title', label: 'Title', sortable: true },
-    { key: 'classNo', label: 'Class', sortable: false },
-    { key: 'subjectName', label: 'Subject', sortable: false },
-    { key: 'batchName', label: 'Batch', sortable: false },
-    { key: 'availableUntilDate', label: 'Available Until', sortable: true }
+    { key: 'title',              label: 'Title',           sortable: true  },
+    { key: 'classNo',            label: 'Class',           sortable: false },
+    { key: 'subjectName',        label: 'Subject',         sortable: false },
+    { key: 'batchName',          label: 'Batch',           sortable: false },
+    { key: 'availableUntilDate', label: 'Available Until', sortable: true  }
   ];
 
-  dataArray: any[] = [];
-  totalRecords = 0;
-  loading = false;
+  dataArray:    any[] = [];
+  totalRecords  = 0;
+  loading       = false;
+
+  // Track current pagination so delete reloads the same page
+  currentPage     = 1;
+  currentPageSize = 10;
+
+  // Last used filter + pagination — in-memory only, survives modal actions
+  private lastRequest: { page: number; pageSize: number; search?: string } = { page: 1, pageSize: 10 };
 
   class_options = Array.from({ length: 8 }, (_, i) => ({
     label: (i + 6).toString(),
     value: i + 6
   }));
 
-  subjects: any[] = [];
+  subjects:     any[] = [];
   batch_options: any[] = [];
 
   actions = [
     {
-      type: 'icon',
-      icon: 'fa-regular fa-eye',
+      type: 'icon', icon: 'fa-regular fa-eye',
       tooltip: 'View',
       callback: (row: any) => this.view(row)
     },
     {
-      type: 'icon',
-      icon: 'fa-regular fa-pen-to-square',
+      type: 'icon', icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
       callback: (row: any) => this.edit(row)
     },
     {
-      type: 'icon',
-      icon: 'fa-regular fa-trash-can',
-      tooltip: 'Delete',
-      color: '#dc3545',
-      hoverColor: '#a71d2a',
+      type: 'icon', icon: 'fa-regular fa-trash-can',
+      tooltip: 'Delete', color: '#dc3545', hoverColor: '#a71d2a',
       callback: (row: any) => this.openDelete(row)
     }
   ];
 
   constructor(
     private breadcrumb: BredcrumpService,
-    private router: Router,
-    private commonApi: CommonapiService,
-    private fb: FormBuilder
+    private router:     Router,
+    private commonApi:  CommonapiService,
+    private fb:         FormBuilder
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Knowledge Base' }]);
   }
 
   ngOnInit(): void {
-
     this.filterForm = this.fb.group({
-      classNo: [''],
+      classNo:   [''],
       subjectId: [''],
-      batchId: ['']
+      batchId:   ['']
     });
 
     this.loadSubjects();
     this.loadBatches();
   }
 
-  // =========================
-  // Load Subjects
-  // =========================
+  // ── Dropdowns ──────────────────────────────────────────────────────────────
 
-  private loadSubjects() {
-    this.commonApi.fetchData(
-      { entiId: this.tenantId },
-      'ims/subject',
-      'list?list=full'
-    ).subscribe((res: any) => {
-      this.subjects = (res?.data || []).map((s: any) => ({
-        label: s.subjectName,
-        value: s.subjectId
-      }));
-    });
+  private loadSubjects(): void {
+    this.commonApi.fetchData({ entiId: this.tenantId }, 'ims/subject', 'list?list=full')
+      .subscribe((res: any) => {
+        this.subjects = (res?.data || []).map((s: any) => ({
+          label: s.subjectName,
+          value: s.subjectId
+        }));
+      });
   }
 
-  // =========================
-  // Load Batches
-  // =========================
-
-  private loadBatches() {
-    this.commonApi.fetchData(
-      { entiId: this.tenantId },
-      'batch',
-      'list?list=full'
-    ).subscribe((res: any) => {
-      this.batch_options = (res?.data || []).map((b: any) => ({
-        label: b.batchName,
-        value: b.batchCode
-      }));
-    });
+  private loadBatches(): void {
+    this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full')
+      .subscribe((res: any) => {
+        this.batch_options = (res?.data || []).map((b: any) => ({
+          label: b.batchName,
+          value: b.batchCode
+        }));
+      });
   }
 
-  // =========================
-  // Fetch Knowledge List
-  // =========================
+  // ── Fetch list ─────────────────────────────────────────────────────────────
 
-  fetchTableData(req: {
-    page: number;
-    pageSize: number;
-  }) {
-
-    // if (this.filterForm.invalid) return;
+  fetchTableData(req: { page: number; pageSize: number; search?: string }): void {
+    // Store so delete / back-navigation reloads the same page + filters
+    this.currentPage     = req.page;
+    this.currentPageSize = req.pageSize;
+    this.lastRequest     = { ...req };
 
     const f = this.filterForm.value;
-
     this.loading = true;
 
-    const endpoint =
-      `list?page=${req.page}&limit=${req.pageSize}` +
-      `&classNo=${f.classNo}` +
-      // `&subjectId=${f.subjectId}` +
-      `&batchId=${f.batchId}`;
+    let endpoint = `list?page=${req.page}&limit=${req.pageSize}`;
+    if (f.classNo)   endpoint += `&classNo=${f.classNo}`;
+    if (f.subjectId) endpoint += `&subjectId=${f.subjectId}`;
+    if (f.batchId)   endpoint += `&batchId=${f.batchId}`;
+    if (req.search)  endpoint += `&search=${req.search}`;
 
-    this.commonApi.fetchData(
-      { tenantId: this.tenantId },
-      'institue/library',
-      endpoint
-    ).subscribe((res: any) => {
-
-      this.loading = false;
-
-      if (res?.status) {
-
-        this.totalRecords = res.total || 0;
-
-        this.dataArray = (res.data || []).map((d: any) => ({
-          ...d,
-          subjectName: d.subjectId?.subjectName || '',
-          batchName: d.batchIds[0] || '-',
-          availableUntilDate: new Date(d.availableUntil).toLocaleDateString()
-        }));
-      }
-    });
+    this.commonApi.fetchData({ tenantId: this.tenantId }, 'institue/library', endpoint)
+      .subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          if (res?.status) {
+            this.totalRecords = res.total || res.count || 0;
+            this.dataArray = (res.data || []).map((d: any) => ({
+              ...d,
+              subjectName:        d.subjectId?.subjectName || '',
+              batchName:          d.batchIds?.[0] || '-',
+              availableUntilDate: d.availableUntil
+                ? new Date(d.availableUntil).toLocaleDateString('en-IN', {
+                    day: '2-digit', month: 'short', year: 'numeric'
+                  })
+                : '-'
+            }));
+          }
+        },
+        error: () => { this.loading = false; }
+      });
   }
 
-  openDelete(row: any) {
-    this.deleteTarget = row;
+  // Separate handler for filter button — always resets to page 1
+  applyFilter(): void {
+    this.fetchTableData({ page: 1, pageSize: this.currentPageSize });
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+
+  openDelete(row: any): void {
+    this.deleteTarget  = row;
     this.deleteMessage = `Are you sure you want to delete "${row.title}"?`;
     this.deleteModalVisible = true;
   }
 
-  onDeleteModalClosed(confirmed: boolean) {
-
+  onDeleteModalClosed(confirmed: boolean): void {
     this.deleteModalVisible = false;
-
     if (!confirmed || !this.deleteTarget) return;
 
-    const payload = {
-      tenantId: this.tenantId,
-      materialId: this.deleteTarget.materialId
-    };
-
     this.commonApi.fetchData(
-      payload,
-      'institue/library',
-      'delete'
+      { tenantId: this.tenantId, materialId: this.deleteTarget.materialId },
+      'institue/library', 'delete'
     ).subscribe((res: any) => {
-
       if (res?.status) {
         this.deleteTarget = null;
 
-        // reload list
-        this.fetchTableData({
-          page: 1,
-          pageSize: 10
-        });
+        // If this was the last item on a page > 1, go back one page
+        const remainingOnPage = this.dataArray.length - 1;
+        const reloadPage = remainingOnPage === 0 && this.currentPage > 1
+          ? this.currentPage - 1
+          : this.currentPage;
+
+        this.fetchTableData({ ...this.lastRequest, page: reloadPage });
       }
     });
   }
 
-  // =========================
-  // Actions
-  // =========================
+  // ── Actions ────────────────────────────────────────────────────────────────
 
-  view(row: any) {
-    this.router.navigate(['/app/knowledge/view'], {
-      state: { material: row }
-    });
+  view(row: any): void {
+    this.router.navigate(['/app/knowledge/view'], { state: { material: row } });
   }
 
-  edit(row: any) {
-    this.router.navigate(['/app/knowledge/create'], {
-      state: { material: row }
-    });
+  edit(row: any): void {
+    this.router.navigate(['/app/knowledge/create'], { state: { material: row } });
   }
-
 }

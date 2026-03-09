@@ -131,8 +131,8 @@
                     <div *ngIf="uploadedFiles.length > 0" class="mt-2">
                         <div *ngFor="let f of uploadedFiles; let i = index"
                             class="d-flex align-items-center justify-content-between border rounded-3 px-3 py-2 mb-1">
-                            <a [href]="f.url" target="_blank" class="small text-primary text-decoration-none">
-                                <i class="fa-solid fa-paperclip me-1"></i>{{ f.name || 'Attachment ' + (i+1) }}
+                            <a  (click)="downloadFile(f.url)" target="_blank" class="small text-primary text-decoration-none">
+                                <i  class="fa-solid fa-paperclip me-1"></i>{{ f.name || 'Attachment ' + (i+1) }}
                             </a>
                             <button type="button" class="btn btn-sm btn-link text-danger p-0"
                                 (click)="removeFile(i)">

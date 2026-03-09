@@ -189,8 +189,8 @@ export class PtmComponent implements OnInit {
 
   ngOnInit(): void {
     this.ptmForm = this.fb.group({
-      batchCode: ['', Validators.required],
-      status: ['', Validators.required]
+      batchCode: [''],
+      status: ['']
     });
 
     this.loadBatches();
@@ -268,7 +268,7 @@ export class PtmComponent implements OnInit {
     sortKey?: string;
     sortDirection?: 'asc' | 'desc';
   }): void {
-    if (!this.isProceed) return;
+    // if (!this.isProceed) return;
     this.fetchPTMList(req.page, req.pageSize, req.search);
   }
 

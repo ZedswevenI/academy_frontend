@@ -1,7 +1,6 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
 
-        <!-- ================= HEADER ================= -->
         <div class="d-flex align-items-center justify-content-between mb-4">
             <h1 class="fw-bold mb-0" style="font-size: 30px;">
                 <i class="fa-solid fa-book-open me-2"></i>
@@ -9,9 +8,7 @@
             </h1>
         </div>
 
-        <!-- ================= FORM ================= -->
         <form [formGroup]="knowledgeForm" (ngSubmit)="addKnowledge()">
-
             <div class="row g-3">
 
                 <!-- Title -->
@@ -35,18 +32,27 @@
                     </selectbox>
                 </div>
 
-                <!-- Topic -->
+                <!-- Topic — select from loaded options OR type custom -->
                 <div class="col-md-6">
-                    <selectbox label="Topic" [options]="topics" formControlName="topicId"
-                        [control]="knowledgeForm.get('topicId')" [required]="true">
-                    </selectbox>
+                    <select-or-input
+                        label="Topic"
+                        placeholder="Enter topic name..."
+                        [options]="topics"
+                        formControlName="topicId"
+                        [control]="knowledgeForm.get('topicId')"
+                        [required]="true">
+                    </select-or-input>
                 </div>
 
-                <!-- SubTopic -->
+                <!-- SubTopic — select from loaded options OR type custom -->
                 <div class="col-md-6">
-                    <selectbox label="Sub Topic" [options]="subTopics" formControlName="subTopicId"
+                    <select-or-input
+                        label="Sub Topic"
+                        placeholder="Enter sub topic name..."
+                        [options]="subTopics"
+                        formControlName="subTopicId"
                         [control]="knowledgeForm.get('subTopicId')">
-                    </selectbox>
+                    </select-or-input>
                 </div>
 
                 <!-- Batch -->
@@ -58,8 +64,9 @@
 
                 <!-- Students -->
                 <div class="col-md-6">
-                    <multiselect label="Students" placeholder="Select Students (Optional)" [options]="studentOptions"
-                        formControlName="studentIds" [control]="knowledgeForm.get('studentIds')">
+                    <multiselect label="Students" placeholder="Select Students (Optional)"
+                        [options]="studentOptions" formControlName="studentIds"
+                        [control]="knowledgeForm.get('studentIds')">
                     </multiselect>
                 </div>
 
@@ -79,34 +86,34 @@
 
                 <!-- Upload -->
                 <div class="col-md-6">
-                    <importfiles label="Upload Material" [multiple]="false" formControlName="attachmentUrl"
+                    <importfiles label="Upload Material" [multiple]="false"
+                        formControlName="attachmentUrl"
+                        [existingFiles]="isEditMode ? uploadedFiles : []"
                         (filesChanged)="onFilesSelected($event)">
                     </importfiles>
                 </div>
 
                 <!-- Description -->
                 <div class="col-md-12">
-                    <description label="Description" placeholder="Type here..." formControlName="description"
+                    <description label="Description" placeholder="Type here..."
+                        formControlName="description"
                         [control]="knowledgeForm.get('description')">
                     </description>
                 </div>
 
             </div>
 
-            <!-- ================= ACTION BUTTONS ================= -->
             <div class="col-12 text-end mt-4">
-                <button type="button" class="btn closebutton px-4 me-2" style="border-radius: 30px;"
-                    routerLink="/app/knowledge">
+                <button type="button" class="btn closebutton px-4 me-2"
+                    style="border-radius: 30px;" routerLink="/app/knowledge">
                     Back
                 </button>
-
-                <button type="submit" class="btn submitbutton px-4" [disabled]="knowledgeForm.invalid"
-                    style="border-radius: 30px;">
+                <button type="submit" class="btn submitbutton px-4"
+                    [disabled]="knowledgeForm.invalid" style="border-radius: 30px;">
                     {{ isEditMode ? 'Update' : 'Submit' }}
                 </button>
             </div>
 
         </form>
-
     </div>
 </div>

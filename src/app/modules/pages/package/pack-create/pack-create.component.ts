@@ -16,19 +16,22 @@ export class PackCreateComponent implements OnInit {
   packageForm!: FormGroup;
 
   tenantId: any;
-  isEditMode  = false;
+  isEditMode = false;
   packageId: string | null = null;
   editPackage: any = null;
-  loading     = false;
-  uploading   = false;
+  loading = false;
+  uploading = false;
   attachmentUrl = '';
 
   class_options = [
-    { label: '9th',      value: 9  },
-    { label: '10th',     value: 10 },
-    { label: '11th',     value: 11 },
-    { label: '12th',     value: 12 },
-    { label: '12th Pass',value: 13 }
+    { label: '6th', value: 6 },
+    { label: '7th', value: 7 },
+    { label: '8th', value: 8 },
+    { label: '9th', value: 9 },
+    { label: '10th', value: 10 },
+    { label: '11th', value: 11 },
+    { label: '12th', value: 12 },
+    { label: '12th Pass', value: 13 }
   ];
 
   subject_options: any[] = [];
@@ -42,12 +45,12 @@ export class PackCreateComponent implements OnInit {
   ) {
     this.tenantId = localStorage.getItem('tenantId');
 
-    const nav          = this.router.getCurrentNavigation();
-    const statePkg     = nav?.extras?.state?.['package'];
+    const nav = this.router.getCurrentNavigation();
+    const statePkg = nav?.extras?.state?.['package'];
 
     if (statePkg) {
-      this.isEditMode  = true;
-      this.packageId   = statePkg.packageId;
+      this.isEditMode = true;
+      this.packageId = statePkg.packageId;
       this.editPackage = statePkg;
       this.breadcrumb.set([
         { label: 'Packages', link: '/app/package' },
@@ -79,20 +82,20 @@ export class PackCreateComponent implements OnInit {
     if (this.isEditMode) {
       // Edit — only title is editable per API
       this.packageForm = this.fb.group({
-        classNo:     [''],
-        subjectId:   [''],
+        classNo: [''],
+        subjectId: [''],
         packageCode: [''],
-        title:       ['', Validators.required],
+        title: ['', Validators.required],
         description: [''],
         attachmentUrl: ['']
       });
     } else {
       this.packageForm = this.fb.group({
-        classNo:      [null, Validators.required],
-        subjectId:    ['',   Validators.required],
-        packageCode:  ['',   Validators.required],
-        title:        ['',   Validators.required],
-        description:  [''],
+        classNo: [null, Validators.required],
+        subjectId: ['', Validators.required],
+        packageCode: ['', Validators.required],
+        title: ['', Validators.required],
+        description: [''],
         attachmentUrl: ['']
       });
     }
@@ -110,7 +113,7 @@ export class PackCreateComponent implements OnInit {
             this.subject_options = (res?.data || []).map((s: any) => ({
               label: s.subjectName,
               value: s._id,
-              name:  s.subjectName
+              name: s.subjectName
             }));
             resolve();
           },
@@ -127,11 +130,11 @@ export class PackCreateComponent implements OnInit {
     this.attachmentUrl = d.attachmentUrl || '';
 
     this.packageForm.patchValue({
-      classNo:      d.classNo,
-      subjectId:    d.subjectId,
-      packageCode:  d.packageCode,
-      title:        d.title,
-      description:  d.description,
+      classNo: d.classNo,
+      subjectId: d.subjectId,
+      packageCode: d.packageCode,
+      title: d.title,
+      description: d.description,
       attachmentUrl: d.attachmentUrl
     }, { emitEvent: false });
 
@@ -196,13 +199,13 @@ export class PackCreateComponent implements OnInit {
     const selectedSubject = this.subject_options.find(s => s.value === f.subjectId);
 
     const payload = {
-      tenantId:      this.tenantId,
-      packageCode:   f.packageCode,
-      classNo:       Number(f.classNo),
-      subjectId:     f.subjectId,
-      subjectName:   selectedSubject?.name || '',
-      title:         f.title,
-      description:   f.description || '',
+      tenantId: this.tenantId,
+      packageCode: f.packageCode,
+      classNo: Number(f.classNo),
+      subjectId: f.subjectId,
+      subjectName: selectedSubject?.name || '',
+      title: f.title,
+      description: f.description || '',
       attachmentUrl: f.attachmentUrl || ''
     };
 
@@ -216,20 +219,20 @@ export class PackCreateComponent implements OnInit {
             this.router.navigate(['/app/package']);
           }
         },
-        error: () => {
+        error: (err: any) => {
           this.loading = false;
-          this.alert.error('Error creating package');
+          this.alert.error(err?.error?.message)
         }
       });
   }
 
-   downloadFile(url: string): void {
+  downloadFile(url: string): void {
     this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
       next: (res: any) => {
-        const fileName  = url.split('/').pop() || 'download';
-        const a         = document.createElement('a');
+        const fileName = url.split('/').pop() || 'download';
+        const a = document.createElement('a');
         const objectUrl = URL.createObjectURL(res);
-        a.href     = objectUrl;
+        a.href = objectUrl;
         a.download = fileName;
         a.click();
       },
@@ -239,9 +242,9 @@ export class PackCreateComponent implements OnInit {
 
   private updatePackage(f: any): void {
     const payload: any = {
-      tenantId:  this.tenantId,
+      tenantId: this.tenantId,
       packageId: this.packageId,
-      title:     f.title
+      title: f.title
     };
 
     this.loading = true;

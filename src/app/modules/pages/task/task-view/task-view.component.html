@@ -66,7 +66,7 @@
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
                             <div class="col-sm-7 pt-2">
                                 <div *ngFor="let file of taskData.attachmentUrl">
-                                    <a [href]="file.url" target="_blank" class="text-primary">
+                                    <a  (click)="downloadAttachment(file.url)" target="_blank" class="text-primary">
                                         {{ file.url.split('/').pop() }}
                                     </a>
                                 </div>
@@ -93,7 +93,7 @@
                         style="border-radius: 30px;" (click)="markInProgress()">
                         Mark In Progress
                     </button>
-                    <button class="btn submitbutton px-4" style="border-radius: 30px;" (click)="onAct()">
+                    <button *ngIf="taskData?.status !== 'Completed'" class="btn submitbutton px-4" style="border-radius: 30px;" (click)="onAct()">
                         Update Status
                     </button>
                 </div>

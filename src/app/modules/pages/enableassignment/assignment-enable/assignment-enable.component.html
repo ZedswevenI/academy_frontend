@@ -141,7 +141,7 @@
                                 <th>Category</th>
                                 <th>SubCategory</th>
                                 <th style="width: 110px;">Test No</th>
-                                <th style="width: 120px;" class="text-end">View</th>
+                                <!-- <th style="width: 120px;" class="text-end">View</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -152,11 +152,11 @@
                                 <td>{{ r?.examCategory || r?.categoryId || '-' }}</td>
                                 <td>{{ r?.examSubCategory || r?.subCategoryId || '-' }}</td>
                                 <td class="fw-semibold">{{ r?.testNo || '-' }}</td>
-                                <td class="text-end">
+                                <!-- <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary" (click)="viewTest(r)">
                                         View
                                     </button>
-                                </td>
+                                </td> -->
                             </tr>
 
                             <tr *ngIf="!modalRows.length">
