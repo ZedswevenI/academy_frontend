@@ -131,7 +131,7 @@ export class PhaseCreateComponent implements OnInit {
       subjectId: subjectId
     };
 
-    this.commonApi.fetchData(body, 'batch/phase', 'available-topics')
+    this.commonApi.fetchData(body, 'institue/phase', 'available-topics')
       .subscribe({
         next: (res: any) => {
           this.availableTopics = res?.data || [];
@@ -207,7 +207,7 @@ export class PhaseCreateComponent implements OnInit {
       subjectId: subjectId
     };
 
-    this.commonApi.fetchData(body, 'batch/phase', 'available-topics')
+    this.commonApi.fetchData(body, 'institue/phase', 'available-topics')
       .subscribe({
         next: (res: any) => {
           this.availableTopics = res?.data || [];
@@ -325,7 +325,7 @@ export class PhaseCreateComponent implements OnInit {
     };
 
     this.loading = true;
-    this.commonApi.fetchData(payload, 'batch/phase', 'create')
+    this.commonApi.fetchData(payload, 'institue/phase', 'create')
       .subscribe({
         next: (res: any) => {
           this.loading = false;
@@ -351,7 +351,7 @@ export class PhaseCreateComponent implements OnInit {
     };
 
     this.loading = true;
-    this.commonApi.fetchData(payload, 'batch/phase', 'update')
+    this.commonApi.fetchData(payload, 'institue/phase', 'update')
       .subscribe({
         next: (res: any) => {
           this.loading = false;
