@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 @Component({
   selector: 'app-knowledge-create',
@@ -37,6 +38,7 @@ export class KnowledgeCreateComponent implements OnInit {
   constructor(
     private breadcrumb: BredcrumpService,
     private fb: FormBuilder,
+     private alert: AlertService,
     private router: Router,
     private commonApi: CommonapiService
   ) {
@@ -304,16 +306,14 @@ export class KnowledgeCreateComponent implements OnInit {
       status: 'Active'
     };
 
-
-    console.log("Data came ", payload);
-
-
-    // if (this.isEditMode) payload.materialId = this.materialId;
-
-    // this.commonApi.fetchData(payload, 'institue/library', this.isEditMode ? 'edit' : 'create')
-    //   .subscribe((res: any) => {
-    //     if (res?.status) this.router.navigate(['/app/knowledge']);
-    //   });
+    if (this.isEditMode) payload.materialId = this.materialId;
+    this.commonApi.fetchData(payload, 'institue/library', this.isEditMode ? 'edit' : 'create')
+      .subscribe({
+        next: (res: any) => {
+         if (res?.status) this.router.navigate(['/app/knowledge']);
+        },
+        error: (err: any) => this.alert.error(err?.error?.message)
+      });
   }
 
   getFileName(url: string): string {

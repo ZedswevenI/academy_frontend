@@ -221,9 +221,9 @@ export class createActivityComponent implements OnInit {
             this.router.navigate(['/app/activity']);
           }
         },
-        error: () => {
+        error: ( err: any) => {
           this.loading = false;
-          this.alert.error('Error updating activity');
+           this.alert.error(err?.error?.message)
         }
       });
   }

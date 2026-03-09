@@ -24,9 +24,9 @@ export class PackCreateComponent implements OnInit {
   attachmentUrl = '';
 
   class_options = [
-    { label: '6th', value: 6 }, 
-    { label: '7th', value: 7 }, 
-    { label: '8th', value: 8 }, 
+    { label: '6th', value: 6 },
+    { label: '7th', value: 7 },
+    { label: '8th', value: 8 },
     { label: '9th', value: 9 },
     { label: '10th', value: 10 },
     { label: '11th', value: 11 },
@@ -219,9 +219,9 @@ export class PackCreateComponent implements OnInit {
             this.router.navigate(['/app/package']);
           }
         },
-        error: () => {
+        error: (err: any) => {
           this.loading = false;
-          this.alert.error('Error creating package');
+          this.alert.error(err?.error?.message)
         }
       });
   }

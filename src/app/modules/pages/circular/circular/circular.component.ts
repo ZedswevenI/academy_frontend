@@ -241,7 +241,10 @@ export class CircularComponent implements OnInit {
           this.fetchList(this.lastFilter.page, this.lastFilter.pageSize);
         }
       },
-      error: () => { this.publishLoading = false; this.alert.error('Error publishing circular'); }
+        error: (err: any) => {
+          this.loading = false;
+          this.alert.error(err?.error?.message);
+         }
     });
   }
 
