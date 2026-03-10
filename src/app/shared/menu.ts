@@ -79,12 +79,12 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/ptm'
   },
   {
-    label: 'Knowledge Base',
+    label: 'Library',
     icon: 'fa-solid fa-book-open',
     route: '/app/knowledge'
   },
   {
-    label: 'Package',
+    label: 'Study Material',
     icon: 'fa-solid fa-box-open',
     route: '/app/package'
   },
@@ -166,6 +166,11 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Sub Category',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-category'
+      },
+      {
+        label: 'School Exams',
+        icon: 'fa-solid fa-chalkboard-user',
+        route: '/app/org-master/school/exams'
       },
       {
         label: 'CGPA Config',

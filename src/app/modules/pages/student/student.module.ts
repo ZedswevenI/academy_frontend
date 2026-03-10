@@ -8,24 +8,10 @@ import { StudentRoutingModule } from './student.routing.module';
 import { StudentViewComponent } from './student-view/student-view.component';
 import { GridListComponent } from './grid-list/grid-list.component';
 import { TableListComponent } from './table-list/table-list.component';
-import { CreateStudentComponent } from './create-student/create-student.component';
 
 @NgModule({
-  declarations: [
-    StudentComponent,
-    StudentViewComponent,
-    GridListComponent,
-    TableListComponent,
-    CreateStudentComponent
-  ],
-  imports: [
-    CommonModule,
-    StudentRoutingModule,
-    UiElementsModule,
-    ReactiveFormsModule,
-    FormsModule
-  ],
+  declarations: [StudentComponent, StudentViewComponent, GridListComponent, TableListComponent],
+  imports: [CommonModule, StudentRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
   exports: []
 })
-
 export class StudentModule {}

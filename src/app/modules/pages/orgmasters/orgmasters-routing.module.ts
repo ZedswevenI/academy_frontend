@@ -12,6 +12,7 @@ import { SubtopicComponent } from './subtopic/subtopic.component';
 import { ExamcategoryComponent } from './examcategory/examcategory.component';
 import { ExamsubcategoryComponent } from './examsubcategory/examsubcategory.component';
 import { CenterviewComponent } from './centerview/centerview.component';
+import { SchoolexamsComponent } from './schoolexams/schoolexams.component';
 
 const routes: Routes = [
   {
@@ -61,6 +62,10 @@ const routes: Routes = [
   {
     path: 'sub-topic',
     component: SubtopicComponent
+  },
+  {
+    path: 'school/exams',
+    component: SchoolexamsComponent
   }
 ];
 

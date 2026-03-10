@@ -1,0 +1,243 @@
+<div class="topic-page">
+    <div class="card mb-3 shadow-sm border-0">
+
+        <!-- ── Card Header ──────────────────────────────────────────────────── -->
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-1 fw-semibold">School Exam Master</h5>
+                <p class="mb-0 text-muted small">Manage school exams mapped to Class &amp; Academic Year.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openImport()"
+                    [disabled]="loading || saving || importing">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>Import Exams</span>
+                </button>
+                <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="add()"
+                    [disabled]="loading || saving || importing">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Exam</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Table ────────────────────────────────────────────────────────── -->
+        <div class="card-body pt-0">
+            <custom-table [autoFitChars]="true" [columns]="columns" [data]="tableData" [actions]="actions"
+                [loading]="loading" [totalRecords]="totalRecords" [pageSizeOptions]="[10, 20, 50]" [success]="'PLANNED'"
+                [warn]="'COMPLETED'" [danger]="'CANCELLED'" (requestData)="fetchTableData($event)">
+            </custom-table>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+       MODAL: CREATE / EDIT
+  ════════════════════════════════════════════════════════════════════════ -->
+    <div class="app-modal-backdrop" *ngIf="showForm">
+        <div class="app-modal" style="max-width: 680px">
+
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">
+                        {{ formMode === 'create' ? 'Create School Exam' : 'Edit School Exam' }}
+                    </h6>
+                    <span class="text-muted small">
+                        {{ formMode === 'create' ? 'Add a new school exam' : 'Update exam details' }}
+                    </span>
+                </div>
+                <button type="button" class="btn-close" (click)="cancel()" [disabled]="saving"></button>
+            </div>
+
+            <div class="app-modal-body">
+                <form [formGroup]="form" (ngSubmit)="save()">
+                    <div class="row g-3">
+
+                        <!-- EXAM NAME -->
+                        <div class="col-md-8">
+                            <formfield label="Exam Name" [required]="true" [control]="form.get('examName')"
+                                formControlName="examName" placeholder="e.g. Midterm, Quarterly, Annual">
+                            </formfield>
+                        </div>
+
+                        <!-- CLASS -->
+                        <div class="col-md-4">
+                            <selectbox label="Class" [required]="true" [options]="classOptions" optionLabel="label"
+                                optionValue="value" [control]="form.get('classNo')" formControlName="classNo">
+                            </selectbox>
+                        </div>
+
+                        <!-- ACADEMIC YEAR -->
+                        <div class="col-md-4">
+                            <formfield label="Academic Year" [required]="true" [control]="form.get('academicYear')"
+                                formControlName="academicYear" placeholder="2025-2026">
+                            </formfield>
+                            <div class="form-text">Format: YYYY-YYYY</div>
+                        </div>
+
+                        <!-- START DATE -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Start Date</label>
+                            <input type="date" class="form-control" formControlName="startDate">
+                        </div>
+
+                        <!-- END DATE -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">End Date</label>
+                            <input type="date" class="form-control" formControlName="endDate">
+                        </div>
+
+                        <!-- STATUS (edit only) -->
+                        <div class="col-md-4" *ngIf="formMode === 'edit'">
+                            <selectbox label="Status" [required]="false" [options]="statusOptions" optionLabel="label"
+                                optionValue="value" [control]="form.get('status')" formControlName="status">
+                            </selectbox>
+                        </div>
+
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving">
+                            <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
+                                aria-hidden="true"></span>
+                            {{ formMode === 'create' ? 'Save' : 'Update' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+       MODAL: IMPORT
+  ════════════════════════════════════════════════════════════════════════ -->
+    <div class="app-modal-backdrop" *ngIf="showImport">
+        <div class="app-modal" style="max-width: 1000px">
+
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">Import School Exams (Excel)</h6>
+                    <span class="text-muted small">Upload Excel to bulk upsert school exams.</span>
+                </div>
+                <button type="button" class="btn-close" (click)="closeImport()" [disabled]="importing"></button>
+            </div>
+
+            <div class="app-modal-body">
+
+                <!-- Instructions -->
+                <div class="alert alert-info py-2 small mb-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <div class="fw-semibold mb-1">Required columns in Excel:</div>
+                            <div class="text-muted">
+                                <span class="me-2">Exam Name</span> |
+                                <span class="mx-2">Academic Year</span> |
+                                <span class="mx-2">Class</span> |
+                                <span class="mx-2">Start Date</span> |
+                                <span class="mx-2">End Date</span> |
+                                <span class="mx-2">Status</span>
+                            </div>
+                            <div class="text-muted mt-1">
+                                Academic Year format: <b>YYYY-YYYY</b> &nbsp;|&nbsp;
+                                Status: <b>PLANNED</b> / <b>COMPLETED</b> / <b>CANCELLED</b> (defaults to PLANNED).<br>
+                                Existing records with same Exam Name + Academic Year + Class will be <b>updated</b>.
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadSampleExcel()"
+                            [disabled]="importing">
+                            <i class="fa-solid fa-download me-1"></i> Download Sample
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File picker + actions -->
+                <div class="row g-3 align-items-end mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Excel File</label>
+                        <input type="file" class="form-control" accept=".xlsx,.xls" (change)="onExcelSelected($event)"
+                            [disabled]="importing" />
+                        <div class="form-text" *ngIf="importFileName">Selected: {{ importFileName }}</div>
+                    </div>
+
+                    <div class="col-md-6 d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline-secondary" (click)="resetImport()"
+                            [disabled]="!importPreviewRows.length || importing">
+                            Reset
+                        </button>
+                        <button type="button" class="btn btn-primary" (click)="confirmImport()"
+                            [disabled]="!importPreviewRows.length || importHasInvalidRows || importing">
+                            <span *ngIf="importing" class="spinner-border spinner-border-sm me-2" role="status"
+                                aria-hidden="true"></span>
+                            <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!importing"></i>
+                            Import Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row count summary -->
+                <div *ngIf="importPreviewRows.length" class="mb-2 d-flex justify-content-between align-items-center">
+                    <div class="small text-muted">
+                        Rows: <span class="fw-semibold">{{ importPreviewRows.length }}</span>
+                        <span class="ms-2" *ngIf="importHasInvalidRows">
+                            | Invalid: <span class="fw-semibold text-danger">{{ importInvalidCount }}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Preview table -->
+                <div *ngIf="importPreviewRows.length" class="table-responsive border rounded">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:50px">#</th>
+                                <th>Exam Name</th>
+                                <th style="width:130px">Academic Year</th>
+                                <th style="width:80px">Class</th>
+                                <th style="width:120px">Start Date</th>
+                                <th style="width:120px">End Date</th>
+                                <th style="width:110px">Status</th>
+                                <th style="width:200px">Validation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let r of importPreviewRows" [class.table-danger]="!r._valid">
+                                <td>{{ r._rowNo }}</td>
+                                <td>{{ r.examName || '—' }}</td>
+                                <td>{{ r.academicYear|| '—' }}</td>
+                                <td>{{ r.classNo || '—' }}</td>
+                                <td>{{ r.startDateLabel }}</td>
+                                <td>{{ r.endDateLabel }}</td>
+                                <td>{{ r.status }}</td>
+                                <td>
+                                    <span *ngIf=" r._valid" class="badge bg-success">OK</span>
+                                    <span *ngIf="!r._valid" class="badge bg-danger">
+                                        {{ r._errors?.join(', ') }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div *ngIf="importPreviewRows.length && importHasInvalidRows" class="alert alert-warning mt-3 small">
+                    Fix invalid rows in Excel and upload again. Import is disabled until all rows are valid.
+                </div>
+
+                <div class="small text-muted mt-2" *ngIf="importPreviewRows.length">
+                    Uses <b>school/exam/import</b> API (bulkUploadSchoolExams) — existing records are updated, new ones
+                    are created.
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete modal -->
+    <delete [title]="'Delete School Exam'" [message]="deleteMessage" [(visible)]="deleteModalVisible"
+        (closed)="onDeleteModalClosed($event)">
+    </delete>
+
+</div>
