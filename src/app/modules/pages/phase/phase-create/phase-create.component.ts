@@ -14,7 +14,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 export class PhaseCreateComponent implements OnInit {
 
   tenantId: string = '';
-  loading = false;
+  loading      = false;
   topicsLoading = false;
 
   // Edit mode
@@ -24,18 +24,30 @@ export class PhaseCreateComponent implements OnInit {
 
   phaseForm!: FormGroup;
 
-  classes = [
-    { label: '6th', value: 6 },
-    { label: '7th', value: 7 },
-    { label: '8th', value: 8 },
-    { label: '9th', value: 9 },
-    { label: '10th', value: 10 },
-    { label: '11th', value: 11 },
-    { label: '12th', value: 12 },
+  // ── All classes (full list) ──
+  allClasses = [
+    { label: '6th',       value: 6  },
+    { label: '7th',       value: 7  },
+    { label: '8th',       value: 8  },
+    { label: '9th',       value: 9  },
+    { label: '10th',      value: 10 },
+    { label: '11th',      value: 11 },
+    { label: '12th',      value: 12 },
     { label: '12th Pass', value: 13 }
   ];
 
+  // Filtered based on selected program
+  classes: any[] = [...this.allClasses];
+
+  // All subjects from API
+  allSubjects: any[] = [];
+  // Filtered based on selected program
   subjects: any[] = [];
+
+  // Programs
+  programs: any[] = [];
+  selectedProgram: any = null;
+
   availableTopics: any[] = [];
 
   constructor(
@@ -50,8 +62,8 @@ export class PhaseCreateComponent implements OnInit {
     const state: any = history.state;
     if (state?.phase) {
       this.isEditMode = true;
-      this.editData = state.phase;
-      this.phaseId = state.phase.phaseId;
+      this.editData   = state.phase;
+      this.phaseId    = state.phase.phaseId;
       this.breadcrump.set([{ label: 'Phase Plan', link: '/app/phase' }, { label: 'Edit' }]);
     } else {
       this.breadcrump.set([{ label: 'Phase Plan', link: '/app/phase' }, { label: 'Create' }]);
@@ -60,19 +72,30 @@ export class PhaseCreateComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeForm();
+    this.loadPrograms();
     this.loadSubjects();
   }
 
+  // ====================================================
+  // FORM INIT
+  // ====================================================
+
   private initializeForm(): void {
     this.phaseForm = this.fb.group({
+      programId: ['', Validators.required],
       phaseName: ['', Validators.required],
-      classNo: [null, Validators.required],
+      classNo:   [null, Validators.required],
       subjectId: ['', Validators.required],
       sortOrder: [1, [Validators.required, Validators.min(1)]],
-      topics: this.fb.array([])
+      topics:    this.fb.array([])
     });
 
-    // When class or subject changes, reload topics (only in create mode)
+    // Program change → filter class & subject
+    this.phaseForm.get('programId')?.valueChanges.subscribe(val => {
+      this.onProgramChange(val);
+    });
+
+    // Class / Subject change → load topics (create mode only)
     this.phaseForm.get('classNo')?.valueChanges.subscribe(() => {
       if (!this.isEditMode) this.onClassOrSubjectChange();
     });
@@ -86,49 +109,123 @@ export class PhaseCreateComponent implements OnInit {
     return this.phaseForm.get('topics') as FormArray;
   }
 
+  // ====================================================
+  // PROGRAM CHANGE
+  // ====================================================
+
+  onProgramChange(programId: string, resetFields = true): void {
+    this.selectedProgram = this.programs.find(p => p.programId === programId) || null;
+
+    if (resetFields) {
+      this.phaseForm.patchValue(
+        { classNo: null, subjectId: '' },
+        { emitEvent: false }
+      );
+      this.topicsArray.clear();
+      this.availableTopics = [];
+    }
+
+    if (!this.selectedProgram) {
+      this.classes  = [...this.allClasses];
+      this.subjects = [...this.allSubjects];
+      return;
+    }
+
+    // Filter classes between startingClass and endingClass
+    this.classes = this.allClasses.filter(
+      c => c.value >= this.selectedProgram.startingClass &&
+           c.value <= this.selectedProgram.endingClass
+    );
+
+    // Filter subjects by program's subjects array (list of _ids)
+    const programSubjectIds: string[] = this.selectedProgram.subjects || [];
+    this.subjects = this.allSubjects.filter(s =>
+      programSubjectIds.includes(s._id)
+    );
+  }
+
+  // ====================================================
+  // LOAD PROGRAMS
+  // ====================================================
+
+  private loadPrograms(): void {
+    this.commonApi.fetchData(
+      { entiId: this.tenantId },
+      'ims/program',
+      'list?list=full'
+    ).subscribe({
+      next: (res: any) => {
+        this.programs = (res?.data || []).filter((p: any) => p.status === 'Active');
+      },
+      error: () => this.alert.error('Error loading programs')
+    });
+  }
+
+  // ====================================================
+  // LOAD SUBJECTS
+  // ====================================================
+
   private loadSubjects(): void {
-    const body = { entiId: this.tenantId };
-    this.commonApi.fetchData(body, 'ims/subject', 'list?list=full')
-      .subscribe({
-        next: (res: any) => {
-          this.subjects = res?.data || [];
+    this.commonApi.fetchData(
+      { entiId: this.tenantId },
+      'ims/subject',
+      'list?list=full'
+    ).subscribe({
+      next: (res: any) => {
+        this.allSubjects = res?.data || [];
+        this.subjects    = [...this.allSubjects];
 
-          // After subjects load, populate form if edit mode
-          if (this.isEditMode && this.editData) {
-            this.populateEditForm();
-          }
-        },
-        error: () => this.alert.error('Error loading subjects')
-      });
+        if (this.isEditMode && this.editData) {
+          this.populateEditForm();
+        }
+      },
+      error: () => this.alert.error('Error loading subjects')
+    });
   }
 
-  // ─── Edit Mode ────────────────────────────────────────────────────────────
-  private populateEditForm(): void {
-    const d = this.editData;
+  // ====================================================
+  // EDIT MODE PATCH
+  // ====================================================
 
-    // Patch header fields first (without triggering valueChanges topic reload)
-    this.phaseForm.patchValue({
-      phaseName: d.phaseName,
-      classNo: d.classNo,
-      subjectId: d.subjectId,
-      sortOrder: d.sortOrder
-    }, { emitEvent: false });
+private populateEditForm(): void {
+  const d = this.editData;
 
-    // Disable header fields — these shouldn't change in edit
-    this.phaseForm.get('classNo')?.disable();
-    this.phaseForm.get('subjectId')?.disable();
+  // ✅ Extract plain string IDs from nested objects
+  const programId  = typeof d.programId  === 'object' ? d.programId?.programId  : d.programId;
+  const subjectId  = typeof d.subjectId  === 'object' ? d.subjectId?._id        : d.subjectId;
+  const classNo    = d.classNo;
 
-    // Now load available topics for the class+subject, then merge with existing
-    this.loadAvailableTopicsForEdit(d.classNo, d.subjectId, d.topics || []);
+  // Step 1 — apply program filter first (populates classes & subjects arrays)
+  if (programId) {
+    this.onProgramChange(programId, false);
   }
+
+  // Step 2 — patch all fields AFTER subjects array is populated
+  this.phaseForm.patchValue({
+    programId: programId || '',
+    phaseName: d.phaseName,
+    classNo:   classNo,
+    subjectId: subjectId,   // ✅ now a plain _id string
+    sortOrder: d.sortOrder
+  }, { emitEvent: false });
+
+  // Step 3 — lock fields in edit mode
+  this.phaseForm.get('classNo')?.disable({ emitEvent: false });
+  this.phaseForm.get('subjectId')?.disable({ emitEvent: false });
+  this.phaseForm.get('programId')?.disable({ emitEvent: false });
+
+  // Step 4 — load topics using resolved plain IDs
+  this.loadAvailableTopicsForEdit(classNo, subjectId, d.topics || []);
+}
 
   private loadAvailableTopicsForEdit(classNo: number, subjectId: string, existingTopics: any[]): void {
     this.topicsLoading = true;
 
     const body = {
       tenantId: this.tenantId,
-      classNo: Number(classNo),
-      subjectId: subjectId
+      classNo:  Number(classNo),
+      programId : this.phaseForm.getRawValue().programId,
+      subjectId
     };
 
     this.commonApi.fetchData(body, 'institue/phase', 'available-topics')
@@ -145,36 +242,23 @@ export class PhaseCreateComponent implements OnInit {
       });
   }
 
-  /**
-   * Merge available topics with existing phase topics:
-   * - If a topic exists in the phase → pre-select it and fill estHours
-   * - If a topic is only in available → show it unselected
-   * - If a topic is only in existing (removed from master) → still show it selected
-   */
   private buildTopicsFormArrayForEdit(available: any[], existing: any[]): void {
-    console.log("Avaabe ", existing);
-
     this.topicsArray.clear();
 
-    // Build a quick lookup map from existing topics
     const existingMap = new Map<string, any>();
     existing.forEach(t => existingMap.set(t.topicId, t));
 
-    // Build a set of topicIds already covered from available list
     const availableIds = new Set(available.map(t => t.topicId));
 
-    // 1. Loop through available topics
     available.forEach((topic: any) => {
       const existingEntry = existingMap.get(topic.topicId);
-      const isSelected = !!existingEntry;
-      const estHours = existingEntry?.estHours ?? null;
-
+      const isSelected    = !!existingEntry;
+      const estHours      = existingEntry?.estHours ?? null;
       this.topicsArray.push(
         this.buildTopicGroup(topic.topicId, topic.topicName, topic.sortOrder, estHours, isSelected)
       );
     });
 
-    // 2. Append any existing topics NOT in the available list (edge case)
     existing.forEach((t: any) => {
       if (!availableIds.has(t.topicId)) {
         this.topicsArray.push(
@@ -182,13 +266,14 @@ export class PhaseCreateComponent implements OnInit {
         );
       }
     });
-
   }
 
-  // ─── Create Mode ──────────────────────────────────────────────────────────
+  // ====================================================
+  // CREATE MODE — TOPIC LOAD
+  // ====================================================
 
   private onClassOrSubjectChange(): void {
-    const classNo = this.phaseForm.get('classNo')?.value;
+    const classNo   = this.phaseForm.get('classNo')?.value;
     const subjectId = this.phaseForm.get('subjectId')?.value;
 
     this.topicsArray.clear();
@@ -201,11 +286,7 @@ export class PhaseCreateComponent implements OnInit {
 
   private loadAvailableTopics(classNo: number, subjectId: string): void {
     this.topicsLoading = true;
-    const body = {
-      tenantId: this.tenantId,
-      classNo: Number(classNo),
-      subjectId: subjectId
-    };
+    const body = { tenantId: this.tenantId, classNo: Number(classNo), subjectId,  programId: this.phaseForm.get('programId')?.value, };
 
     this.commonApi.fetchData(body, 'institue/phase', 'available-topics')
       .subscribe({
@@ -230,7 +311,9 @@ export class PhaseCreateComponent implements OnInit {
     });
   }
 
-  // ─── Shared ───────────────────────────────────────────────────────────────
+  // ====================================================
+  // SHARED TOPIC GROUP BUILDER
+  // ====================================================
 
   private buildTopicGroup(
     topicId: string,
@@ -240,18 +323,15 @@ export class PhaseCreateComponent implements OnInit {
     selected: boolean
   ): FormGroup {
     const group = this.fb.group({
-      topicId: [topicId],
+      topicId:   [topicId],
       topicName: [topicName],
       sortOrder: [sortOrder],
-      estHours: [estHours, selected ? [Validators.min(1)] : []],
-      selected: [selected]
+      estHours:  [estHours, selected ? [Validators.min(1)] : []],
+      selected:  [selected]
     });
 
-    if (!selected) {
-      group.get('estHours')?.disable();
-    }
+    if (!selected) group.get('estHours')?.disable();
 
-    // Toggle estHours on checkbox change
     group.get('selected')?.valueChanges.subscribe((isSelected: any) => {
       const ctrl = group.get('estHours');
       if (isSelected) {
@@ -282,7 +362,9 @@ export class PhaseCreateComponent implements OnInit {
     return this.topicsArray.at(index).get(controlName);
   }
 
-  // ─── Submit ───────────────────────────────────────────────────────────────
+  // ====================================================
+  // SUBMIT
+  // ====================================================
 
   submitPhase(): void {
     if (this.phaseForm.invalid) {
@@ -296,9 +378,9 @@ export class PhaseCreateComponent implements OnInit {
     const selectedTopics = formValue.topics
       .filter((t: any) => t.selected)
       .map((t: any) => ({
-        topicId: t.topicId,
+        topicId:   t.topicId,
         topicName: t.topicName,
-        estHours: Number(t.estHours),
+        estHours:  Number(t.estHours),
         sortOrder: t.sortOrder
       }));
 
@@ -316,12 +398,13 @@ export class PhaseCreateComponent implements OnInit {
 
   private createPhase(formValue: any, selectedTopics: any[]): void {
     const payload = {
-      tenantId: this.tenantId,
+      tenantId:  this.tenantId,
+      programId: formValue.programId,         // ✅ included
       phaseName: formValue.phaseName,
-      classNo: Number(formValue.classNo),
+      classNo:   Number(formValue.classNo),
       subjectId: formValue.subjectId,
       sortOrder: formValue.sortOrder,
-      topics: selectedTopics
+      topics:    selectedTopics
     };
 
     this.loading = true;
@@ -334,20 +417,18 @@ export class PhaseCreateComponent implements OnInit {
             this.router.navigate(['/app/phase']);
           }
         },
-        error: (e) => {
-          this.loading = false;
-          this.alert.error(e.error.message)
-        }
+        error: (e) => { this.loading = false; this.alert.error(e.error.message); }
       });
   }
 
   private updatePhase(formValue: any, selectedTopics: any[]): void {
     const payload = {
-      tenantId: this.tenantId,
-      phaseId: this.phaseId,
+      tenantId:  this.tenantId,
+      phaseId:   this.phaseId,
+      programId: formValue.programId,         // ✅ included
       phaseName: formValue.phaseName,
       sortOrder: formValue.sortOrder,
-      topics: selectedTopics
+      topics:    selectedTopics
     };
 
     this.loading = true;
@@ -360,10 +441,7 @@ export class PhaseCreateComponent implements OnInit {
             this.router.navigate(['/app/phase']);
           }
         },
-        error: (e) => {
-          this.loading = false;
-          this.alert.error(e.error.message)
-        }
+        error: (e) => { this.loading = false; this.alert.error(e.error.message); }
       });
   }
 

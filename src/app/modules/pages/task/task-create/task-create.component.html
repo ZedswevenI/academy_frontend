@@ -27,7 +27,7 @@
 
                 <div class="col-md-6">
                     <formfield label="Due Date" type="date" formControlName="dueDate"
-                        [control]="taskForm.get('dueDate')" [required]="true">
+                        [control]="taskForm.get('dueDate')"  [min]="minDateTime" [required]="true">
                     </formfield>
                 </div>
 

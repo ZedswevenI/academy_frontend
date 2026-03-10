@@ -105,7 +105,7 @@
             </td>
 
             <td class="px-4 py-3 text-center" *ngIf="showaction">
-              <div class="d-flex align-items-center justify-content-center gap-3">
+              <div class="d-flex align-items-center justify-content-end gap-3">
                 <ng-container *ngFor="let action of actions">
                   <!-- ICON BUTTON -->
                   <!-- <button *ngIf="action.type === 'icon'" type="button"
@@ -113,14 +113,14 @@
                   (click)="action.callback(row)" [style.--icon-hover-color]="action.hoverColor || null">
                   <i [class]="action.icon" [style.color]="action.color || ''" class="icon-20"></i>
                 </button> -->
-                  <button *ngIf="action.type === 'icon'" type="button"
+                  <button *ngIf="action.type === 'icon' && (!action.hidden || !action.hidden(row))" type="button"
                     class="btn btn-sm btn-outline-secondary border-0 p-1" [title]="action.tooltip"
                     (click)="action.callback(row)" [style.--hover-color]="action.hoverColor || null">
                     <i [class]="action.icon" [style.color]="action.color || ''" class="icon-20"></i>
                   </button>
 
                   <!-- SIMPLE BUTTON -->
-                  <button *ngIf="action.type === 'simple'" type="button" class="btn btn-sm me-2"
+                  <button *ngIf="action.type === 'simple' && (!action.hidden || !action.hidden(row))" type="button" class="btn btn-sm me-2"
                     style="border-radius: 25px; font-weight: bold;"
                     [ngClass]="action.color ? 'btn-' + action.color : 'btn-secondary'" (click)="action.callback(row)">
                     <i *ngIf="action.icon" [class]="action.icon" class="me-1 icon-14"></i>
@@ -131,9 +131,9 @@
                   <button *ngIf="action.type === 'change' &&
                         (
                           (row.status === 'assigned' && action.value === 'assign') ||
-                          (row.status === 'unassigned' && action.value === 'unassign')
+                          (row.status === 'unassigned' && action.value === 'unassign') 
                         )
-                      " type="button" class="btn btn-sm me-2" style="border-radius: 25px; font-weight: bold;"
+                      && (!action.hidden || !action.hidden(row))" type="button" class="btn btn-sm me-2" style="border-radius: 25px; font-weight: bold;"
                     [ngClass]="action.value === 'assign' ? 'btn-success' : 'btn-danger'" (click)="action.callback(row)">
                     {{ action.text }}
                   </button>
@@ -141,7 +141,7 @@
 
 
                   <!-- DROPDOWN BUTTON -->
-                  <div *ngIf="action.type === 'dropdown'" class="btn-group action-btn-group">
+                  <div *ngIf="action.type === 'dropdown' && (!action.hidden || !action.hidden(row))" class="btn-group action-btn-group">
 
                     <button type="button" class="btn btn-sm action-icon-btn" data-bs-toggle="dropdown"
                       aria-expanded="false" #dropdownBtn>

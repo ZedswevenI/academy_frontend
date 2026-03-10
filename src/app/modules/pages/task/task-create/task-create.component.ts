@@ -15,43 +15,51 @@ export class TaskCreateComponent implements OnInit {
 
   taskForm!: FormGroup;
 
-  faculty_options:     any[] = [];
+  faculty_options: any[] = [];
   uploadedAttachments: any[] = [];
   isUploading = false;
 
   tenantId: string | null = localStorage.getItem('tenantId');
-  userId:   string | null = localStorage.getItem('userid');
+  userId: string | null = localStorage.getItem('userid');
 
   isEditMode = false;
-  taskId     = '';
-  editData:  any = null;
+  taskId = '';
+  editData: any = null;
+
+  minDateTime = this.getTodayDateTimeLocal();
+
 
   constructor(
     private breadcrump: BredcrumpService,
-    private fb:         FormBuilder,
-    private router:     Router,
-    private commonApi:  CommonapiService,
-    private alert:      AlertService,
-    private cdr:        ChangeDetectorRef
+    private fb: FormBuilder,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService,
+    private cdr: ChangeDetectorRef
   ) {
     this.taskForm = this.fb.group({
-      taskName:    ['', Validators.required],
-      staffId:     ['', Validators.required],
-      dueDate:     ['', Validators.required],
-      file:        [null],
+      taskName: ['', Validators.required],
+      staffId: ['', Validators.required],
+      dueDate: ['', Validators.required],
+      file: [null],
       description: ['']
     });
 
     const navigation = this.router.getCurrentNavigation();
-    const stateData  = navigation?.extras?.state as any;
+    const stateData = navigation?.extras?.state as any;
 
     if (stateData?.taskData) {
       this.isEditMode = true;
-      this.editData   = stateData.taskData;
+      this.editData = stateData.taskData;
       this.breadcrump.set([{ label: 'Task', link: '/app/task' }, { label: 'Edit' }]);
     } else {
       this.breadcrump.set([{ label: 'Task', link: '/app/task' }, { label: 'Create' }]);
     }
+  }
+  private getTodayDateTimeLocal(): string {
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   }
 
   ngOnInit(): void {
@@ -87,10 +95,10 @@ export class TaskCreateComponent implements OnInit {
 
     // Patch all non-dependent fields
     this.taskForm.patchValue({
-      taskName:    data.taskName,
-      dueDate:     new Date(data.dueDate).toISOString().split('T')[0],
+      taskName: data.taskName,
+      dueDate: new Date(data.dueDate).toISOString().split('T')[0],
       description: data.description,
-      file:        this.uploadedAttachments
+      file: this.uploadedAttachments
     });
 
     // Patch staffId separately after detectChanges so selectbox
@@ -134,7 +142,7 @@ export class TaskCreateComponent implements OnInit {
     this.isUploading = true;
 
     const formData = new FormData();
-    formData.append('file',     files[0]);
+    formData.append('file', files[0]);
     formData.append('tenantId', this.tenantId!);
 
     this.commonApi.uploadImage(formData, 'teacher/task', 'upload').subscribe({
@@ -171,12 +179,12 @@ export class TaskCreateComponent implements OnInit {
   private addTask(): void {
     const f = this.taskForm.value;
     const payload = {
-      tenantId:      this.tenantId,
-      taskName:      f.taskName,
-      description:   f.description,
-      staffId:       f.staffId,
-      dueDate:       new Date(f.dueDate).getTime(),
-      attachment:    this.uploadedAttachments  
+      tenantId: this.tenantId,
+      taskName: f.taskName,
+      description: f.description,
+      staffId: f.staffId,
+      dueDate: new Date(f.dueDate).getTime(),
+      attachment: this.uploadedAttachments
     };
 
     this.commonApi.fetchData(payload, 'teacher/task', 'create').subscribe({
@@ -193,11 +201,11 @@ export class TaskCreateComponent implements OnInit {
   private updateTask(): void {
     const f = this.taskForm.value;
     const payload = {
-      tenantId:      this.tenantId,
-      taskId:        this.taskId,
-      userId:        this.userId,
-      dueDate:       new Date(f.dueDate).getTime(),
-      description:   f.description,
+      tenantId: this.tenantId,
+      taskId: this.taskId,
+      userId: this.userId,
+      dueDate: new Date(f.dueDate).getTime(),
+      description: f.description,
       attachmentUrl: this.uploadedAttachments   // edit endpoint uses "attachmentUrl"
     };
 

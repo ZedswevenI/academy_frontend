@@ -22,42 +22,42 @@ export class SupportComponent implements OnInit {
   totalRecords = 0;
 
   // Last used pagination — kept in memory so modal actions reload same page
-  private lastPage     = 1;
-  private lastLimit    = 10;
+  private lastPage = 1;
+  private lastLimit = 10;
   private lastSearch?: string;
 
   area_options = [
-    { label: 'Fees',             value: 'FEES'            },
-    { label: 'Timetable',        value: 'TIMETABLE'       },
-    { label: 'PTM',              value: 'PTM'             },
-    { label: 'Books and study',  value: 'BOOKS_AND_STUDY' },
-    { label: 'Examination',      value: 'EXAMINATION'     },
-    { label: 'Academics',        value: 'ACADEMICS'       },
-    { label: 'Tab',              value: 'TAB'             },
-    { label: 'General',          value: 'GENERAL'         },
+    { label: 'Fees', value: 'FEES' },
+    { label: 'Timetable', value: 'TIMETABLE' },
+    { label: 'PTM', value: 'PTM' },
+    { label: 'Books and study', value: 'BOOKS_AND_STUDY' },
+    { label: 'Examination', value: 'EXAMINATION' },
+    { label: 'Academics', value: 'ACADEMICS' },
+    { label: 'Tab', value: 'TAB' },
+    { label: 'General', value: 'GENERAL' },
   ];
 
   status_options = [
-    { label: 'Open',        value: 'OPEN'        },
+    { label: 'Open', value: 'OPEN' },
     { label: 'In Progress', value: 'IN_PROGRESS' },
-    { label: 'Resolved',    value: 'RESOLVED'    },
-    { label: 'Closed',      value: 'CLOSED'      }
+    { label: 'Resolved', value: 'RESOLVED' },
+    { label: 'Closed', value: 'CLOSED' }
   ];
 
   priority_options = [
-    { label: 'Low',    value: 'LOW'    },
+    { label: 'Low', value: 'LOW' },
     { label: 'Medium', value: 'MEDIUM' },
-    { label: 'High',   value: 'HIGH'   },
+    { label: 'High', value: 'HIGH' },
     { label: 'Urgent', value: 'URGENT' }
   ];
 
   columnsArray = [
-    { key: 'studentNo',             label: 'Student No', sortable: false },
-    { key: 'area',                  label: 'Area',       sortable: false },
-    { key: 'issueSubject',          label: 'Issue',      sortable: false },
-    { key: 'priority',              label: 'Priority',   sortable: false },
-    { key: 'status',                label: 'Status',     sortable: false },
-    { key: 'requestedAtFormatted',  label: 'Raised On',  sortable: false }
+    { key: 'studentNo', label: 'Student No', sortable: false },
+    { key: 'area', label: 'Area', sortable: false },
+    { key: 'issueSubject', label: 'Issue', sortable: false },
+    { key: 'priority', label: 'Priority', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
+    { key: 'requestedAtFormatted', label: 'Raised On', sortable: false }
   ];
 
   actions = [
@@ -80,7 +80,8 @@ export class SupportComponent implements OnInit {
       callback: (row: any) => {
         if (row.status === 'CLOSED') return;
         this.openAssignModal(row);
-      }
+      },
+      hidden: (row: any) => row.status.toUpperCase() === 'RESOLVED' || row.status.toUpperCase() === 'CLOSED'
     },
     {
       type: 'icon',
@@ -92,7 +93,8 @@ export class SupportComponent implements OnInit {
       callback: (row: any) => {
         if (row.status === 'CLOSED') return;
         this.openPriorityModal(row);
-      }
+      },
+      hidden: (row: any) => row.status.toUpperCase() === 'RESOLVED' || row.status.toUpperCase() === 'CLOSED'
     },
     {
       type: 'icon',
@@ -104,7 +106,9 @@ export class SupportComponent implements OnInit {
       callback: (row: any) => {
         if (row.status === 'CLOSED') return;
         this.openStatusModal(row);
-      }
+      },
+      hidden: (row: any) => row.status.toUpperCase() === 'CLOSED'
+
     }
   ];
 
@@ -112,28 +116,28 @@ export class SupportComponent implements OnInit {
   selectedTicket: any = null;
 
   // ── Assign modal ───────────────────────────────────────
-  assignTicket:  any = null;
-  assignForm!:   FormGroup;
-  staffList:     any[] = [];
-  staffLoading   = false;
-  staffSearch    = '';
-  assignLoading  = false;
+  assignTicket: any = null;
+  assignForm!: FormGroup;
+  staffList: any[] = [];
+  staffLoading = false;
+  staffSearch = '';
+  assignLoading = false;
 
   // ── Priority modal ─────────────────────────────────────
-  priorityTicket:  any = null;
-  priorityForm!:   FormGroup;
-  priorityLoading  = false;
+  priorityTicket: any = null;
+  priorityForm!: FormGroup;
+  priorityLoading = false;
 
   // ── Status modal ───────────────────────────────────────
-  statusTicket:  any = null;
-  statusForm!:   FormGroup;
-  statusLoading  = false;
+  statusTicket: any = null;
+  statusForm!: FormGroup;
+  statusLoading = false;
 
   constructor(
     private breadcrump: BredcrumpService,
-    private fb:         FormBuilder,
-    private commonApi:  CommonapiService,
-    private alert:      AlertService
+    private fb: FormBuilder,
+    private commonApi: CommonapiService,
+    private alert: AlertService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Support Tickets' }]);
@@ -141,7 +145,7 @@ export class SupportComponent implements OnInit {
 
   ngOnInit(): void {
     this.filterForm = this.fb.group({
-      area:   [''],
+      area: [''],
       status: ['']
     });
 
@@ -154,7 +158,7 @@ export class SupportComponent implements OnInit {
     });
 
     this.statusForm = this.fb.group({
-      status:   ['', Validators.required],
+      status: ['', Validators.required],
       feedback: ['']
     });
   }
@@ -171,15 +175,15 @@ export class SupportComponent implements OnInit {
 
   fetchList(page: number, limit: number, search?: string): void {
     // Persist so modal-triggered reloads use the same page/filters
-    this.lastPage   = page;
-    this.lastLimit  = limit;
+    this.lastPage = page;
+    this.lastLimit = limit;
     this.lastSearch = search;
 
     const { area, status } = this.filterForm.value;
     this.loading = true;
 
     let query = `list?page=${page}&limit=${limit}`;
-    if (area)   query += `&area=${area}`;
+    if (area) query += `&area=${area}`;
     if (status) query += `&status=${status}`;
     if (search) query += `&search=${search}`;
 
@@ -223,8 +227,8 @@ export class SupportComponent implements OnInit {
 
   openAssignModal(row: any): void {
     this.assignTicket = row;
-    this.staffList    = [];
-    this.staffSearch  = '';
+    this.staffList = [];
+    this.staffSearch = '';
     this.assignForm.reset();
     this.openModal('ticketAssignModal');
   }
@@ -237,8 +241,8 @@ export class SupportComponent implements OnInit {
       { tenantId: this.tenantId }, 'ims/staff',
       `list?page=1&limit=10&search=${this.staffSearch.trim()}`
     ).subscribe({
-      next:  (res: any) => { this.staffList = res?.data || []; this.staffLoading = false; },
-      error: ()         => { this.staffLoading = false; this.alert.error('Error searching staff'); }
+      next: (res: any) => { this.staffList = res?.data || []; this.staffLoading = false; },
+      error: () => { this.staffLoading = false; this.alert.error('Error searching staff'); }
     });
   }
 
@@ -251,7 +255,7 @@ export class SupportComponent implements OnInit {
   }
 
   getSelectedStaffName(): string {
-    const id    = this.assignForm.get('assignedStaffId')?.value;
+    const id = this.assignForm.get('assignedStaffId')?.value;
     const staff = this.staffList.find(s => s.staffId === id);
     return staff ? staff.staffName : '';
   }
@@ -260,8 +264,8 @@ export class SupportComponent implements OnInit {
     if (this.assignForm.invalid) { this.alert.error('Please select a staff member'); return; }
 
     const payload = {
-      tenantId:        this.tenantId,
-      ticketId:        this.assignTicket.ticketId,
+      tenantId: this.tenantId,
+      ticketId: this.assignTicket.ticketId,
       assignedStaffId: this.assignForm.value.assignedStaffId
     };
 
@@ -328,7 +332,7 @@ export class SupportComponent implements OnInit {
     const payload = {
       tenantId: this.tenantId,
       ticketId: this.statusTicket.ticketId,
-      status:   this.statusForm.value.status,
+      status: this.statusForm.value.status,
       feedback: this.statusForm.value.feedback || ''
     };
 

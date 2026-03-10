@@ -60,12 +60,14 @@ export class CircularComponent implements OnInit {
       tooltip: 'Edit', color: '#6B7280', hoverColor: '#16A34A',
       callback: (row: any) => {
         this.router.navigate(['/app/circular/create'], { state: { circular: row } });
-      }
+      },
+       hidden : (row: any) => row.status.toUpperCase() === 'PUBLISHED'
     },
     {
       type: 'icon', icon: 'fa-solid fa-paper-plane',
       tooltip: 'Publish', color: '#6B7280', hoverColor: '#7C3AED',
-      callback: (row: any) => row.status === 'DRAFT' ? this.openPublishModal(row) : null
+      callback: (row: any) => row.status === 'DRAFT' ? this.openPublishModal(row) : null,
+      hidden : (row: any) => row.status.toUpperCase() === 'PUBLISHED'
     },
     {
       type: 'icon', icon: 'fa-regular fa-trash-can',

@@ -39,7 +39,8 @@ export class TaskComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#16A34A',
-      callback: (row: any) => this.editTask(row)
+      callback: (row: any) => this.editTask(row),
+      hidden: (row: any) => row.status.toUpperCase() === 'COMPLETED'
     }
   ];
 
