@@ -79,12 +79,12 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/ptm'
   },
   {
-    label: 'Knowledge Base',
+    label: 'Library',
     icon: 'fa-solid fa-book-open',
     route: '/app/knowledge'
   },
   {
-    label: 'Package',
+    label: 'Study Material',
     icon: 'fa-solid fa-box-open',
     route: '/app/package'
   },
