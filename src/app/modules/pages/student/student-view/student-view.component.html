@@ -1,236 +1,392 @@
-<div class="container-fluid p-4 bg-light min-vh-100" *ngIf="student">
+<div class="container-fluid p-4 bg-light min-vh-100">
 
-    <!-- Header -->
-    <div class="card shadow-sm mb-4 p-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="avatar">{{ getInitials(student.basic?.name) }}</div>
-                <div>
-                    <h5 class="mb-1 fw-semibold">{{ student.basic?.name }}</h5>
-                    <div class="text-muted small">
-                        Admission No: <span class="fw-medium">{{ student.basic?.admissionNo }}</span>
-                    </div>
-                    <div class="text-muted small">
-                        Program: <span class="fw-medium">{{ student.program?.programName }}</span>
-                        &nbsp;&bull;&nbsp;
-                        Center: <span class="fw-medium">{{ student.program?.centerName }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="d-flex align-items-center gap-3">
-                <!-- <span class="badge bg-success-subtle text-success px-3 py-2">{{ student.basic?.status }}</span> -->
-                <span class="badge px-3 py-1" [ngClass]="{
-                    'bg-success-subtle text-success': student.basic?.status === 'ACTIVE',
-                    'bg-secondary-subtle text-secondary': student.basic?.status === 'INACTIVE',
-                    'bg-danger-subtle text-danger': student.basic?.status === 'DROPOUT'
-                }">
-                    {{ student.basic?.status }}
-                </span>
-                <span class="text-muted">Attendance: <strong>94%</strong></span>
-                <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
-                    <i class="fa-solid fa-arrow-left"></i> Back to Students
-                </button>
-                <button class="btn btn-outline-primary btn-sm">
-                    <i class="fa-solid fa-pen"></i> Edit Profile
-                </button>
-            </div>
-        </div>
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Loading student details...</p>
     </div>
 
-    <div class="row g-4">
+    <ng-container *ngIf="!loading && student">
 
-        <!-- Left Column -->
-        <div class="col-lg-4">
+        <!-- ── Header ───────────────────────────────────────────────────────── -->
+        <div class="card shadow-sm mb-4 p-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
 
-            <!-- Profile -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h6 class="fw-semibold mb-3">Profile</h6>
-
-                    <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.mobile }}</p>
-                    <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email || '--' }}</p>
-
-                    <hr>
-
-                    <p class="mb-1"><strong>Parent Name</strong></p>
-                    <p>{{ student.basic?.parentName }}</p>
-
-                    <p class="mb-1"><strong>Parent Mobile</strong></p>
-                    <p>{{ student.basic?.parentMobile }}</p>
-
-                    <p class="mb-1"><strong>Address</strong></p>
-                    <p class="mb-0">
-                        12, ABC Apartments<br>
-                        Near XYZ Signal<br>
-                        Coimbatore - 641004<br>
-                        Tamil Nadu
-                    </p>
-                </div>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h6 class="fw-semibold mb-3">Quick Stats</h6>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Attendance</span>
-                        <span class="fw-semibold">
-                            {{ student.assignments?.completed || 0 }}/{{ student.assignments?.total || 0 }}
-                        </span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Assignments Completed</span><strong>12/15</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Average Score</span>
-                        <span class="fw-semibold">{{ student.exams?.averageScore || 0 }}%</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Fees Paid</span>
-                        <span class="fw-semibold text-success">₹{{ student.fees?.paidAmount | number : '1.0-0' }}</span>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar">{{ getInitials(student.basic?.name) }}</div>
+                    <div>
+                        <h5 class="mb-1 fw-semibold">{{ student.basic?.name }}</h5>
+                        <div class="text-muted small">
+                            Admission No: <span class="fw-medium">{{ student.basic?.admissionNo }}</span>
+                        </div>
+                        <div class="text-muted small">
+                            Program: <span class="fw-medium">{{ student.program?.programName }}</span>
+                            &nbsp;&bull;&nbsp;
+                            Center: <span class="fw-medium">{{ student.program?.centerName }}</span>
+                        </div>
                     </div>
                 </div>
+
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <span class="badge px-3 py-1" [ngClass]="{
+              'bg-success-subtle text-success':   student.basic?.status === 'ACTIVE',
+              'bg-secondary-subtle text-secondary': student.basic?.status === 'INACTIVE',
+              'bg-danger-subtle text-danger':     student.basic?.status === 'DROPOUT'
+            }">
+                        {{ student.basic?.status }}
+                    </span>
+
+                    <!-- Attendance % from report summary -->
+                    <span class="text-muted" *ngIf="attendanceSummary">
+                        Attendance: <strong>{{ attendanceSummary.attendancePercentage }}%</strong>
+                    </span>
+
+                    <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
+                        <i class="fa-solid fa-arrow-left"></i> Back to Students
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm">
+                        <i class="fa-solid fa-pen"></i> Edit Profile
+                    </button>
+                </div>
+
             </div>
         </div>
 
-        <!-- Right Column -->
-        <div class="col-lg-8">
+        <div class="row g-4">
 
-            <div class="card shadow-sm">
-                <div class="card-body">
+            <!-- ── Left Column ─────────────────────────────────────────────────── -->
+            <div class="col-lg-4">
 
-                    <!-- Tabs -->
-                    <ul class="nav nav-tabs mb-3" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab"
-                                data-bs-target="#program">Program</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab"
-                                data-bs-target="#attendance">Attendance</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab"
-                                data-bs-target="#assignments">Assignments</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#exam">Exam Results</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#perform">Performance</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ptm">PTM</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#feedback">Feedback</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pack">Package</button>
-                        </li>
-                    </ul>
+                <!-- Profile -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">Profile</h6>
 
-                    <!-- Tab Content -->
-                    <div class="tab-content">
+                        <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.mobile || '—' }}</p>
+                        <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email || '—' }}</p>
 
-                        <!-- Program -->
-                        <div class="tab-pane fade show active" id="program">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <div class="text-muted">Program Name</div>
-                                        <div class="fw-semibold">{{ student.program?.programName }}</div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="text-muted">Academic Year</div>
-                                        <div class="fw-medium">{{ student.program?.academicYear }}</div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="text-muted">Program Code</div>
-                                        <div class="fw-medium">{{ student.program?.programCode }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <div class="text-muted">Current Batch</div>
-                                        <div class="fw-medium">
-                                            <i class="fa-solid fa-layer-group me-1 text-muted"></i>
-                                            {{ student.program?.batchName }}
+                        <hr>
+
+                        <p class="mb-1"><strong>Parent Name</strong></p>
+                        <p>{{ student.basic?.parentName || '—' }}</p>
+
+                        <p class="mb-1"><strong>Parent Mobile</strong></p>
+                        <p>{{ student.basic?.parentMobile || '—' }}</p>
+
+                        <ng-container *ngIf="student.basic?.addressLine1">
+                            <p class="mb-1"><strong>Address</strong></p>
+                            <p class="mb-0">
+                                {{ student.basic?.addressLine1 }}<br *ngIf="student.basic?.city">
+                                {{ student.basic?.city }}<span *ngIf="student.basic?.pincode"> - {{
+                                    student.basic?.pincode }}</span>
+                            </p>
+                        </ng-container>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">Quick Stats</h6>
+
+                        <!-- Attendance from report API -->
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Attendance</span>
+                            <span class="fw-semibold" *ngIf="attendanceSummary">
+                                {{ attendanceSummary.present }}/{{ attendanceSummary.totalPeriods }}
+                                <span class="text-muted small ms-1">({{ attendanceSummary.attendancePercentage
+                                    }}%)</span>
+                            </span>
+                            <span class="fw-semibold text-muted" *ngIf="!attendanceSummary">—</span>
+                        </div>
+
+                        <!-- Assignments from academic/summary -->
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Assignments Completed</span>
+                            <strong>
+                                {{ student.assignments?.completed || 0 }}/{{ student.assignments?.total || 0 }}
+                            </strong>
+                        </div>
+
+                        <!-- Exams from academic/summary -->
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Average Score</span>
+                            <span class="fw-semibold">{{ student.exams?.averageScore || 0 }}%</span>
+                        </div>
+
+                        <!-- Fees from finance/summary -->
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Fees Paid</span>
+                            <span class="fw-semibold text-success">
+                                ₹{{ (student.fees?.paidAmount || 0) | number:'1.0-0' }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Outstanding</span>
+                            <span class="fw-semibold text-danger">
+                                ₹{{ (student.fees?.outstandingAmount || 0) | number:'1.0-0' }}
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Right Column ────────────────────────────────────────────────── -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs mb-3" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#program">
+                                    Program
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance">
+                                    Attendance
+                                    <span class="badge bg-primary ms-1" *ngIf="attendanceSummary">
+                                        {{ attendanceSummary.attendancePercentage }}%
+                                    </span>
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#assignments">
+                                    Assignments
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#exam">
+                                    Exam Results
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#perform">
+                                    Performance
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ptm">
+                                    PTM
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#feedback">
+                                    Remarks
+                                    <span class="badge bg-secondary ms-1" *ngIf="dataArray4.length">
+                                        {{ dataArray4.length }}
+                                    </span>
+                                </button>
+                            </li>
+                            <!-- <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pack">
+                                    Payments
+                                    <span class="badge bg-secondary ms-1" *ngIf="dataArray5.length">
+                                        {{ dataArray5.length }}
+                                    </span>
+                                </button>
+                            </li> -->
+                        </ul>
+
+                        <div class="tab-content">
+
+                            <!-- Program -->
+                            <div class="tab-pane fade show active" id="program">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Program Name</div>
+                                            <div class="fw-semibold">{{ student.program?.programName || '—' }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Academic Year</div>
+                                            <div class="fw-medium">{{ student.program?.academicYear || '—' }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Program Code</div>
+                                            <div class="fw-medium">{{ student.program?.programCode || '—' }}</div>
                                         </div>
                                     </div>
-                                    <div class="mb-3">
-                                        <div class="text-muted">Joining Date</div>
-                                        <div class="fw-medium">
-                                            {{ student.program?.joiningDate | date : 'mediumDate' }}
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Current Batch</div>
+                                            <div class="fw-medium">
+                                                <i class="fa-solid fa-layer-group me-1 text-muted"></i>
+                                                {{ student.program?.batchName || '—' }}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="text-muted">Mentor / Faculty</div>
-                                        <div class="fw-medium">{{ student.program?.mentorName }}</div>
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Joining Date</div>
+                                            <div class="fw-medium">{{ fmtEpoch(student.program?.joiningDate) }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="text-muted small">Mentor / Faculty</div>
+                                            <div class="fw-medium">{{ student.program?.mentorName || 'Not Assigned' }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Attendance -->
-                        <div class="tab-pane fade" id="attendance">
-                            <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray"
-                                [showaction]="false" [success]="'Present'" [danger]="'Absent'"
-                                [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-                                (requestData)="loadTableData($event)"></custom-table>
-                        </div>
+                            <!-- Attendance — wired to getattendance/report -->
+                            <div class="tab-pane fade" id="attendance">
 
-                        <!-- Assignments -->
-                        <div class="tab-pane fade" id="assignments">
-                            <custom-table [autoFitChars]="true" [columns]="columnsArray1" [data]="dataArray1"
-                                [showaction]="false" [success]="'Completed'" [danger]="'Overdue'" [warn]="'Pending'"
-                                [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-                                (requestData)="loadAssData($event)"></custom-table>
-                        </div>
+                                <!-- Summary bar -->
+                                <div *ngIf="attendanceSummary" class="row g-2 mb-3">
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded p-2 text-center">
+                                            <div class="fw-bold text-primary">{{ attendanceSummary.totalPeriods }}</div>
+                                            <div class="small text-muted">Total</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded p-2 text-center">
+                                            <div class="fw-bold text-success">{{ attendanceSummary.present }}</div>
+                                            <div class="small text-muted">Present</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded p-2 text-center">
+                                            <div class="fw-bold text-danger">{{ attendanceSummary.absent }}</div>
+                                            <div class="small text-muted">Absent</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="border rounded p-2 text-center">
+                                            <div class="fw-bold text-info">{{ attendanceSummary.attendancePercentage }}%
+                                            </div>
+                                            <div class="small text-muted">Percentage</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <!-- Exam Results -->
-                        <div class="tab-pane fade" id="exam">
-                            <custom-table [autoFitChars]="true" [columns]="columnsArray2" [data]="dataArray2"
-                                [showaction]="false" [success]="'Pass'"
-                                [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-                                (requestData)="loadExamData($event)"></custom-table>
-                        </div>
+                                <div *ngIf="!dataArray.length" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-calendar-check fa-2x mb-2 d-block"></i>
+                                    No attendance records found.
+                                </div>
+                                <custom-table *ngIf="dataArray.length" [autoFitChars]="true" [columns]="columnsArray"
+                                    [data]="dataArray" [showaction]="false" [success]="'PRESENT'" [danger]="'ABSENT'"
+                                    [warn]="'LATE'" [searchPlaceholder]="'Search attendance...'">
+                                </custom-table>
+                            </div>
 
-                        <!-- Performance -->
-                        <div class="tab-pane fade" id="perform">
-                            <custom-table [autoFitChars]="true" [columns]="columnsArray6" [data]="dataArray6"
-                                [showaction]="false"
-                                [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
-                        </div>
+                            <!-- Assignments — no API yet -->
+                            <div class="tab-pane fade" id="assignments">
+                                <div *ngIf="!dataArray1.length" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-file-pen fa-2x mb-2 d-block"></i>
+                                    Assignment data will be available soon.
+                                </div>
+                                <custom-table *ngIf="dataArray1.length" [autoFitChars]="true" [columns]="columnsArray1"
+                                    [data]="dataArray1" [showaction]="false" [success]="'Completed'"
+                                    [danger]="'Overdue'" [warn]="'Pending'"
+                                    [searchPlaceholder]="'Search assignments...'">
+                                </custom-table>
+                            </div>
 
-                        <!-- PTM -->
-                        <div class="tab-pane fade" id="ptm">
-                            <custom-table [autoFitChars]="true" [columns]="columnsArray3" [data]="dataArray3"
-                                [showaction]="false"
-                                [searchPlaceholder]="'Search StudentName,Batch,...'"></custom-table>
-                        </div>
+                            <!-- Exam Results — no API yet -->
+                            <div class="tab-pane fade" id="exam">
+                                <div *ngIf="!dataArray2.length" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-graduation-cap fa-2x mb-2 d-block"></i>
+                                    Exam result data will be available soon.
+                                </div>
+                                <custom-table *ngIf="dataArray2.length" [autoFitChars]="true" [columns]="columnsArray2"
+                                    [data]="dataArray2" [showaction]="false" [success]="'Pass'" [danger]="'Fail'"
+                                    [searchPlaceholder]="'Search exam results...'">
+                                </custom-table>
+                            </div>
 
-                        <!-- Feedback -->
-                        <div class="tab-pane fade" id="feedback">
-                            <custom-table [autoFitChars]="true" [columns]="columnsArray4" [data]="dataArray4"
-                                [showaction]="false" [searchPlaceholder]="'Search StudentName,Batch,...'"
-                                [totalRecords]="totalRecords" (requestData)="loadExamData($event)"></custom-table>
-                        </div>
+                            <!-- Performance — no API yet -->
+                            <div class="tab-pane fade" id="perform">
+                                <div *ngIf="!dataArray6.length" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-chart-line fa-2x mb-2 d-block"></i>
+                                    Performance data will be available soon.
+                                </div>
+                                <custom-table *ngIf="dataArray6.length" [autoFitChars]="true" [columns]="columnsArray6"
+                                    [data]="dataArray6" [showaction]="false"
+                                    [searchPlaceholder]="'Search performance...'">
+                                </custom-table>
+                            </div>
 
-                        <!-- Package -->
-                        <div class="tab-pane fade" id="pack">
-                            <custom-table [autoFitChars]="true" [columns]="columnsArray5" [data]="dataArray5"
-                                [showaction]="false" [searchPlaceholder]="'Search StudentName,Batch,...'"
-                                [totalRecords]="totalRecords" (requestData)="loadExamData($event)"></custom-table>
+                            <!-- PTM — no API yet -->
+                            <div class="tab-pane fade" id="ptm">
+                                <div *ngIf="!dataArray3.length" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-people-arrows fa-2x mb-2 d-block"></i>
+                                    PTM records will be available soon.
+                                </div>
+                                <custom-table *ngIf="dataArray3.length" [autoFitChars]="true" [columns]="columnsArray3"
+                                    [data]="dataArray3" [showaction]="false"
+                                    [searchPlaceholder]="'Search PTM records...'">
+                                </custom-table>
+                            </div>
+
+                            <!-- Remarks — wired to student/remark/list -->
+                            <div class="tab-pane fade" id="feedback">
+                                <div *ngIf="!dataArray4.length" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-comment fa-2x mb-2 d-block"></i>
+                                    No remarks recorded for this student.
+                                </div>
+                                <custom-table *ngIf="dataArray4.length" [autoFitChars]="true" [columns]="columnsArray4"
+                                    [data]="dataArray4" [showaction]="false" [searchPlaceholder]="'Search remarks...'">
+                                </custom-table>
+                            </div>
+
+                            <!-- Payments — wired to finance/summary receipts -->
+                            <div class="tab-pane fade" id="pack">
+                                <div *ngIf="student.fees" class="row g-2 mb-3">
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-2 text-center">
+                                            <div class="fw-bold text-primary">
+                                                ₹{{ (student.fees.totalAmount || 0) | number:'1.0-0' }}
+                                            </div>
+                                            <div class="small text-muted">Total Fee</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-2 text-center">
+                                            <div class="fw-bold text-success">
+                                                ₹{{ (student.fees.paidAmount || 0) | number:'1.0-0' }}
+                                            </div>
+                                            <div class="small text-muted">Paid</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-2 text-center">
+                                            <div class="fw-bold text-danger">
+                                                ₹{{ (student.fees.outstandingAmount || 0) | number:'1.0-0' }}
+                                            </div>
+                                            <div class="small text-muted">Outstanding</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div *ngIf="!dataArray5.length" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-receipt fa-2x mb-2 d-block"></i>
+                                    No payment records found.
+                                </div>
+                                <custom-table *ngIf="dataArray5.length" [autoFitChars]="true" [columns]="columnsArray5"
+                                    [data]="dataArray5" [showaction]="false" [success]="'CLEARED'" [warn]="'SUBMITTED'"
+                                    [danger]="'CANCELLED'" [searchPlaceholder]="'Search payments...'">
+                                </custom-table>
+                            </div>
+
                         </div>
                     </div>
                 </div>
             </div>
 
-
         </div>
+    </ng-container>
 
+    <!-- Student not found -->
+    <div *ngIf="!loading && !student" class="text-center py-5 text-muted">
+        <i class="fa-solid fa-user-slash fa-3x mb-3 d-block"></i>
+        <p>Student not found.</p>
+        <button class="btn btn-sm btn-outline-primary rounded-pill" routerLink="/app/student">
+            Back to Students
+        </button>
     </div>
+
 </div>

@@ -168,6 +168,11 @@ export const MENU_ITEMS: MenuItem[] = [
         route: '/app/org-master/sub-category'
       },
       {
+        label: 'School Exams',
+        icon: 'fa-solid fa-chalkboard-user',
+        route: '/app/org-master/school/exams'
+      },
+      {
         label: 'CGPA Config',
         icon: 'fa-solid fa-cogs',
         route: '/app/org-master/cgpa'

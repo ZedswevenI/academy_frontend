@@ -14,27 +14,19 @@
           <div class="d-flex align-items-center gap-3">
 
             <div class="view-switch">
-              <button class="view-btn active" type="button"
-              [ngClass]="{ active: activeTab === 'list' }"
-              (click)="setTab('list')">
+              <button class="view-btn active" type="button" [ngClass]="{ active: activeTab === 'list' }"
+                (click)="setTab('list')">
                 <i class="fa-solid fa-list"></i>
                 <span>List</span>
               </button>
 
-              <button class="view-btn" type="button"
-              [ngClass]="{ active: activeTab === 'grid' }"
-              (click)="setTab('grid')">
+              <button class="view-btn" type="button" [ngClass]="{ active: activeTab === 'grid' }"
+                (click)="setTab('grid')">
                 <i class="fa-solid fa-border-all"></i>
                 <span>Grid</span>
               </button>
             </div>
-
-            <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button" routerLink="/app/student/create">
-              <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
-              Add Student</button>
-
           </div>
-
         </div>
       </div>
     </div>
@@ -42,12 +34,12 @@
       <!-- <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
         [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
         (requestData)="loadTableData($event)"></custom-table> -->
-        <ng-container *ngIf="activeTab === 'list'">
-          <app-table-list></app-table-list>
-        </ng-container>
-        <ng-container *ngIf="activeTab === 'grid'">
-          <app-grid-list></app-grid-list>
-        </ng-container>
+      <ng-container *ngIf="activeTab === 'list'">
+        <app-table-list></app-table-list>
+      </ng-container>
+      <ng-container *ngIf="activeTab === 'grid'">
+        <app-grid-list></app-grid-list>
+      </ng-container>
     </div>
   </div>
 </div>
