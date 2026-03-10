@@ -5,54 +5,87 @@
   <!-- Header Fields -->
   <div class="row g-3 mb-4">
 
-    <div class="col-md-3">
+    <!-- Program -->
+    <div class="col-md-4">
+      <label class="form-label">Program <span class="text-danger">*</span></label>
+      <select
+        class="form-select"
+        formControlName="programId"
+        [class.is-invalid]="phaseForm.get('programId')?.invalid && phaseForm.get('programId')?.touched">
+        <option value="">Select Program</option>
+        <option *ngFor="let p of programs" [value]="p.programId">
+          {{ p.programName }}
+          <span *ngIf="p.target"> — {{ p.target }}</span>
+        </option>
+      </select>
+      <div class="invalid-feedback">Program is required</div>
+
+      <!-- Program info badge -->
+      <div *ngIf="selectedProgram" class="mt-1 d-flex gap-2 flex-wrap">
+        <span class="badge bg-light text-dark border">
+          Class {{ selectedProgram.startingClass }} → {{ selectedProgram.endingClass }}
+        </span>
+        <span class="badge bg-light text-dark border">
+          {{ selectedProgram.target }}
+        </span>
+        <span class="badge bg-light text-dark border">
+          {{ selectedProgram.version }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Phase Name -->
+    <div class="col-md-4">
       <label class="form-label">Phase Name <span class="text-danger">*</span></label>
       <input
         type="text"
         class="form-control"
         formControlName="phaseName"
         placeholder="e.g. Phase 1"
-        [class.is-invalid]="phaseForm.get('phaseName')?.invalid && phaseForm.get('phaseName')?.touched"
-      />
+        [class.is-invalid]="phaseForm.get('phaseName')?.invalid && phaseForm.get('phaseName')?.touched" />
       <div class="invalid-feedback">Phase name is required</div>
     </div>
 
-    <div class="col-md-3">
-      <label class="form-label">Class <span class="text-danger">*</span></label>
-      <select
-        class="form-select"
-        formControlName="classNo"
-        [class.is-invalid]="phaseForm.get('classNo')?.invalid && phaseForm.get('classNo')?.touched"
-      >
-        <option [value]="null">Select Class</option>
-        <option *ngFor="let c of classes" [value]="c.value">{{ c.label }}</option>
-      </select>
-      <div class="invalid-feedback">Class is required</div>
-    </div>
-
-    <div class="col-md-3">
-      <label class="form-label">Subject <span class="text-danger">*</span></label>
-      <select
-        class="form-select"
-        formControlName="subjectId"
-        [class.is-invalid]="phaseForm.get('subjectId')?.invalid && phaseForm.get('subjectId')?.touched"
-      >
-        <option value="">Select Subject</option>
-        <option *ngFor="let s of subjects" [value]="s._id">{{ s.subjectName }}</option>
-      </select>
-      <div class="invalid-feedback">Subject is required</div>
-    </div>
-
-    <div class="col-md-3">
+    <!-- Sort Order -->
+    <div class="col-md-4">
       <label class="form-label">Sort Order <span class="text-danger">*</span></label>
       <input
         type="number"
         class="form-control"
         formControlName="sortOrder"
         min="1"
-        [class.is-invalid]="phaseForm.get('sortOrder')?.invalid && phaseForm.get('sortOrder')?.touched"
-      />
+        [class.is-invalid]="phaseForm.get('sortOrder')?.invalid && phaseForm.get('sortOrder')?.touched" />
       <div class="invalid-feedback">Sort order is required (min: 1)</div>
+    </div>
+
+    <!-- Class -->
+    <div class="col-md-6">
+      <label class="form-label">Class <span class="text-danger">*</span></label>
+      <select
+        class="form-select"
+        formControlName="classNo"
+        [class.is-invalid]="phaseForm.get('classNo')?.invalid && phaseForm.get('classNo')?.touched">
+        <option [value]="null">
+          {{ selectedProgram ? 'Select Class' : 'Select Program first' }}
+        </option>
+        <option *ngFor="let c of classes" [value]="c.value">{{ c.label }}</option>
+      </select>
+      <div class="invalid-feedback">Class is required</div>
+    </div>
+
+    <!-- Subject -->
+    <div class="col-md-6">
+      <label class="form-label">Subject <span class="text-danger">*</span></label>
+      <select
+        class="form-select"
+        formControlName="subjectId"
+        [class.is-invalid]="phaseForm.get('subjectId')?.invalid && phaseForm.get('subjectId')?.touched">
+        <option value="">
+          {{ selectedProgram ? 'Select Subject' : 'Select Program first' }}
+        </option>
+        <option *ngFor="let s of subjects" [value]="s._id">{{ s.subjectName }}</option>
+      </select>
+      <div class="invalid-feedback">Subject is required</div>
     </div>
 
   </div>
@@ -70,11 +103,18 @@
       </span>
     </div>
 
-    <!-- Prompt: select class & subject (create mode only) -->
+    <!-- Prompt: select program first -->
+    <div *ngIf="!phaseForm.get('programId')?.value"
+      class="text-center py-4 text-muted border rounded bg-light">
+      <i class="bi bi-info-circle me-1"></i>
+      Please select a <strong>Program</strong> first.
+    </div>
+
+    <!-- Prompt: select class & subject (create mode) -->
     <div
-      *ngIf="!isEditMode && (!phaseForm.get('classNo')?.value || !phaseForm.get('subjectId')?.value)"
-      class="text-center py-4 text-muted border rounded bg-light"
-    >
+      *ngIf="phaseForm.get('programId')?.value && !isEditMode &&
+             (!phaseForm.get('classNo')?.value || !phaseForm.get('subjectId')?.value)"
+      class="text-center py-4 text-muted border rounded bg-light">
       <i class="bi bi-info-circle me-1"></i>
       Please select a <strong>Class</strong> and <strong>Subject</strong> to load available topics.
     </div>
@@ -87,9 +127,9 @@
 
     <!-- No topics found -->
     <div
-      *ngIf="!topicsLoading && topicsArray.length === 0 && phaseForm.get('classNo')?.value && phaseForm.get('subjectId')?.value"
-      class="text-center py-4 text-muted border rounded bg-light"
-    >
+      *ngIf="!topicsLoading && topicsArray.length === 0 &&
+             phaseForm.get('classNo')?.value && phaseForm.get('subjectId')?.value"
+      class="text-center py-4 text-muted border rounded bg-light">
       <i class="bi bi-exclamation-circle me-1"></i>
       No topics found for the selected class and subject.
     </div>
@@ -100,12 +140,8 @@
         <thead class="table-light">
           <tr>
             <th style="width: 48px;" class="text-center">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                [checked]="isAllSelected()"
-                (change)="onSelectAll($event)"
-              />
+              <input type="checkbox" class="form-check-input"
+                [checked]="isAllSelected()" (change)="onSelectAll($event)" />
             </th>
             <th style="width: 50px;">#</th>
             <th>Topic Name</th>
@@ -117,8 +153,7 @@
           <tr
             *ngFor="let topicCtrl of topicsArray.controls; let i = index"
             [formGroupName]="i"
-            [class.table-secondary]="!topicCtrl.get('selected')?.value"
-          >
+            [class.table-secondary]="!topicCtrl.get('selected')?.value">
             <td class="text-center">
               <input type="checkbox" class="form-check-input" formControlName="selected" />
             </td>
@@ -138,9 +173,7 @@
                 [class.is-invalid]="
                   topicCtrl.get('selected')?.value &&
                   topicCtrl.get('estHours')?.invalid &&
-                  topicCtrl.get('estHours')?.touched
-                "
-              />
+                  topicCtrl.get('estHours')?.touched" />
               <div class="invalid-feedback">Min 1 hour</div>
             </td>
             <td class="text-muted small">{{ topicCtrl.get('sortOrder')?.value }}</td>
@@ -160,8 +193,7 @@
       type="button"
       class="btn btn-primary"
       [disabled]="phaseForm.invalid || loading || topicsLoading"
-      (click)="submitPhase()"
-    >
+      (click)="submitPhase()">
       <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
       <ng-container *ngIf="!loading">{{ isEditMode ? 'Update Phase Plan' : 'Create Phase Plan' }}</ng-container>
       <ng-container *ngIf="loading">{{ isEditMode ? 'Updating...' : 'Creating...' }}</ng-container>

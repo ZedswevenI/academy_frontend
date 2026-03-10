@@ -54,7 +54,8 @@ export class ActivityComponent implements OnInit {
     {
       type: 'icon', icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit', color: '#6B7280', hoverColor: '#16A34A',
-      callback: (row: any) => this.router.navigate(['/app/activity/create'], { state: { activity: row } })
+      callback: (row: any) => this.router.navigate(['/app/activity/create'], { state: { activity: row } }),
+      hidden: (row: any) => row.status.toUpperCase() === 'COMPLETED'
     },
     {
       type: 'icon', icon: 'fa-regular fa-trash-can',

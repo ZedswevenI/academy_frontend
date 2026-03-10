@@ -2,145 +2,151 @@
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
 
         <!-- Header -->
-        <div class="d-flex flex-column gap-4">
-            <div class="d-flex flex-column gap-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
-                        <i class="fa-solid fa-people-group me-2"></i>
-                        {{ isEditMode ? 'Edit PTM' : 'Create PTM' }}
-                    </h1>
-                </div>
-            </div>
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                <i class="fa-solid fa-people-group me-2"></i>
+                {{ isEditMode ? 'Edit PTM' : 'Create PTM' }}
+            </h1>
         </div>
 
-        <div class="mt-3">
-            <form [formGroup]="createPtm">
-                <div class="row g-3">
+        <form [formGroup]="createPtm">
+            <div class="row g-3">
 
-                    <!-- Scope -->
-                    <div class="col-md-6">
-                        <selectbox
-                            label="Scope"
-                            [options]="scope_options"
-                            formControlName="scope"
-                            [control]="createPtm.get('scope')"
-                            [required]="true">
-                        </selectbox>
-                    </div>
+                <!-- Scope -->
+                <div class="col-md-6">
+                    <selectbox label="Scope" [options]="scope_options" formControlName="scope"
+                        [control]="createPtm.get('scope')" [required]="true">
+                    </selectbox>
+                </div>
 
-                    <!-- Target (dynamic based on scope) -->
-                    <div class="col-md-6" *ngIf="createPtm.get('scope')?.value">
-                        
-
-                             <multiselect label="Students" [placeholder]="target_label" [options]="target_options"
-                        formControlName="targetIds" [control]="createPtm.get('targetIds')">
+                <!-- Target multi-select (Batch / Program / Center) -->
+                <div class="col-md-6" *ngIf="currentScope">
+                    <multiselect [label]="target_label" [placeholder]="'Select ' + target_label"
+                        [options]="target_options" formControlName="targetIds" [control]="createPtm.get('targetIds')"
+                        [required]="true">
                     </multiselect>
-                    </div>
-
-                    <!-- PTM Date -->
-                    <div class="col-md-6">
-                        <formfield
-                            label="PTM Date"
-                            type="date"
-                            formControlName="ptmDate"
-                            [control]="createPtm.get('ptmDate')"
-                            placeholder="Select Date"
-                            [required]="true">
-                        </formfield>
-                    </div>
-
-                    <!-- Start Time -->
-                    <div class="col-md-6">
-                        <formfield
-                            label="Start Time"
-                            type="datetime-local"
-                            formControlName="startTime"
-                            [control]="createPtm.get('startTime')"
-                            placeholder="Select Start Time"
-                            [required]="true">
-                        </formfield>
-                    </div>
-
-                    <!-- End Time -->
-                    <div class="col-md-6">
-                        <formfield
-                            label="End Time"
-                            type="datetime-local"
-                            formControlName="endTime"
-                            [control]="createPtm.get('endTime')"
-                            placeholder="Select End Time"
-                            [required]="true">
-                        </formfield>
-                    </div>
-
-                    <!-- Duration -->
-                    <div class="col-md-6">
-                        <formfield
-                            label="Duration (mins)"
-                            type="number"
-                            formControlName="durationMins"
-                            [control]="createPtm.get('durationMins')"
-                            placeholder="e.g. 15"
-                            [required]="true">
-                        </formfield>
-                    </div>
-
-                    <!-- Meeting Mode -->
-                    <div class="col-md-6">
-                        <selectbox
-                            label="Meeting Mode"
-                            [options]="mode_options"
-                            formControlName="meetingMode"
-                            [control]="createPtm.get('meetingMode')"
-                            [required]="true">
-                        </selectbox>
-                    </div>
-
-                    <!-- Venue -->
-                    <div class="col-md-6">
-                        <formfield
-                            label="Venue"
-                            formControlName="venue"
-                            [control]="createPtm.get('venue')"
-                            placeholder="Enter Venue"
-                            [required]="true">
-                        </formfield>
-                    </div>
-
-                    <!-- Content -->
-                    <div class="col-md-12">
-                        <description
-                            label="Content"
-                            formControlName="content"
-                            [control]="createPtm.get('content')"
-                            placeholder="Enter meeting agenda or notes..."
-                            [required]="true">
-                        </description>
-                    </div>
-
                 </div>
 
-                <!-- Actions -->
-                <div class="col-12 text-end mt-3">
-                    <button
-                        type="button"
-                        class="btn closebutton px-4 me-2"
-                        style="border-radius: 30px;"
-                        (click)="cancel()">
-                        Back
-                    </button>
-                    <button
-                        type="button"
-                        class="btn submitbutton px-4"
-                        
-                        (click)="addPTM()"
-                        style="border-radius: 30px;">
-                        {{ isEditMode ? 'Update' : 'Submit' }}
-                    </button>
-                </div>
-                <!-- [disabled]="createPtm.invalid" -->
+                <!-- ── Student sub-selection (single batch only) ─────── -->
+                <div class="col-12" *ngIf="isSingleBatch">
+                    <label class="form-label fw-medium">
+                        Students
+                        <span class="text-muted small fw-normal ms-1">
+                            (Optional — leave blank to apply to entire batch)
+                        </span>
+                        <span class="badge bg-primary ms-2" *ngIf="selectedStudentIds.length > 0">
+                            {{ selectedStudentIds.length }} selected
+                        </span>
+                    </label>
 
-            </form>
-        </div>
+                    <!-- Loading -->
+                    <div *ngIf="studentsLoading" class="text-center py-3 border rounded-3">
+                        <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+                        <span class="text-muted small">Loading students...</span>
+                    </div>
+
+                    <!-- Student checkbox list -->
+                    <div *ngIf="!studentsLoading && studentOptions.length > 0" class="border rounded-3 p-2"
+                        style="max-height: 220px; overflow-y: auto;">
+
+                        <!-- Select All -->
+                        <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                            <input type="checkbox" class="form-check-input me-2" [checked]="selectAllStudents"
+                                (change)="toggleAllStudents($any($event.target).checked)" />
+                            <span class="fw-semibold small">Select All</span>
+                            <span class="text-muted small ms-auto">{{ studentOptions.length }} students</span>
+                        </div>
+
+                        <!-- Student rows -->
+                        <div *ngFor="let s of studentOptions" class="d-flex align-items-center px-2 py-1 rounded"
+                            style="cursor: pointer;">
+                            <input type="checkbox" class="form-check-input me-2" [checked]="isStudentSelected(s.value)"
+                                (change)="toggleStudent(s.value, $any($event.target).checked)" />
+                            <span class="small">{{ s.label }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div *ngIf="!studentsLoading && studentOptions.length === 0"
+                        class="text-muted small text-center py-2 border rounded-3">
+                        <i class="fa-solid fa-user-slash me-1"></i>No students in this batch
+                    </div>
+
+                    <!-- Info: what will be sent -->
+                    <div class="mt-2 small" *ngIf="!studentsLoading">
+                        <span *ngIf="selectedStudentIds.length === 0" class="text-muted">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            No students selected — PTM will be sent as <strong>BATCH</strong> scope
+                        </span>
+                        <span *ngIf="selectedStudentIds.length > 0" class="text-success">
+                            <i class="fa-solid fa-circle-check me-1"></i>
+                            {{ selectedStudentIds.length }} student(s) selected — PTM will be sent as
+                            <strong>STUDENT</strong> scope
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Start Time -->
+                <div class="col-md-6">
+                    <formfield label="Start Time" type="datetime-local" formControlName="startTime"
+                        [control]="createPtm.get('startTime')" placeholder="Select Start Time" [required]="true"
+                        [min]="minDateTime">
+                    </formfield>
+                </div>
+
+                <!-- End Time -->
+                <div class="col-md-6">
+                    <formfield label="End Time" type="datetime-local" formControlName="endTime"
+                        [control]="createPtm.get('endTime')" placeholder="Select End Time" [required]="true"
+                        [min]="minDateTime">
+                    </formfield>
+                </div>
+
+                <!-- Duration (auto-calculated, read-only) -->
+                <div class="col-md-6">
+                    <label class="form-label fw-medium">Duration (mins)</label>
+                    <div class="form-control bg-light d-flex align-items-center gap-2">
+                        <i class="fa-regular fa-clock text-muted"></i>
+                        <span class="fw-semibold">{{ durationMins }}</span>
+                        <span class="text-muted small">mins</span>
+                    </div>
+                    <small class="text-muted">Auto-calculated from start &amp; end time</small>
+                </div>
+
+                <!-- Meeting Mode -->
+                <div class="col-md-6">
+                    <selectbox label="Meeting Mode" [options]="mode_options" formControlName="meetingMode"
+                        [control]="createPtm.get('meetingMode')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- Venue -->
+                <div class="col-md-6">
+                    <formfield label="Venue" formControlName="venue" [control]="createPtm.get('venue')"
+                        placeholder="Enter Venue" [required]="true">
+                    </formfield>
+                </div>
+
+                <!-- Content -->
+                <div class="col-md-12">
+                    <description label="Content" formControlName="content" [control]="createPtm.get('content')"
+                        placeholder="Enter meeting agenda or notes..." [required]="true">
+                    </description>
+                </div>
+
+            </div>
+
+            <!-- Actions -->
+            <div class="col-12 text-end mt-4">
+                <button type="button" class="btn closebutton px-4 me-2" style="border-radius: 30px;" (click)="cancel()">
+                    Back
+                </button>
+                <button type="button" class="btn submitbutton px-4" [disabled]="createPtm.invalid || endTimeError"
+                    (click)="addPTM()" style="border-radius: 30px;">
+                    {{ isEditMode ? 'Update' : 'Submit' }}
+                </button>
+            </div>
+
+        </form>
     </div>
 </div>

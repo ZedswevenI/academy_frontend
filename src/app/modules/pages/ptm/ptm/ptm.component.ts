@@ -224,7 +224,7 @@ export class PtmComponent implements OnInit {
     if (this.ptmForm.invalid) return;
 
     this.isProceed = true;
-    this.fetchPTMList(1, 10);
+    this.fetchPTMList(1, 5);
   }
 
   fetchPTMList(page: number, limit: number, search?: string): void {

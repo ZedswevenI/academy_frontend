@@ -21,6 +21,8 @@ export class FormfieldComponent implements ControlValueAccessor {
   @Input() control: AbstractControl | null = null;
   @Input() required = false;
   @Input() id = '';
+  @Input() min: string = '';
+
 
   value: string = '';
   onChange: any = () => { };

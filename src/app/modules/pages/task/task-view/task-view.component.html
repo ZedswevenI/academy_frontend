@@ -66,25 +66,25 @@
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
                             <div class="col-sm-7 pt-2">
                                 <div *ngFor="let file of taskData.attachmentUrl">
-                                    <a  (click)="downloadAttachment(file.url)" target="_blank" class="text-primary">
+                                    <a (click)="downloadAttachment(file.url)" target="_blank" class="text-primary">
                                         {{ file.url.split('/').pop() }}
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!-- <div class="col-lg-6 col-md-12 mb-3">
+                    <div *ngIf="taskData?.status === 'Completed'"  class="col-lg-6 col-md-12 mb-3">
                         <div class="row">
-                            <label class="col-sm-4 col-form-label">
+                            <label class="col-sm-3 col-form-label">
                                 Remarks
                             </label>
                             <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-                            <div class="col-sm-7 pt-1"><button class="btn closebutton" type="button" (click)="onAct()">Action</button></div>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ taskData.remarks }}</strong>
+                            </div>
                         </div>
-                    </div> -->
-
+                    </div>
                 </div>
-
                 <div class="col-12 text-end mt-3">
                     <button class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/task">
                         Back
@@ -93,7 +93,8 @@
                         style="border-radius: 30px;" (click)="markInProgress()">
                         Mark In Progress
                     </button>
-                    <button *ngIf="taskData?.status !== 'Completed'" class="btn submitbutton px-4" style="border-radius: 30px;" (click)="onAct()">
+                    <button *ngIf="taskData?.status !== 'Completed'" class="btn submitbutton px-4"
+                        style="border-radius: 30px;" (click)="onAct()">
                         Update Status
                     </button>
                 </div>
