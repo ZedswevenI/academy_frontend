@@ -1,0 +1,201 @@
+<div class="ms-3 me-3 pt-1 pb-1" *ngIf="circular; else noData">
+
+    <!-- ═══════════════════════════════════════════════
+         CIRCULAR DETAIL CARD
+    ════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <!-- Header -->
+        <div class="d-flex align-items-start justify-content-between mb-4">
+            <div>
+                <h1 class="fw-bold mb-2" style="font-size: 26px;">
+                    <i class="fa-solid fa-bullhorn me-2 text-primary"></i>
+                    {{ circular.subject }}
+                </h1>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge rounded-pill fs-13" [ngClass]="getScopeBadgeClass(circular.scope)">
+                        <i class="fa-solid fa-globe me-1"></i>{{ circular.scope }}
+                    </span>
+                    <span class="badge rounded-pill fs-13" [ngClass]="getStatusBadgeClass(circular.status)">
+                        {{ circular.status }}
+                    </span>
+                    <span class="badge rounded-pill fs-13" [ngClass]="getCategoryBadgeClass(circular.category)">
+                        <i class="fa-solid fa-tag me-1"></i>{{ circular.category }}
+                    </span>
+                </div>
+            </div>
+            <button class="btn closebutton px-4" style="border-radius: 30px;" (click)="goBack()">
+                <i class="fa-solid fa-arrow-left me-1"></i> Back
+            </button>
+        </div>
+
+        <div class="row g-3">
+
+            <!-- ── Left: Details + Attachments ── -->
+            <div class="col-md-8 d-flex flex-column gap-3">
+
+                <!-- Details -->
+                <div class="border rounded-3 p-3 flex-grow-1">
+                    <div class="text-muted small fw-semibold mb-2">
+                        <i class="fa-regular fa-file-lines me-1"></i>Details
+                    </div>
+                    <div style="white-space: pre-wrap; line-height: 1.8;">
+                        {{ circular.details || '—' }}
+                    </div>
+                </div>
+
+                <!-- Attachments -->
+                <div class="border rounded-3 p-3" *ngIf="circular.files?.length > 0">
+                    <div class="text-muted small fw-semibold mb-2">
+                        <i class="fa-solid fa-paperclip me-1"></i>
+                        Attachments ({{ circular.files.length }})
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a *ngFor="let file of circular.files; let i = index"
+                             (click)="downloadFile(file.url)" target="_blank"
+                            class="btn btn-sm btn-outline-primary rounded-pill">
+                            <i class="fa-regular fa-file me-1"></i>
+                            Attachment {{ i + 1 }}
+                        </a>
+                    </div>
+                </div>
+
+                <!-- No attachments -->
+                <div class="border rounded-3 p-3 text-muted small"
+                    *ngIf="!circular.files || circular.files.length === 0">
+                    <i class="fa-solid fa-paperclip me-1"></i>No attachments
+                </div>
+
+            </div>
+
+            <!-- ── Right: Meta Info ── -->
+            <div class="col-md-4">
+                <div class="border rounded-3 p-3 h-80 d-flex flex-column gap-3">
+
+                    <!-- Circular ID -->
+                    <!-- <div class="pb-2 border-bottom">
+                        <div class="text-muted small mb-1">Circular ID</div>
+                        <div class="fw-semibold small text-break font-monospace">
+                            {{ circular.circularId }}
+                        </div>
+                    </div> -->
+
+                    <!-- Scope: CENTER targets -->
+                    <div class="pb-2 border-bottom" *ngIf="circular.scope === 'CENTER'">
+                        <div class="text-muted small mb-1">
+                            <i class="fa-solid fa-building me-1"></i>Centers
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span *ngFor="let c of getCenterCodes()"
+                                class="badge bg-warning text-dark border rounded-pill">
+                                {{ c }}
+                            </span>
+                            <span *ngIf="getCenterCodes().length === 0" class="text-muted small">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Scope: BATCH targets -->
+                    <div class="pb-2 border-bottom" *ngIf="circular.scope === 'BATCH'">
+                        <div class="text-muted small mb-1">
+                            <i class="fa-solid fa-layer-group me-1"></i>Batches
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span *ngFor="let b of getBatchCodes()"
+                                class="badge bg-success text-white rounded-pill">
+                                {{ b }}
+                            </span>
+                            <span *ngIf="getBatchCodes().length === 0" class="text-muted small">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Published At -->
+                    <div class="pb-2 border-bottom">
+                        <div class="text-muted small mb-1">
+                            <i class="fa-regular fa-calendar-check me-1"></i>Published At
+                        </div>
+                        <div class="fw-semibold small">
+                            <!-- Use pre-formatted if available, else format timestamp -->
+                            {{ circular.publishedAtFormatted || formatTimestamp(circular.publishedAt) }}
+                        </div>
+                    </div>
+
+                    <!-- Created At -->
+                    <div class="pb-2 border-bottom">
+                        <div class="text-muted small mb-1">
+                            <i class="fa-regular fa-calendar me-1"></i>Created At
+                        </div>
+                        <div class="fw-semibold small">{{ formatISODate(circular.createdAt) }}</div>
+                    </div>
+
+                    <!-- Updated At -->
+                    <!-- <div class="pb-2 border-bottom">
+                        <div class="text-muted small mb-1">
+                            <i class="fa-regular fa-clock me-1"></i>Last Updated
+                        </div>
+                        <div class="fw-semibold small">{{ formatISODate(circular.updatedAt) }}</div>
+                    </div> -->
+
+                    <!-- Read Count Stat -->
+                    <div class="rounded-3 p-3 text-center mt-auto" style="background: #f0f4ff;">
+                        <div class="fw-bold text-primary" style="font-size: 2rem;">{{ totalRecords }}</div>
+                        <div class="text-muted small">Students Read</div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         READ LIST CARD
+    ════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="fw-bold mb-0">
+                <i class="fa-solid fa-eye me-2 text-success"></i>
+                Read By Students
+                <span class="badge bg-secondary ms-2">{{ totalRecords }}</span>
+            </h5>
+
+            <button class="btn btn-outline-success rounded-pill px-4"
+                (click)="exportToExcel()"
+                [disabled]="exportLoading || totalRecords === 0">
+                <span *ngIf="exportLoading" class="spinner-border spinner-border-sm me-2"></span>
+                <i *ngIf="!exportLoading" class="fa-solid fa-file-excel me-2"></i>
+                {{ exportLoading ? 'Exporting...' : 'Export to Excel' }}
+            </button>
+        </div>
+
+        <!-- Custom table -->
+        <custom-table
+            [columns]="columnsArray"
+            [data]="readList"
+            [totalRecords]="totalRecords"
+            [showaction]="false"
+            [searchPlaceholder]="'Search student name or no...'"
+            (requestData)="fetchReadList($event)">
+        </custom-table>
+
+        <!-- Empty state -->
+        <div *ngIf="!loading && totalRecords === 0"
+            class="text-center py-5 text-muted">
+            <i class="fa-regular fa-eye-slash fa-3x mb-3 d-block opacity-25"></i>
+            <p class="fw-semibold mb-0">No students have read this circular yet</p>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- No data fallback -->
+<ng-template #noData>
+    <div class="text-center py-5 text-muted">
+        <i class="fa-solid fa-triangle-exclamation fa-2x mb-3 d-block"></i>
+        <p>Circular data not found.</p>
+        <button class="btn btn-outline-primary rounded-pill px-4" (click)="goBack()">
+            Go Back
+        </button>
+    </div>
+</ng-template>

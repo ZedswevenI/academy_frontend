@@ -53,7 +53,8 @@ export class CircularComponent implements OnInit {
     {
       type: 'icon', icon: 'fa-regular fa-eye',
       tooltip: 'View', color: '#6B7280', hoverColor: '#0066FF',
-      callback: (row: any) => this.onView(row)
+      // callback: (row: any) => this.onView(row)
+      callback: (row: any) => this.router.navigate(['/app/circular/view'], { state: { circular: row } })
     },
     {
       type: 'icon', icon: 'fa-regular fa-pen-to-square',
