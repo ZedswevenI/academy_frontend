@@ -11,13 +11,10 @@
                 </p>
             </div>
             <div class="d-flex gap-2 flex-wrap align-items-center">
-                <!-- Status badge -->
                 <span class="badge px-3 py-2" [ngClass]="{'bg-success': isPublished, 'bg-warning text-dark': isDraft}">
                     <i class="fa-solid me-1" [ngClass]="{'fa-circle-check': isPublished, 'fa-pencil': isDraft}"></i>
                     {{ timetable.status }}
                 </span>
-
-                <!-- Publish / Unpublish -->
                 <button *ngIf="isDraft" class="btn btn-sm btn-success" (click)="confirmPublish()" [disabled]="loading">
                     <i class="fa-solid fa-paper-plane me-1"></i>Publish
                 </button>
@@ -25,7 +22,6 @@
                     [disabled]="loading">
                     <i class="fa-solid fa-rotate-left me-1"></i>Revert to Draft
                 </button>
-
                 <button class="btn btn-sm btn-outline-primary" (click)="toggleRangeView()" [disabled]="loading">
                     <i class="fa-solid fa-calendar-days me-1"></i>
                     {{ viewMode === 'range' ? 'Weekly View' : 'View By Date Range' }}
@@ -42,12 +38,14 @@
                 <div class="col-md-3">
                     <div class="border rounded-3 p-2 small">
                         <div class="text-muted">{{ viewMode === 'range' ? 'Date Range' : 'Week Starting' }}</div>
+                        <!-- FIX H1: use epochToDisplayDate() — not | date pipe — avoids UTC-vs-local off-by-one -->
                         <div class="fw-semibold" *ngIf="viewMode !== 'range'">
-                            {{ timetable.wkStartOn | date:'mediumDate' }}
+                            {{ epochToDisplayDate(timetable.wkStartOn) }}
                         </div>
+                        <!-- FIX H5: use msToDisplayDate() for fromDateMs/toDateMs -->
                         <div class="fw-semibold" *ngIf="viewMode === 'range'">
-                            {{ fromDateMs | date:'mediumDate' }}<span class="text-muted mx-1">→</span>{{ toDateMs |
-                            date:'mediumDate' }}
+                            {{ msToDisplayDate(fromDateMs) }}<span class="text-muted mx-1">→</span>{{
+                            msToDisplayDate(toDateMs) }}
                         </div>
                     </div>
                 </div>
@@ -115,8 +113,6 @@
                             <td class="fw-bold bg-light text-center align-middle" style="min-width:140px">
                                 <div class="fw-semibold">{{ row.day }}</div>
                                 <div class="small text-muted">{{ row.dateLabel }}</div>
-
-                                <!-- Day actions: show for both DRAFT and Published -->
                                 <div class="d-flex justify-content-center gap-1 mt-2 flex-wrap"
                                     *ngIf="viewMode !== 'range' && !row.__isHoliday">
                                     <button class="btn btn-sm btn-outline-danger" (click)="openCancelDay(row)"
@@ -143,18 +139,16 @@
                                         [class.bg-warning-subtle]="p.__staffChanged && !p.isCancelled">
 
                                         <ng-container *ngIf="!p.__dayCancelled; else dayCancelledTpl">
-                                            <!-- Period type badge -->
                                             <div class="d-flex gap-1 flex-wrap justify-content-center">
                                                 <span class="badge" style="font-size:0.65rem" [ngClass]="{
-                            'bg-secondary-subtle text-secondary': p.periodType === 'LECTURE' || !p.periodType,
-                            'bg-teal-subtle text-teal': p.periodType === 'LAB',
-                            'bg-warning-subtle text-warning': p.periodType === 'TEST' || p.periodType === 'REVISION',
-                            'bg-orange-subtle text-orange': p.periodType === 'TUTORIAL'
-                          }" [style.background]="p.periodType === 'EXAM' ? '#f3e8ff' : null"
+                                                    'bg-secondary-subtle text-secondary': p.periodType === 'LECTURE' || !p.periodType,
+                                                    'bg-teal-subtle text-teal': p.periodType === 'LAB',
+                                                    'bg-warning-subtle text-warning': p.periodType === 'TEST' || p.periodType === 'REVISION',
+                                                    'bg-orange-subtle text-orange': p.periodType === 'TUTORIAL'
+                                                  }" [style.background]="p.periodType === 'EXAM' ? '#f3e8ff' : null"
                                                     [style.color]="p.periodType === 'EXAM' ? '#7c3aed' : null">
                                                     {{ p.periodType || 'LECTURE' }}
                                                 </span>
-                                                <!-- Draft indicator -->
                                                 <span
                                                     class="badge bg-warning-subtle text-warning border border-warning-subtle"
                                                     style="font-size:0.6rem" *ngIf="isDraft">
@@ -172,12 +166,10 @@
                                             <div class="text-muted text-center" style="font-size:0.7rem">{{
                                                 p.time?.startLabel }} – {{ p.time?.endLabel }}</div>
 
-                                            <!-- Phase -->
                                             <div *ngIf="p.phaseName" class="small text-center"
                                                 style="font-size:0.65rem;color:#6366f1">
                                                 <i class="fa-solid fa-layer-group me-1"></i>{{ p.phaseName }}
                                             </div>
-
                                             <div *ngIf="p.periodType === 'EXAM' && p.examDescription"
                                                 class="small text-center" style="font-size:0.7rem;color:#7c3aed">
                                                 <i class="fa-solid fa-file-pen me-1"></i>{{ p.examDescription }}
@@ -191,7 +183,6 @@
                                             <div *ngIf="p.isCancelled" class="badge bg-danger mt-1"><i
                                                     class="fa-solid fa-ban me-1"></i>Cancelled</div>
 
-                                            <!-- Period action buttons — available for both DRAFT and Published -->
                                             <div class="d-flex gap-1 mt-2 flex-wrap justify-content-center"
                                                 *ngIf="viewMode !== 'range' && !p.__dayCancelled && !p.isCancelled">
                                                 <button class="btn btn-sm btn-outline-danger"
@@ -253,8 +244,9 @@
                 <div>
                     <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-paper-plane me-2 text-success"></i>Publish
                         Timetable</h6>
-                    <span class="text-muted small">{{ timetable.batchCode }} • Week of {{ timetable.wkStartOn |
-                        date:'mediumDate' }}</span>
+                    <!-- FIX H2: use epochToDisplayDate() instead of | date pipe -->
+                    <span class="text-muted small">{{ timetable.batchCode }} • Week of {{
+                        epochToDisplayDate(timetable.wkStartOn) }}</span>
                 </div>
                 <button class="btn-close" (click)="cancelPublish()"></button>
             </div>
@@ -311,9 +303,11 @@
 
 
     <!-- ═══════════════════════ EDIT WHOLE DAY MODAL ══════════════════════ -->
+    <!-- FIX H3: max-height + flex layout so modal body scrolls instead of overflowing viewport -->
     <div class="app-modal-backdrop" *ngIf="showEditDay">
-        <div class="app-modal timetable-modal" style="max-width:760px">
-            <div class="app-modal-header d-flex justify-content-between align-items-center">
+        <div class="app-modal timetable-modal"
+            style="max-width:760px;max-height:92vh;display:flex;flex-direction:column;">
+            <div class="app-modal-header d-flex justify-content-between align-items-center flex-shrink-0">
                 <div>
                     <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Edit Day
                         Schedule</h6>
@@ -331,12 +325,13 @@
                 </div>
                 <button class="btn-close" (click)="closeEditDay()" [disabled]="loading || editDayValidating"></button>
             </div>
-            <div class="app-modal-body">
+
+            <!-- FIX H3: flex-grow-1 + overflow-y:auto makes only the body scroll -->
+            <div class="app-modal-body flex-grow-1" style="overflow-y:auto;">
 
                 <div class="alert alert-info small d-flex align-items-start gap-2 py-2 mb-3" *ngIf="isPublished">
                     <i class="fa-solid fa-circle-info mt-1 flex-shrink-0"></i>
-                    <div>
-                        This will create a <strong>date-specific override</strong> for {{ activeDay?.dateLabel }} — the
+                    <div>This will create a <strong>date-specific override</strong> for {{ activeDay?.dateLabel }} — the
                         weekly template is not affected.
                         <span class="ms-1"><i class="fa-solid fa-grip-vertical text-muted mx-1"></i>Drag rows to
                             reorder.</span>
@@ -344,8 +339,7 @@
                 </div>
                 <div class="alert alert-warning small d-flex align-items-start gap-2 py-2 mb-3" *ngIf="isDraft">
                     <i class="fa-solid fa-triangle-exclamation mt-1 flex-shrink-0"></i>
-                    <div>
-                        In <strong>Draft mode</strong> this updates the <strong>weekly template</strong> for {{
+                    <div>In <strong>Draft mode</strong> this updates the <strong>weekly template</strong> for {{
                         activeDay?.day }} directly.
                         <span class="ms-1"><i class="fa-solid fa-grip-vertical text-muted mx-1"></i>Drag rows to
                             reorder.</span>
@@ -374,7 +368,6 @@
                     (dragstart)="onDragStart(i)" (dragover)="onDragOver($event)" (drop)="onDrop(i)"
                     (dragend)="onDragEnd()">
 
-                    <!-- Row header -->
                     <div
                         class="tt-edit-row-header d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light rounded-top-3">
                         <div class="d-flex align-items-center gap-2">
@@ -385,30 +378,30 @@
                                 {{ ep.endTime || '--:--' }}
                             </span>
                             <span class="badge small" style="font-size:0.65rem" [ngClass]="{
-                  'bg-secondary-subtle text-secondary': ep.periodType === 'LECTURE' || !ep.periodType,
-                  'bg-info-subtle text-info': ep.periodType === 'LAB',
-                  'bg-warning-subtle text-warning': ep.periodType === 'TEST' || ep.periodType === 'REVISION',
-                  'bg-orange-subtle text-orange': ep.periodType === 'TUTORIAL'
-                }" [style.background]="ep.periodType === 'EXAM' ? '#f3e8ff' : null"
+                                'bg-secondary-subtle text-secondary': ep.periodType === 'LECTURE' || !ep.periodType,
+                                'bg-info-subtle text-info': ep.periodType === 'LAB',
+                                'bg-warning-subtle text-warning': ep.periodType === 'TEST' || ep.periodType === 'REVISION',
+                                'bg-orange-subtle text-orange': ep.periodType === 'TUTORIAL'
+                              }" [style.background]="ep.periodType === 'EXAM' ? '#f3e8ff' : null"
                                 [style.color]="ep.periodType === 'EXAM' ? '#7c3aed' : null">
                                 {{ ep.periodType || 'LECTURE' }}
                             </span>
                             <span class="badge small" style="font-size:0.65rem" [ngClass]="{
-                  'bg-success-subtle text-success': ep.mode === 'OFFLINE' || !ep.mode,
-                  'bg-info-subtle text-info': ep.mode === 'ONLINE'
-                }">
+                                'bg-success-subtle text-success': ep.mode === 'OFFLINE' || !ep.mode,
+                                'bg-info-subtle text-info': ep.mode === 'ONLINE'
+                              }">
                                 <i class="fa-solid me-1"
                                     [ngClass]="{'fa-building': ep.mode === 'OFFLINE' || !ep.mode, 'fa-wifi': ep.mode === 'ONLINE'}"></i>
                                 {{ ep.mode || 'OFFLINE' }}
                             </span>
                         </div>
+                        <!-- FIX H4: also disable on editDayValidating -->
                         <button class="btn btn-sm btn-outline-danger py-0 px-2" (click)="removeEditDayPeriod(i)"
-                            [disabled]="loading" title="Remove">
+                            [disabled]="loading || editDayValidating" title="Remove">
                             <i class="fa-solid fa-trash-can" style="font-size:0.75rem"></i>
                         </button>
                     </div>
 
-                    <!-- Row fields -->
                     <div class="px-3 py-2">
                         <div class="row g-2">
                             <div class="col-md-3">
@@ -462,7 +455,6 @@
                                         s.staffName }} ({{ s.staffCode }})</option>
                                 </select>
                             </div>
-                            <!-- Phase -->
                             <div class="col-md-6" *ngIf="phasesFull.length">
                                 <label class="form-label small text-muted mb-1"><i
                                         class="fa-solid fa-layer-group me-1 text-indigo-400"></i>Phase
@@ -493,13 +485,12 @@
                     </div>
                 </div>
 
-                <!-- Add period button -->
+                <!-- FIX H4: also disable Add Period during validation -->
                 <button class="btn btn-outline-primary btn-sm w-100 mt-1 mb-3" (click)="addEditDayPeriod()"
-                    [disabled]="loading">
+                    [disabled]="loading || editDayValidating">
                     <i class="fa-solid fa-plus me-1"></i>Add Period
                 </button>
 
-                <!-- Footer -->
                 <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                     <button class="btn btn-outline-secondary btn-sm" (click)="resetEditDayPeriods()"
                         [disabled]="loading">
@@ -678,7 +669,6 @@
                                 s.staffName }} ({{ s.staffCode }})</option>
                         </select>
                     </div>
-                    <!-- Phase -->
                     <div class="col-md-6" *ngIf="phasesFull.length">
                         <label class="form-label small text-muted mb-1"><i
                                 class="fa-solid fa-layer-group me-1"></i>Phase</label>

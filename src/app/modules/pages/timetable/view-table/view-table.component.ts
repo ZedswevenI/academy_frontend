@@ -47,7 +47,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   private moduleName = 'timetable';
 
   timetable: any = null;
-  /** True if timetable.status === 'Active' */
+
   get isPublished(): boolean {
     return this.timetable?.status === 'Active';
   }
@@ -109,7 +109,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   // ── Move Period ──────────────────────────────────────────────────────
   showMovePeriod = false;
   moveToPeriodNo: number | null = null;
-  /** Available period slots on the active day (for move picker) */
   availablePeriodSlots: number[] = [];
 
   // ── Replace Period ───────────────────────────────────────────────────
@@ -179,7 +178,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ─── Date helpers ────────────────────────────────────────────────────
+  // ─── Date helpers ─────────────────────────────────────────────────────
   get fromDateMs(): number {
     return this.toStartOfDayMs(this.fromDateStr) || 0;
   }
@@ -208,22 +207,51 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return `${dd} ${mon} ${d.getUTCFullYear()}`;
   }
 
+  // FIX H1/H2/H5/V9: explicit UTC-safe date display — replaces | date pipe on epoch values
+  epochToDisplayDate(epoch: any): string {
+    if (!epoch) return '-';
+    const ms = Number(epoch);
+    if (!Number.isFinite(ms) || ms <= 0) return '-';
+    return new Date(ms).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    });
+  }
+
+  // FIX H5: for range display — uses fromDateMs/toDateMs (already UTC epoch)
+  msToDisplayDate(ms: number): string {
+    if (!ms) return '-';
+    return new Date(ms).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    });
+  }
+
   // ─── Boot: load lookups then timetable ───────────────────────────────
   private loadLookupsAndTimetable() {
     this.loading = true;
     const tenantId = this.tenantId;
+
+    // FIX V2: all calls use consistent entiId key
     forkJoin({
       center: this.commonApi
-        .fetchData({ tenantId }, 'ims', 'center/list?list=full')
+        .fetchData({ entiId: tenantId }, 'ims', 'center/list?list=full')
         .pipe(catchError(() => of({ data: [] }))),
       staff: this.commonApi
-        .fetchData({ tenantId }, 'ims', 'staff/list?list=full')
+        .fetchData({ entiId: tenantId }, 'ims', 'staff/list?list=full')
         .pipe(catchError(() => of({ data: [] }))),
       subject: this.commonApi
         .fetchData({ entiId: tenantId }, 'ims', 'subject/list?list=full')
         .pipe(catchError(() => of({ data: [] }))),
     })
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)), // FIX V1: finalize always clears loading
+      )
       .subscribe({
         next: ({ center, staff, subject }: any) => {
           this.centersFull = center?.data || [];
@@ -235,6 +263,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
             const code = safeTrim(c?.centerCode);
             if (code) this.centerByCode[code] = c;
           });
+
           this.staffByCode = {};
           this.staffById = {};
           this.staffFull.forEach((s: any) => {
@@ -246,29 +275,28 @@ export class ViewTableComponent implements OnInit, OnDestroy {
                 this.staffById[k] = s;
               });
           });
+
           this.subjectByCode = {};
           this.subjectsFull.forEach((sub: any) => {
             const code = safeTrim(sub?.subjectCode);
             if (code) this.subjectByCode[code] = sub;
           });
 
-          this.loading = false;
           this.loadTimetable();
         },
         error: () => {
-          this.loading = false;
           this.loadTimetable();
         },
       });
   }
 
-  /** Load phases for the timetable's program (called after timetable loads) */
+  // FIX V3: phases use 'institue' module (matching list screen + controller)
   private loadPhases(batchCode: string) {
     if (!batchCode) return;
     this.commonApi
       .fetchData(
         { entiId: this.tenantId, batchCode },
-        'ims',
+        'institue',
         'phase/list?list=full',
       )
       .pipe(
@@ -315,7 +343,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         'view',
       )
       .pipe(
-        takeUntil(this.destroy$),
+        takeUntil(this.destroy$), // FIX V1
         finalize(() => (this.loading = false)),
       )
       .subscribe({
@@ -372,6 +400,8 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         dateMs,
         dateLabel: this.weekDateMap?.[day]?.label || '-',
         periods,
+        // FIX V4: __isHoliday computed from live overrides at build time
+        // getRenderedPeriod also checks isDayCancelled() live — both stay in sync after loadTimetable()
         __isHoliday: this.isDayCancelled(dateMs, day),
       };
     });
@@ -433,7 +463,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   /**
    * Atomically applies all MOVE_PERIOD overrides for a date/day.
-   * Takes a snapshot first so swap order doesn't matter.
+   * Snapshots first so swap order never matters.
    */
   private applyMoveOverrides(
     dateMs: number,
@@ -451,8 +481,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         String(o?.day || '').toUpperCase() === dayU,
     );
     if (!moves.length) return;
-
-    // Snapshot before applying any swap to avoid chained mutations
     const snapshot = new Map(baseMap);
     for (const ov of moves) {
       const fromP = toInt(ov?.periodNo);
@@ -467,9 +495,12 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Returns the fully resolved period for a given day/slot, applying
-   * all override layers in priority order:
-   *   CANCEL_DAY → REPLACE_DAY → CANCEL_PERIOD → REPLACE_PERIOD → MOVE_PERIOD
+   * FIX V5: Correct layer order:
+   *   1. CANCEL_DAY
+   *   2. REPLACE_DAY (whole-day replacement) OR template week[]
+   *   3. MOVE_PERIOD overrides (applied atomically on top of step 2 base)
+   *   4. CANCEL_PERIOD
+   *   5. REPLACE_PERIOD
    */
   getRenderedPeriod(dayRow: any, pNum: number) {
     const dateMs = toInt(dayRow?.dateMs);
@@ -488,14 +519,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     if (this.isDayCancelled(dateMs, day))
       return { __dayCancelled: true, isCancelled: true, time: {} };
 
-    // Layer 2: whole day replaced — period overrides still apply ON TOP
+    // Layer 2: whole day replaced OR template
     const replacedPeriods = this.getDayReplacementPeriods(dateMs, day);
-    let basePeriods: any[];
-    if (replacedPeriods) {
-      basePeriods = replacedPeriods;
-    } else {
-      basePeriods = Array.isArray(dayRow?.periods) ? dayRow.periods : [];
-    }
+    const basePeriods =
+      replacedPeriods ?? (Array.isArray(dayRow?.periods) ? dayRow.periods : []);
 
     const baseMap = new Map<number, any>();
     basePeriods.forEach((p: any) => {
@@ -503,7 +530,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       if (pn > 0) baseMap.set(pn, p);
     });
 
-    // Layer 3: move overrides (atomic)
+    // Layer 3: move overrides (atomic snapshot)
     this.applyMoveOverrides(dateMs, day, baseMap);
 
     const base = baseMap.get(toInt(pNum)) || null;
@@ -564,13 +591,13 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.router.navigate(['/app/timetable']);
   }
 
-  // ─── Get all non-cancelled periods for a day row ─────────────────────
-  /** Returns all rendered periods for a day (including cancelled state info) */
+  // FIX V6: filter both isCancelled AND __dayCancelled
   private getAllRenderedPeriodsForDay(row: any): any[] {
     const result: any[] = [];
     for (const pNum of this.periodHeaders) {
       const p = this.getRenderedPeriod(row, pNum);
-      if (p && !p.__dayCancelled) result.push({ ...p, __slotNo: pNum });
+      if (p && !p.__dayCancelled && !p.isCancelled)
+        result.push({ ...p, __slotNo: pNum });
     }
     return result;
   }
@@ -585,15 +612,21 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   submitPublish() {
     this.showPublishConfirm = false;
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'publish')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'publish',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1/V8
       .subscribe({
         next: () => {
           this.alert.success('Timetable published successfully');
@@ -606,15 +639,21 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   submitUnpublish() {
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'unpublish')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'unpublish',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1/V8
       .subscribe({
         next: () => {
           this.alert.success('Timetable reverted to Draft');
@@ -639,18 +678,24 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   submitCancelDay() {
     if (!this.activeDay?.dateMs) return;
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
-      reason: safeTrim(this.cancelDayReason) || 'Holiday',
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'day/cancel')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          date: toInt(this.activeDay.dateMs),
+          day: String(this.activeDay.day || '').toUpperCase(),
+          reason: safeTrim(this.cancelDayReason) || 'Holiday',
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'day/cancel',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Holiday declared');
@@ -666,9 +711,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   // ─── EDIT WHOLE DAY ──────────────────────────────────────────────────
   openEditDay(row: any) {
     this.activeDay = row;
-    // Load ALL periods from the template week[] for this day (not the rendered overrides)
-    // This is what we will send back to day/edit — which writes to week[] for DRAFT
-    // and to REPLACE_DAY override for published
     const templateDay = (this.timetable?.week || []).find(
       (d: any) =>
         String(d?.day || '').toUpperCase() ===
@@ -678,15 +720,13 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       ? [...templateDay.periods]
       : [];
 
-    // For published: also show currently rendered periods (including overrides) as starting point
     let periodsToEdit: any[];
     if (this.isPublished) {
-      // Use rendered state so user sees what's actually showing today
-      periodsToEdit = this.getAllRenderedPeriodsForDay(row)
-        .filter((p: any) => !p.isCancelled) // don't include cancelled in the new schedule
-        .sort((a: any, b: any) => toInt(a.__slotNo) - toInt(b.__slotNo));
+      // FIX V6: getAllRenderedPeriodsForDay already filters both isCancelled AND __dayCancelled
+      periodsToEdit = this.getAllRenderedPeriodsForDay(row).sort(
+        (a: any, b: any) => toInt(a.__slotNo) - toInt(b.__slotNo),
+      );
     } else {
-      // DRAFT: use template periods directly
       periodsToEdit = templatePeriods.sort(
         (a: any, b: any) => toInt(a.periodNo) - toInt(b.periodNo),
       );
@@ -713,7 +753,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         topic: safeTrim(p.topic) || '',
         venue: safeTrim(p.venue) || '',
         zoomUrl: safeTrim(p.zoomUrl) || '',
-        isCancelled: false, // always start uncancelled in edit
+        isCancelled: false,
       };
     });
 
@@ -737,7 +777,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.editDayDragIndex = null;
   }
 
-  // Drag reorder — swaps entire row objects
   onDragStart(index: number) {
     this.editDayDragIndex = index;
   }
@@ -755,10 +794,8 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       return;
     }
     const arr = this.editDayPeriods;
-    // Swap the entire period objects; reassign periodNo to match new position
     const moved = arr.splice(fromIndex, 1)[0];
     arr.splice(targetIndex, 0, moved);
-    // Re-number periodNo sequentially after drag
     arr.forEach((ep: any, idx: number) => {
       ep.periodNo = idx + 1;
     });
@@ -776,7 +813,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   addEditDayPeriod() {
     const lastPeriod = this.editDayPeriods[this.editDayPeriods.length - 1];
-    // Default start time: last period's end time if available
     const defaultStart = lastPeriod?.endTime || '';
     this.editDayPeriods.push({
       periodNo: this.editDayPeriods.length + 1,
@@ -801,7 +837,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   removeEditDayPeriod(i: number) {
     this.editDayPeriods.splice(i, 1);
-    // Re-number after removal
     this.editDayPeriods.forEach((ep: any, idx: number) => {
       ep.periodNo = idx + 1;
     });
@@ -897,7 +932,22 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     const periods = this.buildEditDayPayloadPeriods();
     if (!periods) return;
 
-    // Validate first via /validate endpoint
+    // FIX V7: include full week context in validate payload so conflict check sees other days
+    const allDays: any[] = this.sortedSchedule.map((row: any) => {
+      const isActiveDay =
+        String(row.day || '').toUpperCase() ===
+        String(this.activeDay.day || '').toUpperCase();
+      if (isActiveDay)
+        return { day: String(this.activeDay.day || '').toUpperCase(), periods };
+      // Other days: use their rendered template periods
+      const dayPeriods: any[] = [];
+      for (const pNum of this.periodHeaders) {
+        const p = this.getRenderedPeriod(row, pNum);
+        if (p && !p.__dayCancelled && !p.isCancelled) dayPeriods.push(p);
+      }
+      return { day: String(row.day || '').toUpperCase(), periods: dayPeriods };
+    });
+
     const validatePayload = {
       tenantId: this.tenantId,
       data: [
@@ -905,17 +955,16 @@ export class ViewTableComponent implements OnInit, OnDestroy {
           batchCode: safeTrim(this.timetable?.batchCode),
           timetableId: this.timetableId,
           wkStartOn: toInt(this.timetable?.wkStartOn),
-          week: [
-            { day: String(this.activeDay.day || '').toUpperCase(), periods },
-          ],
+          week: allDays,
         },
       ],
     };
+
     this.editDayValidating = true;
     this.editDayConflicts = [];
     this.commonApi
       .fetchData(validatePayload, this.moduleName, 'validate')
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntil(this.destroy$)) // FIX V1
       .subscribe({
         next: () => {
           this.editDayValidating = false;
@@ -932,21 +981,24 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   private doSubmitEditDay(periods: any[]) {
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
-      periods,
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'day/edit')
-      .pipe(
-        finalize(() => (this.loading = false)),
-        takeUntil(this.destroy$),
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          date: toInt(this.activeDay.dateMs),
+          day: String(this.activeDay.day || '').toUpperCase(),
+          periods,
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'day/edit',
       )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Day schedule updated');
@@ -974,19 +1026,25 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   submitCancelPeriod() {
     if (!this.activeDay?.dateMs || !this.activePeriodNo) return;
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
-      periodNo: toInt(this.activePeriodNo),
-      reason: safeTrim(this.cancelPeriodReason) || 'Cancelled',
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'period/cancel')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          date: toInt(this.activeDay.dateMs),
+          day: String(this.activeDay.day || '').toUpperCase(),
+          periodNo: toInt(this.activePeriodNo),
+          reason: safeTrim(this.cancelPeriodReason) || 'Cancelled',
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'period/cancel',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Period cancelled');
@@ -1030,20 +1088,26 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       !safeTrim(this.newFacultyId)
     )
       return;
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
-      periodNo: toInt(this.activePeriodNo),
-      newFacultyId: safeTrim(this.newFacultyId),
-      newFacultyName: safeTrim(this.newFacultyName),
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'period/rearrange-staff')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          date: toInt(this.activeDay.dateMs),
+          day: String(this.activeDay.day || '').toUpperCase(),
+          periodNo: toInt(this.activePeriodNo),
+          newFacultyId: safeTrim(this.newFacultyId),
+          newFacultyName: safeTrim(this.newFacultyName),
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'period/rearrange-staff',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Staff updated');
@@ -1061,7 +1125,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
     this.moveToPeriodNo = null;
-    // Build available slots = all periodHeaders except the current one
     this.availablePeriodSlots = this.periodHeaders.filter(
       (n) => n !== toInt(pNum),
     );
@@ -1077,19 +1140,25 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   submitMovePeriod() {
     if (!this.activeDay?.dateMs || !this.activePeriodNo || !this.moveToPeriodNo)
       return;
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
-      fromPeriodNo: toInt(this.activePeriodNo),
-      toPeriodNo: toInt(this.moveToPeriodNo),
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'period/move')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          date: toInt(this.activeDay.dateMs),
+          day: String(this.activeDay.day || '').toUpperCase(),
+          fromPeriodNo: toInt(this.activePeriodNo),
+          toPeriodNo: toInt(this.moveToPeriodNo),
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'period/move',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Period moved');
@@ -1106,7 +1175,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   openReplacePeriod(row: any, pNum: number) {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
-    // Pre-fill with current rendered values so user edits from current state
     const p = this.getRenderedPeriod(row, pNum) || {};
     const rawId = safeTrim(p.facultyId) || '';
     const staff = this.staffByCode[rawId] || this.staffById[rawId] || null;
@@ -1152,7 +1220,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     const s = this.staffByCode[safeTrim(this.rp?.facultyId)];
     this.rp.facultyName = s?.staffName || '';
   }
-
   onReplaceSubjectSelected() {
     const sub = this.subjectByCode[safeTrim(this.rp?.subjectCode)];
     this.rp.subjectName = sub?.subjectName || '';
@@ -1160,7 +1227,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.rp.facultyId = '';
     this.rp.facultyName = '';
   }
-
   onReplacePhaseSelected() {
     const ph = this.phasesFull.find(
       (p: any) => safeTrim(p?.phaseId) === safeTrim(this.rp.phaseId),
@@ -1170,7 +1236,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   submitReplacePeriod() {
     if (!this.activeDay?.dateMs || !this.activePeriodNo) return;
-    // Only send fields that were actually filled in — backend merges with base
     const period: any = {};
     if (safeTrim(this.rp.periodType))
       period.periodType = safeTrim(this.rp.periodType);
@@ -1191,19 +1256,25 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       period.phaseId = safeTrim(this.rp.phaseId);
       period.phaseName = safeTrim(this.rp.phaseName) || null;
     }
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
-      periodNo: toInt(this.activePeriodNo),
-      period,
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'period/replace')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          date: toInt(this.activeDay.dateMs),
+          day: String(this.activeDay.day || '').toUpperCase(),
+          periodNo: toInt(this.activePeriodNo),
+          period,
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'period/replace',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Period replaced');
@@ -1232,19 +1303,25 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   submitSetZoom() {
     if (!this.activeDay?.dateMs || !this.activePeriodNo) return;
-    const payload = {
-      tenantId: this.tenantId,
-      timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
-      periodNo: toInt(this.activePeriodNo),
-      zoomUrl: safeTrim(this.zoomUrlInput) || '',
-      userId: localStorage.getItem('userId'),
-    };
     this.loading = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'update/zoomlink')
-      .pipe(finalize(() => (this.loading = false)))
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          date: toInt(this.activeDay.dateMs),
+          day: String(this.activeDay.day || '').toUpperCase(),
+          periodNo: toInt(this.activePeriodNo),
+          zoomUrl: safeTrim(this.zoomUrlInput) || '',
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'update/zoomlink',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Zoom link saved');
@@ -1315,7 +1392,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.commonApi
       .fetchData(payload, this.moduleName, 'convertToExam')
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: () => {
           this.alert.success('Period converted to Exam');
@@ -1363,7 +1443,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         this.moduleName,
         'viewbybatch',
       )
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      ) // FIX V1
       .subscribe({
         next: (res: any) => {
           const schedule = Array.isArray(res?.data) ? res.data : [];
