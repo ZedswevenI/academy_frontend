@@ -1,14 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil, catchError, of, finalize } from 'rxjs';
 
-const safeTrim = (v: any) =>
+const safeTrim = (v: any): string =>
   v === undefined || v === null ? '' : String(v).trim();
 
-const toInt = (v: any, def = 0) => {
+const toInt = (v: any, def = 0): number => {
   const n = Number(v);
   return Number.isFinite(n) ? Math.trunc(n) : def;
 };
@@ -22,9 +22,9 @@ const timeStrToMin = (t: string): number => {
 const minToLabel = (min: number): string => {
   const h24 = Math.floor(min / 60);
   const mm = min % 60;
-  const period = h24 >= 12 ? 'PM' : 'AM';
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  return `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${period}`;
+  return `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
 };
 
 const minToTimeStr = (min: number): string => {
@@ -32,6 +32,36 @@ const minToTimeStr = (min: number): string => {
   const m = min % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
+
+const timesOverlap = (
+  s1: number,
+  e1: number,
+  s2: number,
+  e2: number,
+): boolean => s1 < e2 && s2 < e1;
+
+const pickFields = (obj: any, fields: string[]): any => {
+  const out: any = {};
+  fields.forEach((f) => {
+    out[f] = obj?.[f] ?? '';
+  });
+  return out;
+};
+
+const CONTENT_FIELDS = [
+  'periodType',
+  'mode',
+  'facultyId',
+  'facultyName',
+  'subjectCode',
+  'subjectName',
+  'subjectId',
+  'phaseId',
+  'phaseName',
+  'topic',
+  'venue',
+  'zoomUrl',
+];
 
 @Component({
   selector: 'app-view',
@@ -41,30 +71,31 @@ const minToTimeStr = (min: number): string => {
 })
 export class ViewTableComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+
   loading = false;
   tenantId: any;
   timetableId = '';
   private moduleName = 'timetable';
-
   timetable: any = null;
-
   get isPublished(): boolean {
     return this.timetable?.status === 'Active';
   }
   get isDraft(): boolean {
     return this.timetable?.status === 'DRAFT';
   }
-
   centersFull: any[] = [];
   staffFull: any[] = [];
+  batchStaffFull: any[] = [];
   subjectsFull: any[] = [];
+  batchSubjects: any[] = [];
   phasesFull: any[] = [];
-
+  batchProgramId = '';
+  private subjectIdToStaff = new Map<string, any[]>();
   private staffByCode: Record<string, any> = {};
   private staffById: Record<string, any> = {};
   private subjectByCode: Record<string, any> = {};
+  private subjectById: Record<string, any> = {};
   private centerByCode: Record<string, any> = {};
-
   daysOrder = [
     'MONDAY',
     'TUESDAY',
@@ -78,40 +109,30 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   maxPeriods = 0;
   periodHeaders: number[] = [];
   weekDateMap: any = {};
-
-  // ── active selections ────────────────────────────────────────────────
+  todayDayName = '';
   activeDay: any = null;
   activePeriodNo = 0;
-
-  // ── Cancel Day ───────────────────────────────────────────────────────
+  activePeriod: any = null;
   showCancelDay = false;
   cancelDayReason = 'Holiday';
-
-  // ── Edit Whole Day ───────────────────────────────────────────────────
   showEditDay = false;
   editDayPeriods: any[] = [];
   editDayOriginalPeriods: any[] = [];
   editDayConflicts: any[] = [];
   editDayValidating = false;
   editDayDragIndex: number | null = null;
+  editDayDragOverIndex: number | null = null;
   editDaySubmitAttempted = false;
-
-  // ── Cancel Period ────────────────────────────────────────────────────
+  showEmptyDayConfirm = false;
   showCancelPeriod = false;
   cancelPeriodReason = 'Cancelled';
-
-  // ── Rearrange Staff ──────────────────────────────────────────────────
   showRearrangeStaff = false;
   newFacultyId = '';
   newFacultyName = '';
   activeSubjectId = '';
-
-  // ── Move Period ──────────────────────────────────────────────────────
   showMovePeriod = false;
   moveToPeriodNo: number | null = null;
   availablePeriodSlots: number[] = [];
-
-  // ── Replace Period ───────────────────────────────────────────────────
   showReplacePeriod = false;
   rp: any = {
     facultyId: '',
@@ -121,19 +142,20 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     subjectId: '',
     venue: '',
     topic: '',
-    periodType: '',
-    mode: '',
+    periodType: 'LECTURE',
+    mode: 'OFFLINE',
     zoomUrl: '',
     phaseId: '',
     phaseName: '',
+    _startMin: 0,
+    _endMin: 0,
+    _startLabel: '',
+    _endLabel: '',
   };
-
-  // ── Set Zoom ─────────────────────────────────────────────────────────
   showSetZoom = false;
   zoomUrlInput = '';
-
-  // ── Convert to Exam ──────────────────────────────────────────────────
   showConvertToExam = false;
+  showConvertConfirm = false;
   examForm: any = {
     examId: '',
     examDescription: '',
@@ -142,16 +164,23 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     venue: '',
     topic: '',
   };
-
-  // ── Publish confirm ───────────────────────────────────────────────────
+  openActionKey = '';
+  actionMenuTop = 0;
+  actionMenuLeft = 0;
   showPublishConfirm = false;
-
-  // ── Date range view ──────────────────────────────────────────────────
+  showUnpublishConfirm = false;
+  weekNavLoading = false;
+  hasPrevWeek = false;
+  hasNextWeek = false;
+  private weekIndex: any[] = [];
   viewMode: 'week' | 'range' = 'week';
   fromDateStr = '';
   toDateStr = '';
   rangeMetaLabel = '';
   private lastWeeklyTimetable: any = null;
+  batchClassNo = 0;
+  batchStaffMap: any[] = [];
+  rpPhases: any[] = [];
 
   constructor(
     private router: Router,
@@ -170,7 +199,22 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       this.router.navigate(['/app/timetable']);
       return;
     }
+    const DAYS_UTC = [
+      'SUNDAY',
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+    ];
+    this.todayDayName = DAYS_UTC[new Date().getUTCDay()];
     this.loadLookupsAndTimetable();
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.openActionKey = '';
   }
 
   ngOnDestroy(): void {
@@ -178,7 +222,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ─── Date helpers ─────────────────────────────────────────────────────
   get fromDateMs(): number {
     return this.toStartOfDayMs(this.fromDateStr) || 0;
   }
@@ -207,7 +250,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return `${dd} ${mon} ${d.getUTCFullYear()}`;
   }
 
-  // FIX H1/H2/H5/V9: explicit UTC-safe date display — replaces | date pipe on epoch values
   epochToDisplayDate(epoch: any): string {
     if (!epoch) return '-';
     const ms = Number(epoch);
@@ -220,7 +262,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     });
   }
 
-  // FIX H5: for range display — uses fromDateMs/toDateMs (already UTC epoch)
   msToDisplayDate(ms: number): string {
     if (!ms) return '-';
     return new Date(ms).toLocaleDateString('en-US', {
@@ -231,12 +272,35 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Boot: load lookups then timetable ───────────────────────────────
+  isToday(dayName: string): boolean {
+    return (
+      this.viewMode === 'week' &&
+      this.isCurrentWeek() &&
+      dayName === this.todayDayName
+    );
+  }
+
+  isCurrentWeek(): boolean {
+    const wkStart = toInt(this.timetable?.wkStartOn, 0);
+    if (!wkStart) return false;
+    const now = Date.now();
+    const wkEnd = wkStart + 7 * 24 * 60 * 60 * 1000;
+    return now >= wkStart && now < wkEnd;
+  }
+
+  isPastDate(dateMs: number): boolean {
+    if (!dateMs) return false;
+    const todayStart = Date.UTC(
+      new Date().getUTCFullYear(),
+      new Date().getUTCMonth(),
+      new Date().getUTCDate(),
+    );
+    return dateMs < todayStart;
+  }
+
   private loadLookupsAndTimetable() {
     this.loading = true;
     const tenantId = this.tenantId;
-
-    // FIX V2: all calls use consistent entiId key
     forkJoin({
       center: this.commonApi
         .fetchData({ entiId: tenantId }, 'ims', 'center/list?list=full')
@@ -250,20 +314,18 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     })
       .pipe(
         takeUntil(this.destroy$),
-        finalize(() => (this.loading = false)), // FIX V1: finalize always clears loading
+        finalize(() => (this.loading = false)),
       )
       .subscribe({
         next: ({ center, staff, subject }: any) => {
           this.centersFull = center?.data || [];
           this.staffFull = staff?.data || [];
           this.subjectsFull = subject?.data || [];
-
           this.centerByCode = {};
           this.centersFull.forEach((c: any) => {
             const code = safeTrim(c?.centerCode);
             if (code) this.centerByCode[code] = c;
           });
-
           this.staffByCode = {};
           this.staffById = {};
           this.staffFull.forEach((s: any) => {
@@ -275,13 +337,15 @@ export class ViewTableComponent implements OnInit, OnDestroy {
                 this.staffById[k] = s;
               });
           });
-
           this.subjectByCode = {};
+          this.subjectById = {};
           this.subjectsFull.forEach((sub: any) => {
             const code = safeTrim(sub?.subjectCode);
+            const id = safeTrim(sub?._id);
             if (code) this.subjectByCode[code] = sub;
+            if (id) this.subjectById[id] = sub;
           });
-
+          this.buildSubjectStaffMap();
           this.loadTimetable();
         },
         error: () => {
@@ -290,15 +354,20 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // FIX V3: phases use 'institue' module (matching list screen + controller)
-  private loadPhases(batchCode: string) {
-    if (!batchCode) return;
+  private buildSubjectStaffMap() {
+    this.subjectIdToStaff = new Map<string, any[]>();
+    this.staffFull.forEach((s: any) => {
+      const subId = safeTrim(s?.subject);
+      if (!subId) return;
+      if (!this.subjectIdToStaff.has(subId))
+        this.subjectIdToStaff.set(subId, []);
+      this.subjectIdToStaff.get(subId)!.push(s);
+    });
+  }
+
+  private loadPhases() {
     this.commonApi
-      .fetchData(
-        { entiId: this.tenantId, batchCode },
-        'institue',
-        'phase/list?list=full',
-      )
+      .fetchData({ entiId: this.tenantId }, 'institue', 'phase/list?list=full')
       .pipe(
         catchError(() => of({ data: [] })),
         takeUntil(this.destroy$),
@@ -308,32 +377,111 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  getCenterName(centerCode: string) {
-    const c = this.centerByCode?.[safeTrim(centerCode)];
-    return c?.centerName || centerCode || '-';
+  private loadRpPhases(subjectId: string) {
+    if (!subjectId || !this.batchProgramId || !this.batchClassNo) {
+      this.rpPhases = [];
+      return;
+    }
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId },
+        'institue',
+        `phase/list?classNo=${this.batchClassNo}&subjectId=${subjectId}&programId=${this.batchProgramId}`,
+      )
+      .pipe(
+        catchError(() => of({ data: [] })),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res: any) => {
+        this.rpPhases = Array.isArray(res) ? res : res?.data || [];
+      });
   }
 
-  resolveFacultyLabel(p: any) {
+  private loadBatchDetails(batchCode: string) {
+    if (!batchCode) return;
+    this.commonApi
+      .fetchData({ entiId: this.tenantId, batchCode }, 'batch', 'view')
+      .pipe(
+        catchError(() => of({ data: null })),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res: any) => {
+        const batch = res?.data || null;
+        this.batchProgramId = safeTrim(batch?.programId);
+
+        this.batchClassNo = toInt(batch?.classNo, 0);
+        this.batchStaffMap = Array.isArray(batch?.staffMap)
+          ? batch.staffMap
+          : [];
+        const batchSubjectCodes: string[] = (
+          batch?.subjects ||
+          batch?.subjectCodes ||
+          []
+        )
+          .map((s: any) => safeTrim(s))
+          .filter(Boolean);
+        this.batchSubjects = batchSubjectCodes.length
+          ? this.subjectsFull.filter((sub) =>
+              batchSubjectCodes.includes(safeTrim(sub?.subjectCode)),
+            )
+          : this.subjectsFull;
+        const batchSubjectIds = new Set(
+          this.batchSubjects.map((s: any) => safeTrim(s?._id)).filter(Boolean),
+        );
+        this.batchStaffFull = batchSubjectIds.size
+          ? this.staffFull.filter((s: any) =>
+              batchSubjectIds.has(safeTrim(s?.subject)),
+            )
+          : this.staffFull;
+
+        if (!this.batchStaffFull.length) this.batchStaffFull = this.staffFull;
+      });
+  }
+
+  getCenterName(centerCode: string): string {
+    return (
+      this.centerByCode?.[safeTrim(centerCode)]?.centerName || centerCode || '-'
+    );
+  }
+
+  resolveFacultyLabel(p: any): string {
     const name = safeTrim(p?.facultyName);
     if (name) return name;
     const idOrCode = safeTrim(p?.facultyId);
     if (!idOrCode) return '';
     const s =
       this.staffByCode?.[idOrCode] || this.staffById?.[idOrCode] || null;
-    if (s?.staffName) return `${safeTrim(s.staffName)} (${idOrCode})`;
-    return idOrCode;
+    return s?.staffName ? `${safeTrim(s.staffName)} (${idOrCode})` : idOrCode;
   }
 
-  resolveSubjectLabel(p: any) {
+  resolveSubjectLabel(p: any): string {
     const code = safeTrim(p?.subjectCode);
     const name = safeTrim(p?.subjectName);
-    if (name && code) return `${name} - ${code}`;
-    if (name) return name;
-    if (code) return code;
-    return '';
+    if (name && code) return `${name} (${code})`;
+    return name || code || '';
   }
 
-  // ─── Load timetable ──────────────────────────────────────────────────
+  getStaffForSubject(subjectId: string): any[] {
+    const id = safeTrim(subjectId);
+    const pool = this.batchStaffFull.length
+      ? this.batchStaffFull
+      : this.staffFull;
+    if (!id) return pool;
+    const mapped = this.subjectIdToStaff.get(id) || [];
+    const batchCodes = new Set(pool.map((s: any) => safeTrim(s?.staffCode)));
+    const filtered = mapped.filter((s: any) =>
+      batchCodes.has(safeTrim(s?.staffCode)),
+    );
+    return filtered.length ? filtered : pool;
+  }
+
+  getAllStaffForSubject(subjectId: string): any[] {
+    const id = safeTrim(subjectId);
+    if (!id) return this.staffFull;
+    const mapped = this.subjectIdToStaff.get(id) || [];
+    return mapped.length ? mapped : this.staffFull;
+  }
+
   loadTimetable() {
     this.loading = true;
     this.commonApi
@@ -343,7 +491,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         'view',
       )
       .pipe(
-        takeUntil(this.destroy$), // FIX V1
+        takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
       )
       .subscribe({
@@ -358,8 +506,11 @@ export class ViewTableComponent implements OnInit, OnDestroy {
             );
           }
           this.processSchedule();
-          if (this.timetable?.batchCode)
-            this.loadPhases(this.timetable.batchCode);
+          if (this.timetable?.batchCode) {
+            this.loadPhases();
+            this.loadBatchDetails(this.timetable.batchCode);
+            this.loadWeekIndex(this.timetable.batchCode);
+          }
         },
         error: (err: any) => {
           this.alert.error(err?.error?.message || 'Failed to load timetable');
@@ -367,7 +518,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── Schedule processing ─────────────────────────────────────────────
   private buildWeekDateMap() {
     this.weekDateMap = {};
     const wkStartOn = toInt(this.timetable?.wkStartOn, 0);
@@ -400,8 +550,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         dateMs,
         dateLabel: this.weekDateMap?.[day]?.label || '-',
         periods,
-        // FIX V4: __isHoliday computed from live overrides at build time
-        // getRenderedPeriod also checks isDayCancelled() live — both stay in sync after loadTimetable()
         __isHoliday: this.isDayCancelled(dateMs, day),
       };
     });
@@ -413,7 +561,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     );
   }
 
-  // ─── Override finders ────────────────────────────────────────────────
   private findDayOverride(dateMs: number, day: string, action?: string) {
     const ovs = Array.isArray(this.timetable?.dayOverrides)
       ? this.timetable.dayOverrides
@@ -447,6 +594,22 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   isDayCancelled(dateMs: number, day: string): boolean {
+    if (this.isDraft) {
+      if (this.findDayOverride(dateMs, day, 'CANCEL_DAY')) return true;
+      const dayData = (this.timetable?.week || []).find(
+        (d: any) =>
+          String(d?.day || '').toUpperCase() ===
+          String(day || '').toUpperCase(),
+      );
+      const periods: any[] = dayData?.periods || [];
+      if (dayData?.isCancelled === true) return true;
+      if (
+        periods.length > 0 &&
+        periods.every((p: any) => p?.isCancelled === true)
+      )
+        return true;
+      return false;
+    }
     return !!this.findDayOverride(dateMs, day, 'CANCEL_DAY');
   }
 
@@ -461,10 +624,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       : null;
   }
 
-  /**
-   * Atomically applies all MOVE_PERIOD overrides for a date/day.
-   * Snapshots first so swap order never matters.
-   */
   private applyMoveOverrides(
     dateMs: number,
     day: string,
@@ -481,85 +640,93 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         String(o?.day || '').toUpperCase() === dayU,
     );
     if (!moves.length) return;
-    const snapshot = new Map(baseMap);
+    const snapshot = new Map<number, any>(baseMap);
+    const applied = new Set<string>();
     for (const ov of moves) {
       const fromP = toInt(ov?.periodNo);
       const toP = toInt(ov?.toPeriodNo);
-      if (!fromP || !toP) continue;
+      if (!fromP || !toP || fromP === toP) continue;
+      const pairKey = `${Math.min(fromP, toP)}-${Math.max(fromP, toP)}`;
+      if (applied.has(pairKey)) continue;
+      applied.add(pairKey);
       const srcPeriod = snapshot.get(fromP);
       const destPeriod = snapshot.get(toP);
-      if (srcPeriod) baseMap.set(toP, { ...srcPeriod, periodNo: toP });
-      if (destPeriod) baseMap.set(fromP, { ...destPeriod, periodNo: fromP });
+      if (srcPeriod)
+        baseMap.set(toP, {
+          ...srcPeriod,
+          periodNo: toP,
+          time: destPeriod?.time ?? srcPeriod.time,
+        });
+      else baseMap.delete(toP);
+      if (destPeriod)
+        baseMap.set(fromP, {
+          ...destPeriod,
+          periodNo: fromP,
+          time: srcPeriod?.time ?? destPeriod.time,
+        });
       else baseMap.delete(fromP);
     }
   }
 
-  /**
-   * FIX V5: Correct layer order:
-   *   1. CANCEL_DAY
-   *   2. REPLACE_DAY (whole-day replacement) OR template week[]
-   *   3. MOVE_PERIOD overrides (applied atomically on top of step 2 base)
-   *   4. CANCEL_PERIOD
-   *   5. REPLACE_PERIOD
-   */
-  getRenderedPeriod(dayRow: any, pNum: number) {
-    const dateMs = toInt(dayRow?.dateMs);
+  getRenderedPeriod(dayRow: any, pNum: number): any {
     const day = String(dayRow?.day || '').toUpperCase();
-    if (!dateMs || !day) return null;
-
-    // Range view: periods pre-built by API
+    if (!day) return null;
     if (this.viewMode === 'range') {
       if (dayRow?.__isHoliday)
         return { __dayCancelled: true, isCancelled: true, time: {} };
       const list = Array.isArray(dayRow?.periods) ? dayRow.periods : [];
       return list.find((p: any) => toInt(p?.periodNo) === toInt(pNum)) || null;
     }
-
-    // Layer 1: day cancelled
+    if (this.isDraft) {
+      if (this.isDayCancelled(toInt(dayRow?.dateMs), day))
+        return { __dayCancelled: true, isCancelled: true, time: {} };
+      const dayData = (this.timetable?.week || []).find(
+        (d: any) => String(d?.day || '').toUpperCase() === day,
+      );
+      if (!dayData) return null;
+      const period = (dayData.periods || []).find(
+        (p: any) => toInt(p?.periodNo) === toInt(pNum),
+      );
+      return period || null;
+    }
+    const dateMs = toInt(dayRow?.dateMs);
     if (this.isDayCancelled(dateMs, day))
       return { __dayCancelled: true, isCancelled: true, time: {} };
-
-    // Layer 2: whole day replaced OR template
     const replacedPeriods = this.getDayReplacementPeriods(dateMs, day);
     const basePeriods =
       replacedPeriods ?? (Array.isArray(dayRow?.periods) ? dayRow.periods : []);
-
     const baseMap = new Map<number, any>();
     basePeriods.forEach((p: any) => {
       const pn = toInt(p?.periodNo);
-      if (pn > 0) baseMap.set(pn, p);
+      if (pn) baseMap.set(pn, p);
     });
-
-    // Layer 3: move overrides (atomic snapshot)
     this.applyMoveOverrides(dateMs, day, baseMap);
-
-    const base = baseMap.get(toInt(pNum)) || null;
-    if (!base) return null;
-
-    // Layer 4: cancel period
     const cancelOv = this.findPeriodOverride(
       dateMs,
       day,
-      toInt(pNum),
+      pNum,
       'CANCEL_PERIOD',
     );
-    if (cancelOv)
-      return {
-        ...base,
-        isCancelled: true,
-        cancelReason: cancelOv.reason || null,
-      };
-
-    // Layer 5: replace period
     const replaceOv = this.findPeriodOverride(
       dateMs,
       day,
-      toInt(pNum),
+      pNum,
       'REPLACE_PERIOD',
     );
-    if (replaceOv?.period) return { ...replaceOv.period, __staffChanged: true };
-
-    return base;
+    let result = baseMap.get(pNum) || null;
+    if (cancelOv)
+      return { ...result, isCancelled: true, cancelReason: cancelOv.reason };
+    if (replaceOv) {
+      const modifiedFields = (CONTENT_FIELDS as string[]).filter(
+        (f) => replaceOv.period?.[f] !== result?.[f],
+      );
+      return {
+        ...replaceOv.period,
+        __modified: true,
+        __modifiedFields: modifiedFields,
+      };
+    }
+    return result;
   }
 
   private computeMaxPeriods(): number {
@@ -587,11 +754,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return maxP;
   }
 
-  back() {
-    this.router.navigate(['/app/timetable']);
-  }
-
-  // FIX V6: filter both isCancelled AND __dayCancelled
   private getAllRenderedPeriodsForDay(row: any): any[] {
     const result: any[] = [];
     for (const pNum of this.periodHeaders) {
@@ -602,12 +764,125 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  // ─── PUBLISH / UNPUBLISH ─────────────────────────────────────────────
+  back() {
+    this.router.navigate(['/app/timetable']);
+  }
+
+  private loadWeekIndex(batchCode: string) {
+    if (!batchCode) return;
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId, batchCode },
+        this.moduleName,
+        'list-by-batch',
+      )
+      .pipe(
+        catchError(() => of({ data: [] })),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res: any) => {
+        const rows: any[] = res?.data || [];
+        this.weekIndex = rows
+          .filter((r: any) => toInt(r?.wkStartOn) > 0)
+          .sort((a: any, b: any) => toInt(a.wkStartOn) - toInt(b.wkStartOn))
+          .map((r: any) => ({
+            wkStartOn: toInt(r.wkStartOn),
+            _id: safeTrim(r._id),
+            status: safeTrim(r.status),
+          }));
+        this.updateWeekNavFlags();
+      });
+  }
+
+  private updateWeekNavFlags() {
+    const cur = toInt(this.timetable?.wkStartOn, 0);
+    const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
+    this.hasPrevWeek = idx > 0;
+    this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
+  }
+
+  get currentWeekLabel(): string {
+    const wkStart = toInt(this.timetable?.wkStartOn, 0);
+    if (!wkStart) return '';
+    const wkEnd = wkStart + 6 * 24 * 60 * 60 * 1000;
+    return `${this.fmtDateLabel(wkStart)} — ${this.fmtDateLabel(wkEnd)}`;
+  }
+
+  get currentWeekIndexDisplay(): string {
+    const cur = toInt(this.timetable?.wkStartOn, 0);
+    const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
+    if (idx < 0 || !this.weekIndex.length) return '';
+    return `Week ${idx + 1} of ${this.weekIndex.length}`;
+  }
+
+  navigateWeek(direction: 'prev' | 'next') {
+    const cur = toInt(this.timetable?.wkStartOn, 0);
+    const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
+    const target =
+      direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
+    if (!target) return;
+    this.weekNavLoading = true;
+    this.timetableId = target._id;
+    this.commonApi
+      .fetchData(
+        { tenantId: this.tenantId, timetableId: target._id },
+        this.moduleName,
+        'view',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.weekNavLoading = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.timetable = res?.data || null;
+          this.lastWeeklyTimetable = this.timetable;
+          this.viewMode = 'week';
+          this.processSchedule();
+          this.updateWeekNavFlags();
+        },
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Failed to load week');
+        },
+      });
+  }
+
+  actionKey(dayName: string, pNum: number): string {
+    return `${dayName}_${pNum}`;
+  }
+
+  toggleActionMenu(key: string, event: MouseEvent) {
+    event.stopPropagation();
+    if (this.openActionKey === key) {
+      this.openActionKey = '';
+      return;
+    }
+    const btn = event.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    this.actionMenuTop = rect.bottom + 4;
+    this.actionMenuLeft = rect.right - 195;
+    if (this.actionMenuLeft < 8) this.actionMenuLeft = 8;
+    this.openActionKey = key;
+  }
+
+  closeActionMenu() {
+    this.openActionKey = '';
+  }
+  isActionMenuOpen(key: string): boolean {
+    return this.openActionKey === key;
+  }
+
   confirmPublish() {
     this.showPublishConfirm = true;
   }
   cancelPublish() {
     this.showPublishConfirm = false;
+  }
+  confirmUnpublish() {
+    this.showUnpublishConfirm = true;
+  }
+  cancelUnpublish() {
+    this.showUnpublishConfirm = false;
   }
 
   submitPublish() {
@@ -626,10 +901,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1/V8
+      )
       .subscribe({
         next: () => {
-          this.alert.success('Timetable published successfully');
+          this.alert.success('Timetable published');
           this.loadTimetable();
         },
         error: (err: any) => {
@@ -639,6 +914,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   submitUnpublish() {
+    this.showUnpublishConfirm = false;
     this.loading = true;
     this.commonApi
       .fetchData(
@@ -653,10 +929,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1/V8
+      )
       .subscribe({
         next: () => {
-          this.alert.success('Timetable reverted to Draft');
+          this.alert.success('Reverted to Draft');
           this.loadTimetable();
         },
         error: (err: any) => {
@@ -665,7 +941,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── CANCEL DAY ──────────────────────────────────────────────────────
   openCancelDay(row: any) {
     this.activeDay = row;
     this.cancelDayReason = 'Holiday';
@@ -677,15 +952,21 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   submitCancelDay() {
-    if (!this.activeDay?.dateMs) return;
+    if (!this.activeDay) return;
+    const dateMs = toInt(this.activeDay.dateMs);
+    if (!dateMs) {
+      this.alert.error(
+        'This day has no valid date. The timetable wkStartOn may not be set — please re-create this timetable.',
+      );
+      return;
+    }
     this.loading = true;
     this.commonApi
       .fetchData(
         {
           tenantId: this.tenantId,
           timetableId: this.timetableId,
-          date: toInt(this.activeDay.dateMs),
-          day: String(this.activeDay.day || '').toUpperCase(),
+          date: dateMs,
           reason: safeTrim(this.cancelDayReason) || 'Holiday',
           userId: localStorage.getItem('userId'),
         },
@@ -695,7 +976,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
           this.alert.success('Holiday declared');
@@ -703,42 +984,40 @@ export class ViewTableComponent implements OnInit, OnDestroy {
           this.loadTimetable();
         },
         error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Failed');
+          this.alert.error(err?.error?.message || 'Failed to declare holiday');
         },
       });
   }
 
-  // ─── EDIT WHOLE DAY ──────────────────────────────────────────────────
   openEditDay(row: any) {
     this.activeDay = row;
-    const templateDay = (this.timetable?.week || []).find(
-      (d: any) =>
-        String(d?.day || '').toUpperCase() ===
-        String(row?.day || '').toUpperCase(),
-    );
-    const templatePeriods: any[] = Array.isArray(templateDay?.periods)
-      ? [...templateDay.periods]
-      : [];
-
+    const day = String(row?.day || '').toUpperCase();
     let periodsToEdit: any[];
-    if (this.isPublished) {
-      // FIX V6: getAllRenderedPeriodsForDay already filters both isCancelled AND __dayCancelled
+    if (this.isDraft) {
+      const templateDay = (this.timetable?.week || []).find(
+        (d: any) => String(d?.day || '').toUpperCase() === day,
+      );
+      periodsToEdit = (
+        Array.isArray(templateDay?.periods) ? [...templateDay.periods] : []
+      )
+        .filter((p: any) => !p.isCancelled)
+        .sort((a: any, b: any) => toInt(a.periodNo) - toInt(b.periodNo));
+    } else {
       periodsToEdit = this.getAllRenderedPeriodsForDay(row).sort(
         (a: any, b: any) => toInt(a.__slotNo) - toInt(b.__slotNo),
       );
-    } else {
-      periodsToEdit = templatePeriods.sort(
-        (a: any, b: any) => toInt(a.periodNo) - toInt(b.periodNo),
-      );
     }
-
     const mapped = periodsToEdit.map((p: any) => {
       const rawId = safeTrim(p.facultyId) || '';
       const staff = this.staffByCode[rawId] || this.staffById[rawId] || null;
+      const startMin = toInt(p?.time?.startMin);
+      const endMin = toInt(p?.time?.endMin);
       return {
         periodNo: toInt(p.periodNo || p.__slotNo || 0),
-        startTime: minToTimeStr(toInt(p?.time?.startMin)),
-        endTime: minToTimeStr(toInt(p?.time?.endMin)),
+        startTime: minToTimeStr(startMin),
+        endTime: minToTimeStr(endMin),
+        startMin,
+        endMin,
         periodType: p.periodType || 'LECTURE',
         mode: p.mode || 'OFFLINE',
         facultyId: staff ? safeTrim(staff.staffCode) : rawId,
@@ -756,12 +1035,13 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         isCancelled: false,
       };
     });
-
     this.editDayPeriods = mapped;
-    this.editDayOriginalPeriods = mapped.map((ep: any) => ({ ...ep }));
+    this.editDayOriginalPeriods = mapped.map((ep) => ({ ...ep }));
     this.editDayConflicts = [];
     this.editDayDragIndex = null;
+    this.editDayDragOverIndex = null;
     this.editDaySubmitAttempted = false;
+    this.showEmptyDayConfirm = false;
     if (!this.editDayPeriods.length) this.addEditDayPeriod();
     this.showEditDay = true;
   }
@@ -775,49 +1055,112 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.editDayValidating = false;
     this.editDaySubmitAttempted = false;
     this.editDayDragIndex = null;
+    this.editDayDragOverIndex = null;
+    this.showEmptyDayConfirm = false;
   }
 
-  onDragStart(index: number) {
+  gripMouseDown(event: MouseEvent) {
+    const rowEl = (event.target as HTMLElement).closest(
+      '.edit-day-row',
+    ) as HTMLElement | null;
+    if (!rowEl) return;
+    rowEl.setAttribute('draggable', 'true');
+    const cleanup = () => {
+      rowEl.removeAttribute('draggable');
+      document.removeEventListener('mouseup', cleanup);
+    };
+    document.addEventListener('mouseup', cleanup);
+  }
+
+  onDragStart(event: DragEvent, index: number) {
     this.editDayDragIndex = index;
+    this.editDayDragOverIndex = null;
+    event.dataTransfer?.setData('text/plain', String(index));
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+    const ghost = event.currentTarget as HTMLElement;
+    event.dataTransfer?.setDragImage(ghost, 20, 20);
   }
-  onDragOver(event: DragEvent) {
+
+  onDragOver(event: DragEvent, index: number) {
     event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    if (this.editDayDragIndex !== null && this.editDayDragIndex !== index) {
+      this.editDayDragOverIndex = index;
+    }
   }
+
+  onDragLeave(event: DragEvent, index: number) {
+    const rel = event.relatedTarget as HTMLElement;
+    const row = event.currentTarget as HTMLElement;
+    if (!row.contains(rel)) {
+      if (this.editDayDragOverIndex === index) this.editDayDragOverIndex = null;
+    }
+  }
+
   onDragEnd() {
     this.editDayDragIndex = null;
+    this.editDayDragOverIndex = null;
+    document
+      .querySelectorAll('.edit-day-row')
+      .forEach((el) => el.removeAttribute('draggable'));
   }
 
-  onDrop(targetIndex: number) {
+  onDrop(event: DragEvent, targetIndex: number) {
+    event.preventDefault();
+    event.stopPropagation();
     const fromIndex = this.editDayDragIndex;
-    if (fromIndex === null || fromIndex === targetIndex) {
-      this.editDayDragIndex = null;
-      return;
-    }
-    const arr = this.editDayPeriods;
-    const moved = arr.splice(fromIndex, 1)[0];
-    arr.splice(targetIndex, 0, moved);
-    arr.forEach((ep: any, idx: number) => {
-      ep.periodNo = idx + 1;
-    });
     this.editDayDragIndex = null;
+    this.editDayDragOverIndex = null;
+    if (fromIndex === null || fromIndex === targetIndex) return;
+
+    const arr = this.editDayPeriods;
+    const fromContent = pickFields(arr[fromIndex], CONTENT_FIELDS);
+    const toContent = pickFields(arr[targetIndex], CONTENT_FIELDS);
+    CONTENT_FIELDS.forEach((f) => {
+      arr[fromIndex][f] = toContent[f];
+      arr[targetIndex][f] = fromContent[f];
+    });
     this.editDayConflicts = [];
   }
 
+  selectSlotForSwap(index: number) {
+    if (this.editDayDragIndex === null) {
+      this.editDayDragIndex = index;
+    } else if (this.editDayDragIndex === index) {
+      this.editDayDragIndex = null;
+    } else {
+      const fromIndex = this.editDayDragIndex;
+      this.editDayDragIndex = null;
+      const arr = this.editDayPeriods;
+      const fromContent = pickFields(arr[fromIndex], CONTENT_FIELDS);
+      const toContent = pickFields(arr[index], CONTENT_FIELDS);
+      CONTENT_FIELDS.forEach((f) => {
+        arr[fromIndex][f] = toContent[f];
+        arr[index][f] = fromContent[f];
+      });
+      this.editDayConflicts = [];
+    }
+  }
+
   resetEditDayPeriods() {
-    this.editDayPeriods = this.editDayOriginalPeriods.map((ep: any) => ({
+    this.editDayPeriods = this.editDayOriginalPeriods.map((ep) => ({
       ...ep,
+      __timeError: '',
     }));
     this.editDayConflicts = [];
     this.editDaySubmitAttempted = false;
   }
 
   addEditDayPeriod() {
-    const lastPeriod = this.editDayPeriods[this.editDayPeriods.length - 1];
-    const defaultStart = lastPeriod?.endTime || '';
+    const last = this.editDayPeriods[this.editDayPeriods.length - 1];
+    const defaultStart = last?.endTime || '';
+    const defaultStartMin = last?.endMin || 0;
     this.editDayPeriods.push({
       periodNo: this.editDayPeriods.length + 1,
       startTime: defaultStart,
       endTime: '',
+      startMin: defaultStartMin,
+      endMin: 0,
       periodType: 'LECTURE',
       mode: 'OFFLINE',
       facultyId: '',
@@ -837,9 +1180,31 @@ export class ViewTableComponent implements OnInit, OnDestroy {
 
   removeEditDayPeriod(i: number) {
     this.editDayPeriods.splice(i, 1);
-    this.editDayPeriods.forEach((ep: any, idx: number) => {
+    this.editDayPeriods.forEach((ep, idx) => {
       ep.periodNo = idx + 1;
     });
+    this.editDayConflicts = [];
+  }
+
+  onEditDayTimeChange(ep: any) {
+    ep.startMin = timeStrToMin(ep.startTime);
+    ep.endMin = timeStrToMin(ep.endTime);
+    ep.__timeError = ''; 
+    if (ep.startMin && ep.endMin && ep.endMin <= ep.startMin) {
+      ep.__timeError = 'End time must be after start time';
+    }
+    if (!ep.__timeError && ep.startMin && ep.endMin) {
+      for (const other of this.editDayPeriods) {
+        if (other === ep) continue;
+        if (!other.startMin || !other.endMin) continue;
+        if (
+          timesOverlap(ep.startMin, ep.endMin, other.startMin, other.endMin)
+        ) {
+          ep.__timeError = `Overlaps with ${other.startTime}–${other.endTime}`;
+          break;
+        }
+      }
+    }
     this.editDayConflicts = [];
   }
 
@@ -853,8 +1218,9 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     const sub = this.subjectByCode[safeTrim(ep.subjectCode)];
     ep.subjectName = sub?.subjectName || '';
     ep.subjectId = sub?._id || '';
-    ep.facultyId = '';
+    ep.facultyId = ''; 
     ep.facultyName = '';
+    ep.topic = '';
     this.editDayConflicts = [];
   }
 
@@ -871,13 +1237,33 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.editDayConflicts = [];
   }
 
-  getStaffForSubject(subjectId: string): any[] {
-    const id = safeTrim(subjectId);
-    if (!id) return this.staffFull;
-    const filtered = this.staffFull.filter(
-      (s: any) => safeTrim(s?.subject) === id || safeTrim(s?.subjectId) === id,
-    );
-    return filtered.length ? filtered : this.staffFull;
+  private validateNoOverlaps(periods: any[]): string | null {
+    for (let i = 0; i < periods.length; i++) {
+      for (let j = i + 1; j < periods.length; j++) {
+        const a = periods[i],
+          b = periods[j];
+        if (timesOverlap(a.startMin, a.endMin, b.startMin, b.endMin)) {
+          return `Period ${i + 1} (${a.startTime}–${a.endTime}) overlaps with Period ${j + 1} (${b.startTime}–${b.endTime})`;
+        }
+      }
+    }
+    return null;
+  }
+
+  getRpStaffList(): { code: string; name: string }[] {
+    if (!this.rp?.subjectId) return [];
+    return this.batchStaffMap
+      .filter(
+        (sm: any) => safeTrim(sm?.subjectId) === safeTrim(this.rp.subjectId),
+      )
+      .map((sm: any) => {
+        const rec = this.staffById[safeTrim(sm.staffId)] || null;
+        const code = rec ? safeTrim(rec.staffCode) : safeTrim(sm.staffId);
+        const name = rec
+          ? safeTrim(rec.staffName)
+          : safeTrim(sm.staffName) || code;
+        return { code, name };
+      });
   }
 
   private buildEditDayPayloadPeriods(): any[] | null {
@@ -886,6 +1272,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       const ep = this.editDayPeriods[i];
       if (!ep.startTime || !ep.endTime) {
         this.alert.error(`Period ${i + 1}: start and end time are required`);
+        return null;
+      }
+      if (ep.__timeError) {
+        this.alert.error(`Period ${i + 1}: ${ep.__timeError}`);
         return null;
       }
       const startMin = timeStrToMin(ep.startTime);
@@ -899,6 +1289,19 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         return null;
       }
     }
+    const overlapError = this.validateNoOverlaps(
+      this.editDayPeriods.map((ep) => ({
+        startMin: timeStrToMin(ep.startTime),
+        endMin: timeStrToMin(ep.endTime),
+        startTime: ep.startTime,
+        endTime: ep.endTime,
+      })),
+    );
+    if (overlapError) {
+      this.alert.error(overlapError);
+      return null;
+    }
+
     return this.editDayPeriods.map((ep: any, idx: number) => {
       const startMin = timeStrToMin(ep.startTime);
       const endMin = timeStrToMin(ep.endTime);
@@ -927,78 +1330,102 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     });
   }
 
-  validateAndSubmitEditDay() {
-    if (!this.activeDay?.dateMs || !this.editDayPeriods.length) return;
+  submitEditDay() {
+    if (!this.activeDay) return;
+    if (!this.editDayPeriods.length) {
+      this.showEmptyDayConfirm = true;
+      return;
+    }
+    this.showEmptyDayConfirm = false;
     const periods = this.buildEditDayPayloadPeriods();
     if (!periods) return;
-
-    // FIX V7: include full week context in validate payload so conflict check sees other days
-    const allDays: any[] = this.sortedSchedule.map((row: any) => {
-      const isActiveDay =
-        String(row.day || '').toUpperCase() ===
-        String(this.activeDay.day || '').toUpperCase();
-      if (isActiveDay)
-        return { day: String(this.activeDay.day || '').toUpperCase(), periods };
-      // Other days: use their rendered template periods
-      const dayPeriods: any[] = [];
-      for (const pNum of this.periodHeaders) {
-        const p = this.getRenderedPeriod(row, pNum);
-        if (p && !p.__dayCancelled && !p.isCancelled) dayPeriods.push(p);
-      }
-      return { day: String(row.day || '').toUpperCase(), periods: dayPeriods };
-    });
-
-    const validatePayload = {
+    const day = String(this.activeDay.day || '').toUpperCase();
+    const dateMs = toInt(this.activeDay.dateMs);
+    const payload: any = {
       tenantId: this.tenantId,
-      data: [
-        {
-          batchCode: safeTrim(this.timetable?.batchCode),
-          timetableId: this.timetableId,
-          wkStartOn: toInt(this.timetable?.wkStartOn),
-          week: allDays,
-        },
-      ],
+      timetableId: this.timetableId,
+      day,
+      periods,
+      userId: localStorage.getItem('userId'),
     };
-
-    this.editDayValidating = true;
-    this.editDayConflicts = [];
-    this.commonApi
-      .fetchData(validatePayload, this.moduleName, 'validate')
-      .pipe(takeUntil(this.destroy$)) // FIX V1
-      .subscribe({
-        next: () => {
-          this.editDayValidating = false;
-          this.doSubmitEditDay(periods);
-        },
-        error: (err: any) => {
-          this.editDayValidating = false;
-          const conflicts = err?.error?.conflicts;
-          if (Array.isArray(conflicts) && conflicts.length)
-            this.editDayConflicts = conflicts;
-          else this.alert.error(err?.error?.message || 'Validation failed');
-        },
+    if (this.isPublished) {
+      if (!dateMs) {
+        this.alert.error('Cannot determine date for this day.');
+        return;
+      }
+      payload.date = dateMs;
+      this.editDayValidating = true;
+      this.editDayConflicts = [];
+      const allDays: any[] = this.sortedSchedule.map((row: any) => {
+        const isActiveDay = String(row.day || '').toUpperCase() === day;
+        if (isActiveDay) return { day, periods };
+        const dayPeriods: any[] = [];
+        for (const pNum of this.periodHeaders) {
+          const p = this.getRenderedPeriod(row, pNum);
+          if (p && !p.__dayCancelled && !p.isCancelled) dayPeriods.push(p);
+        }
+        return {
+          day: String(row.day || '').toUpperCase(),
+          periods: dayPeriods,
+        };
       });
+      this.commonApi
+        .fetchData(
+          {
+            tenantId: this.tenantId,
+            data: [
+              {
+                batchCode: safeTrim(this.timetable?.batchCode),
+                timetableId: this.timetableId,
+                wkStartOn: toInt(this.timetable?.wkStartOn),
+                week: allDays,
+              },
+            ],
+          },
+          this.moduleName,
+          'validate',
+        )
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.editDayValidating = false;
+            this.doSubmitEditDay(payload);
+          },
+          error: (err: any) => {
+            this.editDayValidating = false;
+            const conflicts = err?.error?.conflicts;
+            if (Array.isArray(conflicts) && conflicts.length)
+              this.editDayConflicts = conflicts;
+            else this.alert.error(err?.error?.message || 'Validation failed');
+          },
+        });
+    } else {
+      this.doSubmitEditDay(payload);
+    }
   }
 
-  private doSubmitEditDay(periods: any[]) {
+  confirmEmptyDay() {
+    this.showEmptyDayConfirm = false;
+    const payload: any = {
+      tenantId: this.tenantId,
+      timetableId: this.timetableId,
+      day: String(this.activeDay.day || '').toUpperCase(),
+      periods: [],
+      userId: localStorage.getItem('userId'),
+    };
+    const dateMs = toInt(this.activeDay.dateMs);
+    if (this.isPublished && dateMs) payload.date = dateMs;
+    this.doSubmitEditDay(payload);
+  }
+
+  private doSubmitEditDay(payload: any) {
     this.loading = true;
     this.commonApi
-      .fetchData(
-        {
-          tenantId: this.tenantId,
-          timetableId: this.timetableId,
-          date: toInt(this.activeDay.dateMs),
-          day: String(this.activeDay.day || '').toUpperCase(),
-          periods,
-          userId: localStorage.getItem('userId'),
-        },
-        this.moduleName,
-        'day/edit',
-      )
+      .fetchData(payload, this.moduleName, 'day/edit')
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
           this.alert.success('Day schedule updated');
@@ -1011,40 +1438,45 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── CANCEL PERIOD ───────────────────────────────────────────────────
   openCancelPeriod(row: any, pNum: number) {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
+    this.activePeriod = this.getRenderedPeriod(row, pNum);
     this.cancelPeriodReason = 'Cancelled';
     this.showCancelPeriod = true;
   }
+
   closeCancelPeriod() {
     this.showCancelPeriod = false;
     this.activeDay = null;
     this.activePeriodNo = 0;
+    this.activePeriod = null;
   }
 
   submitCancelPeriod() {
-    if (!this.activeDay?.dateMs || !this.activePeriodNo) return;
+    if (!this.activeDay || !this.activePeriodNo) return;
+    const day = String(this.activeDay.day || '').toUpperCase();
+    const dateMs = toInt(this.activeDay.dateMs);
+    if (this.isPublished && !dateMs) {
+      this.alert.error('Cannot determine date for this day.');
+      return;
+    }
+    const payload: any = {
+      tenantId: this.tenantId,
+      timetableId: this.timetableId,
+      day,
+      periodNo: toInt(this.activePeriodNo),
+      reason: safeTrim(this.cancelPeriodReason) || 'Cancelled',
+      userId: localStorage.getItem('userId'),
+    };
+    if (this.isPublished) payload.date = dateMs;
     this.loading = true;
     this.commonApi
-      .fetchData(
-        {
-          tenantId: this.tenantId,
-          timetableId: this.timetableId,
-          date: toInt(this.activeDay.dateMs),
-          day: String(this.activeDay.day || '').toUpperCase(),
-          periodNo: toInt(this.activePeriodNo),
-          reason: safeTrim(this.cancelPeriodReason) || 'Cancelled',
-          userId: localStorage.getItem('userId'),
-        },
-        this.moduleName,
-        'period/cancel',
-      )
+      .fetchData(payload, this.moduleName, 'period/cancel')
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
           this.alert.success('Period cancelled');
@@ -1057,20 +1489,21 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── REARRANGE STAFF ─────────────────────────────────────────────────
   openRearrangeStaff(row: any, pNum: number) {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
+    this.activePeriod = this.getRenderedPeriod(row, pNum);
+    this.activeSubjectId = safeTrim(this.activePeriod?.subjectId) || '';
     this.newFacultyId = '';
     this.newFacultyName = '';
-    const p = this.getRenderedPeriod(row, pNum);
-    this.activeSubjectId = safeTrim(p?.subjectId) || '';
     this.showRearrangeStaff = true;
   }
+
   closeRearrangeStaff() {
     this.showRearrangeStaff = false;
     this.activeDay = null;
     this.activePeriodNo = 0;
+    this.activePeriod = null;
     this.newFacultyId = '';
     this.newFacultyName = '';
     this.activeSubjectId = '';
@@ -1082,32 +1515,31 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   submitRearrangeStaff() {
-    if (
-      !this.activeDay?.dateMs ||
-      !this.activePeriodNo ||
-      !safeTrim(this.newFacultyId)
-    )
+    if (!this.activeDay || !this.activePeriodNo || !safeTrim(this.newFacultyId))
       return;
+    const day = String(this.activeDay.day || '').toUpperCase();
+    const dateMs = toInt(this.activeDay.dateMs);
+    if (this.isPublished && !dateMs) {
+      this.alert.error('Cannot determine date for this day.');
+      return;
+    }
+    const payload: any = {
+      tenantId: this.tenantId,
+      timetableId: this.timetableId,
+      day,
+      periodNo: toInt(this.activePeriodNo),
+      newFacultyId: safeTrim(this.newFacultyId),
+      newFacultyName: safeTrim(this.newFacultyName),
+      userId: localStorage.getItem('userId'),
+    };
+    if (this.isPublished) payload.date = dateMs;
     this.loading = true;
     this.commonApi
-      .fetchData(
-        {
-          tenantId: this.tenantId,
-          timetableId: this.timetableId,
-          date: toInt(this.activeDay.dateMs),
-          day: String(this.activeDay.day || '').toUpperCase(),
-          periodNo: toInt(this.activePeriodNo),
-          newFacultyId: safeTrim(this.newFacultyId),
-          newFacultyName: safeTrim(this.newFacultyName),
-          userId: localStorage.getItem('userId'),
-        },
-        this.moduleName,
-        'period/rearrange-staff',
-      )
+      .fetchData(payload, this.moduleName, 'period/rearrange-staff')
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
           this.alert.success('Staff updated');
@@ -1120,45 +1552,54 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── MOVE PERIOD ─────────────────────────────────────────────────────
   openMovePeriod(row: any, pNum: number) {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
+    this.activePeriod = this.getRenderedPeriod(row, pNum);
     this.moveToPeriodNo = null;
     this.availablePeriodSlots = this.periodHeaders.filter(
       (n) => n !== toInt(pNum),
     );
     this.showMovePeriod = true;
   }
+
   closeMovePeriod() {
     this.showMovePeriod = false;
     this.activeDay = null;
     this.activePeriodNo = 0;
+    this.activePeriod = null;
     this.moveToPeriodNo = null;
   }
 
+  getMoveSlotPreview(pNum: number): any {
+    if (!this.activeDay) return null;
+    return this.getRenderedPeriod(this.activeDay, pNum);
+  }
+
   submitMovePeriod() {
-    if (!this.activeDay?.dateMs || !this.activePeriodNo || !this.moveToPeriodNo)
+    if (!this.activeDay || !this.activePeriodNo || !this.moveToPeriodNo) return;
+    const day = String(this.activeDay.day || '').toUpperCase();
+    const dateMs = toInt(this.activeDay.dateMs);
+    if (this.isPublished && !dateMs) {
+      this.alert.error('Cannot determine date for this day.');
       return;
+    }
+    const payload: any = {
+      tenantId: this.tenantId,
+      timetableId: this.timetableId,
+      day,
+      fromPeriodNo: toInt(this.activePeriodNo),
+      toPeriodNo: toInt(this.moveToPeriodNo),
+      userId: localStorage.getItem('userId'),
+    };
+    if (this.isPublished) payload.date = dateMs;
     this.loading = true;
     this.commonApi
-      .fetchData(
-        {
-          tenantId: this.tenantId,
-          timetableId: this.timetableId,
-          date: toInt(this.activeDay.dateMs),
-          day: String(this.activeDay.day || '').toUpperCase(),
-          fromPeriodNo: toInt(this.activePeriodNo),
-          toPeriodNo: toInt(this.moveToPeriodNo),
-          userId: localStorage.getItem('userId'),
-        },
-        this.moduleName,
-        'period/move',
-      )
+      .fetchData(payload, this.moduleName, 'period/move')
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
           this.alert.success('Period moved');
@@ -1171,11 +1612,11 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── REPLACE PERIOD ──────────────────────────────────────────────────
   openReplacePeriod(row: any, pNum: number) {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
     const p = this.getRenderedPeriod(row, pNum) || {};
+    this.activePeriod = p;
     const rawId = safeTrim(p.facultyId) || '';
     const staff = this.staffByCode[rawId] || this.staffById[rawId] || null;
     this.rp = {
@@ -1188,18 +1629,25 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       subjectId: safeTrim(p.subjectId) || '',
       venue: safeTrim(p.venue) || '',
       topic: safeTrim(p.topic) || '',
-      periodType: safeTrim(p.periodType) || '',
-      mode: safeTrim(p.mode) || '',
+      periodType: safeTrim(p.periodType) || 'LECTURE',
+      mode: safeTrim(p.mode) || 'OFFLINE',
       zoomUrl: safeTrim(p.zoomUrl) || '',
       phaseId: safeTrim(p.phaseId) || '',
       phaseName: safeTrim(p.phaseName) || '',
+      _startMin: toInt(p?.time?.startMin),
+      _endMin: toInt(p?.time?.endMin),
+      _startLabel: p?.time?.startLabel || minToLabel(toInt(p?.time?.startMin)),
+      _endLabel: p?.time?.endLabel || minToLabel(toInt(p?.time?.endMin)),
     };
     this.showReplacePeriod = true;
   }
+
   closeReplacePeriod() {
     this.showReplacePeriod = false;
     this.activeDay = null;
     this.activePeriodNo = 0;
+    this.activePeriod = null;
+    this.rpPhases = [];
     this.rp = {
       facultyId: '',
       facultyName: '',
@@ -1213,6 +1661,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       zoomUrl: '',
       phaseId: '',
       phaseName: '',
+      _startMin: 0,
+      _endMin: 0,
+      _startLabel: '',
+      _endLabel: '',
     };
   }
 
@@ -1220,26 +1672,71 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     const s = this.staffByCode[safeTrim(this.rp?.facultyId)];
     this.rp.facultyName = s?.staffName || '';
   }
+
   onReplaceSubjectSelected() {
     const sub = this.subjectByCode[safeTrim(this.rp?.subjectCode)];
     this.rp.subjectName = sub?.subjectName || '';
     this.rp.subjectId = sub?._id || '';
     this.rp.facultyId = '';
     this.rp.facultyName = '';
+    this.rp.topic = '';
+    this.rp.phaseId = '';
+    this.rp.phaseName = '';
+    this.rpPhases = [];
+    if (this.rp.subjectId) {
+      const mapped = this.batchStaffMap.find(
+        (sm: any) => safeTrim(sm?.subjectId) === safeTrim(this.rp.subjectId),
+      );
+      if (mapped) {
+        const staffRec = this.staffById[safeTrim(mapped.staffId)] || null;
+        this.rp.facultyId = staffRec
+          ? safeTrim(staffRec.staffCode)
+          : safeTrim(mapped.staffId);
+        this.rp.facultyName = staffRec
+          ? safeTrim(staffRec.staffName)
+          : safeTrim(mapped.staffName) || '';
+      }
+      this.loadRpPhases(this.rp.subjectId);
+    }
   }
+
   onReplacePhaseSelected() {
-    const ph = this.phasesFull.find(
+    const ph = this.rpPhases.find(
       (p: any) => safeTrim(p?.phaseId) === safeTrim(this.rp.phaseId),
     );
     this.rp.phaseName = ph?.phaseName || '';
   }
 
+  get rpPhasesFiltered(): any[] {
+    return this.phasesFull.filter((ph: any) => {
+      const matchProgram =
+        !this.batchProgramId || safeTrim(ph?.programId) === this.batchProgramId;
+      const matchClass =
+        !this.batchClassNo || toInt(ph?.classNo) === this.batchClassNo;
+      const matchSubject =
+        !this.rp?.subjectId ||
+        safeTrim(ph?.subjectId?._id || ph?.subjectId) ===
+          safeTrim(this.rp.subjectId);
+      return matchProgram && matchClass && matchSubject;
+    });
+  }
+
+  onReplaceModeChange() {
+    if (this.rp.mode === 'OFFLINE') this.rp.zoomUrl = '';
+  }
+
   submitReplacePeriod() {
-    if (!this.activeDay?.dateMs || !this.activePeriodNo) return;
-    const period: any = {};
-    if (safeTrim(this.rp.periodType))
-      period.periodType = safeTrim(this.rp.periodType);
-    if (safeTrim(this.rp.mode)) period.mode = safeTrim(this.rp.mode);
+    if (!this.activeDay || !this.activePeriodNo) return;
+    const day = String(this.activeDay.day || '').toUpperCase();
+    const dateMs = toInt(this.activeDay.dateMs);
+    if (this.isPublished && !dateMs) {
+      this.alert.error('Cannot determine date for this day.');
+      return;
+    }
+    const period: any = {
+      periodType: safeTrim(this.rp.periodType) || 'LECTURE',
+      mode: safeTrim(this.rp.mode) || 'OFFLINE',
+    };
     if (safeTrim(this.rp.facultyId)) {
       period.facultyId = safeTrim(this.rp.facultyId);
       period.facultyName = safeTrim(this.rp.facultyName) || null;
@@ -1251,33 +1748,31 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     }
     if (safeTrim(this.rp.venue)) period.venue = safeTrim(this.rp.venue);
     if (safeTrim(this.rp.topic)) period.topic = safeTrim(this.rp.topic);
-    if (safeTrim(this.rp.zoomUrl)) period.zoomUrl = safeTrim(this.rp.zoomUrl);
     if (safeTrim(this.rp.phaseId)) {
       period.phaseId = safeTrim(this.rp.phaseId);
       period.phaseName = safeTrim(this.rp.phaseName) || null;
     }
+    period.zoomUrl =
+      this.rp.mode === 'ONLINE' ? safeTrim(this.rp.zoomUrl) || null : null;
+    const payload: any = {
+      tenantId: this.tenantId,
+      timetableId: this.timetableId,
+      day,
+      periodNo: toInt(this.activePeriodNo),
+      period,
+      userId: localStorage.getItem('userId'),
+    };
+    if (this.isPublished) payload.date = dateMs;
     this.loading = true;
     this.commonApi
-      .fetchData(
-        {
-          tenantId: this.tenantId,
-          timetableId: this.timetableId,
-          date: toInt(this.activeDay.dateMs),
-          day: String(this.activeDay.day || '').toUpperCase(),
-          periodNo: toInt(this.activePeriodNo),
-          period,
-          userId: localStorage.getItem('userId'),
-        },
-        this.moduleName,
-        'period/replace',
-      )
+      .fetchData(payload, this.moduleName, 'period/replace')
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
-          this.alert.success('Period replaced');
+          this.alert.success('Period updated');
           this.closeReplacePeriod();
           this.loadTimetable();
         },
@@ -1287,41 +1782,42 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── SET ZOOM ────────────────────────────────────────────────────────
   openSetZoom(row: any, pNum: number, period: any) {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
+    this.activePeriod = period;
     this.zoomUrlInput = safeTrim(period?.zoomUrl) || '';
     this.showSetZoom = true;
   }
+
   closeSetZoom() {
     this.showSetZoom = false;
     this.activeDay = null;
     this.activePeriodNo = 0;
+    this.activePeriod = null;
     this.zoomUrlInput = '';
   }
 
   submitSetZoom() {
-    if (!this.activeDay?.dateMs || !this.activePeriodNo) return;
+    if (!this.activeDay || !this.activePeriodNo) return;
+    const day = String(this.activeDay.day || '').toUpperCase();
+    const dateMs = toInt(this.activeDay.dateMs);
+    const payload: any = {
+      tenantId: this.tenantId,
+      timetableId: this.timetableId,
+      day,
+      periodNo: toInt(this.activePeriodNo),
+      zoomUrl: safeTrim(this.zoomUrlInput) || '',
+      userId: localStorage.getItem('userId'),
+    };
+    if (this.isPublished) payload.date = dateMs;
     this.loading = true;
     this.commonApi
-      .fetchData(
-        {
-          tenantId: this.tenantId,
-          timetableId: this.timetableId,
-          date: toInt(this.activeDay.dateMs),
-          day: String(this.activeDay.day || '').toUpperCase(),
-          periodNo: toInt(this.activePeriodNo),
-          zoomUrl: safeTrim(this.zoomUrlInput) || '',
-          userId: localStorage.getItem('userId'),
-        },
-        this.moduleName,
-        'update/zoomlink',
-      )
+      .fetchData(payload, this.moduleName, 'update/zoomlink')
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
           this.alert.success('Zoom link saved');
@@ -1334,10 +1830,10 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── CONVERT TO EXAM ─────────────────────────────────────────────────
   openConvertToExam(row: any, pNum: number, period: any) {
     this.activeDay = row;
     this.activePeriodNo = toInt(pNum);
+    this.activePeriod = period;
     this.examForm = {
       examId: '',
       examDescription: '',
@@ -1346,12 +1842,26 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       venue: safeTrim(period?.venue) || '',
       topic: safeTrim(period?.topic) || '',
     };
+    this.showConvertConfirm = true;
+  }
+
+  confirmConvertToExam() {
+    this.showConvertConfirm = false;
     this.showConvertToExam = true;
   }
+
+  cancelConvertConfirm() {
+    this.showConvertConfirm = false;
+    this.activeDay = null;
+    this.activePeriodNo = 0;
+    this.activePeriod = null;
+  }
+
   closeConvertToExam() {
     this.showConvertToExam = false;
     this.activeDay = null;
     this.activePeriodNo = 0;
+    this.activePeriod = null;
     this.examForm = {
       examId: '',
       examDescription: '',
@@ -1368,15 +1878,17 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   submitConvertToExam() {
-    if (!this.activeDay?.dateMs || !this.activePeriodNo) return;
+    if (!this.activeDay || !this.activePeriodNo) return;
+    const day = String(this.activeDay.day || '').toUpperCase();
+    const dateMs = toInt(this.activeDay.dateMs);
     const payload: any = {
       tenantId: this.tenantId,
       timetableId: this.timetableId,
-      date: toInt(this.activeDay.dateMs),
-      day: String(this.activeDay.day || '').toUpperCase(),
+      day,
       periodNo: toInt(this.activePeriodNo),
       userId: localStorage.getItem('userId'),
     };
+    if (this.isPublished) payload.date = dateMs;
     if (safeTrim(this.examForm.examId))
       payload.examId = safeTrim(this.examForm.examId);
     if (safeTrim(this.examForm.examDescription))
@@ -1395,7 +1907,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: () => {
           this.alert.success('Period converted to Exam');
@@ -1408,7 +1920,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ─── DATE RANGE VIEW ─────────────────────────────────────────────────
   toggleRangeView() {
     if (this.viewMode === 'range') this.resetToWeekly();
     else {
@@ -1446,7 +1957,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.loading = false)),
-      ) // FIX V1
+      )
       .subscribe({
         next: (res: any) => {
           const schedule = Array.isArray(res?.data) ? res.data : [];
