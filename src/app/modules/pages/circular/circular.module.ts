@@ -6,11 +6,13 @@ import { CircularComponent } from './circular/circular.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CreateCircularComponent } from './create-circular/create-circular.component';
+import { CircularViewComponent } from './circular-view/circular-view.component';
 
 @NgModule({
     declarations: [
         CircularComponent,
-        CreateCircularComponent
+        CreateCircularComponent,
+        CircularViewComponent
     ],
     imports: [
         CommonModule,

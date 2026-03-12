@@ -16,44 +16,44 @@ export class CreateCircularComponent implements OnInit {
   circularForm!: FormGroup;
 
   tenantId: any;
-  isEditMode   = false;
+  isEditMode = false;
   circularId: string | null = null;
   editData: any = null;
-  loading      = false;
-  uploading    = false;
+  loading = false;
+  uploading = false;
 
   // Uploaded files list
   uploadedFiles: { url: string; name: string }[] = [];
 
   scope_options = [
     { label: 'Institute', value: 'INSTITUTE' },
-    { label: 'Center',    value: 'CENTER'    },
-    { label: 'Batch',     value: 'BATCH'     }
+    { label: 'Center', value: 'CENTER' },
+    { label: 'Batch', value: 'BATCH' }
   ];
 
   category_options = [
-    { label: 'Holiday',       value: 'HOLIDAY'      },
-    { label: 'Exam',          value: 'EXAM'         },
-    { label: 'Event',         value: 'EVENT'        },
-    { label: 'Fee',           value: 'FEE'          },
-    { label: 'General',       value: 'GENERAL'      },
-    { label: 'Announcement',  value: 'ANNOUNCEMENT' }
+    { label: 'Holiday', value: 'HOLIDAY' },
+    { label: 'Exam', value: 'EXAM' },
+    { label: 'Event', value: 'EVENT' },
+    { label: 'Fee', value: 'FEE' },
+    { label: 'General', value: 'GENERAL' },
+    { label: 'Announcement', value: 'ANNOUNCEMENT' }
   ];
 
   status_options = [
-    { label: 'Draft',     value: 'DRAFT'     },
+    { label: 'Draft', value: 'DRAFT' },
     { label: 'Published', value: 'PUBLISHED' }
   ];
 
   // Center multi-select
-  centers: any[]             = [];
+  centers: any[] = [];
   selectedCenterCodes: string[] = [];
-  selectAllCenters           = false;
+  selectAllCenters = false;
 
   // Batch multi-select
-  batches: any[]             = [];
+  batches: any[] = [];
   selectedBatchCodes: string[] = [];
-  selectAllBatches           = false;
+  selectAllBatches = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -64,13 +64,13 @@ export class CreateCircularComponent implements OnInit {
   ) {
     this.tenantId = localStorage.getItem('tenantId');
 
-    const nav       = this.router.getCurrentNavigation();
+    const nav = this.router.getCurrentNavigation();
     const stateData = nav?.extras?.state?.['circular'];
 
     if (stateData) {
-      this.isEditMode  = true;
-      this.circularId  = stateData.circularId;
-      this.editData    = stateData;
+      this.isEditMode = true;
+      this.circularId = stateData.circularId;
+      this.editData = stateData;
       this.breadcrumb.set([
         { label: 'Circular', link: '/app/circular' },
         { label: 'Edit' }
@@ -95,9 +95,9 @@ export class CreateCircularComponent implements OnInit {
     // Watch scope changes
     this.circularForm.get('scope')?.valueChanges.subscribe(() => {
       this.selectedCenterCodes = [];
-      this.selectedBatchCodes  = [];
-      this.selectAllCenters    = false;
-      this.selectAllBatches    = false;
+      this.selectedBatchCodes = [];
+      this.selectAllCenters = false;
+      this.selectAllBatches = false;
     });
 
     if (this.isEditMode && this.editData) {
@@ -107,11 +107,11 @@ export class CreateCircularComponent implements OnInit {
 
   private buildForm(): void {
     this.circularForm = this.fb.group({
-      scope:    ['INSTITUTE', Validators.required],
-      category: ['',         Validators.required],
-      subject:  ['',         Validators.required],
-      details:  ['',         Validators.required],
-      status:   ['DRAFT',    Validators.required]
+      scope: ['INSTITUTE', Validators.required],
+      category: ['', Validators.required],
+      subject: ['', Validators.required],
+      details: ['', Validators.required],
+      status: ['DRAFT', Validators.required]
     });
   }
 
@@ -145,13 +145,13 @@ export class CreateCircularComponent implements OnInit {
     });
   }
 
-   downloadFile(url: string): void {
+  downloadFile(url: string): void {
     this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
       next: (res: any) => {
-        const fileName  = url.split('/').pop() || 'download';
-        const a         = document.createElement('a');
+        const fileName = url.split('/').pop() || 'download';
+        const a = document.createElement('a');
         const objectUrl = URL.createObjectURL(res);
-        a.href     = objectUrl;
+        a.href = objectUrl;
         a.download = fileName;
         a.click();
       },
@@ -165,29 +165,39 @@ export class CreateCircularComponent implements OnInit {
 
   private patchEditData(d: any): void {
     this.circularForm.patchValue({
-      scope:    d.scope,
+      scope: d.scope,
       category: d.category,
-      subject:  d.subject,
-      details:  d.details,
-      status:   d.status
+      subject: d.subject,
+      details: d.details,
+      status: d.status
     }, { emitEvent: false });
 
     // Restore uploaded files
     this.uploadedFiles = (d.files || []).map((f: any, i: number) => ({
-      url:  f.url,
+      url: f.url,
       name: `Attachment ${i + 1}`
     }));
 
-    // Restore multi-selects
+    // ✅ centerCode is a comma-separated string e.g. "64,65"
     if (d.scope === 'CENTER' && d.centerCode) {
-      this.selectedCenterCodes = Array.isArray(d.centerCode)
-        ? d.centerCode
-        : [d.centerCode];
+      this.selectedCenterCodes = typeof d.centerCode === 'string'
+        ? d.centerCode.split(',').map((c: string) => c.trim()).filter(Boolean)
+        : Array.isArray(d.centerCode)
+          ? d.centerCode
+          : [d.centerCode];
+
+      this.selectAllCenters = this.selectedCenterCodes.length === this.centers.length;
     }
+
+    // ✅ batchCode is also a comma-separated string
     if (d.scope === 'BATCH' && d.batchCode) {
-      this.selectedBatchCodes = Array.isArray(d.batchCode)
-        ? d.batchCode
-        : [d.batchCode];
+      this.selectedBatchCodes = typeof d.batchCode === 'string'
+        ? d.batchCode.split(',').map((b: string) => b.trim()).filter(Boolean)
+        : Array.isArray(d.batchCode)
+          ? d.batchCode
+          : [d.batchCode];
+
+      this.selectAllBatches = this.selectedBatchCodes.length === this.batches.length;
     }
   }
 
@@ -204,13 +214,13 @@ export class CreateCircularComponent implements OnInit {
       this.selectedCenterCodes = [...this.selectedCenterCodes, code];
     } else {
       this.selectedCenterCodes = this.selectedCenterCodes.filter(c => c !== code);
-      this.selectAllCenters    = false;
+      this.selectAllCenters = false;
     }
     this.selectAllCenters = this.selectedCenterCodes.length === this.centers.length;
   }
 
   toggleAllCenters(checked: boolean): void {
-    this.selectAllCenters    = checked;
+    this.selectAllCenters = checked;
     this.selectedCenterCodes = checked ? this.centers.map(c => c.centerCode) : [];
   }
 
@@ -227,13 +237,13 @@ export class CreateCircularComponent implements OnInit {
       this.selectedBatchCodes = [...this.selectedBatchCodes, code];
     } else {
       this.selectedBatchCodes = this.selectedBatchCodes.filter(c => c !== code);
-      this.selectAllBatches   = false;
+      this.selectAllBatches = false;
     }
     this.selectAllBatches = this.selectedBatchCodes.length === this.batches.length;
   }
 
   toggleAllBatches(checked: boolean): void {
-    this.selectAllBatches   = checked;
+    this.selectAllBatches = checked;
     this.selectedBatchCodes = checked ? this.batches.map(b => b.batchCode) : [];
   }
 
@@ -256,7 +266,7 @@ export class CreateCircularComponent implements OnInit {
           this.uploading = false;
           if (res?.status) {
             this.uploadedFiles.push({
-              url:  res.data.attachmentUrl || res.data.url,
+              url: res.data.attachmentUrl || res.data.url,
               name: file.name
             });
             this.alert.success('File uploaded');
@@ -299,13 +309,13 @@ export class CreateCircularComponent implements OnInit {
     const f = this.circularForm.value;
 
     const payload: any = {
-      tenantId:  this.tenantId,
-      category:  f.category,
-      scope:     f.scope,
-      subject:   f.subject,
-      details:   f.details,
-      status:    f.status,
-      files:     this.uploadedFiles.map(f => ({ url: f.url }))
+      tenantId: this.tenantId,
+      category: f.category,
+      scope: f.scope,
+      subject: f.subject,
+      details: f.details,
+      status: f.status,
+      files: this.uploadedFiles.map(f => ({ url: f.url }))
     };
 
     if (scope === 'CENTER') {
@@ -313,7 +323,7 @@ export class CreateCircularComponent implements OnInit {
     }
 
     if (scope === 'BATCH') {
-      payload.batchCode  = this.selectedBatchCodes.join(',');
+      payload.batchCode = this.selectedBatchCodes.join(',');
       // Use first center from batch if available
     }
 
