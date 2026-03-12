@@ -13,6 +13,7 @@ import { ExamcategoryComponent } from './examcategory/examcategory.component';
 import { ExamsubcategoryComponent } from './examsubcategory/examsubcategory.component';
 import { CenterviewComponent } from './centerview/centerview.component';
 import { SchoolexamsComponent } from './schoolexams/schoolexams.component';
+import { UsersComponent } from './users/users.component';
 
 const routes: Routes = [
   {
@@ -66,6 +67,10 @@ const routes: Routes = [
   {
     path: 'school/exams',
     component: SchoolexamsComponent
+  },
+  {
+    path: 'users',
+    component: UsersComponent
   }
 ];
 

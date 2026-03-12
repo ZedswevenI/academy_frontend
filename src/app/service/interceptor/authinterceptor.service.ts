@@ -5,7 +5,6 @@ import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
 import { catchError, filter, switchMap, take } from 'rxjs/operators';
 
-
 @Injectable({
   providedIn: 'root'
 })
@@ -17,7 +16,7 @@ export class AuthinterceptorService {
 
   intercept(originalReq: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     let headers = originalReq.headers.set('Cache-Control', 'no-cache');
-    const isAuthEndpoint = originalReq.url.includes('/admin/login') || originalReq.url.includes('/admin/refresh');
+    const isAuthEndpoint = originalReq.url.includes('/user/auth/login') || originalReq.url.includes('/user/auth/refresh');
     const accessToken = localStorage.getItem('token');
 
     let req = originalReq;
