@@ -824,23 +824,19 @@ export class ProgramComponent implements OnInit {
   saveExamMappings() {
     if (this.savingExamMappings) return;
     if (!this.examMappingTargetRecId) return;
-
     this.examMappingsFA.markAllAsTouched();
     if (this.examMappingsFA.invalid) {
       this.alert.error('Please fix exam mapping rows');
       return;
     }
-
     const rows = (this.examMappingsFA.value || []).map((x: any) => ({
       categoryId: String(x.categoryId || '').trim(),
       subCategoryId: String(x.subCategoryId || '').trim(),
-      subjectIds: Array.isArray(x.subjectIds) // ✅ include subjectIds
+      subjectIds: Array.isArray(x.subjectIds)
         ? x.subjectIds.map((s: any) => String(s)).filter(Boolean)
         : [],
       sortOrder: this.toNum(x.sortOrder),
     }));
-
-    // dedup by categoryId__subCategoryId — merge subjectIds union
     const map = new Map<string, any>();
     for (const r of rows) {
       if (!r.categoryId || !r.subCategoryId) continue;
@@ -857,13 +853,11 @@ export class ProgramComponent implements OnInit {
         }
       }
     }
-
     const clean = Array.from(map.values());
     if (!clean.length) {
       this.alert.error('No valid mappings to save');
       return;
     }
-
     this.savingExamMappings = true;
     const payload = {
       entiId: this.entiId,
@@ -872,17 +866,19 @@ export class ProgramComponent implements OnInit {
     };
     this.commonApi
       .fetchData(payload, this.moduleName, 'program/updateExamMappings')
-      .pipe(finalize(() => (this.savingExamMappings = false)))
       .subscribe({
         next: () => {
+          this.savingExamMappings = false;
           this.alert.success('Exam mappings saved');
           this.closeExamMappingModal();
           this.refreshTable();
         },
-        error: (err: any) =>
+        error: (err: any) => {
+          this.savingExamMappings = false;
           this.alert.error(
             err?.error?.message || 'Failed to save exam mappings',
-          ),
+          );
+        },
       });
   }
 
