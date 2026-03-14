@@ -1,0 +1,123 @@
+/* dashboard.component.scss */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+
+.coming-wrap {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fb;
+  font-family: "Inter", sans-serif;
+  padding: 2rem;
+}
+
+.coming-card {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 3rem 2.5rem;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+}
+
+// Icon
+.coming-icon {
+  width: 60px;
+  height: 60px;
+  background: #eef3ff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+
+  i {
+    font-size: 1.4rem;
+    color: #4263eb;
+  }
+}
+
+// Title
+.coming-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #1a1d23;
+  margin: 0 0 0.5rem;
+}
+
+// Subtitle
+.coming-sub {
+  font-size: 0.875rem;
+  color: #8a94a6;
+  line-height: 1.6;
+  margin: 0 0 1.75rem;
+}
+
+// Progress
+.coming-progress {
+  height: 6px;
+  background: #f0f2f5;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+
+.coming-progress-bar {
+  height: 100%;
+  width: 0;
+  background: #4263eb;
+  border-radius: 99px;
+  animation: fill 1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+}
+
+@keyframes fill {
+  to {
+    width: 72%;
+  }
+}
+
+.coming-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #adb5bd;
+  margin-bottom: 1.75rem;
+
+  span:last-child {
+    color: #4263eb;
+    font-weight: 500;
+  }
+}
+
+// Chips
+.coming-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: #f8f9fb;
+  border: 1px solid #e9ecef;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  color: #6c757d;
+
+  i {
+    font-size: 0.7rem;
+    color: #4263eb;
+  }
+}
+
+@media (max-width: 480px) {
+  .coming-card {
+    padding: 2rem 1.5rem;
+  }
+}

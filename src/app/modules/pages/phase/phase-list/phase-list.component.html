@@ -8,11 +8,6 @@
           <h1 class="fw-bold mb-0" style="font-size: 30px;">
             <i class="fa-solid fa-hourglass-half me-2"></i>Phase Plan
           </h1>
-          <!-- <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
-            routerLink="/app/phase/create">
-            <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
-            Create Phase Plan
-          </button> -->
           <!-- Header buttons -->
           <div class="d-flex gap-2">
             <button class="btn btn-outline-primary rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
@@ -32,7 +27,6 @@
     </div>
 
     <!-- Filter Form -->
-    <!-- Filter Form -->
     <div class="mt-3">
       <form [formGroup]="phaseForm">
         <div class="row g-3">
@@ -40,7 +34,7 @@
           <!-- Program -->
           <div class="col-md-4">
             <selectbox label="Program" placeholder="Select Program" formControlName="programId" [options]="programs"
-              [optionLabel]="'programName'" [optionValue]="'programId'" [control]="phaseForm.get('programId')"
+              [optionLabel]="'proname'" [optionValue]="'programId'" [control]="phaseForm.get('programId')"
               [required]="true">
             </selectbox>
             <!-- Program info badge -->
@@ -210,7 +204,7 @@
             <b>Class</b>, <b>Subject</b>, <b>Phase</b>, <b>Topics</b>, <b>No of Hrs</b>
           </div>
           <div class="small mt-1">
-            Subject & Topic names must match masters.
+            Subject names must match masters.
           </div>
         </div>
         <div class="d-flex justify-content-end mb-2">
