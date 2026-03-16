@@ -6,6 +6,8 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil, catchError, of, finalize } from 'rxjs';
 import * as XLSX from 'xlsx';
+import { AuthService } from '../../../../service/auth/auth.service';
+import { RoleLevel } from '../../../../shared/role.config';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const safeTrim = (v: any): string =>
@@ -166,6 +168,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-paper-plane',
       tooltip: 'Publish Timetable',
       showIf: (row: any) => (row?._raw || row)?.status === 'DRAFT',
+      hidden: () => this.authService.getRole() === 'L4',
       callback: (row: any) => this.openPublishConfirmRow(row),
     },
     {
@@ -174,6 +177,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-trash',
       tooltip: 'Delete Timetable',
       showIf: (row: any) => (row?._raw || row)?.status === 'DRAFT',
+      hidden: () => this.authService.getRole() === 'L4',
       callback: (row: any) => this.openDeleteConfirm(row),
     },
   ];
@@ -183,6 +187,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
     private breadcrumb: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
+    private authService: AuthService,
   ) {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId');

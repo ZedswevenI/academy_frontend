@@ -3,6 +3,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 @Component({
   selector: 'app-knowledge-list',
@@ -67,7 +68,8 @@ export class KnowledgeListComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private router:     Router,
     private commonApi:  CommonapiService,
-    private fb:         FormBuilder
+    private fb:         FormBuilder,
+    private authService: AuthService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Knowledge Base' }]);
@@ -80,8 +82,42 @@ export class KnowledgeListComponent implements OnInit {
       batchId:   ['']
     });
 
-    this.loadSubjects();
-    this.loadBatches();
+    const role = this.authService.getRole();
+    if (role === 'L4') {
+      this.loadTeacherMaps();
+    } else {
+      this.loadSubjects();
+      this.loadBatches();
+    }
+  }
+
+  private loadTeacherMaps(): void {
+    const staffId = this.authService.getStaffId();
+    this.commonApi.fetchData({ tenantId: this.tenantId, staffId }, 'teacher', 'getstaffmaps').subscribe({
+      next: (res: any) => {
+        if (res.status && res.data) {
+          const data = res.data;
+
+          // Classes
+          this.class_options = (data.classes || []).map((c: any) => ({
+            label: c.classNo.toString(),
+            value: c.classNo
+          }));
+
+          // Subjects
+          this.subjects = (data.subjects || []).map((s: any) => ({
+            label: s.subjectName,
+            value: s.subjectId
+          }));
+
+          // Batches
+          this.batch_options = (data.batches || []).map((b: any) => ({
+            label: b.batchName,
+            value: b.batchCode
+          }));
+        }
+      }
+    });
   }
 
   // ── Dropdowns ──────────────────────────────────────────────────────────────

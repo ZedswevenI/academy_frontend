@@ -8,13 +8,13 @@
                     <h1 class="fw-bold mb-0" style="font-size: 30px;">
                         <i class="fa-solid fa-calendar-check me-2"></i>Activity
                     </h1>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary rounded-pill me-1 mb-1 fs-16 fw-medium"
-                            type="button" (click)="openImportModal()">
+                    <div *appHasRole="['L1', 'L3']" class="d-flex gap-2">
+                        <button class="btn btn-outline-primary rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                            (click)="openImportModal()">
                             <i class="fa-solid fa-file-import me-2"></i>Bulk Import
                         </button>
-                        <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium"
-                            type="button" routerLink="/app/activity/create">
+                        <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                            routerLink="/app/activity/create">
                             <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
                             Add Activity
                         </button>
@@ -32,7 +32,7 @@
                             formControlName="batchCode" [control]="filterForm.get('batchCode')">
                         </selectbox>
                     </div>
-                    <div class="col-md-4">
+                    <div *appHasRole="['L1', 'L3']" class="col-md-4">
                         <selectbox label="Center" placeholder="Select Center" [options]="center_options"
                             formControlName="centerCode" [control]="filterForm.get('centerCode')">
                         </selectbox>
@@ -108,7 +108,8 @@
                         {{ errorRows.length }} row(s) have missing data
                     </div>
                     <ul class="mb-0 small ps-3">
-                        <li *ngFor="let e of errorRows">Row {{ e.rowNo }}: <strong>{{ e.missing }}</strong> is empty</li>
+                        <li *ngFor="let e of errorRows">Row {{ e.rowNo }}: <strong>{{ e.missing }}</strong> is empty
+                        </li>
                     </ul>
                 </div>
 
@@ -131,13 +132,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let row of parsedRows; let i = index"
-                                [class.table-danger]="isRowError(i + 2)">
+                            <tr *ngFor="let row of parsedRows; let i = index" [class.table-danger]="isRowError(i + 2)">
                                 <td class="text-muted">{{ i + 1 }}</td>
                                 <td *ngFor="let col of previewColumns">{{ row[col.field] || '-' }}</td>
                                 <td class="text-center">
                                     <i *ngIf="!isRowError(i + 2)" class="fa-solid fa-circle-check text-success"></i>
-                                    <i *ngIf="isRowError(i + 2)"  class="fa-solid fa-circle-xmark text-danger"></i>
+                                    <i *ngIf="isRowError(i + 2)" class="fa-solid fa-circle-xmark text-danger"></i>
                                 </td>
                             </tr>
                         </tbody>
@@ -147,8 +147,8 @@
             </div>
 
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-                    data-bs-dismiss="modal" (click)="resetImport()">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                    (click)="resetImport()">Cancel</button>
                 <button type="button" class="btn btn-primary rounded-pill px-4"
                     [disabled]="parsedRows.length === 0 || errorRows.length > 0 || importLoading"
                     (click)="submitImport()">
@@ -199,8 +199,7 @@
                     </div>
                     <div class="col-6">
                         <div class="text-muted small">Status</div>
-                        <span class="badge"
-                            [class.bg-success]="selectedActivity.status === 'COMPLETED'"
+                        <span class="badge" [class.bg-success]="selectedActivity.status === 'COMPLETED'"
                             [class.bg-primary]="selectedActivity.status === 'PLANNED'"
                             [class.bg-warning]="selectedActivity.status === 'IN_PROGRESS'"
                             [class.bg-danger]="selectedActivity.status === 'CANCELLED'">
@@ -217,7 +216,7 @@
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
                     data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal"
-                       routerLink="/app/ptm/create"
+                    routerLink="/app/ptm/create"
                     (click)="router.navigate(['/app/activity/create'], { state: { activity: selectedActivity } })">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Edit
                 </button>
@@ -232,7 +231,8 @@
         <div class="modal-content rounded-4" *ngIf="activityToDelete">
             <div class="modal-body text-center p-4">
                 <div class="mb-3">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10"
+                    <span
+                        class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10"
                         style="width: 64px; height: 64px;">
                         <i class="fa-solid fa-trash-can text-danger fs-4"></i>
                     </span>
@@ -243,10 +243,10 @@
                 <p class="text-muted small mb-0">This action cannot be undone.</p>
             </div>
             <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-                    data-bs-dismiss="modal" (click)="activityToDelete = null">Cancel</button>
-                <button type="button" class="btn btn-danger rounded-pill px-4"
-                    data-bs-dismiss="modal" (click)="confirmDelete()">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                    (click)="activityToDelete = null">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4" data-bs-dismiss="modal"
+                    (click)="confirmDelete()">
                     <i class="fa-solid fa-trash-can me-2"></i>Yes, Delete
                 </button>
             </div>

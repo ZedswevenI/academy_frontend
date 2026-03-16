@@ -573,6 +573,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { AuthService } from '../../../../service/auth/auth.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -681,6 +682,7 @@ export class PhaseListComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrump: BredcrumpService,
+    private authService: AuthService,
   ) {
     this.tenantId = localStorage.getItem('tenantId') || '';
     this.breadcrump.set([{ label: 'Phase Plan', link: '/app/phase' }]);
@@ -688,8 +690,59 @@ export class PhaseListComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
-    this.loadPrograms();
-    this.loadSubjects();
+    const role = this.authService.getRole();
+    if (role === 'L4') {
+      this.loadTeacherMaps();
+    } else {
+      this.loadPrograms();
+      this.loadSubjects();
+    }
+  }
+
+  private loadTeacherMaps(): void {
+    const staffId = this.authService.getStaffId();
+    this.commonApi.fetchData({ tenantId: this.tenantId, staffId }, 'teacher', 'getstaffmaps').subscribe({
+      next: (res: any) => {
+        if (res.status && res.data) {
+          const data = res.data;
+          // Programs from batches
+          const programMap = new Map();
+          (data.batches || []).forEach((b: any) => {
+            if (b.programId) {
+              programMap.set(b.programId, {
+                programId: b.programId,
+                programName: b.programName,
+                programCode: b.batchCode.split('-')[0], // fallback
+                status: 'Active',
+                startingClass: b.classNo,
+                endingClass: b.classNo,
+                subjects: (b.subjects || []).map((s: any) => s.subjectId)
+              });
+            }
+          });
+          this.programs = Array.from(programMap.values()).map(p => ({
+            ...p,
+            proname: `${p.programCode} - ${p.programName}`
+          }));
+
+          // Classes
+          this.allClasses = (data.classes || []).map((c: any) => ({
+            label: `${c.classNo}${c.classNo > 3 ? 'th' : ''}`,
+            value: c.classNo
+          }));
+          this.class_options = [...this.allClasses];
+
+          // Subjects
+          this.allSubjects = (data.subjects || []).map((s: any) => ({
+            _id: s.subjectId,
+            subjectName: s.subjectName,
+            subjectCode: s.subjectCode || ''
+          }));
+          this.subject_options = [...this.allSubjects];
+        }
+      },
+      error: () => this.alert.error('Error loading teacher maps')
+    });
   }
 
   // ====================================================

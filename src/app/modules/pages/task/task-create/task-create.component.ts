@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 @Component({
   selector: 'app-task-create',
@@ -14,11 +15,13 @@ import { AlertService } from '../../../../service/alert/alert.service';
 export class TaskCreateComponent implements OnInit {
 
   taskForm!: FormGroup;
+  staffId: string | null = null;
 
   faculty_options: any[] = [];
   uploadedAttachments: any[] = [];
   isUploading = false;
 
+  isL4 = false;
   tenantId: string | null = localStorage.getItem('tenantId');
   userId: string | null = localStorage.getItem('userid');
 
@@ -35,11 +38,14 @@ export class TaskCreateComponent implements OnInit {
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authService: AuthService
   ) {
+    this.isL4 = this.authService.getRole() === 'L4';
+    this.staffId = this.authService.getStaffId();
     this.taskForm = this.fb.group({
       taskName: ['', Validators.required],
-      staffId: ['', Validators.required],
+      staffId: [this.isL4 ? this.staffId : '', Validators.required],
       dueDate: ['', Validators.required],
       file: [null],
       description: ['']

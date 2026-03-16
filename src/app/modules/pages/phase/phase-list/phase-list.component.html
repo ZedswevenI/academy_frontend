@@ -9,7 +9,7 @@
             <i class="fa-solid fa-hourglass-half me-2"></i>Phase Plan
           </h1>
           <!-- Header buttons -->
-          <div class="d-flex gap-2">
+          <div *appHasRole="['L1', 'L3']" class="d-flex gap-2">
             <button class="btn btn-outline-primary rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
               (click)="openImportModal()">
               <i class="fa-solid fa-file-import me-0"></i>
