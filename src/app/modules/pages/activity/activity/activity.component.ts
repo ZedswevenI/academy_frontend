@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { AuthService } from '../../../../service/auth/auth.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -103,7 +104,8 @@ export class ActivityComponent implements OnInit {
     private fb:         FormBuilder,
     public  router:     Router,
     private commonApi:  CommonapiService,
-    private alert:      AlertService
+    private alert:      AlertService,
+    private authService: AuthService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Activity' }]);
@@ -125,10 +127,27 @@ export class ActivityComponent implements OnInit {
 
   private loadBatches(): Promise<void> {
     return new Promise(resolve => {
-      this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full').subscribe({
-        next:  (res: any) => { this.batch_options  = (res?.data || []).map((b: any) => ({ label: b.batchName,  value: b.batchCode  })); resolve(); },
-        error: () => resolve()
-      });
+      const role = this.authService.getRole();
+      if (role === 'L4') {
+        const staffId = this.authService.getStaffId();
+        this.commonApi.fetchData({ tenantId: this.tenantId, staffId }, 'teacher', 'getstaffmaps').subscribe({
+          next: (res: any) => {
+            if (res.status && res.data) {
+              this.batch_options = (res.data.batches || []).map((b: any) => ({
+                label: b.batchName,
+                value: b.batchCode
+              }));
+            }
+            resolve();
+          },
+          error: () => resolve()
+        });
+      } else {
+        this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full').subscribe({
+          next:  (res: any) => { this.batch_options  = (res?.data || []).map((b: any) => ({ label: b.batchName,  value: b.batchCode  })); resolve(); },
+          error: () => resolve()
+        });
+      }
     });
   }
 

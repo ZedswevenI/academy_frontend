@@ -18,7 +18,7 @@
                     </formfield>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6" *ngIf="!isL4">
                     <selectbox label="Faculty" [options]="faculty_options"
                         formControlName="staffId"
                         [control]="taskForm.get('staffId')" [required]="true">
