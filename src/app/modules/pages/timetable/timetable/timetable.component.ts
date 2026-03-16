@@ -216,6 +216,15 @@ export class TimetableComponent implements OnInit, OnDestroy {
     });
   }
 
+  showimport() {
+    if (
+      this.authService.getRole() === 'L1' ||
+      this.authService.getRole() === 'L3'
+    ) { return true; }
+    return false
+
+  }
+
   // ─── Table data ───────────────────────────────────────────────────────
   fetchTableData(params: {
     page: number;
