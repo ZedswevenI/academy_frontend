@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 @Component({
   selector: 'app-ass-create',
@@ -22,16 +23,7 @@ export class TestCreateComponent implements OnInit {
 
   testForm!: FormGroup;
 
-  classes = [
-    { label: '6th',       value: 6  },
-    { label: '7th',       value: 7  },
-    { label: '8th',       value: 8  },
-    { label: '9th',       value: 9  },
-    { label: '10th',      value: 10 },
-    { label: '11th',      value: 11 },
-    { label: '12th',      value: 12 },
-    { label: '12th Pass', value: 13 }
-  ];
+  classes: any[] = [];
 
   subjects:          any[] = [];
   topics:            any[] = [];
@@ -51,7 +43,8 @@ export class TestCreateComponent implements OnInit {
     private fb:         FormBuilder,
     private commonApi:  CommonapiService,
     private alert:      AlertService,
-    private cdr:        ChangeDetectorRef
+    private cdr:        ChangeDetectorRef,
+    private authService: AuthService
   ) {
     const state: any = history.state;
     this.tenantId = localStorage.getItem('tenantId') || '';
@@ -67,6 +60,19 @@ export class TestCreateComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const role = this.authService.getRole();
+    if (role !== 'L4') {
+      this.classes = [
+        { label: '6th',       value: 6  },
+        { label: '7th',       value: 7  },
+        { label: '8th',       value: 8  },
+        { label: '9th',       value: 9  },
+        { label: '10th',      value: 10 },
+        { label: '11th',      value: 11 },
+        { label: '12th',      value: 12 },
+        { label: '12th Pass', value: 13 }
+      ];
+    }
     this.initializeForm();
     this.loadInitialData();
   }
@@ -142,11 +148,19 @@ export class TestCreateComponent implements OnInit {
   private async loadInitialData(): Promise<void> {
     try {
       this.loading = true;
-      await Promise.all([
-        this.loadSubjects(),
+      const role = this.authService.getRole();
+      const loaders: Promise<any>[] = [
         this.loadExamCategories(),
         this.loadAllExamSubCategories()
-      ]);
+      ];
+
+      if (role === 'L4') {
+        loaders.push(this.loadTeacherMaps());
+      } else {
+        loaders.push(this.loadSubjects());
+      }
+
+      await Promise.all(loaders);
 
       if (this.isEditMode && this.editData) {
         await this.populateFormForEdit();
@@ -292,6 +306,36 @@ private disableEditModeFields(): void {
             reject(err);
           }
         });
+    });
+  }
+
+  private loadTeacherMaps(): Promise<void> {
+    return new Promise((resolve) => {
+      const staffId = this.authService.getStaffId();
+      this.commonApi.fetchData({ tenantId: this.tenantId, staffId }, 'teacher', 'getstaffmaps').subscribe({
+        next: (res: any) => {
+          if (res.status && res.data) {
+            const data = res.data;
+
+            // Classes
+            this.classes = (data.classes || []).map((c: any) => ({
+              label: c.classNo.toString(),
+              value: c.classNo
+            }));
+
+            // Subjects
+            this.subjects = (data.subjects || []).map((s: any) => ({
+              subjectName: s.subjectName,
+              _id:         s.subjectId
+            }));
+          }
+          resolve();
+        },
+        error: () => {
+          this.alert.error('Error loading teacher assignments');
+          resolve();
+        }
+      });
     });
   }
 

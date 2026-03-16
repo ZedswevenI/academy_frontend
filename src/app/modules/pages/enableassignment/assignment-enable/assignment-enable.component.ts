@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { AuthService } from '../../../../service/auth/auth.service';
+import { RoleLevel } from '../../../../shared/role.config';
 
 declare var bootstrap: any;
 
@@ -49,12 +51,15 @@ export class AssignmentEnableComponent implements OnInit {
   disableConfirmText = '';
   subjectsLoading = false;
   batchesLoading = false;
+  teacherData: any = null;
+  isTeacher = false;
 
   constructor(
     private fb: FormBuilder,
     private alert: AlertService,
     private commonApi: CommonapiService,
     private breadcrump: BredcrumpService,
+    private authService: AuthService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.userId =
@@ -66,6 +71,7 @@ export class AssignmentEnableComponent implements OnInit {
     this.classOptions = this.classOptions.concat(
       [6, 7, 8, 9, 10, 11, 12, 13].map((c) => ({ label: String(c), value: c })),
     );
+    this.isTeacher = this.authService.getRole() === 'L4';
 
     this.filterForm = this.fb.group({
       classNo: ['', [Validators.required]],
@@ -85,7 +91,44 @@ export class AssignmentEnableComponent implements OnInit {
       this.selectedBatchLabel = this.getSelectedBatchLabel();
     });
 
-    this.loadSubjects();
+    if (this.isTeacher) {
+      this.loadTeacherMaps();
+    } else {
+      this.loadSubjects();
+    }
+  }
+
+  loadTeacherMaps() {
+    const staffId = this.authService.getStaffId();
+    if (!staffId) {
+      this.alert.error('Staff ID not found for teacher');
+      return;
+    }
+    this.commonApi
+      .fetchData({ tenantId: this.entiId, staffId }, 'teacher', 'getstaffmaps')
+      .subscribe({
+        next: (res: any) => {
+          if (res.status && res.data) {
+            this.teacherData = res.data;
+            this.classOptions = [{ label: '-- Select Class --', value: '' }].concat(
+              (res.data.classes || []).map((c: any) => ({
+                label: String(c.classNo),
+                value: c.classNo,
+              })),
+            );
+            // Initially subjects can be filled from teacher's global subjects
+            this.subjectOptions = [{ label: '-- Select Subject --', value: '' }].concat(
+              (res.data.subjects || []).map((s: any) => ({
+                label: s.subjectName || s.subjectId,
+                value: s.subjectId,
+              })),
+            );
+          }
+        },
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Failed to load teacher maps');
+        },
+      });
   }
 
   canShowBatch(): boolean {
@@ -132,6 +175,28 @@ export class AssignmentEnableComponent implements OnInit {
 
   loadBatches() {
     if (!this.canShowBatch()) return;
+    if (this.isTeacher && this.teacherData) {
+      const classNo = toNum(this.filterForm.get('classNo')?.value);
+      const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
+      this.batchesRaw = (this.teacherData.batches || []).filter((b: any) => {
+        const st = safeTrim(b?.status).toUpperCase();
+        if (st === 'CLOSED' || st === 'INACTIVE') return false;
+        if (toNum(b?.classNo) !== classNo) return false;
+        // Also check if the batch has the selected subject
+        const hasSub = (b.subjects || []).some(
+          (s: any) => safeTrim(s.subjectId) === subjectId,
+        );
+        return hasSub;
+      });
+      this.batchOptions = [{ label: '-- Select Batch --', value: '' }].concat(
+        this.batchesRaw.map((b: any) => ({
+          label: `${b?.batchCode || '-'} - ${b?.batchName || '-'}`,
+          value: safeTrim(b?.batchId),
+          _raw: b,
+        })),
+      );
+      return;
+    }
     this.batchesLoading = true;
     const classNo = toNum(this.filterForm.get('classNo')?.value);
     this.loading = true;
@@ -186,6 +251,27 @@ export class AssignmentEnableComponent implements OnInit {
     this.selectedBatchLabel = '';
     const classNo = toNum(this.filterForm.get('classNo')?.value);
     const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
+
+    // If teacher selects a class, filter the subjects belonging to that class
+    if (this.isTeacher && this.teacherData && classNo) {
+      const subjectsForClass = new Map();
+      (this.teacherData.batches || []).forEach((b: any) => {
+        if (toNum(b.classNo) === classNo) {
+          (b.subjects || []).forEach((s: any) => {
+            subjectsForClass.set(s.subjectId, s.subjectName || s.subjectId);
+          });
+        }
+      });
+      if (subjectsForClass.size > 0) {
+        this.subjectOptions = [{ label: '-- Select Subject --', value: '' }].concat(
+          Array.from(subjectsForClass.entries()).map(([id, name]) => ({
+            label: name,
+            value: id,
+          })),
+        );
+      }
+    }
+
     if (!classNo || !subjectId) return;
 
     this.loadBatches();
@@ -203,10 +289,10 @@ export class AssignmentEnableComponent implements OnInit {
     this.topicsLoading = true;
     this.topicsLoaded = false;
     this.topics = [];
-    const qp = `?classNo=${encodeURIComponent(String(classNo))}&subjectId=${encodeURIComponent(subjectId)}`;
+    const qp = `?classNo=${encodeURIComponent(String(classNo))}&subjectId=${encodeURIComponent(subjectId)}&batchId=${encodeURIComponent(batchId)}`;
     this.commonApi
       .fetchData(
-        { entiId: this.entiId, batchId },
+        { tenantId: this.entiId, batchId },
         this.moduleName,
         `topic/enablestatus${qp}`,
       )
@@ -314,7 +400,8 @@ export class AssignmentEnableComponent implements OnInit {
     const qp =
       `?classNo=${encodeURIComponent(String(classNo))}` +
       `&subjectId=${encodeURIComponent(subjectId)}` +
-      `&topicId=${encodeURIComponent(topicId)}`;
+      `&topicId=${encodeURIComponent(topicId)}` +
+      `&batchId=${encodeURIComponent(batchId)}`;
     this.commonApi
       .fetchData(
         { entiId: this.entiId, batchId },

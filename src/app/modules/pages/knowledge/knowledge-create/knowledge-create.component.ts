@@ -4,6 +4,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 @Component({
   selector: 'app-knowledge-create',
@@ -40,7 +41,8 @@ export class KnowledgeCreateComponent implements OnInit {
     private fb: FormBuilder,
      private alert: AlertService,
     private router: Router,
-    private commonApi: CommonapiService
+    private commonApi: CommonapiService,
+    private authService: AuthService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
 
@@ -60,18 +62,68 @@ export class KnowledgeCreateComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([
-      this.loadSubjects(),
-      this.loadAllTopics(),
-      this.loadAllSubTopics(),
-      this.getBatchList()
-    ]);
+    const role = this.authService.getRole();
+    if (role === 'L4') {
+      await this.loadTeacherMaps();
+    } else {
+      await Promise.all([
+        this.loadSubjects(),
+        this.loadAllTopics(),
+        this.loadAllSubTopics(),
+        this.getBatchList()
+      ]);
+    }
+    
+    // Always load topics/subtopics as they are needed for lookup even for teachers
+    if (role === 'L4') {
+       await Promise.all([
+        this.loadAllTopics(),
+        this.loadAllSubTopics()
+      ]);
+    }
 
     this.registerValueChanges();
 
     if (this.isEditMode && this.editMaterial) {
       await this.patchEditData(this.editMaterial);
     }
+  }
+
+  private loadTeacherMaps(): Promise<void> {
+    return new Promise(resolve => {
+      const staffId = this.authService.getStaffId();
+      this.commonApi.fetchData({ tenantId: this.tenantId, staffId }, 'teacher', 'getstaffmaps').subscribe({
+        next: (res: any) => {
+          if (res.status && res.data) {
+            const data = res.data;
+
+            // Classes
+            this.class_options = (data.classes || []).map((c: any) => ({
+              label: c.classNo.toString(),
+              value: c.classNo
+            }));
+
+            // Subjects
+            this.subjects = (data.subjects || []).map((s: any) => ({
+              label: s.subjectName,
+              value: s.subjectId
+            }));
+
+            // Batches
+            this.batch_options = (data.batches || []).map((b: any) => ({
+              label: b.batchName,
+              value: b.batchCode
+            }));
+            this.allBatches = data.batches || [];
+          }
+          resolve();
+        },
+        error: () => {
+          this.alert.error('Error loading teacher maps');
+          resolve();
+        }
+      });
+    });
   }
 
   private buildForm(): void {
