@@ -260,7 +260,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Assignments',
     icon: 'fa-solid fa-file-pen',
     route: '/app/assignment',
-    roles: ['L1', 'L3']
+    roles: ['L1', 'L3', 'L7']
   },
   {
     label: 'Enable Assignment',
@@ -344,7 +344,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Support',
     icon: 'fa-solid fa-headset',
     route: '/app/support',
-    roles: ['L1', 'L2', 'L3', 'L5', 'L6', 'L7']
+    roles: ['L1', 'L2', 'L3', 'L5', 'L6']
   },
   {
     label: 'Org Masters',
