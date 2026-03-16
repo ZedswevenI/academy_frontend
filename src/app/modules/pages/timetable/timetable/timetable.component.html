@@ -5,7 +5,8 @@
                 <h1 class="fw-bold mb-0" style="font-size:30px">
                     <i class="fa-solid fa-calendar-days me-2"></i>Time Table Management
                 </h1>
-                <button *appHasRole="['L1', 'L3']" class="btn btn-outline-primary" style="border-radius:25px" (click)="openUpload()">
+                <button *ngIf="showimport()" class="btn btn-outline-primary" style="border-radius:25px"
+                    (click)="openUpload()">
                     <i class="fa-solid fa-cloud-arrow-up me-1"></i>Upload Timetable
                 </button>
             </div>
