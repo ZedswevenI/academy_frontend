@@ -39,7 +39,7 @@
                     <button class="btn btn-sm btn-outline-secondary" [disabled]="loading" (click)="resetFilters()">
                         <i class="fa-solid fa-rotate-left me-1"></i>Reset
                     </button>
-                    <button class="btn btn-sm btn-primary" [disabled]="loading || !selectedCenter || !selectedBatch"
+                    <button class="btn btn-sm btn-primary" [disabled]="loading"
                         [title]="!selectedCenter ? 'Select a center first' : !selectedBatch ? 'Select a batch' : ''"
                         (click)="applyFilters()">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
@@ -64,8 +64,12 @@
                     class="d-flex flex-column align-items-center justify-content-center py-5 text-center">
                     <div class="mb-3" style="opacity:0.35;"><i class="fa-solid fa-calendar-days"
                             style="font-size:3rem;color:#6c757d;"></i></div>
-                    <div class="fw-semibold text-muted mb-1">Select a Center and Batch to view timetables</div>
-                    <div class="small text-muted">Use the filters above and click <strong>Search</strong></div>
+                    <!-- <div class="fw-semibold text-muted mb-1">Select a Center and Batch to view timetables</div>
+                    <div class="small text-muted">Use the filters above and click <strong>Search</strong></div> -->
+                    <div class="fw-semibold text-muted mb-1">Use filters to narrow results or click Search to load all
+                    </div>
+                    <div class="small text-muted">Filter by Center, Batch, or both — then click <strong>Search</strong>
+                    </div>
                 </div>
 
                 <!-- State 2: no results -->
