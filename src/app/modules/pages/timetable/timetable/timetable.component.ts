@@ -102,20 +102,15 @@ export class TimetableComponent implements OnInit, OnDestroy {
   centersFull: any[] = [];
   filteredBatches: any[] = [];
   hasSearched = false;
-
-  // ── Lookup maps ──────────────────────────────────────────────────────
   private centerByCode = new Map<string, any>();
   private staffByKey = new Map<string, any>();
   private subjectById = new Map<string, any>();
-  // FIX L8: removed subjectByCode — was populated but never read anywhere
   private phasesByProgram = new Map<string, any[]>();
   private batchProgramMap = new Map<string, string>();
-
-  // ── Upload / parse state ─────────────────────────────────────────────
   parsedPayload: any = null;
   parsedMeta: any = null;
   parseStats = { totalGroups: 0, totalDays: 0, totalPeriods: 0 };
-  parsedGroupsPreview: any[] = []; // FIX H4: rendered in HTML for bulk summary
+  parsedGroupsPreview: any[] = [];
   parseError = '';
   parsing = false;
   parsedPreviewRows: any[] = [];
@@ -126,17 +121,10 @@ export class TimetableComponent implements OnInit, OnDestroy {
   validateLoading = false;
   validateOk = false;
   validateConflicts: any[] = [];
-
-  // ── Publish confirm ───────────────────────────────────────────────────
   showPublishConfirmRow = false;
   publishTargetRow: any = null;
-
-  // ── Delete confirm ────────────────────────────────────────────────────
-  // FIX L5 / H3: delete action + confirm modal
   showDeleteConfirm = false;
   deleteTargetRow: any = null;
-
-  // ── Table columns ────────────────────────────────────────────────────
   columns = [
     { key: 'batchCode', label: 'Batch', sortable: true },
     { key: 'centerCode', label: 'Center', sortable: true },
@@ -155,7 +143,6 @@ export class TimetableComponent implements OnInit, OnDestroy {
     },
   ];
 
-  // FIX L4: showIf guards — publish and delete icons only render for DRAFT rows
   actions = [
     {
       type: 'icon',
@@ -220,9 +207,10 @@ export class TimetableComponent implements OnInit, OnDestroy {
     if (
       this.authService.getRole() === 'L1' ||
       this.authService.getRole() === 'L3'
-    ) { return true; }
-    return false
-
+    ) {
+      return true;
+    }
+    return false;
   }
 
   // ─── Table data ───────────────────────────────────────────────────────
@@ -233,17 +221,14 @@ export class TimetableComponent implements OnInit, OnDestroy {
     sortKey?: string;
     sortDirection?: string;
   }) {
-    if (!this.selectedCenter || !this.selectedBatch) return;
     this.loading = true;
-
-    // FIX L6: all params in POST body — no split between body and query string
     const body: any = {
       tenantId: this.tenantId,
       page: params.page,
       limit: params.pageSize,
-      batchCode: this.selectedBatch,
-      centerCode: this.selectedCenter,
     };
+    if (this.selectedBatch) body.batchCode = this.selectedBatch;
+    if (this.selectedCenter) body.centerCode = this.selectedCenter;
     if (params.search) body.search = params.search;
 
     this.commonApi
@@ -267,10 +252,6 @@ export class TimetableComponent implements OnInit, OnDestroy {
   }
 
   applyFilters() {
-    if (!this.selectedCenter || !this.selectedBatch) {
-      this.alert.warning('Please select both a Center and a Batch to search.');
-      return;
-    }
     this.timetables = [];
     this.totalRecords = 0;
     this.fetchTableData({ page: 1, pageSize: this.pageSize });

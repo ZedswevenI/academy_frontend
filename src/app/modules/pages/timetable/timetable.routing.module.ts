@@ -4,14 +4,10 @@ import { TimetableComponent } from './timetable/timetable.component';
 import { ListComponent } from './list/list.component';
 import { ViewTableComponent } from './view-table/view-table.component';
 
-const routes: Routes = [
-  { path: '', component: TimetableComponent, title: 'Student Attendance' },
-  { path: 'table', component: ListComponent, title: 'Student Attendance' },
-  { path: 'view/:id', component: ViewTableComponent, title: 'Student Attendance' }
-];
+const routes: Routes = [{ path: '', component: TimetableComponent, title: 'Timetable' }, { path: 'table', component: ListComponent, title: 'Timetable' }, { path: 'view/:id', component: ViewTableComponent, title: 'Timetable View' }];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
+  exports: [RouterModule]
 })
-export class TimetableRoutingModule { }
+export class TimetableRoutingModule {}
