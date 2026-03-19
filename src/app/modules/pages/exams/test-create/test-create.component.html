@@ -84,8 +84,8 @@
     <div class="col-md-3">
       <label class="form-label">Start Time <span class="text-danger">*</span></label>
       <input type="datetime-local" class="form-control" formControlName="startTime" [min]="minDateTime"
-        [class.is-invalid]="dateErrors?.startTimeNotFuture || dateErrors?.endBeforeStart" />
-      <div class="text-danger small mt-1" *ngIf="dateErrors?.startTimeNotFuture">
+        [class.is-invalid]="dateErrors?.['startTimeNotFuture'] || dateErrors?.['endBeforeStart']" />
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.['startTimeNotFuture']">
         Start time must be in the future
       </div>
     </div>
@@ -94,11 +94,11 @@
     <div class="col-md-3">
       <label class="form-label">End Time <span class="text-danger">*</span></label>
       <input type="datetime-local" class="form-control" formControlName="endTime" [min]="minDateTime"
-        [class.is-invalid]="dateErrors?.endTimeNotFuture || dateErrors?.endBeforeStart" />
-      <div class="text-danger small mt-1" *ngIf="dateErrors?.endTimeNotFuture">
+        [class.is-invalid]="dateErrors?.['endTimeNotFuture'] || dateErrors?.['endBeforeStart']" />
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.['endTimeNotFuture']">
         End time must be in the future
       </div>
-      <div class="text-danger small mt-1" *ngIf="dateErrors?.endBeforeStart">
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.['endBeforeStart']">
         End time must be after start time
       </div>
     </div>
@@ -107,8 +107,8 @@
     <div class="col-md-3">
       <label class="form-label">Auto Publish At</label>
       <input type="datetime-local" class="form-control" formControlName="autoPublishAt" [min]="minDateTime"
-        [class.is-invalid]="dateErrors?.publishBeforeEnd" />
-      <div class="text-danger small mt-1" *ngIf="dateErrors?.publishBeforeEnd">
+        [class.is-invalid]="dateErrors?.['publishBeforeEnd']" />
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.['publishBeforeEnd']">
         Must be after end time
       </div>
     </div>
