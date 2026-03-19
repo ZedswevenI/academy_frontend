@@ -38,9 +38,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
     this.entiId = ent || '';
-    this.testId = state.questions.examId || state.questions.testId;
+    this.testId = state.questions.examId;
     this.questionData = state.questions;
-
     if (this.testId) {
       this.loadQuestions();
     }
@@ -64,16 +63,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
 
   async loadQuestions() {
     this.loading = true;
-
     const body = {
       tenantId: this.entiId,
-      examId: this.testId,
-      sectionId: "5386cdc0-5cbe-431d-ae3d-c72990490e4b"
+      examId: this.testId
     };
-
     try {
       const res: any = await firstValueFrom(
-        this.commonApi.fetchData(body, 'exam/questions', 'list-by-section')
+        this.commonApi.fetchData(body, 'exam/questions', 'getallquestions')
       );
 
       if (res?.status && res?.data?.length) {

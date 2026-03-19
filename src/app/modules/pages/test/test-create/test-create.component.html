@@ -4,28 +4,18 @@
 </div>
 
 <form *ngIf="!loading" [formGroup]="testForm" class="card shadow-sm p-4">
-
-  <h5 class="mb-3">{{ isEditMode ? 'Edit Test' : 'Create Test' }}</h5>
-
+  <h5 class="mb-3">{{ isEditMode ? "Edit Test" : "Create Test" }}</h5>
   <div class="row g-3">
-
     <!-- Class -->
     <div class="col-md-3">
       <label class="form-label">Class <span class="text-danger">*</span></label>
       <select class="form-select" formControlName="classNo">
         <option value="">Select Class</option>
-        <!--
-          IMPORTANT: use [ngValue] (not [value]) for numbers.
-          [value] always produces a string in the DOM, so patchValue(12)
-          never matches [value]="12" because "12" !== 12.
-          [ngValue] preserves the original type.
-        -->
         <option *ngFor="let c of classes" [ngValue]="c.value">
           {{ c.label }}
         </option>
       </select>
     </div>
-
     <!-- Subject -->
     <div class="col-md-3">
       <label class="form-label">Subject <span class="text-danger">*</span></label>
@@ -36,22 +26,19 @@
         </option>
       </select>
     </div>
-
     <!-- Topic -->
     <div class="col-md-3">
       <label class="form-label">Topic</label>
       <div class="position-relative">
-        <select class="form-select" formControlName="topicId"
-                [class.pe-5]="loadingTopics">
+        <select class="form-select" formControlName="topicId" [class.pe-5]="loadingTopics">
           <option value="">
-            {{ loadingTopics ? 'Loading...' : 'Select Topic' }}
+            {{ loadingTopics ? "Loading..." : "Select Topic" }}
           </option>
           <option *ngFor="let t of topics" [value]="t.topicId">
             {{ t.topicName }}
           </option>
         </select>
-        <span *ngIf="loadingTopics"
-              class="position-absolute top-50 end-0 translate-middle-y me-3">
+        <span *ngIf="loadingTopics" class="position-absolute top-50 end-0 translate-middle-y me-3">
           <span class="spinner-border spinner-border-sm text-primary"></span>
         </span>
       </div>
@@ -61,22 +48,19 @@
     <div class="col-md-3">
       <label class="form-label">Sub Topic</label>
       <div class="position-relative">
-        <select class="form-select" formControlName="subTopicId"
-                [class.pe-5]="loadingSubTopics">
+        <select class="form-select" formControlName="subTopicId" [class.pe-5]="loadingSubTopics">
           <option value="">
-            {{ loadingSubTopics ? 'Loading...' : 'Select Sub Topic' }}
+            {{ loadingSubTopics ? "Loading..." : "Select Sub Topic" }}
           </option>
           <option *ngFor="let st of subTopics" [value]="st.subTopicId">
             {{ st.subTopicName }}
           </option>
         </select>
-        <span *ngIf="loadingSubTopics"
-              class="position-absolute top-50 end-0 translate-middle-y me-3">
+        <span *ngIf="loadingSubTopics" class="position-absolute top-50 end-0 translate-middle-y me-3">
           <span class="spinner-border spinner-border-sm text-primary"></span>
         </span>
       </div>
     </div>
-
     <!-- Exam Category -->
     <div class="col-md-3">
       <label class="form-label">Exam Category <span class="text-danger">*</span></label>
@@ -87,7 +71,6 @@
         </option>
       </select>
     </div>
-
     <!-- Exam Sub Category -->
     <div class="col-md-3">
       <label class="form-label">Exam Sub Category <span class="text-danger">*</span></label>
@@ -98,36 +81,28 @@
         </option>
       </select>
     </div>
-
     <!-- Test Number -->
     <div class="col-md-3">
       <label class="form-label">Test Number <span class="text-danger">*</span></label>
       <input class="form-control" formControlName="testNumber" placeholder="Enter test number" />
     </div>
-
     <!-- Test Code -->
     <div class="col-md-3">
       <label class="form-label">Test Code <span class="text-danger">*</span></label>
       <input class="form-control" formControlName="testCode" placeholder="Enter test code" />
     </div>
-
     <!-- Number of Questions -->
     <div class="col-md-3">
       <label class="form-label">Number of Questions <span class="text-danger">*</span></label>
       <input type="number" class="form-control" formControlName="numberOfQuestions" min="1" />
     </div>
-
   </div>
-
   <div class="text-end mt-4">
     <button type="button" class="btn btn-outline-secondary me-2" (click)="addAss()">
       Cancel
     </button>
-    <button type="button" class="btn btn-primary"
-            [disabled]="testForm.invalid"
-            (click)="submitTest()">
-      {{ isEditMode ? 'Update Test' : 'Create Test' }}
+    <button type="button" class="btn btn-primary" [disabled]="testForm.invalid" (click)="submitTest()">
+      {{ isEditMode ? "Update Test" : "Create Test" }}
     </button>
   </div>
-
 </form>
