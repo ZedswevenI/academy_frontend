@@ -73,15 +73,14 @@ export class QuestionArrangementComponent implements OnInit {
       // 1. Prepare API request body
       const body = {
         tenantId: this.entiId,
-        examId: this.testId,
-        sectionId: "5386cdc0-5cbe-431d-ae3d-c72990490e4b"
+        examId: this.testId
       };
       const res: any = await firstValueFrom(
-        this.commonApi.fetchData(body, 'exam/questions', 'list-by-section')
+        this.commonApi.fetchData(body, 'exam/questions', 'getallquestions')
       );
 
-      if (res?.status && res?.data?.length) {
-        const rawQuestions = res.data;
+      if (res?.status && res?.data) {
+        const rawQuestions = res.data.questions;
         this.rearrangedQuestions = await this.processQuestions(rawQuestions);
 
         this.questions = await this.processQuestions(rawQuestions);

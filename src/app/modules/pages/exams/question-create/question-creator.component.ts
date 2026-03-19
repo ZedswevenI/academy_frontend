@@ -189,7 +189,7 @@ export class QuestionCreatorComponent implements OnInit {
         const downloadRes: any = await firstValueFrom(
           this.commonApi.fetchData(
             { url: originalUrl },
-            'exam/question/image',
+            'exam/questions/image',
             'download'
           )
         );

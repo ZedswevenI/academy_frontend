@@ -3,10 +3,11 @@
   <quill-editor
     autofocus
     [placeholder]="placeholder"
-    [style.height]="height"    
-    [style.width]="width"    
+    [style.height]="height"
+    [style.width]="width"
     [id]="id"
     [(ngModel)]="value"
+    [modules]="modules"
     (onBlur)="onTouched()"
     (onContentChanged)="onEditorChanged($event)"
     [ngClass]="{ 'is-invalid': control && control.invalid && (control.touched || control.dirty) }"
