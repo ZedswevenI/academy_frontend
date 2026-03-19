@@ -1,0 +1,199 @@
+<div *ngIf="loading" class="d-flex justify-content-center align-items-center py-5">
+  <div class="spinner-border text-primary" role="status"></div>
+  <span class="ms-3 text-muted">Loading...</span>
+</div>
+
+<form *ngIf="!loading" [formGroup]="examForm" class="card shadow-sm p-4">
+
+  <h5 class="mb-3">{{ isEditMode ? 'Edit Exam' : 'Create Exam' }}</h5>
+
+  <div class="row g-3">
+
+    <!-- Exam Code -->
+    <div class="col-md-3">
+      <label class="form-label">Exam Code <span class="text-danger">*</span></label>
+      <input class="form-control" formControlName="examCode" placeholder="e.g. JEE_MOCK_01" />
+    </div>
+
+    <!-- Exam Name -->
+    <div class="col-md-5">
+      <label class="form-label">Exam Name <span class="text-danger">*</span></label>
+      <input class="form-control" formControlName="examName" placeholder="e.g. JEE Mock Test 1" />
+    </div>
+
+    <!-- Password -->
+    <div class="col-md-4">
+      <label class="form-label">Password <span class="text-danger">*</span></label>
+      <input class="form-control" formControlName="password" placeholder="Enter exam password" />
+    </div>
+
+    <!-- Test Type -->
+    <div class="col-md-3">
+      <label class="form-label">Test Type <span class="text-danger">*</span></label>
+      <select class="form-select" formControlName="testType">
+        <option *ngFor="let t of testTypeOptions" [value]="t.value">{{ t.label }}</option>
+      </select>
+    </div>
+
+    <!-- Medium -->
+    <div class="col-md-3">
+      <label class="form-label">Medium <span class="text-danger">*</span></label>
+      <select class="form-select" formControlName="medium">
+        <option *ngFor="let m of mediumOptions" [value]="m.value">{{ m.label }}</option>
+      </select>
+    </div>
+
+    <!-- Calculator Type -->
+    <div class="col-md-3">
+      <label class="form-label">Calculator</label>
+      <select class="form-select" formControlName="calculatorType">
+        <option *ngFor="let c of calculatorOptions" [value]="c.value">{{ c.label }}</option>
+      </select>
+    </div>
+
+    <!-- Instruction -->
+    <div class="col-md-3">
+      <label class="form-label">Instruction</label>
+      <select class="form-select" formControlName="instructionId">
+        <option value="">Select Instruction</option>
+        <option *ngFor="let ins of instructions" [value]="ins._id">
+          {{ ins.title }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Duration -->
+    <div class="col-md-2">
+      <label class="form-label">Duration (min) <span class="text-danger">*</span></label>
+      <input type="number" class="form-control" formControlName="duration" min="1" />
+    </div>
+
+    <!-- Total Questions -->
+    <div class="col-md-2">
+      <label class="form-label">Total Questions <span class="text-danger">*</span></label>
+      <input type="number" class="form-control" formControlName="totalQuestions" min="0" />
+    </div>
+
+    <!-- Total Marks -->
+    <div class="col-md-2">
+      <label class="form-label">Total Marks <span class="text-danger">*</span></label>
+      <input type="number" class="form-control" formControlName="totalMarks" min="0" />
+    </div>
+
+    <!-- Start Time -->
+    <div class="col-md-3">
+      <label class="form-label">Start Time <span class="text-danger">*</span></label>
+      <input type="datetime-local" class="form-control" formControlName="startTime" [min]="minDateTime"
+        [class.is-invalid]="dateErrors?.startTimeNotFuture || dateErrors?.endBeforeStart" />
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.startTimeNotFuture">
+        Start time must be in the future
+      </div>
+    </div>
+
+    <!-- End Time -->
+    <div class="col-md-3">
+      <label class="form-label">End Time <span class="text-danger">*</span></label>
+      <input type="datetime-local" class="form-control" formControlName="endTime" [min]="minDateTime"
+        [class.is-invalid]="dateErrors?.endTimeNotFuture || dateErrors?.endBeforeStart" />
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.endTimeNotFuture">
+        End time must be in the future
+      </div>
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.endBeforeStart">
+        End time must be after start time
+      </div>
+    </div>
+
+    <!-- Auto Publish At -->
+    <div class="col-md-3">
+      <label class="form-label">Auto Publish At</label>
+      <input type="datetime-local" class="form-control" formControlName="autoPublishAt" [min]="minDateTime"
+        [class.is-invalid]="dateErrors?.publishBeforeEnd" />
+      <div class="text-danger small mt-1" *ngIf="dateErrors?.publishBeforeEnd">
+        Must be after end time
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="col-12">
+      <label class="form-label">Description</label>
+      <textarea class="form-control" formControlName="description" rows="2"
+        placeholder="Brief description of the exam"></textarea>
+    </div>
+
+  </div>
+
+  <!-- ================= SECTIONS ================= -->
+  <hr class="my-4" />
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-bold mb-0">
+      <i class="fa-solid fa-layer-group me-2"></i>Sections
+    </h6>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="addSection()">
+      <i class="fas fa-plus me-1"></i> Add Section
+    </button>
+  </div>
+
+  <div formArrayName="sections">
+    <div *ngFor="let section of sections.controls; let i = index" [formGroupName]="i" class="card border mb-3 p-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-primary">Section {{ i + 1 }}</span>
+        <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeSection(i)"
+          [disabled]="sections.length <= 1">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+
+      <div class="row g-3">
+        <!-- Subject (select first — auto-fills code & name) -->
+        <div class="col-md-4">
+          <label class="form-label">Subject <span class="text-danger">*</span></label>
+          <select class="form-select" formControlName="subjectId" (change)="onSectionSubjectChange(i)">
+            <option value="">Select Subject</option>
+            <option *ngFor="let s of subjects" [value]="s._id">{{ s.subjectName }}</option>
+          </select>
+        </div>
+
+        <!-- Section Code (auto-filled from subject) -->
+        <div class="col-md-2">
+          <label class="form-label">Code</label>
+          <input class="form-control" formControlName="sectionCode" readonly placeholder="Auto-filled" />
+        </div>
+
+        <!-- Section Name (auto-filled from subject) -->
+        <div class="col-md-3">
+          <label class="form-label">Name</label>
+          <input class="form-control" formControlName="sectionName" readonly placeholder="Auto-filled" />
+        </div>
+
+        <!-- Number of Questions -->
+        <div class="col-md-3">
+          <label class="form-label">Questions <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" formControlName="numberOfQuestions" min="1" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Questions Total -->
+  <div class="d-flex justify-content-end mt-2">
+    <span class="badge fs-6" [class.bg-success]="sectionQuestionsTotal === examForm.get('totalQuestions')?.value"
+      [class.bg-danger]="sectionQuestionsTotal !== examForm.get('totalQuestions')?.value">
+      Section Total: {{ sectionQuestionsTotal }} / {{ examForm.get('totalQuestions')?.value || 0 }}
+    </span>
+  </div>
+  <div class="text-danger small text-end mt-1"
+    *ngIf="sectionQuestionsTotal !== examForm.get('totalQuestions')?.value && sections.length > 0">
+    Section questions must add up to Total Questions ({{ examForm.get('totalQuestions')?.value }})
+  </div>
+
+  <!-- ================= BUTTONS ================= -->
+  <div class="text-end mt-4">
+    <button type="button" class="btn btn-outline-secondary me-2" (click)="goBack()">
+      Cancel
+    </button>
+    <button type="button" class="btn btn-primary" [disabled]="examForm.invalid" (click)="submitExam()">
+      {{ isEditMode ? 'Update Exam' : 'Create Exam' }}
+    </button>
+  </div>
+
+</form>
