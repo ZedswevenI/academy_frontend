@@ -15,13 +15,12 @@ export const ROLE_LABELS: Record<RoleLevel, string> = {
   L7: 'EDP',
 };
 
-// Which roles can access each route (path matches pages-routing.module.ts)
 export const ROUTE_ACCESS: Record<string, RoleLevel[]> = {
   dashboard:        ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7'],
-  batch:            ['L1', 'L2', 'L3', 'L4'],
+  batch:            ['L1', 'L2', 'L3'],
   timetable:        ['L1', 'L3', 'L4'],
   attendance:       ['L1', 'L3', 'L4'],
-  assignment:       ['L1', 'L3', 'L4'],
+  assignment:       ['L1', 'L3', 'L7'],
   enableassignment: ['L1', 'L3', 'L4'],
   report:           ['L1', 'L5'],
   teacher:          ['L1', 'L6'],
@@ -41,7 +40,6 @@ export const ROUTE_ACCESS: Record<string, RoleLevel[]> = {
   'org-master':     ['L1'],
   class:            ['L1', 'L3'],
   inward:           ['L1'],
-  // Exam-related (L5 + L7 share exam scheduling)
   'exam-schedule':  ['L1', 'L5', 'L7'],
   exams:            ['L1', 'L5'],
 };

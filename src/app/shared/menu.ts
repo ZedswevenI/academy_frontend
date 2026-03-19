@@ -230,7 +230,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Batch',
     icon: 'fa-solid fa-layer-group',
     route: '/app/batch',
-    roles: ['L1', 'L2', 'L3', 'L4']
+    roles: ['L1', 'L2', 'L3']
   },
   {
     label: 'Timetable',
@@ -260,7 +260,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Assignments',
     icon: 'fa-solid fa-file-pen',
     route: '/app/assignment',
-    roles: ['L1', 'L3', 'L4']
+    roles: ['L1', 'L3', 'L7']
   },
   {
     label: 'Enable Assignment',
@@ -280,12 +280,12 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/activity',
     roles: ['L1', 'L3', 'L4']
   },
-  {
-    label: 'Student Performance',
-    icon: 'fa-solid fa-chart-column',
-    route: '/app/performance',
-    roles: ['L1', 'L3', 'L4']
-  },
+  // {
+  //   label: 'Student Performance',
+  //   icon: 'fa-solid fa-chart-column',
+  //   route: '/app/performance',
+  //   roles: ['L1', 'L3', 'L4']
+  // },
   {
     label: 'Tasks',
     icon: 'fa-solid fa-list-check',
@@ -344,7 +344,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Support',
     icon: 'fa-solid fa-headset',
     route: '/app/support',
-    roles: ['L1', 'L2', 'L3', 'L5', 'L6', 'L7']
+    roles: ['L1', 'L2', 'L3', 'L5', 'L6']
   },
   {
     label: 'Exams',
