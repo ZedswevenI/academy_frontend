@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-exam-instructions',
@@ -52,8 +53,21 @@ export class ExamInstructionsComponent implements OnInit {
     { label: 'Tamil', value: 'ta' }
   ];
 
+  /* ================= VIEW MODAL ================= */
+  showViewModal = false;
+  viewData: any = null;
+  viewContentHtml: SafeHtml = '';
+
   /* ================= ACTIONS ================= */
   actions = [
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-eye',
+      tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#10b981',
+      callback: (row: any) => this.viewInstruction(row)
+    },
     {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
@@ -77,6 +91,7 @@ export class ExamInstructionsComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private fb: FormBuilder,
+    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
@@ -261,6 +276,20 @@ export class ExamInstructionsComponent implements OnInit {
       return;
     }
     this.fetchTableData({ page: 1, pageSize: 10 });
+  }
+
+  /* ================= VIEW ================= */
+
+  viewInstruction(row: any): void {
+    this.viewData = row;
+    this.viewContentHtml = this.sanitizer.bypassSecurityTrustHtml(row.contentHtml || '');
+    this.showViewModal = true;
+  }
+
+  closeViewModal(): void {
+    this.showViewModal = false;
+    this.viewData = null;
+    this.viewContentHtml = '';
   }
 
   /* ================= EDITOR ================= */

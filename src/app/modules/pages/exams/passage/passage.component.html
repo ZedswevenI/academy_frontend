@@ -186,4 +186,34 @@
     </div>
 
   </div>
+
+  <!-- ================= VIEW MODAL ================= -->
+  <div class="modal-backdrop fade show" *ngIf="showViewModal" (click)="closeViewModal()"></div>
+  <div class="modal fade show d-block" tabindex="-1" *ngIf="showViewModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-book-open-reader me-2"></i>{{ viewData?.title }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeViewModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-3 mb-3">
+            <span class="badge bg-primary">{{ viewData?.language === 'en' ? 'English' : viewData?.language === 'hi' ? 'Hindi' : 'Tamil' }}</span>
+            <span class="badge" [ngClass]="viewData?.status === 'active' ? 'bg-success' : 'bg-secondary'">{{ viewData?.status }}</span>
+          </div>
+          <div *ngIf="viewData?.tags?.length" class="mb-3">
+            <span *ngFor="let tag of viewData.tags" class="badge bg-light text-dark border me-1">{{ tag }}</span>
+          </div>
+          <hr />
+          <div #passageViewContent class="passage-view-content" [innerHTML]="viewPassageHtml"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeViewModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
