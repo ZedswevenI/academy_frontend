@@ -1,0 +1,114 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4 py-4">
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-file-circle-question me-2"></i>Exams
+                    </h1>
+                    <div class="d-flex">
+                        <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium me-2" type="button"
+                            (click)="toggleFilters()">
+                            <i class="fa-solid fa-filter"></i>
+                            {{ showFilters ? 'Hide Filters' : 'Filters' }}
+                        </button>
+                        <button *ngIf="!authService.assignmentRole()"
+                            class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                            routerLink="/app/exams/exams/create">
+                            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
+                            Add Exam</button>
+                        <!-- <button *ngIf="!authService.assignmentRole()"
+                            class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                            routerLink="/app/exams/exams/import">
+                            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
+                            Import Exams</button> -->
+                    </div>
+                </div>
+                <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+                    <div class="card-header bg-white border-0">
+                        <form [formGroup]="filterForm" class="row g-3 align-items-end">
+
+                            <!-- Test Type -->
+                            <div class="col-6 col-md-2">
+                                <selectbox label="Test Type" formControlName="testType"
+                                    [control]="filterForm.get('testType')" [options]="testTypeOptions"
+                                    optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="col-6 col-md-2">
+                                <selectbox label="Status" formControlName="status" [control]="filterForm.get('status')"
+                                    [options]="statusOptions" optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Medium -->
+                            <div class="col-6 col-md-2">
+                                <selectbox label="Medium" formControlName="medium" [control]="filterForm.get('medium')"
+                                    [options]="mediumOptions" optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
+                                <div class="btn-group me-2">
+                                    <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        🖨️ Print
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" (click)="printAllFilteredTests(false)">
+                                                📄 Without Answer <small class="text-muted">(for students)</small>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" (click)="printAllFilteredTests(true)">
+                                                📄 With Answer <small class="text-muted">(answer key)</small>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+                                    Clear
+                                </button>
+                                <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">
+                                    Search
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+            [success]="'Published'" [primary]="'Result Published'" [warn]="'Draft'" [totalRecords]="totalRecords"
+            [loading]="loading" (requestData)="fetchTableData($event)"
+            [searchPlaceholder]="'Search Exam Name, Code...'">
+        </custom-table>
+
+    </div>
+</div>
+<!-- Print Modal -->
+<div *ngIf="showPrintModal" class="print-modal-overlay">
+    <div class="print-modal-box">
+        <h6 class="mb-1">Print Exam</h6>
+        <p class="text-muted mb-3" style="font-size:12px">
+            Exam: <strong>{{ selectedRow?.examName }}</strong> &nbsp;|&nbsp;
+            Code: {{ selectedRow?.examCode }}
+        </p>
+        <div class="d-flex flex-column gap-2">
+            <button class="btn btn-outline-dark btn-sm" (click)="printQuestions(false)">
+                📄 Without Answer &nbsp;<small class="text-muted">(Student Copy)</small>
+            </button>
+            <button class="btn btn-outline-dark btn-sm" (click)="printQuestions(true)">
+                📋 With Answer &nbsp;<small class="text-muted">(Answer Key)</small>
+            </button>
+        </div>
+        <button class="btn btn-link btn-sm text-danger mt-2 p-0" (click)="closePrintModal()">
+            Cancel
+        </button>
+    </div>
+</div>

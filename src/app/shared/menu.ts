@@ -347,6 +347,31 @@ export const MENU_ITEMS: MenuItem[] = [
     roles: ['L1', 'L2', 'L3', 'L5', 'L6', 'L7']
   },
   {
+    label: 'Exams',
+    icon: 'fa-solid fa-file-circle-question',
+    roles: ['L1', 'L5'],
+    children: [
+      {
+        label: 'Instructions',
+        icon: 'fa-solid fa-clipboard-list',
+        route: '/app/exams/instructions',
+        roles: ['L1', 'L5']
+      },
+      {
+        label: 'Passage',
+        icon: 'fa-solid fa-book-open-reader',
+        route: '/app/exams/passage',
+        roles: ['L1', 'L5']
+      },
+      {
+        label: 'Exams',
+        icon: 'fa-solid fa-file-pen',
+        route: '/app/exams/exams',
+        roles: ['L1', 'L5']
+      }
+    ]
+  },
+  {
     label: 'Org Masters',
     icon: 'fa-solid fa-sitemap',
     roles: ['L1'],

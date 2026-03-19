@@ -1,0 +1,150 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+    <!-- ================= LIST VIEW ================= -->
+    <div *ngIf="!showForm">
+      <div class="d-flex flex-column gap-4 py-4">
+        <div class="d-flex flex-column gap-4">
+          <div class="d-flex align-items-center justify-content-between">
+            <h1 class="fw-bold mb-0" style="font-size: 30px;">
+              <i class="fa-solid fa-clipboard-list me-2"></i>Instructions
+            </h1>
+            <div class="d-flex">
+              <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium me-2" type="button"
+                (click)="toggleFilters()">
+                <i class="fa-solid fa-filter"></i>
+                {{ showFilters ? 'Hide Filters' : 'Filters' }}
+              </button>
+              <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+                (click)="openCreateForm()">
+                <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
+                Add Instruction
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+            <div class="card-header bg-white border-0">
+              <form [formGroup]="filterForm" class="row g-3 align-items-end">
+
+                <div class="col-6 col-md-2">
+                  <selectbox label="Status" formControlName="status" [control]="filterForm.get('status')"
+                    [options]="statusOptions" optionLabel="label" optionValue="value">
+                  </selectbox>
+                </div>
+
+                <div class="col-6 col-md-2">
+                  <selectbox label="Language" formControlName="language" [control]="filterForm.get('language')"
+                    [options]="languageOptions" optionLabel="label" optionValue="value">
+                  </selectbox>
+                </div>
+
+                <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+                    Clear
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">
+                    Search
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+        [success]="'active'" [primary]="'inactive'" [totalRecords]="totalRecords" [loading]="loading"
+        (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search instructions...'">
+      </custom-table>
+    </div>
+
+    <!-- ================= CREATE / EDIT FORM ================= -->
+    <div *ngIf="showForm">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="fw-bold mb-0">
+          <i class="fa-solid fa-clipboard-list me-2"></i>
+          {{ isEditMode ? 'Edit Instruction' : 'Create Instruction' }}
+        </h4>
+        <button class="btn btn-outline-secondary btn-sm" (click)="closeForm()">
+          <i class="fa-solid fa-arrow-left me-1"></i> Back
+        </button>
+      </div>
+
+      <form [formGroup]="instructionForm">
+        <div class="row g-3">
+
+          <!-- Title -->
+          <div class="col-md-6">
+            <label class="form-label">Title <span class="text-danger">*</span></label>
+            <input class="form-control" formControlName="title" placeholder="Enter instruction title" />
+          </div>
+
+          <!-- Language -->
+          <div class="col-md-3">
+            <label class="form-label">Language <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="language">
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="ta">Tamil</option>
+            </select>
+          </div>
+
+          <!-- Content HTML -->
+          <div class="col-12">
+            <label class="form-label">Content <span class="text-danger">*</span></label>
+            <div class="editor-container border rounded">
+              <div class="editor-toolbar bg-light border-bottom p-2">
+                <div class="btn-toolbar" role="toolbar">
+                  <div class="btn-group btn-group-sm me-2" role="group">
+                    <button type="button" class="btn btn-outline-secondary"
+                      (click)="execCommand('bold')" title="Bold">
+                      <i class="fas fa-bold"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary"
+                      (click)="execCommand('italic')" title="Italic">
+                      <i class="fas fa-italic"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary"
+                      (click)="execCommand('underline')" title="Underline">
+                      <i class="fas fa-underline"></i>
+                    </button>
+                  </div>
+                  <div class="btn-group btn-group-sm me-2" role="group">
+                    <button type="button" class="btn btn-outline-secondary"
+                      (click)="execCommand('insertUnorderedList')" title="Bullet List">
+                      <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary"
+                      (click)="execCommand('insertOrderedList')" title="Numbered List">
+                      <i class="fas fa-list-ol"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div id="contentEditor" class="editor-content p-3" contenteditable="true"
+                (input)="onEditorInput($event)"
+                [innerHTML]="instructionForm.get('contentHtml')?.value"
+                style="min-height: 200px; max-height: 400px; overflow-y: auto;">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="text-end mt-4">
+          <button type="button" class="btn btn-outline-secondary me-2" (click)="closeForm()">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary"
+            [disabled]="instructionForm.invalid"
+            (click)="submitInstruction()">
+            {{ isEditMode ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>

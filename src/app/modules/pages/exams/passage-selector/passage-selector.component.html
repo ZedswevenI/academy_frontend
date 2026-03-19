@@ -1,0 +1,68 @@
+<div class="modal-backdrop fade show"></div>
+
+<div class="modal d-block" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-book me-2"></i>Select Passage
+        </h5>
+        <button type="button" class="btn-close" (click)="close()"></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+        <div class="row">
+
+          <!-- LEFT: PASSAGE LIST -->
+          <div class="col-md-4 border-end">
+            <div class="list-group">
+              <button
+                *ngFor="let p of passages"
+                type="button"
+                class="list-group-item list-group-item-action"
+                [class.active]="p === activePassage"
+                (click)="selectPassage(p)">
+                {{ p.title }}
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT: PASSAGE PREVIEW -->
+          <div class="col-md-8">
+            <label class="fw-bold mb-2">Preview</label>
+
+            <!-- SAME EDITOR STYLE (READONLY) -->
+            <div class="editor-container border rounded">
+              <div class="editor-toolbar bg-light border-bottom p-2 text-muted">
+                <i class="fas fa-eye me-1"></i> Read-only preview
+              </div>
+
+              <div class="editor-content p-3 bg-light"
+                   style="min-height:200px"
+                   [innerHTML]="activePassage?.passageHtml || activePassage?.content || 'Select a passage to preview'">
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" (click)="close()">
+          Cancel
+        </button>
+
+        <button class="btn btn-primary"
+                [disabled]="!activePassage"
+                (click)="confirm()">
+          Use this Passage
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

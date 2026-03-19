@@ -43,6 +43,7 @@ export const ROUTE_ACCESS: Record<string, RoleLevel[]> = {
   inward:           ['L1'],
   // Exam-related (L5 + L7 share exam scheduling)
   'exam-schedule':  ['L1', 'L5', 'L7'],
+  exams:            ['L1', 'L5'],
 };
 
 // Which roles can DOWNLOAD in each module (L1 can always download)
