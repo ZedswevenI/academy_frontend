@@ -31,6 +31,16 @@ export class TaskCreateComponent implements OnInit {
 
   minDateTime = this.getTodayDateTimeLocal();
 
+  descriptionModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      [{ 'header': [1, 2, 3, false] }],
+      ['clean']
+    ]
+  };
+
 
   constructor(
     private breadcrump: BredcrumpService,
@@ -155,11 +165,19 @@ export class TaskCreateComponent implements OnInit {
       next: (res: any) => {
         this.isUploading = false;
         if (res?.status) {
-          // API may return attachmentUrl or url — handle both
-          const url = res.data?.attachmentUrl || res.data?.url || '';
-          this.uploadedAttachments = [{ url }];
-          this.taskForm.patchValue({ file: this.uploadedAttachments });
-          this.alert.success('File uploaded successfully');
+          const url = res.data?.attachmentUrl
+            || res.data?.url
+            || res.attachmentUrl
+            || res.url
+            || '';
+          if (url) {
+            this.uploadedAttachments = [{ url }];
+            this.taskForm.patchValue({ file: this.uploadedAttachments });
+            this.alert.success('File uploaded successfully');
+          } else {
+            console.error('Upload response missing URL:', res);
+            this.alert.error('Upload succeeded but no URL returned');
+          }
         } else {
           this.alert.error('Upload failed');
         }
@@ -190,7 +208,8 @@ export class TaskCreateComponent implements OnInit {
       description: f.description,
       staffId: f.staffId,
       dueDate: new Date(f.dueDate).getTime(),
-      attachment: this.uploadedAttachments
+      attachment: this.uploadedAttachments,
+      attachmentUrl: this.uploadedAttachments
     };
 
     this.commonApi.fetchData(payload, 'teacher/task', 'create').subscribe({

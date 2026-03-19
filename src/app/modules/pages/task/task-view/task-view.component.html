@@ -47,16 +47,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-6 col-md-12 mb-3">
-                        <div class="row">
-                            <label class="col-sm-3 col-form-label">
-                                Description
-                            </label>
-                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-                            <div class="col-sm-7 pt-2">
-                                <strong>{{ taskData.description }}</strong>
-                            </div>
-                        </div>
+                    <div class="col-12 mb-3">
+                        <label class="col-form-label fw-semibold">Description</label>
+                        <div class="border rounded p-3 bg-light" style="word-wrap: break-word; overflow-wrap: break-word;" [innerHTML]="taskData.description"></div>
                     </div>
                     <div class="col-lg-6 col-md-12 mb-3" *ngIf="taskData.attachmentUrl?.length">
                         <div class="row">

@@ -50,11 +50,13 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <description label="Description" placeholder="Type here...."
+                <div class="col-12">
+                    <doceditor label="Description" placeholder="Type here...."
                         formControlName="description"
-                        [control]="taskForm.get('description')">
-                    </description>
+                        [control]="taskForm.get('description')"
+                        [modules]="descriptionModules"
+                        id="taskDescription" height="200px" width="100%">
+                    </doceditor>
                 </div>
 
             </div>
