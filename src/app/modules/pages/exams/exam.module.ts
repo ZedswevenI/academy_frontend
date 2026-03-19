@@ -15,9 +15,10 @@ import { QuestionArrangementComponent } from './question-arrange/question-arange
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ExamInstructionsComponent } from './instructions/instructions.component';
 import { ExamPassageComponent } from './passage/passage.component';
+import { ExamQuestionsComponent } from './questions/questions.component';
 
 @NgModule({
-  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent,QuestionArrangementComponent, ExamInstructionsComponent, ExamPassageComponent],
+  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent,QuestionArrangementComponent, ExamInstructionsComponent, ExamPassageComponent, ExamQuestionsComponent],
   imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass,DragDropModule],
   exports: []
 })

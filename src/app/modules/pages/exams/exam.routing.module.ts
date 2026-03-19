@@ -10,10 +10,12 @@ import { QuestionViewComponent } from './question-view/question-view.component';
 import { QuestionArrangementComponent } from './question-arrange/question-arange.component';
 import { ExamInstructionsComponent } from './instructions/instructions.component';
 import { ExamPassageComponent } from './passage/passage.component';
+import { ExamQuestionsComponent } from './questions/questions.component';
 
 const routes: Routes = [
   { path: 'instructions', component: ExamInstructionsComponent, title: 'Exam-Instructions' },
   { path: 'passage', component: ExamPassageComponent, title: 'Exam-Passage' },
+  { path: 'questions', component: ExamQuestionsComponent, title: 'Exam-Questions' },
   { path: 'exams', component: TestComponent, title: 'Exams' },
   { path: 'exams/create', component: TestCreateComponent, title: 'Exam-Create' },
   { path: 'exams/import', component: TestimportComponent, title: 'Exam-Import' },

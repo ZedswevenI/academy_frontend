@@ -364,6 +364,12 @@ export const MENU_ITEMS: MenuItem[] = [
         roles: ['L1', 'L5']
       },
       {
+        label: 'Questions',
+        icon: 'fa-solid fa-circle-question',
+        route: '/app/exams/questions',
+        roles: ['L1', 'L5']
+      },
+      {
         label: 'Exams',
         icon: 'fa-solid fa-file-pen',
         route: '/app/exams/exams',

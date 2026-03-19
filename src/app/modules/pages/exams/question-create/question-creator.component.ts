@@ -28,6 +28,7 @@ export class QuestionCreatorComponent implements OnInit {
   testId = ''
 
   isEditMode = false;
+  isBankMode = false;
   recId: string = '';
   entiId: string;
   private imageUrlMap = new Map<string, string>();
@@ -37,6 +38,14 @@ export class QuestionCreatorComponent implements OnInit {
   examData: any = null;
   sections: any[] = [];
   selectedSubjectId = '';
+
+  /* ================= BANK MODE: SUBJECT / TOPIC / SUBTOPIC ================= */
+  subjects: any[] = [];
+  allTopics: any[] = [];
+  allSubTopics: any[] = [];
+  subjectOptions: any[] = [];
+  topicOptions: any[] = [];
+  subTopicOptions: any[] = [];
 
   /* ================= PASSAGES & TAGS ================= */
   passages: any[] = [];
@@ -60,27 +69,35 @@ export class QuestionCreatorComponent implements OnInit {
 
     const state: any = history.state;
     this.entiId = localStorage.getItem('tenantId') || '';
-    this.testId = state.question.testId;
 
-    // Exam context
-    this.examId = state.question.examId || state.question.testId || '';
-    this.examData = state.question;
-    this.sections = state.question.sections || [];
+    if (state?.bank) {
+      // Bank mode — no exam/section context
+      this.isBankMode = true;
+      this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Add Question' }]);
+    } else if (state?.question) {
+      this.testId = state.question.testId;
+      this.examId = state.question.examId || state.question.testId || '';
+      this.examData = state.question;
+      this.sections = state.question.sections || [];
 
-    if (state?.question?.recId) {
-      this.isEditMode = true;
-      this.recId = state?.question?.recId;
-      this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Edit Question' }]);
-    } else {
-      this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Add Question' }]);
+      if (state.question.recId) {
+        this.isEditMode = true;
+        this.recId = state.question.recId;
+        this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Edit Question' }]);
+      } else {
+        this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Add Question' }]);
+      }
     }
 
   }
   initializeForm() {
     this.questionForm = this.fb.group({
-      sectionId: ['', Validators.required],
+      sectionId: [''],
       questionId: [''],
       sortOrder: [1, [Validators.required, Validators.min(1)]],
+      bankSubjectId: [''],
+      topicId: [''],
+      subTopicId: [''],
       enablePassage: [false],
       enableInstruction: [false],
       enableSolution: [false],
@@ -120,6 +137,10 @@ export class QuestionCreatorComponent implements OnInit {
   ngOnInit(): void {
     this.loadPassages();
 
+    if (this.isBankMode) {
+      this.loadBankMasters();
+    }
+
     if (this.isEditMode) {
       this.loadQuestionForEdit();
     } else {
@@ -134,6 +155,50 @@ export class QuestionCreatorComponent implements OnInit {
     this.questionForm.get('questionType')?.valueChanges.subscribe(type => {
       this.onQuestionTypeChange(type);
     });
+  }
+
+  /* ================= BANK MODE MASTERS ================= */
+
+  private loadBankMasters(): void {
+    const body = { entiId: this.entiId };
+
+    this.commonApi.fetchData(body, 'ims/subject', 'list?list=full').subscribe({
+      next: (res: any) => {
+        this.subjects = res?.data || [];
+        this.subjectOptions = this.subjects.map((s: any) => ({
+          label: s.subjectName, value: s._id
+        }));
+      }
+    });
+
+    this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
+      next: (res: any) => { this.allTopics = res?.data || []; }
+    });
+
+    this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
+      next: (res: any) => { this.allSubTopics = res?.data || []; }
+    });
+  }
+
+  onBankSubjectChange(subjectId: string): void {
+    this.topicOptions = [];
+    this.subTopicOptions = [];
+    this.questionForm.patchValue({ topicId: '', subTopicId: '' });
+    if (subjectId) {
+      this.topicOptions = this.allTopics
+        .filter((t: any) => (t.subjectId?._id || t.subjectId) === subjectId)
+        .map((t: any) => ({ label: t.topicName, value: t.topicId }));
+    }
+  }
+
+  onBankTopicChange(topicId: string): void {
+    this.subTopicOptions = [];
+    this.questionForm.patchValue({ subTopicId: '' });
+    if (topicId) {
+      this.subTopicOptions = this.allSubTopics
+        .filter((st: any) => (st.topicId?.topicId || st.topicId) === topicId)
+        .map((st: any) => ({ label: st.subTopicName, value: st.subTopicId }));
+    }
   }
 
   /* ================= LOAD PASSAGES ================= */
@@ -420,6 +485,11 @@ export class QuestionCreatorComponent implements OnInit {
       return;
     }
 
+    if (this.isBankMode) {
+      this.submitBankQuestion();
+      return;
+    }
+
     if (!this.selectedSubjectId) {
       this.alert.error('Please select a section first');
       return;
@@ -478,6 +548,38 @@ export class QuestionCreatorComponent implements OnInit {
           }
         });
       }
+    });
+  }
+
+  private submitBankQuestion(): void {
+    this.prepareQuestionData().then(payload => {
+      const formValue = this.questionForm.value;
+
+      const finalPayload: any = {
+        entiId: this.entiId,
+        subjectId: formValue.bankSubjectId || undefined,
+        topicId: formValue.topicId || undefined,
+        subTopicId: formValue.subTopicId || undefined,
+        sortOrder: formValue.sortOrder,
+        status: 'active',
+        ...payload
+      };
+
+      this.commonApi.fetchData(
+        finalPayload,
+        'exam/questions/bank',
+        'create'
+      ).subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success('Question created successfully');
+            this.router.navigate(['/app/exams/questions']);
+          }
+        },
+        error: (err) => {
+          this.alert.error(err.error?.message || 'Create failed');
+        }
+      });
     });
   }
 

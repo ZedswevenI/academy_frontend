@@ -1,0 +1,150 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+    <div class="d-flex flex-column gap-4 py-4">
+      <div class="d-flex flex-column gap-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <h1 class="fw-bold mb-0" style="font-size: 30px;">
+            <i class="fa-solid fa-circle-question me-2"></i>Questions
+          </h1>
+          <div class="d-flex">
+            <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium me-2" type="button"
+              (click)="toggleFilters()">
+              <i class="fa-solid fa-filter"></i>
+              {{ showFilters ? 'Hide Filters' : 'Filters' }}
+            </button>
+            <button class="btn btn-outline-primary rounded-pill fs-16 fw-medium me-2" type="button"
+              (click)="goToImport()">
+              <i class="fa-solid fa-file-import me-1"></i> Import
+            </button>
+            <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+              (click)="goToCreate()">
+              <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
+              Add Question
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+          <div class="card-header bg-white border-0">
+            <form [formGroup]="filterForm" class="row g-3 align-items-end">
+
+              <div class="col-6 col-md-2">
+                <selectbox label="Subject" formControlName="subjectId" [control]="filterForm.get('subjectId')"
+                  [options]="subjectOptions" optionLabel="label" optionValue="value">
+                </selectbox>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <selectbox label="Topic" formControlName="topicId" [control]="filterForm.get('topicId')"
+                  [options]="topicOptions" optionLabel="label" optionValue="value">
+                </selectbox>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <selectbox label="Sub Topic" formControlName="subTopicId" [control]="filterForm.get('subTopicId')"
+                  [options]="subTopicOptions" optionLabel="label" optionValue="value">
+                </selectbox>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <selectbox label="Question Type" formControlName="questionType"
+                  [control]="filterForm.get('questionType')"
+                  [options]="questionTypeOptions" optionLabel="label" optionValue="value">
+                </selectbox>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <selectbox label="Difficulty" formControlName="difficulty"
+                  [control]="filterForm.get('difficulty')"
+                  [options]="difficultyOptions" optionLabel="label" optionValue="value">
+                </selectbox>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <selectbox label="Status" formControlName="status" [control]="filterForm.get('status')"
+                  [options]="statusOptions" optionLabel="label" optionValue="value">
+                </selectbox>
+              </div>
+
+              <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+                  Clear
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">
+                  Search
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+      [success]="'active'" [primary]="'inactive'" [totalRecords]="totalRecords" [loading]="loading"
+      (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search questions...'">
+    </custom-table>
+
+  </div>
+
+  <!-- ================= VIEW MODAL ================= -->
+  <div class="modal-backdrop fade show" *ngIf="showViewModal" (click)="closeViewModal()"></div>
+  <div class="modal fade show d-block" tabindex="-1" *ngIf="showViewModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-circle-question me-2"></i>Question Details
+          </h5>
+          <button type="button" class="btn-close" (click)="closeViewModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-3 mb-3">
+            <span class="badge bg-info text-dark">{{ viewData?.questionType }}</span>
+            <span class="badge bg-warning text-dark">{{ viewData?.difficulty }}</span>
+            <span class="badge bg-success">+{{ viewData?.positiveMarks }}</span>
+            <span class="badge bg-danger" *ngIf="viewData?.negativeMarks">-{{ viewData?.negativeMarks }}</span>
+            <span class="badge" [ngClass]="viewData?.status === 'active' ? 'bg-success' : 'bg-secondary'">{{ viewData?.status }}</span>
+          </div>
+          <hr />
+
+          <!-- Question -->
+          <h6 class="fw-bold">Question</h6>
+          <div class="question-view-content border rounded p-3 bg-light mb-3" [innerHTML]="viewQuestionHtml"></div>
+
+          <!-- Options -->
+          <div *ngIf="viewData?.questionOptions?.length" class="mb-3">
+            <h6 class="fw-bold">Options</h6>
+            <div *ngFor="let opt of viewData.questionOptions; let i = index"
+              class="d-flex align-items-start gap-2 mb-2 p-2 border rounded"
+              [ngClass]="opt.isCorrect ? 'border-success bg-success bg-opacity-10' : ''">
+              <span class="badge rounded-circle" [ngClass]="opt.isCorrect ? 'bg-success' : 'bg-secondary'"
+                style="width: 24px; height: 24px; line-height: 18px;">
+                {{ 'ABCDEFGH'[i] }}
+              </span>
+              <div [innerHTML]="opt.textHtml"></div>
+            </div>
+          </div>
+
+          <!-- Correct Answer -->
+          <div *ngIf="viewData?.correctAnswer" class="mb-3">
+            <h6 class="fw-bold">Correct Answer</h6>
+            <span class="badge bg-primary fs-6">{{ viewData.correctAnswer }}</span>
+          </div>
+
+          <!-- Solution -->
+          <div *ngIf="viewSolutionHtml" class="mb-3">
+            <h6 class="fw-bold">Solution</h6>
+            <div class="question-view-content border rounded p-3 bg-light" [innerHTML]="viewSolutionHtml"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeViewModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

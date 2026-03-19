@@ -14,8 +14,8 @@
         <div class="card-body">
           <form [formGroup]="questionForm" (ngSubmit)="onSubmit()">
 
-            <!-- Subject, Sort Order, Question ID -->
-            <div class="row mb-4">
+            <!-- Exam mode: Section, Sort Order, Question ID -->
+            <div class="row mb-4" *ngIf="!isBankMode">
               <div class="col-md-5">
                 <label class="form-label fw-bold">
                   Subject <span class="text-danger">*</span>
@@ -38,6 +38,35 @@
               <div class="col-md-4">
                 <label class="form-label fw-bold">Question ID</label>
                 <input class="form-control" formControlName="questionId" placeholder="e.g. q_001 (optional)" />
+              </div>
+            </div>
+
+            <!-- Bank mode: Subject, Topic, SubTopic -->
+            <div class="row mb-4" *ngIf="isBankMode">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Subject</label>
+                <select class="form-select" formControlName="bankSubjectId"
+                  (change)="onBankSubjectChange($any($event.target).value)">
+                  <option value="">Select Subject</option>
+                  <option *ngFor="let s of subjectOptions" [value]="s.value">{{ s.label }}</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Topic</label>
+                <select class="form-select" formControlName="topicId"
+                  (change)="onBankTopicChange($any($event.target).value)">
+                  <option value="">Select Topic</option>
+                  <option *ngFor="let t of topicOptions" [value]="t.value">{{ t.label }}</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Sub Topic</label>
+                <select class="form-select" formControlName="subTopicId">
+                  <option value="">Select Sub Topic</option>
+                  <option *ngFor="let st of subTopicOptions" [value]="st.value">{{ st.label }}</option>
+                </select>
               </div>
             </div>
 
