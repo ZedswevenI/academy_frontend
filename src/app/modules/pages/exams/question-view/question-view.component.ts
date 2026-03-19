@@ -72,8 +72,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         this.commonApi.fetchData(body, 'exam/questions', 'getallquestions')
       );
 
-      if (res?.status && res?.data?.length) {
-        const rawQuestions = res.data;
+      if (res?.status && res?.data) {
+        const rawQuestions = res.data.questions;
         this.questions = await this.processQuestions(rawQuestions);
 
         this.cdr.detectChanges();
