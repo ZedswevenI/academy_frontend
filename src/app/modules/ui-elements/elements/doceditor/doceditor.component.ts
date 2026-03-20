@@ -25,6 +25,7 @@ export class DoceditorComponent implements ControlValueAccessor {
   @Input() modules: any = null;
 
   value: any = '';
+  private editorReady = false;
   onChange = (_: any) => { };
   onTouched = () => { };
 
@@ -38,7 +39,12 @@ export class DoceditorComponent implements ControlValueAccessor {
     this.onTouched = fn;
   }
 
+  onReady(): void {
+    setTimeout(() => this.editorReady = true, 100);
+  }
+
   onEditorChanged(content: any) {
+    if (!this.editorReady) return;
     this.value = content.html;
     this.onChange(this.value);
   }

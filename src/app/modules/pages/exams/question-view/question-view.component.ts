@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChildren, QueryList, ElementRef, AfterViewInit, 
 import { firstValueFrom } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../../service/auth/auth.service';
@@ -25,12 +26,54 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
 
+  /* ================= MAP FROM BANK ================= */
+  showBankModal = false;
+  bankQuestions: any[] = [];
+  bankLoading = false;
+  bankTotalRecords = 0;
+  bankSelectedIds = new Set<string>();
+  bankSectionId = '';
+  bankMapping = false;
+
+  /* Bank filters */
+  bankSubjectOptions: any[] = [];
+  bankTopicOptions: any[] = [];
+  bankSubTopicOptions: any[] = [];
+  bankAllTopics: any[] = [];
+  bankAllSubTopics: any[] = [];
+  bankFilterSubjectId = '';
+  bankFilterTopicId = '';
+  bankFilterSubTopicId = '';
+  bankFilterDifficulty = '';
+  bankFilterQuestionType = '';
+  bankSearch = '';
+  bankPage = 1;
+  bankPageSize = 10;
+
+  questionTypeOptions = [
+    { label: 'MCQ (Single)', value: 'mcq_single' },
+    { label: 'MCQ (Multiple)', value: 'mcq_multiple' },
+    { label: 'Integer', value: 'integer' },
+    { label: 'Numerical', value: 'numeric' },
+    { label: 'Subjective', value: 'subjective' },
+    { label: 'True/False', value: 'true_false' },
+    { label: 'Text Based', value: 'passage_qns' },
+    { label: 'Matrix', value: 'matrix' }
+  ];
+
+  difficultyOptions = [
+    { label: 'Easy', value: 'easy' },
+    { label: 'Medium', value: 'medium' },
+    { label: 'Hard', value: 'hard' }
+  ];
+
   constructor(
     private commonApi: CommonapiService,
     private sanitizer: DomSanitizer,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private breadcrump: BredcrumpService,
+    private alert: AlertService,
     public authService: AuthService
   ) { this.breadcrump.set([{ label: 'Exams', link: '/app/exams/exams' }, { label: 'View' }]); }
 
@@ -670,11 +713,234 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       printWindow.document.close();
     }, 500);
   }
-}
 
-//  <div class="question-number">Q${i + 1}.
-//             <span class="meta-right">
-//               [${this.formatQuestionType(q.questionType)}] &nbsp;|&nbsp;
-//               Marks: +${q.positiveMarks} / –${q.negativeMarks}
-//             </span>
-//           </div>
+  /* ================= MAP FROM BANK: METHODS ================= */
+
+  openBankModal(): void {
+    this.showBankModal = true;
+    this.bankSelectedIds.clear();
+    this.bankSectionId = '';
+    this.bankPage = 1;
+    this.resetBankFilters();
+    this.loadBankMasters();
+    this.fetchBankQuestions();
+  }
+
+  closeBankModal(): void {
+    this.showBankModal = false;
+    this.bankQuestions = [];
+    this.bankSelectedIds.clear();
+  }
+
+  private loadBankMasters(): void {
+    const body = { entiId: this.entiId };
+
+    this.commonApi.fetchData(body, 'ims/subject', 'list?list=full').subscribe({
+      next: (res: any) => {
+        this.bankSubjectOptions = (res?.data || []).map((s: any) => ({
+          label: s.subjectName, value: s._id
+        }));
+      }
+    });
+
+    this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
+      next: (res: any) => { this.bankAllTopics = res?.data || []; }
+    });
+
+    this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
+      next: (res: any) => { this.bankAllSubTopics = res?.data || []; }
+    });
+  }
+
+  onBankSubjectChange(subjectId: string): void {
+    this.bankFilterSubjectId = subjectId;
+    this.bankFilterTopicId = '';
+    this.bankFilterSubTopicId = '';
+    this.bankSubTopicOptions = [];
+    if (subjectId) {
+      this.bankTopicOptions = this.bankAllTopics
+        .filter((t: any) => (t.subjectId?._id || t.subjectId) === subjectId)
+        .map((t: any) => ({ label: t.topicName, value: t.topicId }));
+    } else {
+      this.bankTopicOptions = [];
+    }
+  }
+
+  onBankTopicChange(topicId: string): void {
+    this.bankFilterTopicId = topicId;
+    this.bankFilterSubTopicId = '';
+    if (topicId) {
+      this.bankSubTopicOptions = this.bankAllSubTopics
+        .filter((st: any) => (st.topicId?.topicId || st.topicId) === topicId)
+        .map((st: any) => ({ label: st.subTopicName, value: st.subTopicId }));
+    } else {
+      this.bankSubTopicOptions = [];
+    }
+  }
+
+  resetBankFilters(): void {
+    this.bankFilterSubjectId = '';
+    this.bankFilterTopicId = '';
+    this.bankFilterSubTopicId = '';
+    this.bankFilterDifficulty = '';
+    this.bankFilterQuestionType = '';
+    this.bankSearch = '';
+    this.bankTopicOptions = [];
+    this.bankSubTopicOptions = [];
+  }
+
+  searchBank(): void {
+    this.bankPage = 1;
+    this.fetchBankQuestions();
+  }
+
+  clearBankFilters(): void {
+    this.resetBankFilters();
+    this.bankPage = 1;
+    this.fetchBankQuestions();
+  }
+
+  fetchBankQuestions(): void {
+    this.bankLoading = true;
+    const query: any = { page: this.bankPage, limit: this.bankPageSize };
+
+    if (this.bankSearch) query.search = this.bankSearch;
+    if (this.bankFilterTopicId) query.topicId = this.bankFilterTopicId;
+    if (this.bankFilterSubTopicId) query.subTopicId = this.bankFilterSubTopicId;
+    if (this.bankFilterDifficulty) query.difficulty = this.bankFilterDifficulty;
+    if (this.bankFilterQuestionType) query.questionType = this.bankFilterQuestionType;
+
+    const queryString = Object.keys(query)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
+      .join('&');
+
+    this.commonApi.fetchData({ entiId: this.entiId }, 'exam/questions/bank', `list?${queryString}`)
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.bankQuestions = (res.data || []).map((item: any) => ({
+              ...item,
+              questionPreview: this.stripHtml(item.questionHtml || '').substring(0, 120)
+            }));
+            this.bankTotalRecords = res.count || 0;
+          }
+          this.bankLoading = false;
+        },
+        error: () => {
+          this.bankLoading = false;
+          this.alert.error('Error loading bank questions');
+        }
+      });
+  }
+
+  private stripHtml(html: string): string {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  }
+
+  onBankPageChange(page: number): void {
+    this.bankPage = page;
+    this.fetchBankQuestions();
+  }
+
+  toggleBankSelect(id: string): void {
+    if (this.bankSelectedIds.has(id)) {
+      this.bankSelectedIds.delete(id);
+    } else {
+      this.bankSelectedIds.add(id);
+    }
+  }
+
+  toggleSelectAll(event: any): void {
+    if (event.target.checked) {
+      this.bankQuestions.forEach(q => this.bankSelectedIds.add(q._id));
+    } else {
+      this.bankQuestions.forEach(q => this.bankSelectedIds.delete(q._id));
+    }
+  }
+
+  get allCurrentPageSelected(): boolean {
+    return this.bankQuestions.length > 0 &&
+      this.bankQuestions.every(q => this.bankSelectedIds.has(q._id));
+  }
+
+  mapSingleQuestion(recId: string): void {
+    if (!this.bankSectionId) {
+      this.alert.error('Please select a section first');
+      return;
+    }
+
+    this.bankMapping = true;
+    const payload = {
+      entiId: this.entiId,
+      recId: recId,
+      examId: this.testId,
+      sectionId: this.bankSectionId
+    };
+
+    this.commonApi.fetchData(payload, 'exam/questions', 'map').subscribe({
+      next: (res: any) => {
+        this.bankMapping = false;
+        if (res?.status) {
+          this.alert.success('Question mapped successfully');
+          this.bankSelectedIds.delete(recId);
+          this.loadQuestions();
+        }
+      },
+      error: () => {
+        this.bankMapping = false;
+        this.alert.error('Error mapping question');
+      }
+    });
+  }
+
+  mapSelectedQuestions(): void {
+    if (!this.bankSectionId) {
+      this.alert.error('Please select a section first');
+      return;
+    }
+
+    if (this.bankSelectedIds.size === 0) {
+      this.alert.error('Please select at least one question');
+      return;
+    }
+
+    this.bankMapping = true;
+    const payload = {
+      entiId: this.entiId,
+      recIds: Array.from(this.bankSelectedIds),
+      examId: this.testId,
+      sectionId: this.bankSectionId
+    };
+
+    this.commonApi.fetchData(payload, 'exam/questions', 'bulk-map').subscribe({
+      next: (res: any) => {
+        this.bankMapping = false;
+        if (res?.status) {
+          this.alert.success(`${this.bankSelectedIds.size} question(s) mapped successfully`);
+          this.bankSelectedIds.clear();
+          this.loadQuestions();
+          this.closeBankModal();
+        }
+      },
+      error: () => {
+        this.bankMapping = false;
+        this.alert.error('Error mapping questions');
+      }
+    });
+  }
+
+  get bankTotalPages(): number {
+    return Math.ceil(this.bankTotalRecords / this.bankPageSize);
+  }
+
+  get bankPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.bankTotalPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+}

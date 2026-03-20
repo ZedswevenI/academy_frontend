@@ -11,8 +11,8 @@
         </div>
         <div class="card-body">
 
-          <!-- Subject Selection -->
-          <div class="row mb-4">
+          <!-- Subject Selection (exam mode only) -->
+          <div class="row mb-4" *ngIf="!isBankMode">
             <div class="col-md-6">
               <label class="form-label fw-bold">
                 Subject <span class="text-danger">*</span>
@@ -24,6 +24,33 @@
                 </option>
               </select>
               <small class="text-muted">Select the subject/section for imported questions</small>
+            </div>
+          </div>
+
+          <!-- Bank mode: Subject / Topic / SubTopic -->
+          <div class="row mb-4" *ngIf="isBankMode">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Subject <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="selectedSubjectId"
+                (ngModelChange)="onBankSubjectChange($event)">
+                <option value="">Select Subject</option>
+                <option *ngFor="let s of subjectOptions" [value]="s.value">{{ s.label }}</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Topic</label>
+              <select class="form-select" [(ngModel)]="selectedTopicId"
+                (ngModelChange)="onBankTopicChange($event)">
+                <option value="">Select Topic</option>
+                <option *ngFor="let t of topicOptions" [value]="t.value">{{ t.label }}</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Sub Topic</label>
+              <select class="form-select" [(ngModel)]="selectedSubTopicId">
+                <option value="">Select Sub Topic</option>
+                <option *ngFor="let st of subTopicOptions" [value]="st.value">{{ st.label }}</option>
+              </select>
             </div>
           </div>
 
@@ -55,10 +82,10 @@
 
           <!-- Process Button -->
           <div class="d-flex justify-content-center gap-3 mt-2">
-            <button class="btn btn-outline-secondary btn-lg" routerLink="/app/exams/exams">
+            <button class="btn btn-outline-secondary btn-lg" [routerLink]="isBankMode ? '/app/exams/questions' : '/app/exams/exams'">
               <i class="fas fa-times me-2"></i>Cancel
             </button>
-            <button class="btn btn-success btn-lg" [disabled]="!selectedFile || !selectedSectionId || isProcessing" (click)="processDocx()">
+            <button class="btn btn-success btn-lg" [disabled]="!selectedFile || (!isBankMode && !selectedSectionId) || (isBankMode && !selectedSubjectId) || isProcessing" (click)="processDocx()">
               <span *ngIf="!isProcessing">
                 <i class="fas fa-cogs me-2"></i>Process Document
               </span>
@@ -192,7 +219,7 @@
               <button class="btn btn-outline-secondary" (click)="reset()">
                 <i class="fas fa-arrow-left me-2"></i>Back to Upload
               </button>
-              <button class="btn btn-outline-danger" routerLink="/app/exams/exams">
+              <button class="btn btn-outline-danger" [routerLink]="isBankMode ? '/app/exams/questions' : '/app/exams/exams'">
                 <i class="fas fa-times me-2"></i>Cancel
               </button>
             </div>
@@ -225,7 +252,7 @@
             <button class="btn btn-primary" (click)="reset()">
               <i class="fas fa-plus me-2"></i>Import More Questions
             </button>
-            <button class="btn btn-outline-secondary" routerLink="/app/exams/exams">
+            <button class="btn btn-outline-secondary" [routerLink]="isBankMode ? '/app/exams/questions' : '/app/exams/exams'">
               <i class="fas fa-list me-2"></i>View Exams
             </button>
           </div>

@@ -30,7 +30,10 @@
             </li>
           </ul>
         </div>
-        <button  *ngIf="!authService.assignmentRole()" class="btn btn-primary btn-sm" (click)="addNewQuestion()">
+        <button *ngIf="!authService.assignmentRole()" class="btn btn-outline-success btn-sm me-2" (click)="openBankModal()">
+          <i class="fas fa-database me-1"></i> Map from Bank
+        </button>
+        <button *ngIf="!authService.assignmentRole()" class="btn btn-primary btn-sm" (click)="addNewQuestion()">
           + Add Question
         </button>
       </div>
@@ -130,4 +133,169 @@
 
   </div>
 
+</div>
+
+<!-- ================= MAP FROM BANK MODAL ================= -->
+<div class="modal-backdrop fade show" *ngIf="showBankModal" (click)="closeBankModal()"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showBankModal" (click)="$event.stopPropagation()">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="fas fa-database me-2"></i>Map Questions from Bank
+        </h5>
+        <button type="button" class="btn-close" (click)="closeBankModal()"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Section selector -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Section <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="bankSectionId">
+              <option value="">Select Section</option>
+              <option *ngFor="let s of questionData?.sections" [value]="s.sectionId">
+                {{ s.sectionName }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-8 d-flex align-items-end justify-content-end">
+            <span class="badge bg-primary fs-6">{{ bankSelectedIds.size }} selected</span>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- Filters -->
+        <div class="row g-2 mb-3">
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterSubjectId"
+              (ngModelChange)="onBankSubjectChange($event)">
+              <option value="">Subject</option>
+              <option *ngFor="let s of bankSubjectOptions" [value]="s.value">{{ s.label }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterTopicId"
+              (ngModelChange)="onBankTopicChange($event)">
+              <option value="">Topic</option>
+              <option *ngFor="let t of bankTopicOptions" [value]="t.value">{{ t.label }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterSubTopicId">
+              <option value="">Sub Topic</option>
+              <option *ngFor="let st of bankSubTopicOptions" [value]="st.value">{{ st.label }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterQuestionType">
+              <option value="">Type</option>
+              <option *ngFor="let qt of questionTypeOptions" [value]="qt.value">{{ qt.label }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterDifficulty">
+              <option value="">Difficulty</option>
+              <option *ngFor="let d of difficultyOptions" [value]="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex gap-1">
+            <button class="btn btn-sm btn-primary flex-fill" (click)="searchBank()">Search</button>
+            <button class="btn btn-sm btn-outline-secondary flex-fill" (click)="clearBankFilters()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <input class="form-control form-control-sm" placeholder="Search questions..."
+              [(ngModel)]="bankSearch" (keydown.enter)="searchBank()" />
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="bankLoading" class="text-center py-4">
+          <div class="spinner-border text-primary"></div>
+        </div>
+
+        <!-- Questions table -->
+        <div *ngIf="!bankLoading" class="table-responsive">
+          <table class="table table-hover table-sm align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px;">
+                  <input type="checkbox" class="form-check-input"
+                    [checked]="allCurrentPageSelected"
+                    (change)="toggleSelectAll($event)" />
+                </th>
+                <th>Question</th>
+                <th style="width:100px;">Type</th>
+                <th style="width:80px;">Difficulty</th>
+                <th style="width:70px;">+Marks</th>
+                <th style="width:80px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let q of bankQuestions">
+                <td>
+                  <input type="checkbox" class="form-check-input"
+                    [checked]="bankSelectedIds.has(q._id)"
+                    (change)="toggleBankSelect(q._id)" />
+                </td>
+                <td>
+                  <span class="text-truncate d-inline-block" style="max-width:400px;">
+                    {{ q.questionPreview }}
+                  </span>
+                </td>
+                <td><span class="badge bg-info text-dark">{{ formatQuestionType(q.questionType) }}</span></td>
+                <td><span class="badge bg-secondary">{{ q.difficulty }}</span></td>
+                <td>+{{ q.positiveMarks }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-success" [disabled]="bankMapping || !bankSectionId"
+                    (click)="mapSingleQuestion(q._id)">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!bankQuestions.length">
+                <td colspan="6" class="text-center text-muted py-4">No questions found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div *ngIf="bankTotalPages > 1" class="d-flex justify-content-center mt-2">
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="bankPage === 1">
+                <a class="page-link" (click)="onBankPageChange(bankPage - 1)">Prev</a>
+              </li>
+              <li *ngFor="let p of bankPageNumbers" class="page-item" [class.active]="p === bankPage">
+                <a class="page-link" (click)="onBankPageChange(p)">{{ p }}</a>
+              </li>
+              <li class="page-item" [class.disabled]="bankPage === bankTotalPages">
+                <a class="page-link" (click)="onBankPageChange(bankPage + 1)">Next</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeBankModal()">Cancel</button>
+        <button type="button" class="btn btn-success"
+          [disabled]="bankMapping || bankSelectedIds.size === 0 || !bankSectionId"
+          (click)="mapSelectedQuestions()">
+          <span *ngIf="bankMapping">
+            <span class="spinner-border spinner-border-sm me-1"></span> Mapping...
+          </span>
+          <span *ngIf="!bankMapping">
+            <i class="fas fa-check me-1"></i> Map {{ bankSelectedIds.size }} Question(s)
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

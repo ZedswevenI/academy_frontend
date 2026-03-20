@@ -33,9 +33,70 @@ export class QuestionImportComponent implements OnInit {
   examId = '';
   sections: any[] = [];
   selectedSectionId = '';
+  isBankMode = false;
+
+  /* ================= BANK MODE: SUBJECT / TOPIC / SUBTOPIC ================= */
+  subjects: any[] = [];
+  allTopics: any[] = [];
+  allSubTopics: any[] = [];
+  subjectOptions: any[] = [];
+  topicOptions: any[] = [];
+  subTopicOptions: any[] = [];
+  selectedSubjectId = '';
+  selectedTopicId = '';
+  selectedSubTopicId = '';
 
   ngOnInit(): void {
+    if (this.isBankMode) {
+      this.loadBankMasters();
+    }
+  }
 
+  private loadBankMasters(): void {
+    const body = { entiId: localStorage.getItem('tenantId') };
+
+    this.commonApi.fetchData(body, 'ims/subject', 'list?list=full').subscribe({
+      next: (res: any) => {
+        this.subjects = res?.data || [];
+        this.subjectOptions = this.subjects.map((s: any) => ({
+          label: s.subjectName, value: s._id
+        }));
+      }
+    });
+
+    this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
+      next: (res: any) => { this.allTopics = res?.data || []; }
+    });
+
+    this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
+      next: (res: any) => { this.allSubTopics = res?.data || []; }
+    });
+  }
+
+  onBankSubjectChange(subjectId: string): void {
+    this.selectedSubjectId = subjectId;
+    this.selectedTopicId = '';
+    this.selectedSubTopicId = '';
+    this.subTopicOptions = [];
+    if (subjectId) {
+      this.topicOptions = this.allTopics
+        .filter((t: any) => (t.subjectId?._id || t.subjectId) === subjectId)
+        .map((t: any) => ({ label: t.topicName, value: t.topicId }));
+    } else {
+      this.topicOptions = [];
+    }
+  }
+
+  onBankTopicChange(topicId: string): void {
+    this.selectedTopicId = topicId;
+    this.selectedSubTopicId = '';
+    if (topicId) {
+      this.subTopicOptions = this.allSubTopics
+        .filter((st: any) => (st.topicId?.topicId || st.topicId) === topicId)
+        .map((st: any) => ({ label: st.subTopicName, value: st.subTopicId }));
+    } else {
+      this.subTopicOptions = [];
+    }
   }
 
   selectedFile: File | null = null;
@@ -49,12 +110,15 @@ export class QuestionImportComponent implements OnInit {
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state as any;
 
-    if (state) {
+    if (state?.bank) {
+      this.isBankMode = true;
+      this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Import' }]);
+    } else if (state?.questions) {
       this.testId = state.questions.examId || state.questions.testId;
       this.examId = state.questions.examId || state.questions.testId || '';
       this.sections = state.questions.sections || [];
+      this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Import' }]);
     }
-    this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Import' }]);
     this.questionForm = this.fb.group({
       questionType: ['mcq-single', Validators.required],
       questionText: ['', Validators.required],
@@ -409,38 +473,57 @@ export class QuestionImportComponent implements OnInit {
   /* ================= UI ================= */
 
   async submitAllQuestions() {
-    if (!this.selectedSectionId) {
+    if (!this.isBankMode && !this.selectedSectionId) {
       this.alert.error('Please select a subject before submitting');
       return;
     }
 
-    const payload = this.buildBulkQuestionPayload();
+    const payload = await this.buildBulkQuestionPayload();
     const entiId = localStorage.getItem('tenantId');
 
-    const newPlaylod = {
-      entiId: entiId,
-      examId: this.examId,
-      sectionId: this.selectedSectionId,
-      ...await payload
+    if (this.isBankMode) {
+      // Inject subjectId/topicId/subTopicId into each question
+      if (payload.questions?.length) {
+        payload.questions = payload.questions.map((q: any) => ({
+          ...q,
+          subjectId: this.selectedSubjectId || undefined,
+          topicId: this.selectedTopicId || undefined,
+          subTopicId: this.selectedSubTopicId || undefined
+        }));
+      }
+      const bankPayload: any = { entiId, ...payload };
+      this.commonApi.fetchData(bankPayload, 'exam/questions/bank', 'bulk-create')
+        .subscribe({
+          next: (res: any) => {
+            if (res?.status) {
+              this.alert.success(res.message || 'Questions imported successfully');
+              this.router.navigate(['/app/exams/questions']);
+            } else {
+              this.alert.error('Error importing questions');
+            }
+          },
+          error: (e) => this.alert.error(e.error?.message || 'Import failed')
+        });
+    } else {
+      const examPayload = {
+        entiId,
+        examId: this.examId,
+        sectionId: this.selectedSectionId,
+        ...payload
+      };
+      this.commonApi.fetchData(examPayload, 'exam/questions', 'bulk-create')
+        .subscribe({
+          next: (res: any) => {
+            if (res?.status) {
+              this.alert.success(res.message || 'Questions imported successfully');
+              this.router.navigate(['/app/exams/exams']);
+            } else {
+              this.alert.error('Error importing questions');
+            }
+          },
+          error: (e) => this.alert.error(e.error?.message || 'Import failed')
+        });
     }
-    this.commonApi.fetchData(newPlaylod, 'exam/questions', 'bulk-create')
-      .subscribe({
-        next: (res: any) => {
-          console.log("Question respos. ", res);
-
-          if (res?.status) {
-            this.alert.success(res.message);
-            this.router.navigate(['/app/exams/exams']);
-          } else {
-            this.alert.success("Error importing questions");
-          }
-        },
-        error: (e) => this.alert.error(e.error.message)
-      });
-    // Here you would call your API
-    // this.http.post('/api/questions/bulk', payload).subscribe(...)
-
-    // this.currentStep = 'success';
   }
 
   reset() {
