@@ -11,28 +11,14 @@ import { AlertService } from '../../../../service/alert/alert.service';
   styleUrl: './task.component.scss'
 })
 export class TaskComponent implements OnInit {
-
   tenantId = localStorage.getItem('tenantId');
 
-  columnsArray = [
-    { key: 'taskName', label: 'Task Name', sortable: false },
-    { key: 'assignedDate', label: 'Assigned Date', sortable: false },
-    { key: 'dueDate', label: 'Due Date', sortable: false },
-    { key: 'status', label: 'Status', sortable: false },
-  ];
+  columnsArray = [{ key: 'taskName', label: 'Task Name', sortable: false }, { key: 'assignedDate', label: 'Assigned Date', sortable: false }, { key: 'dueDate', label: 'Due Date', sortable: false }, { key: 'status', label: 'Status', sortable: false }];
 
   dataArray: any[] = [];
   totalRecords = 0;
 
   actions = [
-    {
-      type: 'icon',
-      icon: 'fa-regular fa-eye',
-      tooltip: 'View',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      callback: (row: any) => this.viewTask(row)
-    },
     {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
@@ -41,15 +27,18 @@ export class TaskComponent implements OnInit {
       hoverColor: '#16A34A',
       callback: (row: any) => this.editTask(row),
       hidden: (row: any) => row.status.toUpperCase() === 'COMPLETED'
+    },
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-eye',
+      tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.viewTask(row)
     }
   ];
 
-  constructor(
-    private breadcrump: BredcrumpService,
-    private router: Router,
-    private commonApi: CommonapiService,
-    private alert: AlertService
-  ) {
+  constructor(private breadcrump: BredcrumpService, private router: Router, private commonApi: CommonapiService, private alert: AlertService) {
     this.breadcrump.set([{ label: 'Task' }]);
   }
 
@@ -61,24 +50,12 @@ export class TaskComponent implements OnInit {
   // LOAD TASK LIST FROM API
   // ================================
 
-  loadTableData(req: {
-    page: number;
-    pageSize: number;
-    search?: string;
-    sortKey?: string;
-    sortDirection?: 'asc' | 'desc';
-  }) {
-
+  loadTableData(req: { page: number; pageSize: number; search?: string; sortKey?: string; sortDirection?: 'asc' | 'desc' }) {
     const endpoint = `list?page=${req.page}&limit=${req.pageSize}&search=${req.search}`;
 
-    this.commonApi.fetchData(
-      { entiId: this.tenantId },
-      'teacher/task',
-      endpoint
-    ).subscribe({
+    this.commonApi.fetchData({ entiId: this.tenantId }, 'teacher/task', endpoint).subscribe({
       next: (res: any) => {
         if (res.status) {
-
           this.totalRecords = res.count;
 
           this.dataArray = res.data.map((task: any) => ({
@@ -88,7 +65,6 @@ export class TaskComponent implements OnInit {
             dueDate: this.formatDate(task.dueDate),
             status: this.formatStatus(task.status)
           }));
-
         }
       },
       error: () => {
@@ -127,8 +103,8 @@ export class TaskComponent implements OnInit {
   // VIEW TASK
   // ================================
   viewTask(row: any) {
-    console.log("row cav",row);
-    
+    console.log('row cav', row);
+
     this.router.navigate(['/app/task/view'], {
       state: { taskData: row }
     });
@@ -143,5 +119,4 @@ export class TaskComponent implements OnInit {
       state: { taskData: row }
     });
   }
-
 }
