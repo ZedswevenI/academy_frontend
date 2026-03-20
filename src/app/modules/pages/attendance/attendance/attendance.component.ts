@@ -33,6 +33,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     { key: 'batchCode', label: 'Batch', sortable: false },
     { key: 'timeLabel', label: 'Timing', sortable: false },
     { key: 'subjectName', label: 'Subject', sortable: false },
+    { key: 'phaseName', label: 'Phase', sortable: false },
     { key: 'facultyName', label: 'Faculty', sortable: false },
     { key: 'periodType', label: 'Type', sortable: false },
     { key: 'mode', label: 'Mode', sortable: false },

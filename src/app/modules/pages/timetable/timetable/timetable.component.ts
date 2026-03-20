@@ -129,7 +129,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
     { key: 'batchCode', label: 'Batch', sortable: true },
     { key: 'centerCode', label: 'Center', sortable: true },
     { key: 'wkStartOn', label: 'Week Starting', sortable: true, date: true },
-    { key: 'phase', label: 'Phase', sortable: true },
+    // { key: 'phase', label: 'Phase', sortable: true },
     {
       key: 'status',
       label: 'Status',
