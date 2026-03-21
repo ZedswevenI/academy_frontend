@@ -40,19 +40,19 @@ export class QuestionCreatorComponent implements OnInit {
     { value: 'numeric', label: 'Numerical' },
     { value: 'subjective', label: 'Subjective Type' },
     { value: 'true_false', label: 'True/False' },
-    { value: 'passae_qns', label: 'Text Based' },
+    { value: 'passage_qns', label: 'Text Based' },
     { value: 'matrix', label: 'Matrix Type (Match the Questions)' }
   ];
 
-  constructor(private fb: FormBuilder,    private breadcrump: BredcrumpService,
-   private commonApi: CommonapiService, private alert: AlertService, private router: Router) {
+  constructor(private fb: FormBuilder, private breadcrump: BredcrumpService,
+    private commonApi: CommonapiService, private alert: AlertService, private router: Router) {
     this.initializeForm();
 
     // const navigation = this.router.getCurrentNavigation();
     const state: any = history.state;
     this.entiId = localStorage.getItem('tenantId') || '';
     this.testId = state.question.testId;
-    
+
 
     if (state?.question?.recId) {
       this.isEditMode = true;
@@ -61,7 +61,7 @@ export class QuestionCreatorComponent implements OnInit {
     } else {
       this.breadcrump.set([{ label: 'Assignment', link: '/app/assignment' }, { label: 'Create' }]);
     }
-  
+
   }
   initializeForm() {
     this.questionForm = this.fb.group({
@@ -386,7 +386,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question updated successfully');
-              this.router.navigate(['/app/assignment']);
+              this.router.navigate(['/app/assignment/question-view'], { state: { questions: { testId: this.testId } } });
             }
           },
           error: (err) => {
@@ -404,7 +404,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question created successfully');
-              this.router.navigate(['/app/assignment']);
+              this.router.navigate(['/app/assignment/question-view'], { state: { questions: { testId: this.testId } } });
             }
           },
           error: (err) => {
@@ -724,7 +724,7 @@ export class QuestionCreatorComponent implements OnInit {
 
         return {
           ...baseData,
-          correctAnswer :sampleAnswer
+          correctAnswer: sampleAnswer
         };
       }
 

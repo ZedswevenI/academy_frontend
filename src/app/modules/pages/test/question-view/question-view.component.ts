@@ -51,7 +51,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   addNewQuestion() {
-    this.router.navigate(['/app/assignment/question-create'], { state: { question:  history.state } }); 
+    this.router.navigate(['/app/assignment/question-create'], { state: { question: { testId: this.testId } } });
   }
 
   ngAfterViewInit(): void {
