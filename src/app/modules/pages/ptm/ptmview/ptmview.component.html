@@ -1,0 +1,590 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()"
+                    title="Back to PTM Sessions" data-bs-toggle="tooltip" data-bs-placement="right">
+                    <i class="fa-solid fa-arrow-left me-1"></i>Back
+                </button>
+                <div>
+                    <h1 class="fw-bold mb-0" style="font-size: 22px;">
+                        <i class="fa-solid fa-users me-2"></i>{{ session?.batchCode }}
+                    </h1>
+                    <div class="text-muted small mt-1">
+                        Parent Teacher Meeting Details
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-outline-primary rounded-pill fs-16 fw-medium" (click)="openFeedbackImportModal()"
+                title="Bulk import staff feedback via Excel" data-bs-toggle="tooltip" data-bs-placement="left">
+                <i class="fa-solid fa-file-import me-2"></i>Import Feedback
+            </button>
+        </div>
+
+        <!-- ── Session Info Panel ─────────────────────────── -->
+        <div class="border rounded-3 p-3 mb-4 bg-light">
+
+            <!-- Row 1: Date · Time · Duration · Mode · Venue -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-2 col-6">
+                    <div class="text-muted small mb-1">
+                        <i class="fa-regular fa-calendar me-1"></i>PTM Date
+                    </div>
+                    <div class="fw-semibold">{{ session?.ptmDateFormatted }}</div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="text-muted small mb-1">
+                        <i class="fa-regular fa-clock me-1"></i>Time
+                    </div>
+                    <div class="fw-semibold">
+                        {{ session?.startFormatted }}
+                        <span class="text-muted fw-normal mx-1">to</span>
+                        {{ session?.endFormatted }}
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="text-muted small mb-1">
+                        <i class="fa-regular fa-hourglass me-1"></i>Duration
+                    </div>
+                    <div class="fw-semibold">{{ session?.durationMins }} mins</div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="text-muted small mb-1">
+                        <i class="fa-solid fa-video me-1"></i>Mode
+                    </div>
+                    <div class="fw-semibold">{{ session?.meetingMode }}</div>
+                </div>
+                <div class="col-md-4 col-12">
+                    <div class="text-muted small mb-1">
+                        <i class="fa-solid fa-location-dot me-1"></i>Venue
+                    </div>
+                    <div class="fw-semibold">{{ session?.venue || '-' }}</div>
+                </div>
+            </div>
+            <hr class="my-2" />
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 bg-white border rounded-3">
+                        <i class="fa-solid fa-users text-primary"></i>
+                        <div>
+                            <div class="fw-bold lh-1">{{ session?.totalStudents || totalRecords }}</div>
+                            <div class="text-muted" style="font-size: 11px;">Total</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 bg-white border rounded-3">
+                        <i class="fa-solid fa-circle-check text-success"></i>
+                        <div>
+                            <div class="fw-bold lh-1 text-success">{{ session?.completedCount || 0 }}</div>
+                            <div class="text-muted" style="font-size: 11px;">Completed</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 bg-white border rounded-3">
+                        <i class="fa-solid fa-user-slash text-warning"></i>
+                        <div>
+                            <div class="fw-bold lh-1 text-warning">{{ session?.noShowCount || 0 }}</div>
+                            <div class="text-muted" style="font-size: 11px;">No Show</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 bg-white border rounded-3">
+                        <i class="fa-solid fa-ban text-danger"></i>
+                        <div>
+                            <div class="fw-bold lh-1 text-danger">{{ session?.cancelledCount || 0 }}</div>
+                            <div class="text-muted" style="font-size: 11px;">Cancelled</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3 px-3 py-2 bg-white border rounded-3">
+                    <div>
+                        <div class="fw-semibold small">Post-PTM Feedback</div>
+                        <div class="text-muted" style="font-size: 11px;">
+                            Enable for all students in this session
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span *ngIf="masterToggling" class="spinner-border spinner-border-sm text-primary"></span>
+                        <div class="form-check form-switch mb-0"
+                            title="{{ masterPostFeedback ? 'Disable post-PTM feedback for all students' : 'Enable post-PTM feedback for all students' }}"
+                            data-bs-toggle="tooltip" data-bs-placement="left">
+                            <input class="form-check-input" type="checkbox" role="switch" id="masterToggle"
+                                style="width: 2.5em; height: 1.4em; cursor: pointer;" [checked]="masterPostFeedback"
+                                [disabled]="masterToggling" (change)="onMasterToggle($any($event.target).checked)">
+                        </div>
+                        <span class="badge rounded-pill" [class.bg-success]="masterPostFeedback"
+                            [class.bg-secondary]="!masterPostFeedback">
+                            {{ masterPostFeedback ? 'ON' : 'OFF' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>S.No</th>
+                        <th>Student Name</th>
+                        <th>Admission No</th>
+                        <th>Status</th>
+                        <th>Pre Feedback</th>
+                        <th>Post Feedback</th>
+                        <th class="text-center" title="Toggle post-PTM feedback per student" data-bs-toggle="tooltip">
+                            Post Enabled
+                        </th>
+                        <th>Staff Remarks</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <!-- Loading -->
+                    <tr *ngIf="loading">
+                        <td colspan="8" class="text-center py-4">
+                            <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+                            Loading students...
+                        </td>
+                    </tr>
+
+                    <!-- Empty -->
+                    <tr *ngIf="!loading && dataArray.length === 0">
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-user-slash me-2"></i>No students found
+                        </td>
+                    </tr>
+
+                    <!-- Rows -->
+                    <tr *ngFor="let row of dataArray; let i = index">
+                        <td class="fw-semibold">{{ i+1 }}</td>
+                        <td class="fw-semibold">{{ row.studentName }}</td>
+                        <td class="text-muted small">{{ row.admissionNo }}</td>
+                        <td>
+                            <span class="badge rounded-pill" [class.bg-success]="row.status === 'COMPLETED'"
+                                [class.bg-primary]="row.status === 'SCHEDULED'"
+                                [class.bg-danger]="row.status === 'CANCELLED'"
+                                [class.bg-warning]="row.status === 'NO_SHOW'">
+                                {{ row.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill" [class.bg-success]="row.prePtmSubmittedAt"
+                                [class.bg-secondary]="!row.prePtmSubmittedAt"
+                                [title]="row.prePtmSubmittedAt ? 'Submitted on ' + formatDate(row.prePtmSubmittedAt) : 'Not yet submitted'"
+                                data-bs-toggle="tooltip">
+                                <i class="fa-solid me-1" [class.fa-circle-check]="row.prePtmSubmittedAt"
+                                    [class.fa-clock]="!row.prePtmSubmittedAt"></i>
+                                {{ row.prePtmSubmittedAt ? 'Submitted' : 'Pending' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill" [class.bg-success]="row.postPtmSubmittedAt"
+                                [class.bg-secondary]="!row.postPtmSubmittedAt"
+                                [title]="row.postPtmSubmittedAt ? 'Submitted on ' + formatDate(row.postPtmSubmittedAt) : 'Not yet submitted'"
+                                data-bs-toggle="tooltip">
+                                <i class="fa-solid me-1" [class.fa-circle-check]="row.postPtmSubmittedAt"
+                                    [class.fa-clock]="!row.postPtmSubmittedAt"></i>
+                                {{ row.postPtmSubmittedAt ? 'Submitted' : 'Pending' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="form-check form-switch d-flex justify-content-center mb-0" [title]="row.enablePostPtmFeedback
+                  ? 'Click to disable post-PTM feedback for ' + row.studentName
+                  : 'Click to enable post-PTM feedback for ' + row.studentName" data-bs-toggle="tooltip"
+                                data-bs-placement="top">
+                                <input class="form-check-input" type="checkbox" role="switch" style="cursor: pointer;"
+                                    [checked]="row.enablePostPtmFeedback"
+                                    (change)="onStudentToggle(row, $any($event.target).checked)">
+                            </div>
+                        </td>
+                        <td style="max-width: 180px;">
+                            <span class="text-truncate d-block small" style="max-width: 180px;"
+                                [title]="row.staffRemarks || 'No remarks added yet'" data-bs-toggle="tooltip"
+                                data-bs-placement="top">
+                                {{ row.staffRemarks || '-' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-sm btn-outline-success rounded-pill px-2"
+                                    (click)="openStaffFeedbackModal(row)"
+                                    title="Add / edit staff remarks and update meeting status for {{ row.studentName }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top">
+                                    <i class="fa-regular fa-comment-dots"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-2"
+                                    (click)="openQuestionsModal(row)"
+                                    title="View pre and post PTM questions answered by {{ row.studentName }}'s parent"
+                                    data-bs-toggle="tooltip" data-bs-placement="top">
+                                    <i class="fa-regular fa-rectangle-list"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Footer count -->
+        <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="!loading && totalRecords > 0">
+            <small class="text-muted">
+                Showing {{ dataArray.length }} of {{ totalRecords }} student(s)
+            </small>
+        </div>
+    </div>
+</div>
+
+
+<!-- ===================== STAFF FEEDBACK MODAL ===================== -->
+<div class="modal fade" id="staffFeedbackModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content rounded-4" *ngIf="selectedStudent">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-regular fa-comment-dots me-2 text-success"></i>Staff Feedback
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close"
+                    data-bs-toggle="tooltip"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Student info chip -->
+                <div class="p-3 bg-light rounded-3 mb-4 d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center
+            justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                        <i class="fa-solid fa-user text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">{{ selectedStudent.studentName }}</div>
+                        <div class="text-muted small">
+                            {{ selectedStudent.admissionNo }}
+                            &nbsp;·&nbsp;
+                            {{ selectedStudent.batchCode }}
+                        </div>
+                    </div>
+                </div>
+                <!-- Status -->
+                <div class="mb-3">
+                    <label class="form-label fw-medium">
+                        Meeting Status <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select rounded-3" [(ngModel)]="staffStatus">
+                        <option value="" disabled>Select meeting outcome</option>
+                        <option *ngFor="let s of status_options" [value]="s.value">
+                            {{ s.label }}
+                        </option>
+                    </select>
+                    <div class="text-muted small mt-1">
+                        This updates the meeting status for this student
+                    </div>
+                </div>
+                <!-- Staff Remarks -->
+                <div class="mb-1">
+                    <label class="form-label fw-medium">Staff Remarks</label>
+                    <textarea class="form-control rounded-3" rows="4"
+                        placeholder="Enter your observations, discussion points, or action items..."
+                        [(ngModel)]="staffRemarks">
+          </textarea>
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                    title="Discard changes and close" data-bs-toggle="tooltip">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-success rounded-pill px-4" [disabled]="staffSaving || !staffStatus"
+                    (click)="saveStaffFeedback()"
+                    [title]="!staffStatus ? 'Please select a status first' : 'Save staff feedback for ' + selectedStudent.studentName"
+                    data-bs-toggle="tooltip">
+                    <span *ngIf="staffSaving" class="spinner-border spinner-border-sm me-2"></span>
+                    {{ staffSaving ? 'Saving...' : 'Save Feedback' }}
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- ===================== QUESTIONS VIEW MODAL ===================== -->
+<div class="modal fade" id="questionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 600px;">
+        <div class="modal-content rounded-4">
+
+            <div class="modal-header border-bottom">
+                <div>
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-regular fa-rectangle-list me-2 text-primary"></i>
+                        PTM Feedback Questions
+                    </h5>
+                    <div class="text-muted small mt-1" *ngIf="questionStudent">
+                        {{ questionStudent.studentName }}
+                        &nbsp;·&nbsp;
+                        {{ questionStudent.admissionNo }}
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close"
+                    data-bs-toggle="tooltip"></button>
+            </div>
+
+            <div class="modal-body p-4">
+
+                <!-- Loading -->
+                <div *ngIf="questionsLoading" class="text-center py-4">
+                    <span class="spinner-border text-primary mb-2"></span>
+                    <div class="text-muted small">Loading questions...</div>
+                </div>
+
+                <ng-container *ngIf="!questionsLoading && questionsPtmData">
+
+                    <!-- Pre / Post tabs -->
+                    <ul class="nav nav-pills mb-4 gap-2">
+                        <li class="nav-item">
+                            <button class="btn rounded-pill px-4" [class.btn-primary]="activeTab === 'pre'"
+                                [class.btn-outline-secondary]="activeTab !== 'pre'" (click)="activeTab = 'pre'"
+                                title="View pre-PTM questions submitted before the meeting" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom">
+                                <i class="fa-solid fa-clock-rotate-left me-2"></i>Pre-PTM
+                                <span class="badge ms-2 rounded-pill" [class.bg-white]="activeTab === 'pre'"
+                                    [class.text-primary]="activeTab === 'pre'"
+                                    [class.bg-secondary]="activeTab !== 'pre'">
+                                    {{ questionsPtmData.prePtmSubmittedAt ? 'Submitted' : 'Pending' }}
+                                </span>
+                            </button>
+                        </li>
+                        <li class="nav-item" *ngIf="questionsPtmData.enablePostPtmFeedback">
+                            <button class="btn rounded-pill px-4" [class.btn-primary]="activeTab === 'post'"
+                                [class.btn-outline-secondary]="activeTab !== 'post'" (click)="activeTab = 'post'"
+                                title="View post-PTM questions submitted after the meeting" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom">
+                                <i class="fa-solid fa-flag-checkered me-2"></i>Post-PTM
+                                <span class="badge ms-2 rounded-pill" [class.bg-white]="activeTab === 'post'"
+                                    [class.text-primary]="activeTab === 'post'"
+                                    [class.bg-secondary]="activeTab !== 'post'">
+                                    {{ questionsPtmData.postPtmSubmittedAt ? 'Submitted' : 'Pending' }}
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- PRE PTM -->
+                    <div *ngIf="activeTab === 'pre'">
+
+                        <div *ngIf="questionsPtmData.prePtmRemarks" class="alert alert-light border rounded-3 mb-3">
+                            <div class="text-muted small mb-1">
+                                <i class="fa-solid fa-quote-left me-1"></i>Parent remarks
+                            </div>
+                            <div class="fw-semibold">{{ questionsPtmData.prePtmRemarks }}</div>
+                        </div>
+
+                        <div *ngIf="!questionsPtmData.prePtmSubmittedAt" class="text-center text-muted py-4">
+                            <i class="fa-regular fa-clock fa-2x mb-2 d-block"></i>
+                            Parent has not submitted pre-PTM feedback yet
+                        </div>
+
+                        <div *ngIf="questionsPtmData.prePtmSubmittedAt" class="d-flex flex-column gap-3">
+                            <div *ngFor="let q of questionsPtmData.prePtmQuestions; let i = index"
+                                class="p-3 border rounded-3" [class.border-success]="isAnswered(q)"
+                                [class.bg-light]="!isAnswered(q)">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="text-muted small">
+                                        Q{{ i + 1 }}. {{ q.fieldText }}
+                                    </div>
+                                    <span class="badge rounded-pill ms-2 flex-shrink-0"
+                                        [class.bg-success]="isAnswered(q)" [class.bg-secondary]="!isAnswered(q)"
+                                        [title]="'Field type: ' + q.fieldType" data-bs-toggle="tooltip">
+                                        {{ q.fieldType }}
+                                    </span>
+                                </div>
+                                <div class="fw-semibold" [class.text-muted]="!isAnswered(q)">
+                                    {{ formatFieldValue(q) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- POST PTM -->
+                    <div *ngIf="activeTab === 'post'">
+
+                        <div *ngIf="!questionsPtmData.enablePostPtmFeedback" class="text-center text-muted py-4">
+                            <i class="fa-solid fa-ban fa-2x mb-2 d-block"></i>
+                            Post-PTM feedback is not enabled for this student
+                        </div>
+
+                        <ng-container *ngIf="questionsPtmData.enablePostPtmFeedback">
+
+                            <div *ngIf="questionsPtmData.postPtmRemarks"
+                                class="alert alert-light border rounded-3 mb-3">
+                                <div class="text-muted small mb-1">
+                                    <i class="fa-solid fa-quote-left me-1"></i>Parent remarks
+                                </div>
+                                <div class="fw-semibold">{{ questionsPtmData.postPtmRemarks }}</div>
+                            </div>
+
+                            <div *ngIf="!questionsPtmData.postPtmSubmittedAt" class="text-center text-muted py-4">
+                                <i class="fa-regular fa-clock fa-2x mb-2 d-block"></i>
+                                Parent has not submitted post-PTM feedback yet
+                            </div>
+
+                            <div *ngIf="questionsPtmData.postPtmSubmittedAt" class="d-flex flex-column gap-3">
+                                <div *ngFor="let q of questionsPtmData.postPtmQuestions; let i = index"
+                                    class="p-3 border rounded-3" [class.border-success]="isAnswered(q)"
+                                    [class.bg-light]="!isAnswered(q)">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="text-muted small">
+                                            Q{{ i + 1 }}. {{ q.fieldText }}
+                                        </div>
+                                        <span class="badge rounded-pill ms-2 flex-shrink-0"
+                                            [class.bg-success]="isAnswered(q)" [class.bg-secondary]="!isAnswered(q)"
+                                            [title]="'Field type: ' + q.fieldType" data-bs-toggle="tooltip">
+                                            {{ q.fieldType }}
+                                        </span>
+                                    </div>
+                                    <div class="fw-semibold" [class.text-muted]="!isAnswered(q)">
+                                        {{ formatFieldValue(q) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </ng-container>
+                    </div>
+
+                </ng-container>
+            </div>
+
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                    title="Close questions view" data-bs-toggle="tooltip">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- ===================== FEEDBACK IMPORT MODAL ===================== -->
+<div class="modal fade" id="feedbackImportModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4">
+
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-file-import me-2 text-primary"></i>
+                    Import Staff Feedback
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="resetImport()"
+                    title="Close import" data-bs-toggle="tooltip"></button>
+            </div>
+
+            <div class="modal-body p-4">
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="fw-semibold">Upload Excel File</span>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="downloadFeedbackTemplate()"
+                        title="Download a sample Excel template with the correct column format" data-bs-toggle="tooltip"
+                        data-bs-placement="left">
+                        <i class="fa-solid fa-download me-1"></i>Download Template
+                    </button>
+                </div>
+
+                <!-- Expected columns -->
+                <!-- <div class="p-3 bg-light rounded-3 small mb-3">
+                    <div class="fw-semibold mb-2 text-muted">Expected Columns:</div>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <span class="badge bg-secondary">Admission No</span>
+                        <span class="badge bg-secondary">Staff Remarks</span>
+                        <span class="badge bg-danger">Status *required</span>
+                    </div>
+                    <div class="mt-2 text-muted">
+                        Status values:
+                        <code>COMPLETED</code> &nbsp;·&nbsp;
+                        <code>NO_SHOW</code> &nbsp;·&nbsp;
+                        <code>CANCELLED</code>
+                    </div>
+                </div> -->
+                <div class="p-3 bg-light rounded-3 small mb-3">
+                    <div class="fw-semibold mb-2 text-muted">Expected Columns:</div>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <span class="badge bg-danger">Admission No *required</span>
+                        <span class="badge bg-secondary">Staff Remarks</span>
+                        <span class="badge bg-danger">Status *required</span>
+                    </div>
+                    <div class="mt-2 text-muted">
+                        Status values:
+                        <code>COMPLETED</code> &nbsp;·&nbsp;
+                        <code>NO_SHOW</code> &nbsp;·&nbsp;
+                        <code>CANCELLED</code>
+                    </div>
+                    <div class="mt-2 text-success small">
+                        <i class="fa-solid fa-circle-check me-1"></i>
+                        Download template — admission numbers are pre-filled from this session's student list
+                    </div>
+                </div>
+                <importfiles label="Select File (.xlsx / .xls / .csv)" [required]="true" [multiple]="false"
+                    accept=".xlsx,.xls,.csv" (filesChanged)="onFeedbackFileSelected($event)">
+                </importfiles>
+                <div *ngIf="errorRows.length > 0" class="alert alert-danger rounded-3 mt-3 mb-0">
+                    <div class="fw-semibold mb-2">
+                        <i class="fa-solid fa-circle-exclamation me-1"></i>
+                        {{ errorRows.length }} row(s) have issues
+                    </div>
+                    <ul class="mb-0 small ps-3">
+                        <li *ngFor="let e of errorRows">
+                            Row {{ e.rowNo }}: <strong>{{ e.missing }}</strong> is empty
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Success -->
+                <div *ngIf="parsedRows.length > 0 && errorRows.length === 0"
+                    class="alert alert-success rounded-3 mt-3 mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span><strong>{{ parsedRows.length }}</strong> row(s) ready to import</span>
+                </div>
+
+                <!-- Preview table -->
+                <div *ngIf="parsedRows.length > 0" class="table-responsive mt-3"
+                    style="max-height: 260px; overflow-y: auto;">
+                    <table class="table table-bordered table-sm align-middle mb-0">
+                        <thead class="table-light" style="position: sticky; top: 0;">
+                            <tr>
+                                <th>#</th>
+                                <th *ngFor="let col of feedbackPreviewColumns">{{ col.header }}</th>
+                                <th>Valid</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of parsedRows; let i = index" [class.table-danger]="isRowError(i + 2)">
+                                <td class="text-muted">{{ i + 1 }}</td>
+                                <td *ngFor="let col of feedbackPreviewColumns">
+                                    {{ row[col.field] || '-' }}
+                                </td>
+                                <td class="text-center">
+                                    <i *ngIf="!isRowError(i + 2)" class="fa-solid fa-circle-check text-success"></i>
+                                    <i *ngIf="isRowError(i + 2)" class="fa-solid fa-circle-xmark text-danger"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                    (click)="resetImport()" title="Cancel and discard file" data-bs-toggle="tooltip">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary rounded-pill px-4"
+                    [disabled]="parsedRows.length === 0 || errorRows.length > 0 || importLoading"
+                    (click)="submitFeedbackImport()"
+                    [title]="parsedRows.length === 0 ? 'Please upload a valid file first' : 'Import ' + parsedRows.length + ' feedback records'"
+                    data-bs-toggle="tooltip">
+                    <span *ngIf="importLoading" class="spinner-border spinner-border-sm me-1"></span>
+                    {{ importLoading ? 'Importing...' : 'Import ' + parsedRows.length + ' Record(s)' }}
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

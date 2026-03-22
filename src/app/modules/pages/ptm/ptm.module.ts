@@ -6,20 +6,11 @@ import { PtmComponent } from './ptm/ptm.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CreatePTMComponent } from './create-ptm/create-ptm.component';
+import { PtmviewComponent } from './ptmview/ptmview.component';
 
 @NgModule({
-    declarations: [
-        PtmComponent,
-        CreatePTMComponent
-    ],
-    imports: [
-        CommonModule,
-        PtmRoutingModule,
-        UiElementsModule,
-        ReactiveFormsModule,
-        FormsModule
-    ],
-    exports: []
+  declarations: [PtmComponent, CreatePTMComponent, PtmviewComponent],
+  imports: [CommonModule, PtmRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
+  exports: []
 })
-
-export class PtmModule { }
+export class PtmModule {}
