@@ -104,7 +104,8 @@ export class CreatePTMComponent implements OnInit {
       durationMins: [{ value: 0, disabled: true }],
       content: ['', Validators.required],
       venue: ['', Validators.required],
-      meetingMode: ['', Validators.required]
+      meetingMode: ['', Validators.required],
+      enablePostPtmFeedback: [false]
     });
   }
 
@@ -334,37 +335,27 @@ export class CreatePTMComponent implements OnInit {
       this.alert.error('Please fill all required fields');
       return;
     }
-
     if (this.endTimeError) {
       this.alert.error('End time must be after start time');
       return;
     }
-
     const f = this.createPtm.getRawValue();
     const startMs = new Date(f.startTime).getTime();
     const endMs = new Date(f.endTime).getTime();
-
-    // Derive ptmDate from startTime (midnight of that day)
     const ptmDateObj = new Date(f.startTime);
     ptmDateObj.setHours(0, 0, 0, 0);
-
-    // Determine final scope + targetIds
     const batchIds: string[] = (f.targetIds || []).map((v: any) =>
       typeof v === 'object' ? v.value : v
     );
-
     let finalScope: string;
     let finalTargetIds: string[];
-
     if (this.currentScope === 'BATCH' && batchIds.length === 1 && this.selectedStudentIds.length > 0) {
-      // Single batch + students selected → STUDENT scope
       finalScope = 'STUDENT';
       finalTargetIds = [...this.selectedStudentIds];
     } else {
       finalScope = f.scope;
       finalTargetIds = batchIds;
     }
-
     const payload: any = {
       tenantId: this.tenantId,
       scope: finalScope,
@@ -375,13 +366,11 @@ export class CreatePTMComponent implements OnInit {
       durationMins: f.durationMins,
       content: f.content,
       venue: f.venue,
-      meetingMode: f.meetingMode
+      meetingMode: f.meetingMode,
+      enablePostPtmFeedback: f.enablePostPtmFeedback
     };
-
     if (this.isEditMode) payload.ptmId = this.ptmId;
-
     const endpoint = this.isEditMode ? 'edit' : 'schedule';
-
     this.commonApi.fetchData(payload, 'ims/ptm', endpoint)
       .subscribe({
         next: (res: any) => {
@@ -399,10 +388,6 @@ export class CreatePTMComponent implements OnInit {
   cancel(): void {
     this.router.navigate(['/app/ptm']);
   }
-
-  // ====================================================
-  // HELPERS
-  // ====================================================
 
   private timestampToDatetimeLocal(ts: number): string {
     if (!ts) return '';
