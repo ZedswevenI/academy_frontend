@@ -1,0 +1,140 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size: 28px;">
+                <i class="fa-regular fa-star me-2"></i>
+                {{ isEditMode ? 'Edit Feedback Form' : 'Create Feedback Form' }}
+            </h1>
+        </div>
+
+        <form [formGroup]="feedbackForm">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <formfield label="Form Title" formControlName="title" [control]="feedbackForm.get('title')"
+                        placeholder="e.g. Mid-term Staff Feedback" [required]="true">
+                    </formfield>
+                </div>
+                <div class="col-md-6">
+                    <selectbox label="Select Template" placeholder="Choose an active template"
+                        [options]="template_options" formControlName="templateId"
+                        [control]="feedbackForm.get('templateId')" [required]="true">
+                    </selectbox>
+                    <div class="text-muted small mt-1">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Only ACTIVE templates are shown.
+                        <a routerLink="/app/feedback/template" class="ms-1">
+                            Manage templates
+                        </a>
+                    </div>
+                </div>
+                <!-- <div class="col-md-6" *ngIf="isStaffTemplate">
+                    <selectbox label="Select Staff Member" placeholder="Select staff being reviewed"
+                        [options]="staff_options" formControlName="staffId" [control]="feedbackForm.get('staffId')"
+                        [required]="true">
+                    </selectbox>
+                </div> -->
+                <!-- <div class="col-md-6">
+                    <multiselect label="Assign to Batches" placeholder="Select one or more batches"
+                        [options]="batch_options" formControlName="assignedBatches"
+                        [control]="feedbackForm.get('assignedBatches')" [required]="true">
+                    </multiselect>
+                </div> -->
+                <div [class]="isStaffTemplate ? 'col-md-6' : 'col-md-6'">
+                    <multiselect label="Assign to Batches" placeholder="Select one or more batches"
+                        [options]="batch_options" formControlName="assignedBatches"
+                        [control]="feedbackForm.get('assignedBatches')" [required]="true">
+                    </multiselect>
+                    <div *ngIf="isStaffTemplate" class="text-muted small mt-1">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Staff list will update based on selected batches
+                    </div>
+                </div>
+                <div class="col-12" *ngIf="isStaffTemplate">
+                    <div class="border rounded-3 p-3"
+                        [class.border-warning]="isStaffTemplate && !selectedBatches.length">
+                        <div *ngIf="!selectedBatches.length"
+                            class="d-flex align-items-center gap-2 text-warning small mb-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Please select batch(es) first to load mapped staff
+                        </div>
+                        <multiselect label="Select Staff Members" placeholder="Select staff being reviewed"
+                            [options]="staff_options" formControlName="staffIds"
+                            [control]="feedbackForm.get('staffIds')" [required]="true">
+                        </multiselect>
+                        <div *ngIf="staffLoading" class="text-muted small mt-1">
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            Loading staff...
+                        </div>
+                        <div *ngIf="selectedBatches.length && !staffLoading && !staff_options.length"
+                            class="text-danger small mt-1">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            No staff mapped to the selected batch(es)
+                        </div>
+                        <div *ngIf="staff_options.length" class="text-muted small mt-1">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            {{ staff_options.length }} staff member(s) available for selected batch(es)
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <formfield label="Start Date" type="date" formControlName="startDate"
+                        [control]="feedbackForm.get('startDate')" [min]="minDate" [required]="true">
+                    </formfield>
+                </div>
+                <div class="col-md-3">
+                    <formfield label="End Date" type="date" formControlName="endDate"
+                        [control]="feedbackForm.get('endDate')" [min]="minDate" [required]="true">
+                    </formfield>
+                </div>
+                <div class="col-12">
+                    <description label="Description (optional)" formControlName="description"
+                        [control]="feedbackForm.get('description')"
+                        placeholder="Brief description of what this feedback is about...">
+                    </description>
+                </div>
+                <div class="col-12" *ngIf="feedbackForm.get('templateId')?.value">
+                    <div class="border rounded-3 p-3">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="fa-solid fa-list-check text-primary"></i>
+                            <span class="fw-semibold">Questions from selected template</span>
+                            <span *ngIf="selectedTemplate" class="badge bg-primary rounded-pill ms-1">
+                                {{ selectedTemplate.questions?.length || 0 }} questions
+                            </span>
+                            <span *ngIf="templateLoading"
+                                class="spinner-border spinner-border-sm text-primary ms-2"></span>
+                        </div>
+                        <div *ngIf="!templateLoading && selectedTemplate" class="d-flex flex-column gap-2">
+                            <div *ngFor="let q of selectedTemplate.questions; let i = index"
+                                class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                                <span class="badge bg-secondary rounded-pill flex-shrink-0 mt-1">
+                                    {{ q.fieldType }}
+                                </span>
+                                <div class="flex-grow-1">
+                                    <div class="fw-medium small">
+                                        Q{{ i + 1 }}. {{ q.fieldText }}
+                                    </div>
+                                    <div *ngIf="q.fieldOptions?.length" class="d-flex flex-wrap gap-1 mt-1">
+                                        <span *ngFor="let opt of q.fieldOptions"
+                                            class="badge bg-white border text-muted small">
+                                            {{ opt }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 text-end mt-4">
+                <button type="button" class="btn closebutton px-4 me-2" style="border-radius: 30px;"
+                    (click)="cancel()">Back</button>
+                <button type="button" class="btn submitbutton px-4" [disabled]="feedbackForm.invalid || saving"
+                    (click)="submit()" style="border-radius: 30px;">
+                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
+                    {{ saving ? 'Saving...' : (isEditMode ? 'Update' : 'Create Form') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

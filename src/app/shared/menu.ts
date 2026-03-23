@@ -316,12 +316,25 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/circular',
     roles: ['L1', 'L2', 'L3']
   },
-  // {
-  //   label: 'Feedback',
-  //   icon: 'fa-solid fa-award',
-  //   route: '/app/feedback',
-  //   roles: ['L1', 'L3', 'L4']
-  // },
+  {
+    label: 'Feedback',
+    icon: 'fa-solid fa-award',
+    roles: ['L1', 'L3', 'L4'],
+    children: [
+      {
+        label: 'Feedback',
+        icon: 'fa-solid fa-commenting',
+        route: '/app/feedback',
+        roles: ['L1', 'L3', 'L4']
+      },
+      {
+        label: 'Templates',
+        icon: 'fa-solid fa-newspaper',
+        route: '/app/feedback/feedback/template',
+        roles: ['L1', 'L3']
+      }
+    ]
+  },
   // {
   //   label: 'Report',
   //   icon: 'fa-solid fa-chart-line',
