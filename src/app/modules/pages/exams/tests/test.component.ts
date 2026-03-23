@@ -28,6 +28,15 @@ export class TestComponent implements OnInit, OnDestroy {
     sortDirection?: string;
   } | null = null;
 
+  /* ================= BATCH ASSIGN STATE ================= */
+  showBatchModal = false;
+  batchAssignRow: any = null;
+  allBatches: any[] = [];
+  enabledBatchIds: Set<string> = new Set();
+  selectedBatchIds: Set<string> = new Set();
+  batchLoading = false;
+  batchAssigning = false;
+
   /* ================= PRINT STATE ================= */
   showPrintModal = false;
   selectedRow: any = null;
@@ -106,7 +115,8 @@ export class TestComponent implements OnInit, OnDestroy {
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
         { text: 'Add Question', icon: 'fa-solid fa-file-import', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', callback: (row: any) => this.importQuestions(row) },
-        // { text: 'Report', icon: 'fa-solid fa-chart-line', callback: (row: any) => this.report(row) },
+        { text: 'Assign Batch', icon: 'fa-solid fa-users', callback: (row: any) => this.openBatchModal(row) },
+        { text: 'Result', icon: 'fa-solid fa-chart-bar', callback: (row: any) => this.viewResult(row) },
         { text: 'Delete', icon: 'fa-regular fa-trash-can', callback: (row: any) => this.deleteExam(row) }
       ]
     }
@@ -256,7 +266,119 @@ export class TestComponent implements OnInit, OnDestroy {
   editExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row } }); }
   importQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-import'], { state: { questions: row } }); }
   addQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-create'], { state: { question: row } }); }
-  report(row: any) { }
+  viewResult(row: any) { this.router.navigate(['/app/exams/exams/result-batch'], { state: { exam: row } }); }
+
+  /* ================= BATCH ENABLE/DISABLE ================= */
+
+  openBatchModal(row: any) {
+    this.batchAssignRow = row;
+    this.enabledBatchIds = new Set();
+    this.selectedBatchIds = new Set();
+    this.showBatchModal = true;
+    this.loadBatches();
+  }
+
+  closeBatchModal() {
+    this.showBatchModal = false;
+    this.batchAssignRow = null;
+    this.allBatches = [];
+    this.enabledBatchIds = new Set();
+    this.selectedBatchIds = new Set();
+  }
+
+  loadBatches() {
+    this.batchLoading = true;
+    const entiId = localStorage.getItem('tenantId');
+
+    // Load all batches and already assigned batches in parallel
+    this.commonApi.fetchData({ entiId }, 'batch', 'list?list=full').subscribe({
+      next: (allRes: any) => {
+        this.allBatches = allRes?.data || [];
+
+        // Now load assigned batches for this exam
+        this.commonApi.fetchData({ entiId, examId: this.batchAssignRow.examId }, 'exam/batch', 'list-by-exam').subscribe({
+          next: (assignedRes: any) => {
+            const assignedBatches = assignedRes?.data || [];
+            assignedBatches.forEach((b: any) => {
+
+              if (b.status === 'enabled') {
+                this.enabledBatchIds.add(b.batchId);
+                this.selectedBatchIds.add(b.batchId);
+              }
+            });
+            this.batchLoading = false;
+          },
+          error: () => {
+            this.batchLoading = false;
+          }
+        });
+      },
+      error: () => {
+        this.batchLoading = false;
+        this.alert.error('Error loading batches');
+      }
+    });
+  }
+
+  toggleBatchSelect(batchId: string) {
+    if (this.selectedBatchIds.has(batchId)) {
+      this.selectedBatchIds.delete(batchId);
+    } else {
+      this.selectedBatchIds.add(batchId);
+    }
+  }
+
+  saveBatchChanges() {
+    const entiId = localStorage.getItem('tenantId');
+    const examId = this.batchAssignRow.examId;
+
+    // Newly selected (not previously enabled) -> assign
+    const toAssign = Array.from(this.selectedBatchIds).filter(id => !this.enabledBatchIds.has(id));
+    // Previously enabled but now unchecked -> disable
+    const toDisable = Array.from(this.enabledBatchIds).filter(id => !this.selectedBatchIds.has(id));
+
+    if (!toAssign.length && !toDisable.length) {
+      this.alert.error('No changes to save');
+      return;
+    }
+
+    this.batchAssigning = true;
+    let pending = 0;
+    let hasError = false;
+
+    const checkDone = () => {
+      pending--;
+      if (pending <= 0) {
+        this.batchAssigning = false;
+        if (!hasError) {
+          this.alert.success('Batch changes saved successfully');
+          this.closeBatchModal();
+        }
+      }
+    };
+
+    if (toAssign.length) {
+      pending++;
+      this.commonApi.fetchData({ entiId, examId, batchIds: toAssign }, 'exam/batch', 'assign').subscribe({
+        next: (res: any) => {
+          if (!res?.status) { hasError = true; this.alert.error('Error assigning batches'); }
+          checkDone();
+        },
+        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error assigning batches'); checkDone(); }
+      });
+    }
+
+    if (toDisable.length) {
+      pending++;
+      this.commonApi.fetchData({ entiId, examId, batchIds: toDisable }, 'exam/batch', 'disable').subscribe({
+        next: (res: any) => {
+          if (!res?.status) { hasError = true; this.alert.error('Error disabling batches'); }
+          checkDone();
+        },
+        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error disabling batches'); checkDone(); }
+      });
+    }
+  }
 
   /* ================= PRINT ================= */
 
