@@ -55,7 +55,101 @@
                 </div>
             </div>
             <hr />
-            <div class="d-flex flex-column gap-4 mt-4">
+            <!-- Add batch tab selector after summary cards, before hr -->
+            <div class="mb-4" *ngIf="batchResults.length > 1">
+                <div class="fw-semibold small text-muted mb-2">View results by batch</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button *ngFor="let b of batchResults" class="btn btn-sm rounded-pill"
+                        [class.btn-primary]="activeBatch === b.batchCode"
+                        [class.btn-outline-secondary]="activeBatch !== b.batchCode" (click)="activeBatch = b.batchCode">
+                        {{ b.batchName || b.batchCode }}
+                        <span class="badge ms-1 rounded-pill" [class.bg-white]="activeBatch === b.batchCode"
+                            [class.text-primary]="activeBatch === b.batchCode"
+                            [class.bg-secondary]="activeBatch !== b.batchCode">
+                            {{ b.totalResponses }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <hr />
+
+            <!-- Replace the question summary loop with this -->
+            <div class="d-flex flex-column gap-4 mt-4" *ngIf="activeBatchResult">
+                <div *ngFor="let q of activeBatchResult.questionSummary; let i = index" class="p-4 border rounded-3"
+                    [class.border-primary]="q.isSubjectBased">
+
+                    <!-- Question header -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <div class="text-muted small">Question {{ i + 1 }}</div>
+                                <!-- Subject badge -->
+                                <span *ngIf="q.isSubjectBased"
+                                    class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
+                                    style="font-size: 11px;">
+                                    <i class="fa-solid fa-book-open me-1"></i>
+                                    {{ q.subjectName }}
+                                </span>
+                                <!-- Staff badge -->
+                                <span *ngIf="q.staffName && q.isSubjectBased"
+                                    class="badge bg-success bg-opacity-10 text-success rounded-pill"
+                                    style="font-size: 11px;">
+                                    <i class="fa-solid fa-chalkboard-teacher me-1"></i>
+                                    {{ q.staffName }}
+                                </span>
+                            </div>
+                            <div class="fw-semibold">{{ q.fieldText }}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-3">
+                            <span class="badge bg-secondary rounded-pill">{{ q.fieldType }}</span>
+                            <span class="badge bg-light text-dark border rounded-pill">
+                                {{ q.totalAnswered }} answered
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Radio / Checkbox bar chart -->
+                    <div *ngIf="q.fieldType !== 'text'" class="d-flex flex-column gap-2">
+                        <div *ngFor="let opt of getOptionEntries(q.optionCounts)"
+                            class="d-flex align-items-center gap-3">
+                            <div style="width: 160px; font-size: 13px;" class="text-truncate flex-shrink-0"
+                                [title]="opt.key">
+                                {{ opt.key }}
+                            </div>
+                            <div class="flex-grow-1 position-relative" style="height: 28px;">
+                                <div class="rounded-2 h-100"
+                                    style="background: var(--bs-primary-bg-subtle); transition: width .4s ease;"
+                                    [style.width]="getBarWidth(opt.value, getMaxCount(q.optionCounts))">
+                                </div>
+                                <div class="position-absolute top-0 start-0 h-100
+            d-flex align-items-center px-2" style="font-size: 12px; font-weight: 500;">
+                                    {{ opt.value }}
+                                    <span class="text-muted ms-1">
+                                        ({{ q.optionPercentages[opt.key] }}%)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Text answers -->
+                    <div *ngIf="q.fieldType === 'text'">
+                        <div *ngIf="!q.textAnswers?.length" class="text-muted small">
+                            No responses yet
+                        </div>
+                        <div *ngIf="q.textAnswers?.length" class="d-flex flex-column gap-2">
+                            <div *ngFor="let ans of q.textAnswers"
+                                class="p-2 bg-light rounded-3 small border-start border-3"
+                                [class.border-primary]="q.isSubjectBased" [class.border-secondary]="!q.isSubjectBased">
+                                {{ ans }}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <!-- <div class="d-flex flex-column gap-4 mt-4">
                 <div *ngFor="let q of results.questionSummary; let i = index" class="p-4 border rounded-3">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
@@ -90,7 +184,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Text — list of answers -->
                     <div *ngIf="q.fieldType === 'text'">
                         <div *ngIf="!q.textAnswers?.length" class="text-muted small">
                             No text responses yet
@@ -103,7 +196,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 </div>

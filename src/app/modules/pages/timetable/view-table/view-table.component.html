@@ -254,7 +254,7 @@
                           'bg-secondary-subtle text-secondary': !p.periodType || p.periodType==='LECTURE',
                           'bg-info-subtle text-info':           p.periodType==='LAB',
                           'bg-warning-subtle text-warning-emphasis': p.periodType==='TEST' || p.periodType==='REVISION',
-                          'bg-success-subtle text-success':     p.periodType==='TUTORIAL'
+                          'bg-success-subtle text-success':     p.periodType==='TUTORIAL' ,'bg-primary-subtle text-primary': p.periodType==='PT' || p.periodType==='YOGA'
                         }" [style.background]="p.periodType==='EXAM' ? '#f3e8ff' : null"
                                                 [style.color]="p.periodType==='EXAM' ? '#7c3aed' : null">
                                                 {{ p.periodType || 'LECTURE' }}
@@ -573,6 +573,8 @@
                                     <option value="TEST">Test</option>
                                     <option value="REVISION">Revision</option>
                                     <option value="EXAM">Exam</option>
+                                    <option value="PT">PT</option>
+                                    <option value="YOGA">Yoga</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -1090,39 +1092,52 @@
 <div *ngIf="!timetable && loading" class="d-flex justify-content-center py-5">
     <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
 </div>
+<!-- No timetable for this week -->
+<div *ngIf="!timetable && !loading"
+    class="d-flex flex-column align-items-center justify-content-center py-5 text-center">
+    <div class="mb-3" style="opacity:0.35;">
+        <i class="fa-solid fa-calendar-xmark" style="font-size:3rem;color:#6c757d;"></i>
+    </div>
+    <div class="fw-semibold text-muted mb-1">No timetable for this week</div>
+    <div class="small text-muted">Use the navigation arrows to go to another week</div>
+    <!-- Still show week nav so user can browse -->
+    <div class="d-flex align-items-center gap-3 mt-3">
+        <button class="btn btn-sm btn-outline-secondary" (click)="navigateWeek('prev')"
+            [disabled]="!hasPrevWeek || weekNavLoading">
+            <i class="fa-solid fa-chevron-left"></i> Prev Week
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="navigateWeek('next')"
+            [disabled]="!hasNextWeek || weekNavLoading">
+            Next Week <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
 
 <!-- ═══ PERIOD ACTION MENU — rendered OUTSIDE the table so it is never clipped ═══ -->
 <!-- Uses position:fixed with coords from getBoundingClientRect of the trigger button -->
 <div *ngIf="openActionKey" class="tt-action-menu" [style.top.px]="actionMenuTop" [style.left.px]="actionMenuLeft"
     (click)="$event.stopPropagation()">
-
     <ng-container *ngFor="let row of sortedSchedule">
         <ng-container *ngFor="let pNum of periodHeaders">
             <ng-container *ngIf="isActionMenuOpen(actionKey(row.day, pNum))">
                 <ng-container *ngIf="getRenderedPeriod(row, pNum) as p">
-
                     <button class="tt-action-item danger" (click)="openCancelPeriod(row, pNum); closeActionMenu()">
                         <i class="fa-solid fa-ban me-2"></i>Cancel Period
                     </button>
-
                     <button class="tt-action-item" (click)="openRearrangeStaff(row, pNum); closeActionMenu()">
                         <i class="fa-solid fa-user-pen me-2" style="color:#6c757d"></i>Change Staff
                     </button>
-
                     <button *ngIf="p.periodType !== 'EXAM'" class="tt-action-item"
                         (click)="openReplacePeriod(row, pNum); closeActionMenu()">
                         <i class="fa-solid fa-arrows-rotate me-2" style="color:#0d6efd"></i>Replace Period
                     </button>
-
                     <button class="tt-action-item" (click)="openMovePeriod(row, pNum); closeActionMenu()">
                         <i class="fa-solid fa-arrows-up-down me-2" style="color:#0dcaf0"></i>Move / Swap
                     </button>
-
                     <button *ngIf="p.mode === 'ONLINE'" class="tt-action-item"
                         (click)="openSetZoom(row, pNum, p); closeActionMenu()">
                         <i class="fa-solid fa-video me-2" style="color:#0dcaf0"></i>Set Zoom Link
                     </button>
-
                     <ng-container *ngIf="p.periodType !== 'EXAM'">
                         <hr style="margin:4px 0" />
                         <button class="tt-action-item purple"
@@ -1130,7 +1145,6 @@
                             <i class="fa-solid fa-file-pen me-2"></i>Convert to Exam
                         </button>
                     </ng-container>
-
                 </ng-container>
             </ng-container>
         </ng-container>

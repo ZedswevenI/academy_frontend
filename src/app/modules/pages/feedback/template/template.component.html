@@ -20,8 +20,6 @@
     </div>
 </div>
 
-
-<!-- ===== CREATE / EDIT TEMPLATE MODAL ===== -->
 <div class="modal fade" id="templateFormModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-4">
@@ -37,126 +35,190 @@
             <div class="modal-body p-4">
                 <form [formGroup]="templateForm">
                     <div class="row g-3 mb-4">
-
-                        <!-- Title -->
                         <div class="col-md-6">
                             <formfield label="Template Title" formControlName="title"
                                 [control]="templateForm.get('title')" placeholder="e.g. Staff Feedback — Q1 2025"
                                 [required]="true">
                             </formfield>
                         </div>
-
-                        <!-- Category -->
                         <div class="col-md-6">
                             <selectbox label="Category" [options]="category_options" formControlName="category"
                                 [control]="templateForm.get('category')" [required]="true">
                             </selectbox>
                         </div>
-
-                        <!-- Description -->
                         <div class="col-12">
                             <description label="Description (optional)" formControlName="description"
                                 [control]="templateForm.get('description')"
                                 placeholder="Brief description of this template...">
                             </description>
                         </div>
-
                     </div>
-
-                    <!-- Questions -->
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="fw-bold mb-0">
-                            Questions
-                            <span class="badge bg-primary rounded-pill ms-2">
-                                {{ questions.length }}
+                        <div class="d-flex align-items-center gap-2">
+                            <h6 class="fw-bold mb-0">
+                                Questions
+                                <span class="badge bg-primary rounded-pill ms-2">
+                                    {{ questions.length }}
+                                </span>
+                            </h6>
+                            <span *ngIf="questions.length > 0"
+                                class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
+                                style="font-size: 11px;">
+                                {{ getSubjectBasedCount() }} subject-based
                             </span>
-                        </h6>
+                        </div>
                         <button type="button" class="btn btn-outline-primary rounded-pill btn-sm"
-                            (click)="addQuestion()" title="Add a new question">
+                            (click)="addQuestion()">
                             <i class="fa-solid fa-plus me-1"></i>Add Question
                         </button>
                     </div>
-
-                    <div *ngIf="questions.length === 0" class="text-center text-muted py-3 border rounded-3 mb-3">
+                    <div *ngIf="questions.length === 0" class="text-center text-muted py-4 border rounded-3 mb-3">
                         <i class="fa-solid fa-circle-info me-2"></i>
                         No questions yet — click "Add Question" to start
                     </div>
-
                     <div formArrayName="questions" class="d-flex flex-column gap-3">
                         <div *ngFor="let q of questions.controls; let i = index" [formGroupName]="i"
-                            class="p-3 border rounded-3 bg-light">
-
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="fw-semibold small text-muted">Question {{ i + 1 }}</span>
+                            class="border rounded-3 overflow-hidden" [class.border-primary]="isSubjectBasedQ(i)">
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2"
+                                [class.bg-primary]="isSubjectBasedQ(i)" [class.bg-opacity-10]="isSubjectBasedQ(i)"
+                                [class.bg-light]="!isSubjectBasedQ(i)">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-semibold small" [class.text-primary]="isSubjectBasedQ(i)"
+                                        [class.text-muted]="!isSubjectBasedQ(i)">
+                                        Question {{ i + 1 }}
+                                    </span>
+                                    <span *ngIf="isSubjectBasedQ(i)" class="badge bg-primary rounded-pill"
+                                        style="font-size: 10px;">
+                                        <i class="fa-solid fa-book-open me-1"></i>Subject-based
+                                    </span>
+                                    <span *ngIf="isSubjectBasedQ(i) && !hasSubjectPlaceholder(i)"
+                                        class="badge bg-warning text-dark rounded-pill" style="font-size: 10px;"
+                                        title="Add &#123;subject&#125; to the question text">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                        Missing &#123;subject&#125;
+                                    </span>
+                                </div>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill"
-                                    (click)="removeQuestion(i)" title="Remove this question">
+                                    (click)="removeQuestion(i)">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
-
-                            <div class="row g-2">
-
-                                <!-- Field Type -->
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-medium">
-                                        Type <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select form-select-sm rounded-3" formControlName="fieldType">
-                                        <option *ngFor="let t of fieldType_options" [value]="t.value">{{ t.label }}
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <!-- Field Text -->
-                                <div class="col-md-9">
-                                    <label class="form-label small fw-medium">
-                                        Question Text <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" class="form-control form-control-sm rounded-3"
-                                        formControlName="fieldText" placeholder="Enter your question...">
-                                </div>
-
-                                <!-- Options (radio/checkbox only) -->
-                                <div class="col-12" *ngIf="needsOptions(i)">
-                                    <label class="form-label small fw-medium">
-                                        Options
-                                        <span class="text-muted fw-normal ms-1">
-                                            (comma-separated, min 2)
-                                        </span>
-                                    </label>
-                                    <input type="text" class="form-control form-control-sm rounded-3"
-                                        formControlName="optionsRaw" placeholder="e.g. Excellent, Good, Average, Poor">
-                                    <div class="d-flex flex-wrap gap-1 mt-2" *ngIf="q.get('optionsRaw')?.value">
-                                        <span *ngFor="let opt of q.get('optionsRaw')?.value?.split(',') || []"
-                                            class="badge bg-white border text-muted small">
-                                            {{ opt.trim() }}
-                                        </span>
+                            <div class="p-3 bg-white">
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-medium">
+                                            Type <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select form-select-sm rounded-3"
+                                            formControlName="fieldType">
+                                            <option *ngFor="let t of fieldType_options" [value]="t.value">
+                                                {{ t.label }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <label class="form-label small fw-medium">
+                                            Question Text <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm rounded-3"
+                                            formControlName="fieldText" [placeholder]="isSubjectBasedQ(i)
+                        ? 'e.g. How is your {subject} teacher?'
+                        : 'Enter your question...'">
+                                    </div>
+                                    <div class="col-12" *ngIf="needsOptions(i)">
+                                        <label class="form-label small fw-medium">
+                                            Options
+                                            <span class="text-muted fw-normal ms-1">
+                                                (comma-separated, min 2)
+                                            </span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm rounded-3"
+                                            formControlName="optionsRaw"
+                                            placeholder="e.g. Excellent, Good, Average, Poor">
+                                        <div class="d-flex flex-wrap gap-1 mt-2" *ngIf="q.get('optionsRaw')?.value">
+                                            <span *ngFor="let opt of q.get('optionsRaw')?.value?.split(',') || []"
+                                                class="badge bg-white border text-muted small">
+                                                {{ opt.trim() }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="d-flex align-items-start gap-3 p-3 rounded-3 border"
+                                            [class.border-primary]="isSubjectBasedQ(i)"
+                                            [class.bg-primary]="isSubjectBasedQ(i)"
+                                            [class.bg-opacity-10]="isSubjectBasedQ(i)"
+                                            [class.bg-light]="!isSubjectBasedQ(i)">
+                                            <div class="form-check form-switch mb-0 flex-shrink-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    style="width: 2.2em; height: 1.2em; cursor: pointer; margin-top: 2px;"
+                                                    formControlName="isSubjectBased">
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-medium small" [class.text-primary]="isSubjectBasedQ(i)">
+                                                    Subject-based question
+                                                </div>
+                                                <div class="text-muted" style="font-size: 11px; line-height: 1.5;">
+                                                    Enable if this question repeats for each subject in the batch.
+                                                    Use <code class="bg-white px-1 rounded">&#123;subject&#125;</code>
+                                                    as a placeholder — replaced with the actual subject name at form
+                                                    creation.
+                                                </div>
+                                                <div *ngIf="isSubjectBasedQ(i) && hasSubjectPlaceholder(i)"
+                                                    class="mt-2">
+                                                    <div class="text-primary small fw-medium mb-1">
+                                                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>
+                                                        Preview — expands into:
+                                                    </div>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <span *ngFor="let sub of previewSubjects" class="badge bg-primary bg-opacity-10 text-primary
+                                border border-primary border-opacity-25 rounded-pill"
+                                                            style="font-size: 11px; font-weight: 400;">
+                                                            {{ getPreviewText(i, sub) }}
+                                                        </span>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary
+                              border rounded-pill" style="font-size: 11px; font-weight: 400;">
+                                                            + more based on batch subjects...
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div *ngIf="isSubjectBasedQ(i) && !hasSubjectPlaceholder(i)"
+                                                    class="mt-2 text-warning small">
+                                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                                    Add <code class="bg-white px-1 rounded">&#123;subject&#125;</code>
+                                                    to the question text above to enable expansion
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
-
                 </form>
             </div>
-
-            <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-                    data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4"
-                    [disabled]="templateForm.invalid || !questions.length || saving" (click)="saveTemplate()">
-                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
-                    {{ saving ? 'Saving...' : (isEditMode ? 'Update Template' : 'Create Template') }}
-                </button>
+            <div class="modal-footer border-top justify-content-between">
+                <div class="text-muted small" *ngIf="questions.length > 0">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    {{ questions.length }} question(s) total
+                    <span *ngIf="getSubjectBasedCount() > 0">
+                        · {{ getSubjectBasedCount() }} subject-based
+                        (will expand per batch subjects at form creation)
+                    </span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4"
+                        [disabled]="templateForm.invalid || !questions.length || saving" (click)="saveTemplate()">
+                        <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
+                        {{ saving ? 'Saving...' : (isEditMode ? 'Update Template' : 'Create Template') }}
+                    </button>
+                </div>
             </div>
-
         </div>
     </div>
 </div>
 
-
-<!-- DELETE MODAL -->
 <div class="modal fade" id="templateDeleteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
         <div class="modal-content rounded-4" *ngIf="templateToDelete">

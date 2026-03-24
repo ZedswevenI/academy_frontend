@@ -75,6 +75,8 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   loading = false;
   tenantId: any;
   timetableId = '';
+  batchCode = '';
+  currentWkStartOn = 0;
   private moduleName = 'timetable';
   timetable: any = null;
   get isPublished(): boolean {
@@ -193,9 +195,11 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.timetableId = safeTrim(this.route.snapshot.paramMap.get('id'));
-    if (!this.timetableId) {
-      this.alert.error('Timetable ID missing');
+    // this.timetableId = safeTrim(this.route.snapshot.paramMap.get('id'));
+    this.batchCode = safeTrim(this.route.snapshot.paramMap.get('id'));
+    this.currentWkStartOn = this.getMondayOfCurrentWeek();
+    if (!this.batchCode) {
+      this.alert.error('batchCode ID missing');
       this.router.navigate(['/app/timetable']);
       return;
     }
@@ -227,6 +231,17 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
   get toDateMs(): number {
     return this.toStartOfDayMs(this.toDateStr) || this.fromDateMs || 0;
+  }
+
+  private getMondayOfCurrentWeek(): number {
+    const now = new Date();
+    const day = now.getUTCDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    return Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() + diff,
+    );
   }
 
   private toStartOfDayMs(dateStr: string): number {
@@ -486,7 +501,11 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.commonApi
       .fetchData(
-        { tenantId: this.tenantId, timetableId: this.timetableId },
+        {
+          tenantId: this.tenantId,
+          batchCode: this.batchCode,
+          wkStartOn: this.currentWkStartOn,
+        },
         this.moduleName,
         'view',
       )
@@ -497,6 +516,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res: any) => {
           this.timetable = res?.data || null;
+          this.timetableId = this.timetable._id;
           this.lastWeeklyTimetable = this.timetable;
           const wkStart = toInt(this.timetable?.wkStartOn, 0);
           if (wkStart && !this.fromDateStr) {
@@ -513,7 +533,16 @@ export class ViewTableComponent implements OnInit, OnDestroy {
           }
         },
         error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Failed to load timetable');
+          // this.alert.error(err?.error?.message || 'Failed to load timetable');
+          this.loading = false;
+          this.timetable = null;
+          if (err?.status !== 404) {
+            this.alert.error(err?.error?.message || 'Failed to load timetable');
+          }
+          if (this.batchCode) {
+            this.loadWeekIndex(this.batchCode);
+            this.loadBatchDetails(this.batchCode);
+          }
         },
       });
   }
@@ -794,12 +823,20 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
+  // private updateWeekNavFlags() {
+  //   const cur = toInt(this.timetable?.wkStartOn, 0);
+  //   const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
+  //   this.hasPrevWeek = idx > 0;
+  //   this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
+  // }
+
   private updateWeekNavFlags() {
-    const cur = toInt(this.timetable?.wkStartOn, 0);
-    const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
-    this.hasPrevWeek = idx > 0;
-    this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
-  }
+  // Use currentWkStartOn as fallback if timetable is null
+  const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
+  const idx = this.weekIndex.findIndex((w) => toInt(w.wkStartOn) === toInt(cur));
+  this.hasPrevWeek = idx > 0;
+  this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
+}
 
   get currentWeekLabel(): string {
     const wkStart = toInt(this.timetable?.wkStartOn, 0);
@@ -815,38 +852,73 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return `Week ${idx + 1} of ${this.weekIndex.length}`;
   }
 
-  navigateWeek(direction: 'prev' | 'next') {
-    const cur = toInt(this.timetable?.wkStartOn, 0);
-    const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
-    const target =
-      direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
-    if (!target) return;
-    this.weekNavLoading = true;
-    this.timetableId = target._id;
-    this.commonApi
-      .fetchData(
-        { tenantId: this.tenantId, timetableId: target._id },
-        this.moduleName,
-        'view',
-      )
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => (this.weekNavLoading = false)),
-      )
-      .subscribe({
-        next: (res: any) => {
-          this.timetable = res?.data || null;
-          this.lastWeeklyTimetable = this.timetable;
-          this.viewMode = 'week';
-          this.processSchedule();
-          this.updateWeekNavFlags();
-        },
-        error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Failed to load week');
-        },
-      });
-  }
+//   navigateWeek(direction: 'prev' | 'next') {
+//     const cur = toInt(this.timetable?.wkStartOn, 0);
+//     const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
+//     const target =
+//       direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
+//     if (!target) return;
+//     this.weekNavLoading = true;
+//     this.timetableId = target._id;
+//     this.commonApi
+//       .fetchData(
+//         {
+//           tenantId: this.tenantId,
+//           batchCode: this.batchCode,
+//           wkStartOn: target.wkStartOn,
+//         },
+//         this.moduleName,
+//         'view',
+//       )
+//       .pipe(
+//         takeUntil(this.destroy$),
+//         finalize(() => (this.weekNavLoading = false)),
+//       )
+//       .subscribe({
+//         next: (res: any) => {
+//           this.timetable = res?.data || null;
+//           this.lastWeeklyTimetable = this.timetable;
+// this.timetableId = this.timetable?._id || '';
+// this.currentWkStartOn = target.wkStartOn;
+//           this.viewMode = 'week';
+//           this.processSchedule();
+//           this.updateWeekNavFlags();
+//         },
+//         error: (err: any) => {
+//           this.alert.error(err?.error?.message || 'Failed to load week');
+//         },
+//       });
+//   }
 
+  navigateWeek(direction: 'prev' | 'next') {
+  const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
+  const idx = this.weekIndex.findIndex((w) => toInt(w.wkStartOn) === toInt(cur));
+  const target = direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
+  if (!target) return;
+  this.weekNavLoading = true;
+  this.commonApi
+    .fetchData(
+      { tenantId: this.tenantId, batchCode: this.batchCode, wkStartOn: target.wkStartOn },
+      this.moduleName,
+      'view',
+    )
+    .pipe(takeUntil(this.destroy$), finalize(() => (this.weekNavLoading = false)))
+    .subscribe({
+      next: (res: any) => {
+        this.timetable           = res?.data || null;
+        this.timetableId         = this.timetable?._id || '';
+        this.currentWkStartOn    = toInt(target.wkStartOn);
+        this.lastWeeklyTimetable = this.timetable;
+        this.viewMode            = 'week';
+        this.processSchedule();
+        this.updateWeekNavFlags();
+      },
+      error: (err: any) => {
+        this.alert.error(err?.error?.message || 'Failed to load week');
+      },
+    });
+  }
+  
   actionKey(dayName: string, pNum: number): string {
     return `${dayName}_${pNum}`;
   }
@@ -1189,7 +1261,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   onEditDayTimeChange(ep: any) {
     ep.startMin = timeStrToMin(ep.startTime);
     ep.endMin = timeStrToMin(ep.endTime);
-    ep.__timeError = ''; 
+    ep.__timeError = '';
     if (ep.startMin && ep.endMin && ep.endMin <= ep.startMin) {
       ep.__timeError = 'End time must be after start time';
     }
@@ -1218,7 +1290,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     const sub = this.subjectByCode[safeTrim(ep.subjectCode)];
     ep.subjectName = sub?.subjectName || '';
     ep.subjectId = sub?._id || '';
-    ep.facultyId = ''; 
+    ep.facultyId = '';
     ep.facultyName = '';
     ep.topic = '';
     this.editDayConflicts = [];
