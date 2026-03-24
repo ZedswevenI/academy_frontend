@@ -20,17 +20,20 @@ export class TemplateComponent implements OnInit {
   editId: string | null = null;
   saving = false;
   templateToDelete: any = null;
+
   category_options = [
     { label: 'Staff / Teacher', value: 'STAFF' },
     { label: 'Batch / Class', value: 'BATCH' },
     { label: 'Facility', value: 'FACILITY' },
     { label: 'Course Content', value: 'COURSE' },
   ];
+
   fieldType_options = [
     { label: 'Text (open answer)', value: 'text' },
     { label: 'Radio (single)', value: 'radio' },
     { label: 'Checkbox (multi)', value: 'checkbox' },
   ];
+
   columnsArray = [
     { key: 'title', label: 'Title', sortable: false },
     { key: 'categoryLabel', label: 'Category', sortable: false },
@@ -38,6 +41,7 @@ export class TemplateComponent implements OnInit {
     { key: 'status', label: 'Status', sortable: false },
     { key: 'createdAt', label: 'Created', sortable: false },
   ];
+
   actions = [
     {
       type: 'icon',
@@ -64,12 +68,16 @@ export class TemplateComponent implements OnInit {
       callback: (row: any) => this.openDeleteModal(row),
     },
   ];
+
   categoryMap: Record<string, string> = {
     STAFF: 'Staff / Teacher',
     BATCH: 'Batch / Class',
     FACILITY: 'Facility',
     COURSE: 'Course Content',
   };
+
+  // Sample subjects for live preview
+  previewSubjects = ['Maths', 'Physics', 'Chemistry'];
 
   constructor(
     private fb: FormBuilder,
@@ -89,6 +97,9 @@ export class TemplateComponent implements OnInit {
     this.fetchTemplates(1, 10);
   }
 
+  // ====================================================
+  // FORM BUILDERS
+  // ====================================================
   private buildForm(): void {
     this.templateForm = this.fb.group({
       title: ['', Validators.required],
@@ -108,6 +119,7 @@ export class TemplateComponent implements OnInit {
       fieldType: ['radio', Validators.required],
       fieldText: ['', Validators.required],
       optionsRaw: [''],
+      isSubjectBased: [false],
     });
   }
 
@@ -125,32 +137,59 @@ export class TemplateComponent implements OnInit {
     );
   }
 
+  isSubjectBasedQ(i: number): boolean {
+    return this.questions.at(i).get('isSubjectBased')?.value === true;
+  }
+
+  // Get live preview text for a question replacing {subject}
+  getPreviewText(i: number, subject: string): string {
+    const text =
+      this.questions.at(i).get('fieldText')?.value || 'Question text';
+    return text.replace(/\{subject\}/g, subject);
+  }
+
+  // Check if question text contains {subject} placeholder
+  hasSubjectPlaceholder(i: number): boolean {
+    const text = this.questions.at(i).get('fieldText')?.value || '';
+    return text.includes('{subject}');
+  }
+
+  // ====================================================
+  // FETCH
+  // ====================================================
   fetchTemplates(page: number, limit: number): void {
     this.loading = true;
-    const body = { tenantId: this.tenantId };
-    const query = `list?page=${page}&limit=${limit}`;
-    this.commonApi.fetchData(body, 'feedback/template', query).subscribe({
-      next: (res: any) => {
-        this.dataArray = (res?.data || []).map((t: any) => ({
-          ...t,
-          categoryLabel: this.categoryMap[t.category] || t.category,
-          questionCount: (t.questions?.length || 0) + ' questions',
-          createdAt: this.formatDate(t.createdAt),
-        }));
-        this.totalRecords = res?.count || this.dataArray.length;
-        this.loading = false;
-      },
-      error: () => {
-        this.alert.error('Error loading templates');
-        this.loading = false;
-      },
-    });
+    this.commonApi
+      .fetchData(
+        { tenantId: this.tenantId },
+        'feedback/template',
+        `list?page=${page}&limit=${limit}`,
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.dataArray = (res?.data || []).map((t: any) => ({
+            ...t,
+            categoryLabel: this.categoryMap[t.category] || t.category,
+            questionCount: (t.questions?.length || 0) + ' questions',
+            createdAt: this.formatDate(t.createdAt),
+          }));
+          this.totalRecords = res?.count || this.dataArray.length;
+          this.loading = false;
+        },
+        error: () => {
+          this.alert.error('Error loading templates');
+          this.loading = false;
+        },
+      });
   }
 
   loadTableData(req: { page: number; pageSize: number }): void {
     this.fetchTemplates(req.page, req.pageSize);
   }
 
+  // ====================================================
+  // CREATE MODAL
+  // ====================================================
   openCreateModal(): void {
     this.isEditMode = false;
     this.editId = null;
@@ -159,10 +198,14 @@ export class TemplateComponent implements OnInit {
     this.openModal('templateFormModal');
   }
 
+  // ====================================================
+  // EDIT MODAL
+  // ====================================================
   openEditModal(row: any): void {
     this.isEditMode = true;
     this.editId = row._id;
     this.buildForm();
+
     this.commonApi
       .fetchData(
         { tenantId: this.tenantId, templateId: row._id },
@@ -185,6 +228,7 @@ export class TemplateComponent implements OnInit {
                   fieldType: [q.fieldType, Validators.required],
                   fieldText: [q.fieldText, Validators.required],
                   optionsRaw: [q.fieldOptions?.join(', ') || ''],
+                  isSubjectBased: [q.isSubjectBased || false],
                 }),
               );
             });
@@ -195,6 +239,9 @@ export class TemplateComponent implements OnInit {
       });
   }
 
+  // ====================================================
+  // SAVE TEMPLATE
+  // ====================================================
   saveTemplate(): void {
     if (this.templateForm.invalid || !this.questions.length) {
       this.templateForm.markAllAsTouched();
@@ -203,6 +250,22 @@ export class TemplateComponent implements OnInit {
       );
       return;
     }
+
+    // Validate — subject-based questions must have {subject} in fieldText
+    const subjectWarnings: number[] = [];
+    this.questions.controls.forEach((ctrl, i) => {
+      const qv = ctrl.value;
+      if (qv.isSubjectBased && !qv.fieldText.includes('{subject}')) {
+        subjectWarnings.push(i + 1);
+      }
+    });
+    if (subjectWarnings.length) {
+      this.alert.error(
+        `Question(s) ${subjectWarnings.join(', ')} are marked subject-based but missing {subject} placeholder in text`,
+      );
+      return;
+    }
+
     const f = this.templateForm.value;
     const questions = this.questions.controls.map((ctrl, i) => {
       const qv = ctrl.value;
@@ -217,9 +280,11 @@ export class TemplateComponent implements OnInit {
         fieldType: qv.fieldType,
         fieldText: qv.fieldText,
         fieldOptions: qv.fieldType === 'text' ? [] : options,
+        isSubjectBased: qv.isSubjectBased || false,
         sortOrder: i + 1,
       };
     });
+
     const payload: any = {
       tenantId: this.tenantId,
       userId: localStorage.getItem('userId'),
@@ -229,35 +294,35 @@ export class TemplateComponent implements OnInit {
       questions,
     };
     if (this.isEditMode) payload.templateId = this.editId;
+
     this.saving = true;
     const endpoint = this.isEditMode ? 'update' : 'create';
-    this.commonApi
-      .fetchData(payload, 'feedback/template', endpoint)
-      .subscribe({
-        next: (res: any) => {
-          if (res?.status) {
-            this.alert.success(
-              this.isEditMode ? 'Template updated' : 'Template created',
-            );
-            this.closeModal('templateFormModal');
-            this.fetchTemplates(1, 10);
-          }
-          this.saving = false;
-        },
-        error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Error saving template');
-          this.saving = false;
-        },
-      });
+
+    this.commonApi.fetchData(payload, 'feedback/template', endpoint).subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.alert.success(
+            this.isEditMode ? 'Template updated' : 'Template created',
+          );
+          this.closeModal('templateFormModal');
+          this.fetchTemplates(1, 10);
+        }
+        this.saving = false;
+      },
+      error: (err: any) => {
+        this.alert.error(err?.error?.message || 'Error saving template');
+        this.saving = false;
+      },
+    });
   }
 
+  // ====================================================
+  // TOGGLE STATUS
+  // ====================================================
   toggleStatus(row: any): void {
     this.commonApi
       .fetchData(
-        {
-          tenantId: this.tenantId,
-          templateId: row._id
-        },
+        { tenantId: this.tenantId, templateId: row._id },
         'feedback/template',
         'togglestatus',
       )
@@ -272,6 +337,9 @@ export class TemplateComponent implements OnInit {
       });
   }
 
+  // ====================================================
+  // DELETE
+  // ====================================================
   openDeleteModal(row: any): void {
     this.templateToDelete = row;
     this.openModal('templateDeleteModal');
@@ -302,6 +370,9 @@ export class TemplateComponent implements OnInit {
       });
   }
 
+  // ====================================================
+  // HELPERS
+  // ====================================================
   private formatDate(ts: any): string {
     if (!ts) return '-';
     return new Date(ts).toLocaleDateString('en-IN', {
@@ -319,5 +390,11 @@ export class TemplateComponent implements OnInit {
   private closeModal(id: string): void {
     const el = document.getElementById(id);
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
+  }
+  
+  getSubjectBasedCount(): number {
+    return this.questions.controls.filter(
+      (ctrl) => ctrl.get('isSubjectBased')?.value === true,
+    ).length;
   }
 }

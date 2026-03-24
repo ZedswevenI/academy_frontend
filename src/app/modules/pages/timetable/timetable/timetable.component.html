@@ -26,8 +26,6 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label small text-muted mb-1">Batch</label>
-                    <!-- FIX L14: (ngModelChange)="onBatchChange()" instead of (change)="applyFilters()" -->
-                    <!-- Batch selection no longer auto-fires search; user must click Search -->
                     <select class="form-select form-select-sm" [(ngModel)]="selectedBatch"
                         (ngModelChange)="onBatchChange()" [disabled]="!!selectedCenter && !filteredBatches.length">
                         <option value="">All Batches</option>
@@ -39,9 +37,7 @@
                     <button class="btn btn-sm btn-outline-secondary" [disabled]="loading" (click)="resetFilters()">
                         <i class="fa-solid fa-rotate-left me-1"></i>Reset
                     </button>
-                    <button class="btn btn-sm btn-primary" [disabled]="loading"
-                        [title]="!selectedCenter ? 'Select a center first' : !selectedBatch ? 'Select a batch' : ''"
-                        (click)="applyFilters()">
+                    <button class="btn btn-sm btn-primary" [disabled]="loading" (click)="applyFilters()">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                         <i class="fa-solid fa-magnifying-glass me-1" *ngIf="!loading"></i>Search
                     </button>
@@ -62,10 +58,9 @@
                 <!-- State 1: prompt -->
                 <div *ngIf="!hasSearched && !loading"
                     class="d-flex flex-column align-items-center justify-content-center py-5 text-center">
-                    <div class="mb-3" style="opacity:0.35;"><i class="fa-solid fa-calendar-days"
-                            style="font-size:3rem;color:#6c757d;"></i></div>
-                    <!-- <div class="fw-semibold text-muted mb-1">Select a Center and Batch to view timetables</div>
-                    <div class="small text-muted">Use the filters above and click <strong>Search</strong></div> -->
+                    <div class="mb-3" style="opacity:0.35;">
+                        <i class="fa-solid fa-calendar-days" style="font-size:3rem;color:#6c757d;"></i>
+                    </div>
                     <div class="fw-semibold text-muted mb-1">Use filters to narrow results or click Search to load all
                     </div>
                     <div class="small text-muted">Filter by Center, Batch, or both — then click <strong>Search</strong>
@@ -75,13 +70,14 @@
                 <!-- State 2: no results -->
                 <div *ngIf="hasSearched && !loading && !timetables.length"
                     class="d-flex flex-column align-items-center justify-content-center py-5 text-center">
-                    <div class="mb-3" style="opacity:0.35;"><i class="fa-solid fa-calendar-xmark"
-                            style="font-size:3rem;color:#6c757d;"></i></div>
+                    <div class="mb-3" style="opacity:0.35;">
+                        <i class="fa-solid fa-calendar-xmark" style="font-size:3rem;color:#6c757d;"></i>
+                    </div>
                     <div class="fw-semibold text-muted mb-1">No timetables found</div>
-                    <div class="small text-muted">No timetables exist for the selected Center and Batch</div>
+                    <div class="small text-muted">No timetables exist for the selected filters</div>
                 </div>
 
-                <!-- State 3: table -->
+                <!-- State 3: table — one row per batch -->
                 <div *ngIf="hasSearched && timetables.length">
                     <custom-table [autoFitChars]="true" [columns]="columns" [data]="timetables"
                         [totalRecords]="totalRecords" [actions]="actions" [showpageoptions]="true"
@@ -94,80 +90,8 @@
 </div>
 
 
-<!-- ═══════════════ PUBLISH CONFIRM ════════════════════════════════════════ -->
-<div class="app-modal-backdrop" *ngIf="showPublishConfirmRow">
-    <div class="app-modal timetable-modal">
-        <div class="app-modal-header d-flex justify-content-between align-items-center">
-            <div>
-                <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-paper-plane me-2 text-success"></i>Publish Timetable
-                </h6>
-                <!-- FIX H1: use epochToDisplayDate() instead of | date pipe directly on raw epoch -->
-                <span class="text-muted small">
-                    {{ publishTargetRow?.batchCode }} &bull; Week of {{ epochToDisplayDate(publishTargetRow?.wkStartOn)
-                    }}
-                </span>
-            </div>
-            <button class="btn-close" (click)="closePublishConfirmRow()" [disabled]="loading"></button>
-        </div>
-        <div class="app-modal-body">
-            <div class="alert alert-warning small">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                <strong>Once published:</strong>
-                <ul class="mb-0 mt-1 ps-3">
-                    <li>The current week schedule becomes the <strong>baseline template</strong>.</li>
-                    <li>All further edits will create <strong>date-specific overrides</strong>.</li>
-                    <li>A conflict check will run before activation.</li>
-                </ul>
-            </div>
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <button class="btn btn-outline-secondary" (click)="closePublishConfirmRow()"
-                    [disabled]="loading">Cancel</button>
-                <button class="btn btn-success" (click)="submitPublishRow()" [disabled]="loading">
-                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="fa-solid fa-paper-plane me-1" *ngIf="!loading"></i>Publish
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- ═══════════════ DELETE CONFIRM ═════════════════════════════════════════ -->
-<!-- FIX L5 / H3: delete confirm modal -->
-<div class="app-modal-backdrop" *ngIf="showDeleteConfirm">
-    <div class="app-modal timetable-modal">
-        <div class="app-modal-header d-flex justify-content-between align-items-center">
-            <div>
-                <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-trash me-2 text-danger"></i>Delete Timetable</h6>
-                <span class="text-muted small">
-                    {{ deleteTargetRow?.batchCode }} &bull; Week of {{ epochToDisplayDate(deleteTargetRow?.wkStartOn) }}
-                </span>
-            </div>
-            <button class="btn-close" (click)="closeDeleteConfirm()" [disabled]="loading"></button>
-        </div>
-        <div class="app-modal-body">
-            <div class="alert alert-danger small">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                <strong>This action cannot be undone.</strong> The timetable and all its week data will be permanently
-                deleted.
-                Only <strong>DRAFT</strong> timetables can be deleted.
-            </div>
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <button class="btn btn-outline-secondary" (click)="closeDeleteConfirm()"
-                    [disabled]="loading">Cancel</button>
-                <button class="btn btn-danger" (click)="submitDelete()" [disabled]="loading">
-                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="fa-solid fa-trash me-1" *ngIf="!loading"></i>Delete
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 <!-- ═══════════════════════ UPLOAD MODAL ═══════════════════════════════════ -->
 <div class="app-modal-backdrop" *ngIf="showUpload">
-    <!-- FIX H2: max-height + overflow-y on modal so preview table doesn't overflow viewport -->
     <div class="app-modal timetable-modal"
         style="position:relative;max-height:92vh;display:flex;flex-direction:column;">
         <div class="app-modal-header d-flex justify-content-between align-items-center flex-shrink-0">
@@ -187,7 +111,6 @@
             </button>
         </div>
 
-        <!-- FIX H2: overflow-y:auto on body so it scrolls instead of overflowing -->
         <div class="app-modal-body position-relative flex-grow-1" style="overflow-y:auto;">
             <!-- Modal overlay loader -->
             <div *ngIf="parsing || validateLoading || (loading && showUpload)"
@@ -222,12 +145,12 @@
                         </div>
                         <div class="form-text small" *ngIf="parsedPayload && !parseError">
                             <i class="fa-solid fa-check-circle text-success me-1"></i>
-                            Parsed successfully: {{ parseStats.totalGroups }} timetable(s) &bull; {{
-                            parseStats.totalDays }} days &bull; {{ parseStats.totalPeriods }} periods
+                            Parsed successfully: {{ parseStats.totalGroups }} timetable(s) &bull;
+                            {{ parseStats.totalDays }} days &bull; {{ parseStats.totalPeriods }} periods
                         </div>
                     </div>
 
-                    <!-- FIX H4: Bulk groups summary — shown when multiple timetable groups detected -->
+                    <!-- Bulk groups summary -->
                     <div class="col-12" *ngIf="parsedGroupsPreview.length > 0 && !parseError">
                         <div class="border rounded-3 overflow-hidden">
                             <div class="px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2">
@@ -259,13 +182,11 @@
                                             <td>{{ g.wkStartOnLabel || '-' }}</td>
                                             <td class="text-center">{{ g.daysCount }}</td>
                                             <td class="text-center">{{ g.periodsCount }}</td>
-                                            <td class="text-center">
-                                                <span class="badge bg-info-subtle text-info">{{ g.onlineCount }}</span>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge bg-success-subtle text-success">{{ g.offlineCount
-                                                    }}</span>
-                                            </td>
+                                            <td class="text-center"><span class="badge bg-info-subtle text-info">{{
+                                                    g.onlineCount }}</span></td>
+                                            <td class="text-center"><span
+                                                    class="badge bg-success-subtle text-success">{{ g.offlineCount
+                                                    }}</span></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -273,7 +194,7 @@
                         </div>
                     </div>
 
-                    <!-- Preview table (raw rows) -->
+                    <!-- Preview table -->
                     <div class="col-12" *ngIf="parsedPreviewRows.length && !parseError">
                         <div class="border rounded-3 overflow-hidden">
                             <div
@@ -289,7 +210,6 @@
                                     {{ parseStats.totalPeriods }} periods
                                 </span>
                             </div>
-
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered mb-0">
                                     <thead class="table-light text-muted" style="font-size:0.75rem">
@@ -346,7 +266,6 @@
                                     </tbody>
                                 </table>
                             </div>
-
                             <div class="px-3 py-2 border-top small text-muted" *ngIf="parsedPreviewTruncated">
                                 <i class="fa-solid fa-circle-info me-1"></i>Preview truncated — file contains more rows.
                             </div>
@@ -394,13 +313,14 @@
                 </div>
 
                 <div class="small text-muted mt-2">
-                    Groups: <b>{{ parseStats.totalGroups }}</b> &bull; Days: <b>{{ parseStats.totalDays }}</b> &bull;
+                    Groups: <b>{{ parseStats.totalGroups }}</b> &bull;
+                    Days: <b>{{ parseStats.totalDays }}</b> &bull;
                     Periods: <b>{{ parseStats.totalPeriods }}</b>
                 </div>
             </ng-container>
         </div>
 
-        <!-- Footer — FIX H2: flex-shrink-0 keeps footer always visible -->
+        <!-- Footer -->
         <div class="app-modal-footer d-flex justify-content-end gap-2 p-3 flex-shrink-0 border-top">
             <ng-container *ngIf="!showConfirm">
                 <button type="button" class="btn btn-outline-secondary" (click)="closeUpload()"
@@ -426,8 +346,8 @@
                 </button>
                 <button class="btn btn-saffron" (click)="confirmProceed()"
                     [disabled]="validateLoading || !validateOk || validateConflicts.length">
-                    <i class="fa-solid fa-circle-check me-1"></i>Confirm &amp; {{ confirmMode === 'single' ? 'Save' :
-                    'Import' }}
+                    <i class="fa-solid fa-circle-check me-1"></i>
+                    Confirm &amp; {{ confirmMode === 'single' ? 'Save' : 'Import' }}
                 </button>
             </ng-container>
         </div>
