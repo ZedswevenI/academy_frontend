@@ -11,6 +11,8 @@ import { QuestionArrangementComponent } from './question-arrange/question-arange
 import { ExamInstructionsComponent } from './instructions/instructions.component';
 import { ExamPassageComponent } from './passage/passage.component';
 import { ExamQuestionsComponent } from './questions/questions.component';
+import { ResultBatchComponent } from './result-batch/result-batch.component';
+import { ResultViewComponent } from './result-view/result-view.component';
 
 const routes: Routes = [
   { path: 'instructions', component: ExamInstructionsComponent, title: 'Exam-Instructions' },
@@ -23,7 +25,9 @@ const routes: Routes = [
   { path: 'exams/question-view', component: QuestionViewComponent, title: 'Exam-Question-View' },
   { path: 'exams/question-rearrange', component: QuestionArrangementComponent, title: 'Exam-Question-rearrangeOrder' },
   { path: 'exams/question-import', component: QuestionImportComponent, title: 'Exam-Question-Import' },
-  { path: 'exams/view', component: TestViewComponent, title: 'Exam-View' }
+  { path: 'exams/view', component: TestViewComponent, title: 'Exam-View' },
+  { path: 'exams/result-batch', component: ResultBatchComponent, title: 'Exam-Result-Batches' },
+  { path: 'exams/result-view', component: ResultViewComponent, title: 'Exam-Result-View' }
 ];
 
 @NgModule({

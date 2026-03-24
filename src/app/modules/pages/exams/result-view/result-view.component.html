@@ -1,0 +1,31 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4 py-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-poll me-2"></i>Result View
+                    </h1>
+                    <small class="text-muted">
+                        Batch: {{ batchData.batchId }}
+                        <span *ngIf="examData?.examName"> | Exam: {{ examData.examName }}</span>
+                    </small>
+                </div>
+                <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium"
+                    (click)="router.navigate(['/app/exams/exams/result-batch'], { state: { exam: examData } })">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loading" class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+        </div>
+
+        <!-- Result content will be added here -->
+        <div *ngIf="!loading" class="py-4 text-center text-muted">
+            <p>Result view for batch <strong>{{ batchData.batchId }}</strong></p>
+        </div>
+    </div>
+</div>

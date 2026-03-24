@@ -91,6 +91,78 @@
 
     </div>
 </div>
+<!-- Enable/Disable Batch Modal -->
+<div class="modal-backdrop fade show" *ngIf="showBatchModal" (click)="closeBatchModal()"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showBatchModal" (click)="$event.stopPropagation()">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-users me-2"></i>Enable / Disable Batches
+                </h5>
+                <button type="button" class="btn-close" (click)="closeBatchModal()"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">
+                    Exam: <strong>{{ batchAssignRow?.examName }}</strong> ({{ batchAssignRow?.examCode }})
+                </p>
+
+                <div *ngIf="batchLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+
+                <div *ngIf="!batchLoading" class="table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:40px;">Enable</th>
+                                <th>Batch Code</th>
+                                <th>Batch Name</th>
+                                <th style="width:90px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let b of allBatches">
+                                <td>
+                                    <input type="checkbox" class="form-check-input"
+                                        [checked]="selectedBatchIds.has(b.batchCode)"
+                                        (change)="toggleBatchSelect(b.batchCode)" />
+                                </td>
+                                <td>{{ b.batchCode }}</td>
+                                <td>{{ b.batchName }}</td>
+                                <td>
+                                    <span class="badge"
+                                        [ngClass]="enabledBatchIds.has(b.batchCode) ? 'bg-success' : 'bg-secondary'">
+                                        {{ enabledBatchIds.has(b.batchCode) ? 'Enabled' : 'Not Assigned' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr *ngIf="!allBatches.length">
+                                <td colspan="4" class="text-center text-muted py-4">No batches found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end mt-2">
+                    <span class="badge bg-primary fs-6">{{ selectedBatchIds.size }} enabled</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" (click)="closeBatchModal()">Cancel</button>
+                <button type="button" class="btn btn-success" [disabled]="batchAssigning" (click)="saveBatchChanges()">
+                    <span *ngIf="batchAssigning">
+                        <span class="spinner-border spinner-border-sm me-1"></span> Saving...
+                    </span>
+                    <span *ngIf="!batchAssigning">
+                        <i class="fa-solid fa-check me-1"></i> Save Changes
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Print Modal -->
 <div *ngIf="showPrintModal" class="print-modal-overlay">
     <div class="print-modal-box">
