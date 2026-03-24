@@ -831,12 +831,14 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   // }
 
   private updateWeekNavFlags() {
-  // Use currentWkStartOn as fallback if timetable is null
-  const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
-  const idx = this.weekIndex.findIndex((w) => toInt(w.wkStartOn) === toInt(cur));
-  this.hasPrevWeek = idx > 0;
-  this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
-}
+    // Use currentWkStartOn as fallback if timetable is null
+    const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
+    const idx = this.weekIndex.findIndex(
+      (w) => toInt(w.wkStartOn) === toInt(cur),
+    );
+    this.hasPrevWeek = idx > 0;
+    this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
+  }
 
   get currentWeekLabel(): string {
     const wkStart = toInt(this.timetable?.wkStartOn, 0);
@@ -852,73 +854,83 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return `Week ${idx + 1} of ${this.weekIndex.length}`;
   }
 
-//   navigateWeek(direction: 'prev' | 'next') {
-//     const cur = toInt(this.timetable?.wkStartOn, 0);
-//     const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
-//     const target =
-//       direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
-//     if (!target) return;
-//     this.weekNavLoading = true;
-//     this.timetableId = target._id;
-//     this.commonApi
-//       .fetchData(
-//         {
-//           tenantId: this.tenantId,
-//           batchCode: this.batchCode,
-//           wkStartOn: target.wkStartOn,
-//         },
-//         this.moduleName,
-//         'view',
-//       )
-//       .pipe(
-//         takeUntil(this.destroy$),
-//         finalize(() => (this.weekNavLoading = false)),
-//       )
-//       .subscribe({
-//         next: (res: any) => {
-//           this.timetable = res?.data || null;
-//           this.lastWeeklyTimetable = this.timetable;
-// this.timetableId = this.timetable?._id || '';
-// this.currentWkStartOn = target.wkStartOn;
-//           this.viewMode = 'week';
-//           this.processSchedule();
-//           this.updateWeekNavFlags();
-//         },
-//         error: (err: any) => {
-//           this.alert.error(err?.error?.message || 'Failed to load week');
-//         },
-//       });
-//   }
+  //   navigateWeek(direction: 'prev' | 'next') {
+  //     const cur = toInt(this.timetable?.wkStartOn, 0);
+  //     const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
+  //     const target =
+  //       direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
+  //     if (!target) return;
+  //     this.weekNavLoading = true;
+  //     this.timetableId = target._id;
+  //     this.commonApi
+  //       .fetchData(
+  //         {
+  //           tenantId: this.tenantId,
+  //           batchCode: this.batchCode,
+  //           wkStartOn: target.wkStartOn,
+  //         },
+  //         this.moduleName,
+  //         'view',
+  //       )
+  //       .pipe(
+  //         takeUntil(this.destroy$),
+  //         finalize(() => (this.weekNavLoading = false)),
+  //       )
+  //       .subscribe({
+  //         next: (res: any) => {
+  //           this.timetable = res?.data || null;
+  //           this.lastWeeklyTimetable = this.timetable;
+  // this.timetableId = this.timetable?._id || '';
+  // this.currentWkStartOn = target.wkStartOn;
+  //           this.viewMode = 'week';
+  //           this.processSchedule();
+  //           this.updateWeekNavFlags();
+  //         },
+  //         error: (err: any) => {
+  //           this.alert.error(err?.error?.message || 'Failed to load week');
+  //         },
+  //       });
+  //   }
 
   navigateWeek(direction: 'prev' | 'next') {
-  const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
-  const idx = this.weekIndex.findIndex((w) => toInt(w.wkStartOn) === toInt(cur));
-  const target = direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
-  if (!target) return;
-  this.weekNavLoading = true;
-  this.commonApi
-    .fetchData(
-      { tenantId: this.tenantId, batchCode: this.batchCode, wkStartOn: target.wkStartOn },
-      this.moduleName,
-      'view',
-    )
-    .pipe(takeUntil(this.destroy$), finalize(() => (this.weekNavLoading = false)))
-    .subscribe({
-      next: (res: any) => {
-        this.timetable           = res?.data || null;
-        this.timetableId         = this.timetable?._id || '';
-        this.currentWkStartOn    = toInt(target.wkStartOn);
-        this.lastWeeklyTimetable = this.timetable;
-        this.viewMode            = 'week';
-        this.processSchedule();
-        this.updateWeekNavFlags();
-      },
-      error: (err: any) => {
-        this.alert.error(err?.error?.message || 'Failed to load week');
-      },
-    });
+    const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
+    const idx = this.weekIndex.findIndex(
+      (w) => toInt(w.wkStartOn) === toInt(cur),
+    );
+    const target =
+      direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
+    if (!target) return;
+    this.weekNavLoading = true;
+    this.commonApi
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          batchCode: this.batchCode,
+          wkStartOn: target.wkStartOn,
+        },
+        this.moduleName,
+        'view',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.weekNavLoading = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.timetable = res?.data || null;
+          this.timetableId = this.timetable?._id || '';
+          this.currentWkStartOn = toInt(target.wkStartOn);
+          this.lastWeeklyTimetable = this.timetable;
+          this.viewMode = 'week';
+          this.processSchedule();
+          this.updateWeekNavFlags();
+        },
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Failed to load week');
+        },
+      });
   }
-  
+
   actionKey(dayName: string, pNum: number): string {
     return `${dayName}_${pNum}`;
   }

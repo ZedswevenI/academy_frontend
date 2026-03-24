@@ -77,6 +77,25 @@ export class StudentListComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  recalcCounts(): void {
+    this.presentCount = this.students.filter(
+      (s) => s.status === 'PRESENT',
+    ).length;
+    this.absentCount = this.students.filter(
+      (s) => s.status === 'ABSENT',
+    ).length;
+    this.lateCount = this.students.filter((s) => s.status === 'LATE').length;
+  }
+
+  toggleAttendance(student: any): void {
+    if (student.status === 'NOT_MARKED') student.status = 'PRESENT';
+    else if (student.status === 'PRESENT') student.status = 'ABSENT';
+    else if (student.status === 'ABSENT') student.status = 'PRESENT';
+    else if (student.status === 'LATE') student.status = 'ABSENT';
+    this.recalcSelectAll();
+    this.recalcCounts(); // ← add this
+  }
+
   loadStudents(): void {
     const tenantId = localStorage.getItem('tenantId');
     const payload = {
@@ -99,6 +118,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
             (s: any) => ({ ...s }),
           );
           this.recalcSelectAll();
+          this.recalcCounts();
         },
         error: () => {
           this.loading = false;
@@ -107,25 +127,13 @@ export class StudentListComponent implements OnInit, OnDestroy {
       });
   }
 
-  toggleAttendance(student: any): void {
-    if (student.status === 'NOT_MARKED') {
-      student.status = 'PRESENT';
-    } else if (student.status === 'PRESENT') {
-      student.status = 'ABSENT';
-    } else if (student.status === 'ABSENT') {
-      student.status = 'PRESENT';
-    } else if (student.status === 'LATE') {
-      student.status = 'ABSENT';
-    }
-    this.recalcSelectAll();
-  }
-
   toggleSelectAll(): void {
     this.students.forEach((s) => {
       if (s.status !== 'LATE') {
         s.status = this.selectAll ? 'PRESENT' : 'ABSENT';
       }
     });
+    this.recalcCounts();
   }
 
   recalcSelectAll(): void {
@@ -149,6 +157,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
       (s) => s.status === 'ABSENT',
     ).length;
     this.lateCount = this.students.filter((s) => s.status === 'LATE').length;
+    this.recalcCounts();
     this.showSummary = true;
   }
 
