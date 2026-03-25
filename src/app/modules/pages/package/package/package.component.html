@@ -4,19 +4,19 @@
         <!-- Header -->
         <div class="d-flex align-items-center justify-content-between mb-4">
             <h1 class="fw-bold mb-0" style="font-size: 30px;">
-                <i class="fa-solid fa-box-open me-2"></i>Packages
+                <i class="fa-solid fa-box-open me-2"></i>Study Materials
             </h1>
             <button class="btn btn-newbutton rounded-pill fs-16 fw-medium" type="button"
                 routerLink="/app/package/create">
                 <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
-                Add Package
+                Add Study Material
             </button>
         </div>
 
         <!-- Table -->
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
             success="ACTIVE" danger="INACTIVE" [totalRecords]="totalRecords"
-            [searchPlaceholder]="'Search Package Code, Title...'" (requestData)="loadTableData($event)">
+            [searchPlaceholder]="'Search Study Material Code, Title...'" (requestData)="loadTableData($event)">
         </custom-table>
 
     </div>
@@ -28,7 +28,7 @@
         <div class="modal-content rounded-4" *ngIf="selectedPackage">
             <div class="modal-header border-bottom">
                 <h5 class="modal-title fw-bold">
-                    <i class="fa-solid fa-box-open me-2 text-primary"></i>Package Details
+                    <i class="fa-solid fa-box-open me-2 text-primary"></i>Study Material Details
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -63,16 +63,10 @@
                     </div>
                     <div class="col-12" *ngIf="selectedPackage.attachmentUrl">
                         <div class="text-muted small mb-1">Attachment</div>
-                        <a  (click)="downloadFile(selectedPackage.attachmentUrl)" target="_blank"
+                        <a (click)="downloadFile(selectedPackage.attachmentUrl)" target="_blank"
                             class="btn btn-sm btn-outline-primary rounded-pill">
                             <i class="fa-solid fa-download me-1"></i>Download
                         </a>
-                    </div>
-                    <div class="col-12" *ngIf="selectedPackage.enablementId">
-                        <div class="text-muted small">Enablement ID</div>
-                        <div class="fw-semibold small text-success">
-                            <i class="fa-solid fa-circle-check me-1"></i>Enabled
-                        </div>
                     </div>
                 </div>
             </div>
@@ -80,7 +74,7 @@
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
                     data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal"
-                    ()="router.navigate(['/app/package/create'], { state: { package: selectedPackage } })">
+                    (click)="router.navigate(['/app/package/create'], { state: { package: selectedPackage } })">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Edit
                 </button>
             </div>
@@ -88,177 +82,223 @@
     </div>
 </div>
 
-<!-- ===================== ENABLE MODAL ===================== -->
-<div class="modal fade" id="packageEnableModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+<!-- ===================== ENABLE / DISABLE MODAL ===================== -->
+<div class="modal fade" id="packageEnableDisableModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 620px;">
         <div class="modal-content rounded-4" *ngIf="selectedPackage">
             <div class="modal-header border-bottom">
                 <h5 class="modal-title fw-bold">
-                    <i class="fa-solid fa-toggle-on me-2 text-primary"></i>Enable Package
+                    <i class="fa-solid fa-sliders me-2 text-primary"></i>Enable / Disable
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body p-4">
-                <p class="text-muted small mb-3">
-                    Enabling: <strong>{{ selectedPackage.title }}</strong>
-                </p>
 
-                <form [formGroup]="enableForm">
-                    <div class="row g-3">
+                <!-- Package info -->
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <div class="fw-semibold">{{ selectedPackage.title }}</div>
+                    <div class="text-muted small">{{ selectedPackage.packageCode }} · Class {{ selectedPackage.classNo }} · {{ selectedPackage.subjectName }}</div>
+                </div>
 
-                        <!-- Scope -->
-                        <div class="col-12">
-                            <selectbox label="Scope" [options]="scope_options" formControlName="scope"
-                                [control]="enableForm.get('scope')" [required]="true">
-                            </selectbox>
-                        </div>
+                <!-- Existing Enablements -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold mb-0">Active Enablements</h6>
+                        <button class="btn btn-sm rounded-pill px-3"
+                            [class.btn-primary]="!showAddNew"
+                            [class.btn-outline-secondary]="showAddNew"
+                            (click)="toggleAddNew()">
+                            <i class="fa-solid me-1" [class.fa-plus]="!showAddNew" [class.fa-times]="showAddNew"></i>
+                            {{ showAddNew ? 'Cancel' : 'Add New' }}
+                        </button>
+                    </div>
 
-                        <!-- BATCH multi-select -->
-                        <div class="col-12" *ngIf="enableForm.get('scope')?.value === 'BATCH'">
-                            <label class="form-label fw-medium">
-                                Batches <span class="text-danger">*</span>
-                                <span class="badge bg-primary ms-2">{{ selectedBatchIds.length }} selected</span>
-                            </label>
+                    <!-- Loading -->
+                    <div *ngIf="enablementsLoading" class="text-center py-4">
+                        <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+                        <span class="text-muted small">Loading enablements...</span>
+                    </div>
 
-                            <div class="border rounded-3 p-2" style="max-height: 220px; overflow-y: auto;">
-                                <!-- Select All -->
-                                <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
-                                    <input type="checkbox" class="form-check-input me-2" [checked]="selectAllBatches"
-                                        (change)="toggleAllBatches($any($event.target).checked)" />
-                                    <span class="fw-semibold small">Select All</span>
+                    <!-- Empty -->
+                    <div *ngIf="!enablementsLoading && enablements.length === 0"
+                        class="text-center py-4 text-muted border rounded-3">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        No active enablements found
+                    </div>
+
+                    <!-- Enablement cards -->
+                    <div *ngFor="let e of enablements" class="border rounded-3 p-3 mb-2">
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge rounded-pill"
+                                        [class.bg-primary]="e.scope === 'BATCH'"
+                                        [class.bg-info]="e.scope === 'STUDENT'">
+                                        {{ e.scope }}
+                                    </span>
+                                    <span class="badge rounded-pill"
+                                        [class.bg-success]="e.status === 'ACTIVE'"
+                                        [class.bg-secondary]="e.status !== 'ACTIVE'">
+                                        {{ e.status }}
+                                    </span>
                                 </div>
-                                <!-- Batch rows -->
-                                <div *ngFor="let b of batches"
-                                    class="d-flex align-items-center px-2 py-1 rounded hover-bg"
-                                    style="cursor: pointer;">
-                                    <input type="checkbox" class="form-check-input me-2"
-                                        [checked]="isBatchSelected(b.batchCode)"
-                                        (change)="toggleBatch(b.batchCode, $any($event.target).checked)" />
-                                    <span class="small">{{ b.batchName }}</span>
-                                    <span class="text-muted small ms-auto">{{ b.batchCode }}</span>
+
+                                <!-- Targets -->
+                                <div class="mb-2">
+                                    <div class="text-muted small mb-1">Targets:</div>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <span *ngFor="let t of e.resolvedTargets"
+                                            class="badge bg-light text-dark border small">
+                                            {{ t.name }}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div *ngIf="batches.length === 0" class="text-muted small text-center py-2">
-                                    No batches available
+
+                                <!-- Dates -->
+                                <div class="d-flex gap-3 text-muted small">
+                                    <span><i class="fa-regular fa-calendar me-1"></i>From: {{ formatDate(e.enableDate) }}</span>
+                                    <span><i class="fa-regular fa-calendar-xmark me-1"></i>To: {{ formatDate(e.disableDate) }}</span>
                                 </div>
                             </div>
+
+                            <!-- Disable button -->
+                            <button *ngIf="e.status === 'ACTIVE'" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-3 flex-shrink-0"
+                                [disabled]="e._disabling"
+                                (click)="disableEnablement(e)">
+                                <span *ngIf="e._disabling" class="spinner-border spinner-border-sm me-1"></span>
+                                <i *ngIf="!e._disabling" class="fa-solid fa-toggle-off me-1"></i>
+                                Disable
+                            </button>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- STUDENT multi-select -->
-                        <!-- STUDENT scope — step 1: pick a batch, step 2: pick students -->
-                        <div class="col-12" *ngIf="enableForm.get('scope')?.value === 'STUDENT'">
+                <!-- Add New Enablement Form -->
+                <div *ngIf="showAddNew" class="border-top pt-4">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fa-solid fa-plus me-2 text-success"></i>Add New Enablement
+                    </h6>
 
-                            <!-- Step 1: Select Batch first -->
-                            <div class="mb-3">
-                                <label class="form-label fw-medium">
-                                    Select Batch First <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select" [value]="studentBatchCode"
-                                    (change)="loadStudentsByBatch($any($event.target).value)">
-                                    <option value="">-- Select Batch --</option>
-                                    <option *ngFor="let b of batches" [value]="b.batchCode">
-                                        {{ b.batchName }} ({{ b.batchCode }})
-                                    </option>
-                                </select>
+                    <form [formGroup]="enableForm">
+                        <div class="row g-3">
+
+                            <!-- Scope -->
+                            <div class="col-12">
+                                <selectbox label="Scope" [options]="scope_options" formControlName="scope"
+                                    [control]="enableForm.get('scope')" [required]="true">
+                                </selectbox>
                             </div>
 
-                            <!-- Step 2: Student list (shown after batch selected) -->
-                            <div *ngIf="studentBatchCode">
+                            <!-- BATCH multi-select -->
+                            <div class="col-12" *ngIf="enableForm.get('scope')?.value === 'BATCH'">
                                 <label class="form-label fw-medium">
-                                    Students <span class="text-danger">*</span>
-                                    <span class="badge bg-primary ms-2">{{ selectedStudentIds.length }} selected</span>
+                                    Batches <span class="text-danger">*</span>
+                                    <span class="badge bg-primary ms-2">{{ selectedBatchIds.length }} selected</span>
                                 </label>
-
-                                <!-- Loading -->
-                                <div *ngIf="studentsLoading" class="text-center py-3 border rounded-3">
-                                    <span class="spinner-border spinner-border-sm text-primary me-2"></span>
-                                    <span class="text-muted small">Loading students...</span>
-                                </div>
-
-                                <!-- Student checkbox list -->
-                                <div *ngIf="!studentsLoading" class="border rounded-3 p-2"
-                                    style="max-height: 220px; overflow-y: auto;">
-
-                                    <!-- Select All -->
+                                <div class="border rounded-3 p-2" style="max-height: 220px; overflow-y: auto;">
                                     <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
                                         <input type="checkbox" class="form-check-input me-2"
-                                            [checked]="selectAllStudents"
-                                            (change)="toggleAllStudents($any($event.target).checked)" />
+                                            [checked]="selectAllBatches"
+                                            (change)="toggleAllBatches($any($event.target).checked)" />
                                         <span class="fw-semibold small">Select All</span>
-                                        <span class="text-muted small ms-auto">{{ students.length }} total</span>
                                     </div>
-
-                                    <!-- Student rows -->
-                                    <div *ngFor="let s of students" class="d-flex align-items-center px-2 py-1 rounded"
+                                    <div *ngFor="let b of batches"
+                                        class="d-flex align-items-center px-2 py-1 rounded hover-bg"
                                         style="cursor: pointer;">
                                         <input type="checkbox" class="form-check-input me-2"
-                                            [checked]="isStudentSelected(s.value)"
-                                            (change)="toggleStudent(s.value, $any($event.target).checked)" />
-                                        <span class="small">{{ s.label }}</span>
+                                            [checked]="isBatchSelected(b.batchCode)"
+                                            (change)="toggleBatch(b.batchCode, $any($event.target).checked)" />
+                                        <span class="small">{{ b.batchName }}</span>
+                                        <span class="text-muted small ms-auto">{{ b.batchCode }}</span>
                                     </div>
-
-                                    <!-- Empty state -->
-                                    <div *ngIf="students.length === 0" class="text-muted small text-center py-3">
-                                        <i class="fa-solid fa-user-slash me-1"></i>
-                                        No students found in this batch
+                                    <div *ngIf="batches.length === 0" class="text-muted small text-center py-2">
+                                        No batches available
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Enable Date -->
-                        <div class="col-6">
-                            <formfield label="Enable Date" type="date" formControlName="enableDate"
-                                [control]="enableForm.get('enableDate')" [required]="true">
-                            </formfield>
-                        </div>
 
-                        <!-- Disable Date -->
-                        <div class="col-6">
-                            <formfield label="Disable Date" type="date" formControlName="disableDate"
-                                [control]="enableForm.get('disableDate')" [required]="true">
-                            </formfield>
-                        </div>
+                            <!-- STUDENT multi-select -->
+                            <div class="col-12" *ngIf="enableForm.get('scope')?.value === 'STUDENT'">
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">
+                                        Select Batch First <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select" [value]="studentBatchCode"
+                                        (change)="loadStudentsByBatch($any($event.target).value)">
+                                        <option value="">-- Select Batch --</option>
+                                        <option *ngFor="let b of batches" [value]="b.batchCode">
+                                            {{ b.batchName }} ({{ b.batchCode }})
+                                        </option>
+                                    </select>
+                                </div>
 
-                    </div>
-                </form>
+                                <div *ngIf="studentBatchCode">
+                                    <label class="form-label fw-medium">
+                                        Students <span class="text-danger">*</span>
+                                        <span class="badge bg-primary ms-2">{{ selectedStudentIds.length }} selected</span>
+                                    </label>
+                                    <div *ngIf="studentsLoading" class="text-center py-3 border rounded-3">
+                                        <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+                                        <span class="text-muted small">Loading students...</span>
+                                    </div>
+                                    <div *ngIf="!studentsLoading" class="border rounded-3 p-2"
+                                        style="max-height: 220px; overflow-y: auto;">
+                                        <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                                            <input type="checkbox" class="form-check-input me-2"
+                                                [checked]="selectAllStudents"
+                                                (change)="toggleAllStudents($any($event.target).checked)" />
+                                            <span class="fw-semibold small">Select All</span>
+                                            <span class="text-muted small ms-auto">{{ students.length }} total</span>
+                                        </div>
+                                        <div *ngFor="let s of students"
+                                            class="d-flex align-items-center px-2 py-1 rounded"
+                                            style="cursor: pointer;">
+                                            <input type="checkbox" class="form-check-input me-2"
+                                                [checked]="isStudentSelected(s.value)"
+                                                (change)="toggleStudent(s.value, $any($event.target).checked)" />
+                                            <span class="small">{{ s.label }}</span>
+                                        </div>
+                                        <div *ngIf="students.length === 0" class="text-muted small text-center py-3">
+                                            <i class="fa-solid fa-user-slash me-1"></i>
+                                            No students found in this batch
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enable Date -->
+                            <div class="col-6">
+                                <formfield label="Enable Date" type="date" formControlName="enableDate"
+                                    [control]="enableForm.get('enableDate')" [min]="todayDate" [required]="true">
+                                </formfield>
+                            </div>
+
+                            <!-- Disable Date -->
+                            <div class="col-6">
+                                <formfield label="Disable Date" type="date" formControlName="disableDate"
+                                    [control]="enableForm.get('disableDate')" [min]="minDisableDate" [required]="true">
+                                </formfield>
+                            </div>
+
+                            <!-- Submit -->
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-success rounded-pill px-4"
+                                    [disabled]="enableLoading" (click)="submitEnable()">
+                                    <span *ngIf="enableLoading" class="spinner-border spinner-border-sm me-1"></span>
+                                    {{ enableLoading ? 'Enabling...' : 'Enable' }}
+                                </button>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+
             </div>
+
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-                    data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4" [disabled]="enableLoading"
-                    (click)="submitEnable()">
-                    <span *ngIf="enableLoading" class="spinner-border spinner-border-sm me-1"></span>
-                    {{ enableLoading ? 'Enabling...' : 'Enable' }}
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===================== DISABLE MODAL ===================== -->
-<div class="modal fade" id="packageDisableModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-        <div class="modal-content rounded-4" *ngIf="packageToDisable">
-            <div class="modal-body text-center p-4">
-                <div class="mb-3">
-                    <span
-                        class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning bg-opacity-10"
-                        style="width: 64px; height: 64px;">
-                        <i class="fa-solid fa-toggle-off text-warning fs-4"></i>
-                    </span>
-                </div>
-                <h5 class="fw-bold mb-1">Disable Package?</h5>
-                <p class="text-muted mb-1">You are about to disable</p>
-                <p class="fw-semibold mb-3">"{{ packageToDisable.title }}"</p>
-                <p class="text-muted small mb-0">This will revoke access for all assigned targets.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
-                    (click)="packageToDisable = null">Cancel</button>
-                <button type="button" class="btn btn-warning rounded-pill px-4 text-white" data-bs-dismiss="modal"
-                    (click)="confirmDisable()">
-                    <i class="fa-solid fa-toggle-off me-2"></i>Yes, Disable
-                </button>
+                    data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -276,7 +316,7 @@
                         <i class="fa-solid fa-trash-can text-danger fs-4"></i>
                     </span>
                 </div>
-                <h5 class="fw-bold mb-1">Delete Package?</h5>
+                <h5 class="fw-bold mb-1">Delete Study Material?</h5>
                 <p class="text-muted mb-1">You are about to delete</p>
                 <p class="fw-semibold mb-3">"{{ packageToDelete.title }}"</p>
                 <p class="text-muted small mb-0">This action cannot be undone.</p>

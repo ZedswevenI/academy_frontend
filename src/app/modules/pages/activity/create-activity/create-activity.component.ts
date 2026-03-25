@@ -21,6 +21,8 @@ export class createActivityComponent implements OnInit {
   editActivity: any = null;
 
   loading = false;
+  todayDate = new Date().toISOString().split('T')[0];
+  minEndDate = this.todayDate;
 
   batch_options:  any[] = [];
   center_options: any[] = [];
@@ -59,6 +61,14 @@ export class createActivityComponent implements OnInit {
     }
 
     this.buildForm();
+
+    this.activityForm.get('startDate')?.valueChanges.subscribe((val: string) => {
+      this.minEndDate = val || this.todayDate;
+      const endDate = this.activityForm.get('endDate')?.value;
+      if (endDate && endDate < this.minEndDate) {
+        this.activityForm.get('endDate')?.setValue('');
+      }
+    });
   }
 
   // ====================================================

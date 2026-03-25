@@ -17,7 +17,7 @@ export class ResultViewComponent implements OnInit {
   examData: any = {};
 
   constructor(
-    private router: Router,
+    public router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrumb: BredcrumpService

@@ -324,7 +324,14 @@ export class CreateCircularComponent implements OnInit {
 
     if (scope === 'BATCH') {
       payload.batchCode = this.selectedBatchCodes.join(',');
-      // Use first center from batch if available
+      const centerCodes = [...new Set(
+        this.selectedBatchCodes
+          .map(code => this.batches.find(b => b.batchCode === code)?.centerCode)
+          .filter(Boolean)
+      )];
+      if (centerCodes.length) {
+        payload.centerCode = centerCodes.join(',');
+      }
     }
 
     if (this.isEditMode) {

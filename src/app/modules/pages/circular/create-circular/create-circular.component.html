@@ -120,7 +120,7 @@
                 <div class="col-12">
                     <label class="form-label fw-medium">Attachments</label>
                     <importfiles label="" [required]="false" [multiple]="false"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        accept=".pdf"
                         (filesChanged)="onFileSelected($event)">
                     </importfiles>
                     <div *ngIf="uploading" class="text-muted small mt-1">

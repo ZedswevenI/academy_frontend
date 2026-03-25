@@ -24,6 +24,7 @@ import { ViewTableComponent } from './elements/view-table/view-table.component';
 import { FilterComponent } from './elements/filter/filter.component';
 import { RichTextEditorComponent } from './elements/rich-text-editor/rich-text-editor.component';
 import { SelectOrInputComponent } from './elements/select-or-input/select-or-input.component';
+import { HasRoleDirective } from '../../shared/directives/has-role.directive';
 
 @NgModule({
   declarations: [
@@ -54,7 +55,8 @@ import { SelectOrInputComponent } from './elements/select-or-input/select-or-inp
     UiElementsRoutingModule,
     ReactiveFormsModule,
     FormsModule,
-    QuillModule.forRoot()
+    QuillModule.forRoot(),
+    HasRoleDirective
   ],
   exports: [
     FormfieldComponent,
@@ -77,7 +79,8 @@ import { SelectOrInputComponent } from './elements/select-or-input/select-or-inp
     ViewTableComponent,
     FilterComponent,
     RichTextEditorComponent,
-    SelectOrInputComponent
+    SelectOrInputComponent,
+    HasRoleDirective
   ]
 })
-export class UiElementsModule {}
+export class UiElementsModule { }

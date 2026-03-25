@@ -6,7 +6,7 @@
             <div class="d-flex align-items-center justify-content-between">
                 <h1 class="fw-bold mb-0" style="font-size: 30px;">
                     <i class="fa-solid fa-box-open me-2"></i>
-                    {{ isEditMode ? 'Edit Package' : 'Create Package' }}
+                    {{ isEditMode ? 'Edit Study Material' : 'Create Study Material' }}
                 </h1>
             </div>
         </div>
@@ -58,7 +58,7 @@
                     <!-- File Upload -->
                     <div class="col-md-6">
                         <importfiles label="Attachment" [required]="false" [multiple]="false"
-                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                            accept=".pdf"
                             (filesChanged)="onFileSelected($event)">
                         </importfiles>
                         <div *ngIf="uploading" class="text-muted small mt-1">

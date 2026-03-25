@@ -45,6 +45,7 @@
                     <div class="col-md-6">
                         <formfield label="Start Date" type="date" formControlName="startDate"
                             [control]="activityForm.get('startDate')"
+                            [min]="todayDate"
                             placeholder="Select Start Date" [required]="true">
                         </formfield>
                     </div>
@@ -53,6 +54,7 @@
                     <div class="col-md-6">
                         <formfield label="End Date" type="date" formControlName="endDate"
                             [control]="activityForm.get('endDate')"
+                            [min]="minEndDate"
                             placeholder="Select End Date" [required]="true">
                         </formfield>
                     </div>
@@ -61,6 +63,7 @@
                     <div class="col-md-6" *ngIf="isEditMode">
                         <formfield label="Actual Start Date" type="date" formControlName="actualStartDate"
                             [control]="activityForm.get('actualStartDate')"
+                            [min]="activityForm.get('startDate')?.value || todayDate"
                             placeholder="Select Actual Start Date">
                         </formfield>
                     </div>
@@ -69,6 +72,7 @@
                     <div class="col-md-6" *ngIf="isEditMode">
                         <formfield label="Actual End Date" type="date" formControlName="actualEndDate"
                             [control]="activityForm.get('actualEndDate')"
+                            [min]="activityForm.get('actualStartDate')?.value || activityForm.get('startDate')?.value || todayDate"
                             placeholder="Select Actual End Date">
                         </formfield>
                     </div>

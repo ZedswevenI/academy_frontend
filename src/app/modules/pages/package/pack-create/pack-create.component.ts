@@ -53,12 +53,12 @@ export class PackCreateComponent implements OnInit {
       this.packageId = statePkg.packageId;
       this.editPackage = statePkg;
       this.breadcrumb.set([
-        { label: 'Packages', link: '/app/package' },
+        { label: 'Study Materials', link: '/app/package' },
         { label: 'Edit' }
       ]);
     } else {
       this.breadcrumb.set([
-        { label: 'Packages', link: '/app/package' },
+        { label: 'Study Materials', link: '/app/package' },
         { label: 'Create' }
       ]);
     }
@@ -215,7 +215,7 @@ export class PackCreateComponent implements OnInit {
         next: (res: any) => {
           this.loading = false;
           if (res?.status) {
-            this.alert.success('Package created successfully');
+            this.alert.success('Study material created successfully');
             this.router.navigate(['/app/package']);
           }
         },
@@ -253,7 +253,7 @@ export class PackCreateComponent implements OnInit {
         next: (res: any) => {
           this.loading = false;
           if (res?.status) {
-            this.alert.success('Package updated successfully');
+            this.alert.success('Study material updated successfully');
             this.router.navigate(['/app/package']);
           }
         },
