@@ -2,7 +2,7 @@
   <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
 
     <h1 class="fw-bold mb-4" style="font-size: 30px;">
-      <i class="fa-solid fa-book-open me-2"></i>View Knowledge Base
+      <i class="fa-solid fa-book-open me-2"></i>View Library
     </h1>
 
     <div class="row g-3">
@@ -34,19 +34,90 @@
       <!-- Subject -->
       <div class="col-lg-6 mb-3">
         <label class="fw-semibold">Subject :</label>
-        <div><strong>{{ material.subjectId.subjectName }}</strong></div>
+        <div><strong>{{ material.subjectId?.subjectName }}</strong></div>
       </div>
 
       <!-- Topic -->
       <div class="col-lg-6 mb-3">
         <label class="fw-semibold">Topic :</label>
-        <div><strong>{{ material.topicId.topicName }}</strong></div>
+        <div><strong>{{ material.topicId?.topicName || material.topicId }}</strong></div>
       </div>
 
-      <!-- Batch -->
-      <div class="col-lg-6 mb-3">
-        <label class="fw-semibold">Batch :</label>
-        <div><strong>{{ getBatchDisplay() }}</strong></div>
+      <!-- Batches -->
+      <div class="col-lg-12 mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="fw-semibold mb-0">Batches :</label>
+          <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+              (click)="showAddBatch = !showAddBatch">
+            <i class="fa-solid me-1" [class.fa-plus]="!showAddBatch" [class.fa-times]="showAddBatch"></i>
+            {{ showAddBatch ? 'Cancel' : 'Add Batch' }}
+          </button>
+        </div>
+        <div class="d-flex flex-wrap gap-2" *ngIf="material.batchIds?.length">
+          <span *ngFor="let batch of material.batchIds"
+              class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+            <i class="fa-solid fa-users-rectangle me-1 text-primary"></i>{{ batch }}
+          </span>
+        </div>
+        <div *ngIf="!material.batchIds?.length" class="text-muted">No batches assigned</div>
+
+        <!-- Add Batch Section -->
+        <div *ngIf="showAddBatch" class="border rounded-3 p-3 mt-3 bg-light">
+          <label class="form-label fw-medium mb-2">Select batch to add:</label>
+          <div class="d-flex gap-2 align-items-end">
+            <select class="form-select" [(ngModel)]="newBatchCode" (ngModelChange)="onNewBatchChange($event)" style="max-width: 300px;">
+              <option value="">-- Select Batch --</option>
+              <ng-container *ngFor="let b of availableBatches">
+                <option [value]="b.batchCode" *ngIf="!isBatchAssigned(b.batchCode)">
+                  {{ b.batchName }} ({{ b.batchCode }})
+                </option>
+              </ng-container>
+            </select>
+          </div>
+
+          <!-- Student list for selected batch -->
+          <div *ngIf="newBatchCode" class="mt-3">
+            <div *ngIf="studentsLoading" class="text-center py-3">
+              <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+              <span class="text-muted small">Loading students...</span>
+            </div>
+
+            <div *ngIf="!studentsLoading && students.length > 0">
+              <label class="form-label fw-medium mb-2">
+                Students (Optional)
+                <span class="badge bg-primary ms-2">{{ selectedStudentIds.length }} selected</span>
+              </label>
+              <div class="border rounded-3 p-2 bg-white" style="max-height: 220px; overflow-y: auto;">
+                <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                  <input type="checkbox" class="form-check-input me-2" [checked]="selectAllStudents"
+                      (change)="toggleAllStudents($any($event.target).checked)" />
+                  <span class="fw-semibold small">Select All</span>
+                  <span class="text-muted small ms-auto">{{ students.length }} total</span>
+                </div>
+                <div *ngFor="let s of students" class="d-flex align-items-center px-2 py-1 rounded"
+                    style="cursor: pointer;">
+                  <input type="checkbox" class="form-check-input me-2"
+                      [checked]="isStudentSelected(s.value)"
+                      (change)="toggleStudent(s.value, $any($event.target).checked)" />
+                  <span class="small">{{ s.label }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="!studentsLoading && students.length === 0 && newBatchCode" class="text-muted small mt-2">
+              <i class="fa-solid fa-user-slash me-1"></i>No students found in this batch
+            </div>
+          </div>
+
+          <div class="mt-3 text-end">
+            <button class="btn btn-success rounded-pill px-4"
+                [disabled]="!newBatchCode || addBatchLoading"
+                (click)="addBatch()">
+              <span *ngIf="addBatchLoading" class="spinner-border spinner-border-sm me-1"></span>
+              {{ addBatchLoading ? 'Adding...' : 'Add' }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Description -->
@@ -59,7 +130,7 @@
       <div class="col-lg-12 mb-3" *ngIf="getAttachmentUrl()">
         <label class="fw-semibold">Document :</label>
         <div>
-          <a (click)="downloadFile(getAttachmentUrl())" target="_blank" class="text-primary">
+          <a (click)="downloadFile(getAttachmentUrl())" target="_blank" class="text-primary" style="cursor: pointer;">
             View / Download File
           </a>
         </div>

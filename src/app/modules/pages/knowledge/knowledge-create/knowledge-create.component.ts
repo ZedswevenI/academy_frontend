@@ -20,6 +20,9 @@ export class KnowledgeCreateComponent implements OnInit {
   materialId: string | null = null;
   isEditMode = false;
   editMaterial: any = null;
+  loading = false;
+  todayDate = new Date().toISOString().split('T')[0];
+  minUntilDate = this.todayDate;
 
   uploadedFiles: any[] = [];
 
@@ -35,6 +38,11 @@ export class KnowledgeCreateComponent implements OnInit {
   allBatches: any[] = [];
   allTopics: any[] = [];
   allSubTopics: any[] = [];
+
+  // Multi-batch selection
+  selectedBatchCodes: string[] = [];
+  selectAllBatches = false;
+  studentBatchCode = '';
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -53,12 +61,20 @@ export class KnowledgeCreateComponent implements OnInit {
       this.isEditMode = true;
       this.materialId = stateMaterial.materialId;
       this.editMaterial = stateMaterial;
-      this.breadcrumb.set([{ label: 'Knowledge Base', link: '/app/knowledge' }, { label: 'Edit' }]);
+      this.breadcrumb.set([{ label: 'Library', link: '/app/knowledge' }, { label: 'Edit' }]);
     } else {
-      this.breadcrumb.set([{ label: 'Knowledge Base', link: '/app/knowledge' }, { label: 'Create' }]);
+      this.breadcrumb.set([{ label: 'Library', link: '/app/knowledge' }, { label: 'Create' }]);
     }
 
     this.buildForm();
+
+    this.knowledgeForm.get('availableFrom')?.valueChanges.subscribe((val: string) => {
+      this.minUntilDate = val || this.todayDate;
+      const until = this.knowledgeForm.get('availableUntil')?.value;
+      if (until && until < this.minUntilDate) {
+        this.knowledgeForm.get('availableUntil')?.setValue('');
+      }
+    });
   }
 
   async ngOnInit(): Promise<void> {
@@ -134,7 +150,6 @@ export class KnowledgeCreateComponent implements OnInit {
       topicId: ['', Validators.required],
       subTopicId: [''],
       description: [''],
-      batchId: ['', Validators.required],
       studentIds: [[]],
       availableFrom: ['', Validators.required],
       availableUntil: ['', Validators.required],
@@ -142,12 +157,32 @@ export class KnowledgeCreateComponent implements OnInit {
     });
   }
 
+  // ── Batch multi-select helpers ──────────────────────────────────────────
+  isBatchSelected(code: string): boolean {
+    return this.selectedBatchCodes.includes(code);
+  }
+
+  toggleBatch(code: string, checked: boolean): void {
+    if (checked) {
+      this.selectedBatchCodes = [...this.selectedBatchCodes, code];
+    } else {
+      this.selectedBatchCodes = this.selectedBatchCodes.filter(c => c !== code);
+      this.selectAllBatches = false;
+    }
+    this.selectAllBatches = this.selectedBatchCodes.length === this.batch_options.length;
+  }
+
+  toggleAllBatches(checked: boolean): void {
+    this.selectAllBatches = checked;
+    this.selectedBatchCodes = checked ? this.batch_options.map(b => b.value) : [];
+  }
+
   // ── Value change listeners ─────────────────────────────────────────────────
 
   private registerValueChanges(): void {
     this.knowledgeForm.get('subjectId')?.valueChanges.subscribe(val => this.onSubjectChange(val));
     this.knowledgeForm.get('topicId')?.valueChanges.subscribe(val => this.onTopicChange(val));
-    this.knowledgeForm.get('batchId')?.valueChanges.subscribe(val => this.onBatchChange(val));
+    // Batch → Student loading is handled by studentBatchCode dropdown
   }
 
   // ── Subject → Topics list ─────────────────────────────────────────────────
@@ -192,7 +227,8 @@ export class KnowledgeCreateComponent implements OnInit {
 
   // ── Batch → Students ──────────────────────────────────────────────────────
 
-  private onBatchChange(batchId: any): void {
+  onBatchChange(batchId: any): void {
+    this.studentBatchCode = batchId || '';
     this.studentOptions = [];
     this.knowledgeForm.patchValue({ studentIds: [] }, { emitEvent: false });
     if (!batchId) return;
@@ -290,11 +326,14 @@ export class KnowledgeCreateComponent implements OnInit {
       subjectId,
       availableFrom: this.formatDate(d.availableFrom),
       availableUntil: this.formatDate(d.availableUntil),
-      batchId: d.batchIds?.[0] || '',
       attachmentUrl: d.attachmentUrl || [],
-      topicId: topicText,      // text name → select-or-input auto-switches to manual if no UUID match
-      subTopicId: subTopicText    // text name → same behaviour
+      topicId: topicText,
+      subTopicId: subTopicText
     }, { emitEvent: false });
+
+    // Restore multi-batch selection
+    this.selectedBatchCodes = d.batchIds || [];
+    this.selectAllBatches = this.selectedBatchCodes.length === this.batch_options.length;
 
     // Build topics dropdown for reference (user can still switch to select mode)
     this.onSubjectChange(subjectId);
@@ -334,13 +373,15 @@ export class KnowledgeCreateComponent implements OnInit {
   addKnowledge(): void {
     if (this.knowledgeForm.invalid) { this.knowledgeForm.markAllAsTouched(); return; }
 
+    if (this.selectedBatchCodes.length === 0) {
+      this.alert.error('Please select at least one batch');
+      return;
+    }
 
     const f = this.knowledgeForm.value;
 
     const topicText = this.allTopics.find(t => t.topicId === f.topicId)?.topicName || f.topicId || '';
     const subTopicText = this.allSubTopics.find(s => s.subTopicId === f.subTopicId)?.subTopicName || f.subTopicId || '';
-
-
 
     const payload: any = {
       tenantId: this.tenantId,
@@ -348,9 +389,9 @@ export class KnowledgeCreateComponent implements OnInit {
       description: f.description,
       classNo: f.classNo,
       subjectId: f.subjectId,
-      topicId: topicText,        // UUID string or free-text name
-      subTopicId: subTopicText,     // UUID string or free-text name
-      batchIds: f.batchId ? [f.batchId] : [],
+      topicId: topicText,
+      subTopicId: subTopicText,
+      batchIds: this.selectedBatchCodes,
       studentIds: (f.studentIds || []).map((s: any) => typeof s === 'string' ? s : s.value),
       availableFrom: new Date(f.availableFrom).getTime(),
       availableUntil: new Date(f.availableUntil).getTime(),
@@ -359,12 +400,17 @@ export class KnowledgeCreateComponent implements OnInit {
     };
 
     if (this.isEditMode) payload.materialId = this.materialId;
+    this.loading = true;
     this.commonApi.fetchData(payload, 'institue/library', this.isEditMode ? 'edit' : 'create')
       .subscribe({
         next: (res: any) => {
-         if (res?.status) this.router.navigate(['/app/knowledge']);
+          this.loading = false;
+          if (res?.status) this.router.navigate(['/app/knowledge']);
         },
-        error: (err: any) => this.alert.error(err?.error?.message)
+        error: (err: any) => {
+          this.loading = false;
+          this.alert.error(err?.error?.message);
+        }
       });
   }
 

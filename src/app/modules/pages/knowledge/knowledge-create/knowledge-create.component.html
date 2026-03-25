@@ -4,7 +4,7 @@
         <div class="d-flex align-items-center justify-content-between mb-4">
             <h1 class="fw-bold mb-0" style="font-size: 30px;">
                 <i class="fa-solid fa-book-open me-2"></i>
-                {{ isEditMode ? 'Edit Knowledge Base' : 'Create Knowledge Base' }}
+                {{ isEditMode ? 'Edit Library' : 'Create Library' }}
             </h1>
         </div>
 
@@ -55,15 +55,49 @@
                     </select-or-input>
                 </div>
 
-                <!-- Batch -->
+                <!-- Batch Multi-Select -->
                 <div class="col-md-6">
-                    <selectbox label="Batch" [options]="batch_options" formControlName="batchId"
-                        [control]="knowledgeForm.get('batchId')" [required]="true">
-                    </selectbox>
+                    <label class="form-label fw-medium">
+                        Batch <span class="text-danger">*</span>
+                        <span class="badge bg-primary ms-2">{{ selectedBatchCodes.length }} selected</span>
+                    </label>
+                    <div class="border rounded-3 p-2" style="max-height: 220px; overflow-y: auto;">
+                        <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                            <input type="checkbox" class="form-check-input me-2" [checked]="selectAllBatches"
+                                (change)="toggleAllBatches($any($event.target).checked)" />
+                            <span class="fw-semibold small">Select All</span>
+                        </div>
+                        <div *ngFor="let b of batch_options"
+                            class="d-flex align-items-center px-2 py-1 rounded"
+                            style="cursor: pointer;">
+                            <input type="checkbox" class="form-check-input me-2"
+                                [checked]="isBatchSelected(b.value)"
+                                (change)="toggleBatch(b.value, $any($event.target).checked)" />
+                            <span class="small">{{ b.label }}</span>
+                            <span class="text-muted small ms-auto">{{ b.value }}</span>
+                        </div>
+                        <div *ngIf="batch_options.length === 0" class="text-muted small text-center py-2">
+                            No batches available
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Load Students by Batch -->
+                <div class="col-md-6" *ngIf="selectedBatchCodes.length > 0">
+                    <label class="form-label fw-medium">Load Students from Batch</label>
+                    <select class="form-select" [value]="studentBatchCode"
+                        (change)="onBatchChange($any($event.target).value)">
+                        <option value="">-- Select Batch --</option>
+                        <ng-container *ngFor="let b of batch_options">
+                            <option *ngIf="isBatchSelected(b.value)" [value]="b.value">
+                                {{ b.label }} ({{ b.value }})
+                            </option>
+                        </ng-container>
+                    </select>
                 </div>
 
                 <!-- Students -->
-                <div class="col-md-6">
+                <div class="col-md-6" *ngIf="studentOptions.length > 0">
                     <multiselect label="Students" placeholder="Select Students (Optional)"
                         [options]="studentOptions" formControlName="studentIds"
                         [control]="knowledgeForm.get('studentIds')">
@@ -73,21 +107,21 @@
                 <!-- Available From -->
                 <div class="col-md-6">
                     <formfield label="Available From" type="date" formControlName="availableFrom"
-                        [control]="knowledgeForm.get('availableFrom')" [required]="true">
+                        [control]="knowledgeForm.get('availableFrom')" [min]="todayDate" [required]="true">
                     </formfield>
                 </div>
 
                 <!-- Available Until -->
                 <div class="col-md-6">
                     <formfield label="Available Until" type="date" formControlName="availableUntil"
-                        [control]="knowledgeForm.get('availableUntil')" [required]="true">
+                        [control]="knowledgeForm.get('availableUntil')" [min]="minUntilDate" [required]="true">
                     </formfield>
                 </div>
 
                 <!-- Upload -->
                 <div class="col-md-6">
                     <importfiles label="Upload Material" [multiple]="false"
-                        formControlName="attachmentUrl"
+                        formControlName="attachmentUrl" accept=".pdf"
                         [existingFiles]="isEditMode ? uploadedFiles : []"
                         (filesChanged)="onFilesSelected($event)">
                     </importfiles>
@@ -109,8 +143,9 @@
                     Back
                 </button>
                 <button type="submit" class="btn submitbutton px-4"
-                    [disabled]="knowledgeForm.invalid" style="border-radius: 30px;">
-                    {{ isEditMode ? 'Update' : 'Submit' }}
+                    [disabled]="knowledgeForm.invalid || loading" style="border-radius: 30px;">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    {{ loading ? (isEditMode ? 'Updating...' : 'Submitting...') : (isEditMode ? 'Update' : 'Submit') }}
                 </button>
             </div>
 

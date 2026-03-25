@@ -38,12 +38,14 @@ export class PtmviewComponent implements OnInit {
   fileName = '';
   feedbackColumnMap: { [key: string]: string } = {
     'Admission No': 'admissionNo',
+    'Student Name': 'studentName',
     'Staff Remarks': 'staffRemarks',
     Status: 'status',
   };
   feedbackRequiredColumns = Object.keys(this.feedbackColumnMap);
   feedbackPreviewColumns = [
     { field: 'admissionNo', header: 'Admission No' },
+    { field: 'studentName', header: 'Student Name' },
     { field: 'staffRemarks', header: 'Staff Remarks' },
     { field: 'status', header: 'Status' },
   ];
@@ -429,7 +431,7 @@ export class PtmviewComponent implements OnInit {
           ptmId,
           admissionNo: row.admissionNo,
           staffRemarks: row.staffRemarks,
-          status: row.status,
+          status: row.status?.toUpperCase(),
         });
       }
     });
@@ -474,17 +476,19 @@ export class PtmviewComponent implements OnInit {
   downloadFeedbackTemplate(): void {
     const sample = this.dataArray.length
       ? this.dataArray.map((s) => ({
-          'Admission No': s.admissionNo,
-          'Staff Remarks': '',
-          Status: '',
-        }))
+        'Admission No': s.admissionNo,
+        'Student Name': s.studentName || '',
+        'Staff Remarks': '',
+        Status: '',
+      }))
       : [
-          {
-            'Admission No': '902164259005',
-            'Staff Remarks': 'Student needs improvement in maths',
-            Status: 'COMPLETED',
-          },
-        ];
+        {
+          'Admission No': '902164259005',
+          'Student Name': 'John Doe',
+          'Staff Remarks': 'Student needs improvement in maths',
+          Status: 'COMPLETED',
+        },
+      ];
 
     const ws = XLSX.utils.json_to_sheet(sample);
     const wb = XLSX.utils.book_new();

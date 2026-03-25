@@ -531,6 +531,7 @@ export class PtmComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#DC2626',
       callback: (row: any) => this.openDeleteModal(row),
+      hidden: (row: any) => row.status === 'COMPLETED',
     },
   ];
 
@@ -642,7 +643,7 @@ export class PtmComponent implements OnInit {
   // FETCH SESSIONS (listPtmSessions)
   // ====================================================
   onProceed(): void {
-    this.fetchSessions(1, 10);
+    this.fetchSessions(1, 5);
   }
 
   fetchSessions(page: number, limit: number): void {
@@ -700,6 +701,7 @@ export class PtmComponent implements OnInit {
       cancelledCount: row.cancelledCount,
       ptmDateFormatted: row.ptmDateFormatted,
       startFormatted: row.startFormatted,
+      status: row.status,
     }))
     console.log('sessionKey ', sessionKey);
     this.router.navigate(['/app/ptm/view', sessionKey]);

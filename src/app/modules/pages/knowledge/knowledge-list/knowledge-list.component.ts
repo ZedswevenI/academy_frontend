@@ -20,19 +20,19 @@ export class KnowledgeListComponent implements OnInit {
   deleteMessage = '';
 
   columnsArray = [
-    { key: 'title',              label: 'Title',           sortable: true  },
-    { key: 'classNo',            label: 'Class',           sortable: false },
-    { key: 'subjectName',        label: 'Subject',         sortable: false },
-    { key: 'batchName',          label: 'Batch',           sortable: false },
-    { key: 'availableUntilDate', label: 'Available Until', sortable: true  }
+    { key: 'title', label: 'Title', sortable: true },
+    { key: 'classNo', label: 'Class', sortable: false },
+    { key: 'subjectName', label: 'Subject', sortable: false },
+    { key: 'batchName', label: 'Batch', sortable: false },
+    { key: 'availableUntilDate', label: 'Available Until', sortable: true }
   ];
 
-  dataArray:    any[] = [];
-  totalRecords  = 0;
-  loading       = false;
+  dataArray: any[] = [];
+  totalRecords = 0;
+  loading = false;
 
   // Track current pagination so delete reloads the same page
-  currentPage     = 1;
+  currentPage = 1;
   currentPageSize = 10;
 
   // Last used filter + pagination — in-memory only, survives modal actions
@@ -43,7 +43,7 @@ export class KnowledgeListComponent implements OnInit {
     value: i + 6
   }));
 
-  subjects:     any[] = [];
+  subjects: any[] = [];
   batch_options: any[] = [];
 
   actions = [
@@ -66,20 +66,20 @@ export class KnowledgeListComponent implements OnInit {
 
   constructor(
     private breadcrumb: BredcrumpService,
-    private router:     Router,
-    private commonApi:  CommonapiService,
-    private fb:         FormBuilder,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private fb: FormBuilder,
     private authService: AuthService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
-    this.breadcrumb.set([{ label: 'Knowledge Base' }]);
+    this.breadcrumb.set([{ label: 'Library' }]);
   }
 
   ngOnInit(): void {
     this.filterForm = this.fb.group({
-      classNo:   [''],
+      classNo: [''],
       subjectId: [''],
-      batchId:   ['']
+      batchId: ['']
     });
 
     const role = this.authService.getRole();
@@ -107,7 +107,7 @@ export class KnowledgeListComponent implements OnInit {
           // Subjects
           this.subjects = (data.subjects || []).map((s: any) => ({
             label: s.subjectName,
-            value: s.subjectId
+            value: s._id
           }));
 
           // Batches
@@ -127,7 +127,7 @@ export class KnowledgeListComponent implements OnInit {
       .subscribe((res: any) => {
         this.subjects = (res?.data || []).map((s: any) => ({
           label: s.subjectName,
-          value: s.subjectId
+          value: s._id
         }));
       });
   }
@@ -146,18 +146,18 @@ export class KnowledgeListComponent implements OnInit {
 
   fetchTableData(req: { page: number; pageSize: number; search?: string }): void {
     // Store so delete / back-navigation reloads the same page + filters
-    this.currentPage     = req.page;
+    this.currentPage = req.page;
     this.currentPageSize = req.pageSize;
-    this.lastRequest     = { ...req };
+    this.lastRequest = { ...req };
 
     const f = this.filterForm.value;
     this.loading = true;
 
     let endpoint = `list?page=${req.page}&limit=${req.pageSize}`;
-    if (f.classNo)   endpoint += `&classNo=${f.classNo}`;
+    if (f.classNo) endpoint += `&classNo=${f.classNo}`;
     if (f.subjectId) endpoint += `&subjectId=${f.subjectId}`;
-    if (f.batchId)   endpoint += `&batchId=${f.batchId}`;
-    if (req.search)  endpoint += `&search=${req.search}`;
+    if (f.batchId) endpoint += `&batchId=${f.batchId}`;
+    if (req.search) endpoint += `&search=${req.search}`;
 
     this.commonApi.fetchData({ tenantId: this.tenantId }, 'institue/library', endpoint)
       .subscribe({
@@ -167,12 +167,12 @@ export class KnowledgeListComponent implements OnInit {
             this.totalRecords = res.total || res.count || 0;
             this.dataArray = (res.data || []).map((d: any) => ({
               ...d,
-              subjectName:        d.subjectId?.subjectName || '',
-              batchName:          d.batchIds?.[0] || '-',
+              subjectName: d.subjectId?.subjectName || '',
+              batchName: d.batchIds?.length ? d.batchIds.join(', ') : '-',
               availableUntilDate: d.availableUntil
                 ? new Date(d.availableUntil).toLocaleDateString('en-IN', {
-                    day: '2-digit', month: 'short', year: 'numeric'
-                  })
+                  day: '2-digit', month: 'short', year: 'numeric'
+                })
                 : '-'
             }));
           }
@@ -189,7 +189,7 @@ export class KnowledgeListComponent implements OnInit {
   // ── Delete ─────────────────────────────────────────────────────────────────
 
   openDelete(row: any): void {
-    this.deleteTarget  = row;
+    this.deleteTarget = row;
     this.deleteMessage = `Are you sure you want to delete "${row.title}"?`;
     this.deleteModalVisible = true;
   }

@@ -46,19 +46,11 @@ export class PackageComponent implements OnInit {
     },
     {
       type: 'icon',
-      icon: 'fa-solid fa-toggle-on',
-      tooltip: 'Enable',
+      icon: 'fa-solid fa-sliders',
+      tooltip: 'Enable / Disable',
       color: '#6B7280',
       hoverColor: '#2563EB',
-      callback: (row: any) => this.openEnableModal(row)
-    },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-toggle-off',
-      tooltip: 'Disable',
-      color: '#6B7280',
-      hoverColor: '#DC2626',
-      callback: (row: any) => row.enablementId ? this.openDisableModal(row) : null
+      callback: (row: any) => this.openEnableDisableModal(row)
     },
     {
       type: 'icon',
@@ -70,41 +62,91 @@ export class PackageComponent implements OnInit {
     }
   ];
 
-
-
   // Modals state
   selectedPackage: any = null;
   packageToDelete: any = null;
-  packageToDisable: any = null;
 
-  // ── Enable modal ───────────────────────────────────────
+  // ── Enable/Disable modal ─────────────────────────────
   enableForm!: FormGroup;
   enableLoading = false;
+  showAddNew = false;
 
-  // Replace scope_options — remove STUDENT as separate, handle both
+  // Existing enablements list
+  enablements: any[] = [];
+  enablementsLoading = false;
+
   scope_options = [
     { label: 'Batch', value: 'BATCH' },
     { label: 'Student', value: 'STUDENT' }
   ];
 
-  // Add student list
+  batches: any[] = [];
   students: any[] = [];
-  selectAllBatches = false;
-  selectAllStudents = false;
-
-  // Selected arrays (manage manually instead of form control)
   selectedBatchIds: string[] = [];
   selectedStudentIds: string[] = [];
-
-  target_options: any[] = [];
-  target_label = 'Target';
-  batches: any[] = [];
-
-  // Add these new properties
-  studentBatchCode = '';   // selected batch for student loading
+  selectAllBatches = false;
+  selectAllStudents = false;
+  studentBatchCode = '';
   studentsLoading = false;
+  todayDate = new Date().toISOString().split('T')[0];
+  minDisableDate = this.todayDate;
 
-  // Replace loadStudents — now takes batchCode
+  constructor(
+    private breadcrump: BredcrumpService,
+    private fb: FormBuilder,
+    public router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService
+  ) {
+    this.tenantId = localStorage.getItem('tenantId');
+    this.breadcrump.set([{ label: 'Study Materials' }]);
+  }
+
+  ngOnInit(): void {
+    this.buildEnableForm();
+    this.loadBatches();
+    this.fetchList(1, 10);
+  }
+
+  private buildEnableForm(): void {
+    this.enableForm = this.fb.group({
+      scope: ['BATCH'],
+      enableDate: [''],
+      disableDate: ['']
+    });
+
+    this.enableForm.get('scope')?.valueChanges.subscribe(() => {
+      this.selectedBatchIds = [];
+      this.selectedStudentIds = [];
+      this.selectAllBatches = false;
+      this.selectAllStudents = false;
+      this.studentBatchCode = '';
+      this.students = [];
+    });
+
+    this.enableForm.get('enableDate')?.valueChanges.subscribe((val: string) => {
+      this.minDisableDate = val || this.todayDate;
+      const disableDate = this.enableForm.get('disableDate')?.value;
+      if (disableDate && disableDate < this.minDisableDate) {
+        this.enableForm.get('disableDate')?.setValue('');
+      }
+    });
+  }
+
+  // ====================================================
+  // LOAD BATCHES
+  // ====================================================
+
+  private loadBatches(): void {
+    this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full')
+      .subscribe({
+        next: (res: any) => {
+          this.batches = res?.data || [];
+        },
+        error: () => { }
+      });
+  }
+
   loadStudentsByBatch(batchCode: string): void {
     if (!batchCode) return;
 
@@ -133,72 +175,6 @@ export class PackageComponent implements OnInit {
     });
   }
 
-  // Update openEnableModal — reset studentBatchCode too
-
-
-  constructor(
-    private breadcrump: BredcrumpService,
-    private fb: FormBuilder,
-    private router: Router,
-    private commonApi: CommonapiService,
-    private alert: AlertService
-  ) {
-    this.tenantId = localStorage.getItem('tenantId');
-    this.breadcrump.set([{ label: 'Packages' }]);
-  }
-
-  ngOnInit(): void {
-    this.buildEnableForm();
-    this.loadBatches();
-    this.fetchList(1, 10);
-  }
-
-  private buildEnableForm(): void {
-    this.enableForm = this.fb.group({
-      scope: ['BATCH'],
-      targetIds: [[]],
-      enableDate: [''],
-      disableDate: ['']
-    });
-
-    this.enableForm.get('scope')?.valueChanges.subscribe(val => {
-      this.onScopeChange(val);
-    });
-
-    // Init target options
-    this.onScopeChange('BATCH');
-  }
-
-  // ====================================================
-  // LOAD BATCHES
-  // ====================================================
-
-  private loadBatches(): void {
-    this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full')
-      .subscribe({
-        next: (res: any) => {
-          this.batches = res?.data || [];
-          this.onScopeChange(this.enableForm.get('scope')?.value || 'BATCH');
-        },
-        error: () => { }
-      });
-  }
-
-  private onScopeChange(scope: string): void {
-    this.enableForm.patchValue({ targetIds: [] }, { emitEvent: false });
-
-    if (scope === 'BATCH') {
-      this.target_label = 'Batch';
-      this.target_options = this.batches.map(b => ({
-        label: b.batchName,
-        value: b.batchCode
-      }));
-    } else {
-      this.target_label = 'Student';
-      this.target_options = [];
-    }
-  }
-
   // ====================================================
   // LIST
   // ====================================================
@@ -215,7 +191,7 @@ export class PackageComponent implements OnInit {
           this.loading = false;
         },
         error: () => {
-          this.alert.error('Error loading packages');
+          this.alert.error('Error loading study materials');
           this.loading = false;
         }
       });
@@ -235,32 +211,114 @@ export class PackageComponent implements OnInit {
   }
 
   // ====================================================
-  // DISABLE
+  // ENABLE / DISABLE MODAL
   // ====================================================
 
-  openDisableModal(row: any): void {
-    this.packageToDisable = row;
-    this.openModal('packageDisableModal');
+  openEnableDisableModal(row: any): void {
+    this.selectedPackage = row;
+    this.showAddNew = false;
+    this.enablements = [];
+    this.resetEnableForm();
+    this.fetchEnablements(row.packageId);
+    this.openModal('packageEnableDisableModal');
   }
 
-  confirmDisable(): void {
-    if (!this.packageToDisable?.enablementId) return;
+  private fetchEnablements(packageId: string): void {
+    this.enablementsLoading = true;
+    this.commonApi.fetchData(
+      { tenantId: this.tenantId, packageId },
+      'ims/package',
+      'list/enadisa'
+    ).subscribe({
+      next: (res: any) => {
+        this.enablements = res?.data || [];
+        this.enablementsLoading = false;
+      },
+      error: () => {
+        this.enablementsLoading = false;
+        this.alert.error('Error loading enablements');
+      }
+    });
+  }
 
+  disableEnablement(enablement: any): void {
     const payload = {
       tenantId: this.tenantId,
-      enablementId: this.packageToDisable.enablementId
+      enablementId: enablement.enablementId
     };
 
+    enablement._disabling = true;
     this.commonApi.fetchData(payload, 'ims/package', 'disable')
       .subscribe({
         next: (res: any) => {
+          enablement._disabling = false;
           if (res?.status) {
-            this.alert.success('Package disabled successfully');
-            this.packageToDisable = null;
+            this.alert.success('Enablement disabled successfully');
+            this.fetchEnablements(this.selectedPackage.packageId);
             this.fetchList(1, 10);
           }
         },
-        error: () => this.alert.error('Error disabling package')
+        error: () => {
+          enablement._disabling = false;
+          this.alert.error('Error disabling enablement');
+        }
+      });
+  }
+
+  toggleAddNew(): void {
+    this.showAddNew = !this.showAddNew;
+    if (this.showAddNew) {
+      this.resetEnableForm();
+    }
+  }
+
+  private resetEnableForm(): void {
+    this.enableForm.reset({ scope: 'BATCH', enableDate: '', disableDate: '' });
+    this.selectedBatchIds = [];
+    this.selectedStudentIds = [];
+    this.selectAllBatches = false;
+    this.selectAllStudents = false;
+    this.studentBatchCode = '';
+    this.students = [];
+    this.enableLoading = false;
+  }
+
+  submitEnable(): void {
+    const f = this.enableForm.value;
+    const scope = f.scope;
+    const targetIds = scope === 'BATCH' ? this.selectedBatchIds : this.selectedStudentIds;
+
+    if (!scope || !targetIds.length || !f.enableDate || !f.disableDate) {
+      this.alert.error('Please fill all required fields and select at least one target');
+      return;
+    }
+
+    const payload = {
+      tenantId: this.tenantId,
+      packageId: this.selectedPackage.packageId,
+      scope: scope,
+      targetIds: targetIds,
+      enableDate: new Date(f.enableDate).getTime(),
+      disableDate: new Date(f.disableDate).getTime()
+    };
+
+    this.enableLoading = true;
+    this.commonApi.fetchData(payload, 'ims/package', 'enable')
+      .subscribe({
+        next: (res: any) => {
+          this.enableLoading = false;
+          if (res?.status) {
+            this.alert.success('Study material enabled successfully');
+            this.showAddNew = false;
+            this.resetEnableForm();
+            this.fetchEnablements(this.selectedPackage.packageId);
+            this.fetchList(1, 10);
+          }
+        },
+        error: () => {
+          this.enableLoading = false;
+          this.alert.error('Error enabling package');
+        }
       });
   }
 
@@ -282,7 +340,7 @@ export class PackageComponent implements OnInit {
     ).subscribe({
       next: (res: any) => {
         if (res?.status) {
-          this.alert.success('Package deleted successfully');
+          this.alert.success('Study material deleted successfully');
           this.dataArray = this.dataArray.filter(d => d.packageId !== this.packageToDelete.packageId);
           this.totalRecords = this.dataArray.length;
           this.packageToDelete = null;
@@ -293,37 +351,8 @@ export class PackageComponent implements OnInit {
   }
 
   // ====================================================
-  // HELPERS
+  // BATCH / STUDENT MULTI-SELECT
   // ====================================================
-
-  hasEnablement(row: any): boolean {
-    return !!row.enablementId;
-  }
-
-  private openModal(id: string): void {
-    const el = document.getElementById(id);
-    if (el) new (window as any).bootstrap.Modal(el).show();
-  }
-
-  private closeModal(id: string): void {
-    const el = document.getElementById(id);
-    if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
-  }
-
-  private loadStudents(): void {
-    this.commonApi.fetchData({ entiId: this.tenantId }, 'student', 'list?list=full')
-      .subscribe({
-        next: (res: any) => {
-          this.students = (res?.data || []).map((s: any) => ({
-            label: `${s.student?.name} (${s.admissionNo})`,
-            value: s.studentId
-          }));
-        },
-        error: () => { }
-      });
-  }
-
-  // Call loadStudents() inside ngOnInit alongside loadBatches()
 
   toggleBatch(value: string, checked: boolean): void {
     if (checked) {
@@ -359,13 +388,21 @@ export class PackageComponent implements OnInit {
     this.selectedStudentIds = checked ? this.students.map(s => s.value) : [];
   }
 
-   downloadFile(url: string): void {
+  isStudentSelected(value: string): boolean {
+    return this.selectedStudentIds.includes(value);
+  }
+
+  // ====================================================
+  // HELPERS
+  // ====================================================
+
+  downloadFile(url: string): void {
     this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
       next: (res: any) => {
-        const fileName  = url.split('/').pop() || 'download';
-        const a         = document.createElement('a');
+        const fileName = url.split('/').pop() || 'download';
+        const a = document.createElement('a');
         const objectUrl = URL.createObjectURL(res);
-        a.href     = objectUrl;
+        a.href = objectUrl;
         a.download = fileName;
         a.click();
       },
@@ -373,56 +410,20 @@ export class PackageComponent implements OnInit {
     });
   }
 
-  isStudentSelected(value: string): boolean {
-    return this.selectedStudentIds.includes(value);
+  formatDate(ts: number): string {
+    if (!ts) return '-';
+    return new Date(ts).toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
   }
 
-  openEnableModal(row: any): void {
-    this.selectedPackage = row;
-    this.selectedBatchIds = [];
-    this.selectedStudentIds = [];
-    this.selectAllBatches = false;
-    this.selectAllStudents = false;
-    this.studentBatchCode = '';
-    this.students = [];
-    this.enableForm.reset({ scope: 'BATCH', enableDate: '', disableDate: '' });
-    this.openModal('packageEnableModal');
+  private openModal(id: string): void {
+    const el = document.getElementById(id);
+    if (el) new (window as any).bootstrap.Modal(el).show();
   }
 
-  submitEnable(): void {
-    const f = this.enableForm.value;
-    const scope = f.scope;
-    const targetIds = scope === 'BATCH' ? this.selectedBatchIds : this.selectedStudentIds;
-
-    if (!scope || !targetIds.length || !f.enableDate || !f.disableDate) {
-      this.alert.error('Please fill all required fields and select at least one target');
-      return;
-    }
-
-    const payload = {
-      tenantId: this.tenantId,
-      packageId: this.selectedPackage.packageId,
-      scope: scope,
-      targetIds: targetIds,
-      enableDate: new Date(f.enableDate).getTime(),
-      disableDate: new Date(f.disableDate).getTime()
-    };
-
-    this.enableLoading = true;
-    this.commonApi.fetchData(payload, 'ims/package', 'enable')
-      .subscribe({
-        next: (res: any) => {
-          this.enableLoading = false;
-          if (res?.status) {
-            this.alert.success('Package enabled successfully');
-            this.closeModal('packageEnableModal');
-            this.fetchList(1, 10);
-          }
-        },
-        error: () => {
-          this.enableLoading = false;
-          this.alert.error('Error enabling package');
-        }
-      });
+  private closeModal(id: string): void {
+    const el = document.getElementById(id);
+    if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
 }
