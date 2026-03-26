@@ -18,10 +18,10 @@
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div class="d-flex gap-3 small">
                 <span class="text-success fw-semibold">
-                    <i class="fa-solid fa-circle-check me-1"></i>{{ students | presentCount }} Present
+                    <i class="fa-solid fa-circle-check me-1"></i>{{ presentCount }} Present
                 </span>
                 <span class="text-danger fw-semibold">
-                    <i class="fa-solid fa-circle-xmark me-1"></i>{{ students | absentCount }} Absent
+                    <i class="fa-solid fa-circle-xmark me-1"></i>{{ absentCount }} Absent
                 </span>
                 <span class="text-secondary fw-semibold" *ngIf="(students | notMarkedCount) > 0">
                     <i class="fa-solid fa-circle-question me-1"></i>{{ students | notMarkedCount }} Not Marked
