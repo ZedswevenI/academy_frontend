@@ -1,31 +1,119 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-        <div class="d-flex flex-column gap-4 py-4">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
-                        <i class="fa-solid fa-poll me-2"></i>Result View
-                    </h1>
-                    <small class="text-muted">
-                        Batch: {{ batchData.batchId }}
-                        <span *ngIf="examData?.examName"> | Exam: {{ examData.examName }}</span>
-                    </small>
-                </div>
-                <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium"
-                    (click)="router.navigate(['/app/exams/exams/result-batch'], { state: { exam: examData } })">
-                    <i class="fa-solid fa-arrow-left me-1"></i> Back
-                </button>
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h1 class="fw-bold mb-0" style="font-size: 28px;">
+                    <i class="fa-solid fa-poll me-2"></i>Exam Results
+                </h1>
+                <small class="text-muted">
+                    Batch: {{ batchData.batchId }}
+                    <span *ngIf="examData?.examName"> | {{ examData.examName }} ({{ examData.examCode }})</span>
+                </small>
             </div>
+            <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium"
+                (click)="router.navigate(['/app/exams/exams/result-batch'], { state: { exam: examData } })">
+                <i class="fa-solid fa-arrow-left me-1"></i> Back
+            </button>
         </div>
 
-        <!-- Loading -->
-        <div *ngIf="loading" class="text-center py-5">
-            <div class="spinner-border text-primary"></div>
+        <!-- Tabs -->
+        <ul class="nav nav-pills mb-4">
+            <li class="nav-item">
+                <button class="nav-link rounded-pill" [class.active]="activeTab === 'results'"
+                    (click)="switchTab('results')">
+                    <i class="fa-solid fa-table me-1"></i> Student Results
+                </button>
+            </li>
+            <li class="nav-item ms-2">
+                <button class="nav-link rounded-pill" [class.active]="activeTab === 'analytics'"
+                    (click)="switchTab('analytics')">
+                    <i class="fa-solid fa-chart-bar me-1"></i> Analytics
+                </button>
+            </li>
+        </ul>
+
+        <!-- Student Results Tab -->
+        <div *ngIf="activeTab === 'results'">
+            <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+                [success]="'Result Published'" [totalRecords]="totalRecords" [loading]="loading"
+                [searchPlaceholder]="'Search Admission No...'">
+            </custom-table>
         </div>
 
-        <!-- Result content will be added here -->
-        <div *ngIf="!loading" class="py-4 text-center text-muted">
-            <p>Result view for batch <strong>{{ batchData.batchId }}</strong></p>
+        <!-- Analytics Tab -->
+        <div *ngIf="activeTab === 'analytics'">
+
+            <!-- Section Analytics Cards -->
+            <div class="row g-3 mb-4" *ngIf="sectionAnalytics.length > 0">
+                <div class="col-md-4" *ngFor="let section of sectionAnalytics">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold mb-0">{{ section.sectionName }}</h6>
+                                <span class="badge rounded-pill"
+                                    [ngClass]="section.accuracy >= 70 ? 'bg-success' : section.accuracy >= 40 ? 'bg-warning' : 'bg-danger'">
+                                    {{ section.accuracy }}% Accuracy
+                                </span>
+                            </div>
+                            <div class="row g-2 text-center">
+                                <div class="col-4">
+                                    <div class="bg-light rounded-3 p-2">
+                                        <div class="fw-bold text-primary fs-18">{{ section.avgObtained }}</div>
+                                        <small class="text-muted">Avg Marks</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-light rounded-3 p-2">
+                                        <div class="fw-bold text-success fs-18">{{ section.maxObtained }}</div>
+                                        <small class="text-muted">Max</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-light rounded-3 p-2">
+                                        <div class="fw-bold text-danger fs-18">{{ section.minObtained }}</div>
+                                        <small class="text-muted">Min</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-2 text-center mt-1">
+                                <div class="col-4">
+                                    <small class="text-muted">Correct</small>
+                                    <div class="fw-semibold text-success">{{ section.totalCorrect }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Wrong</small>
+                                    <div class="fw-semibold text-danger">{{ section.totalWrong }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Skipped</small>
+                                    <div class="fw-semibold text-warning">{{ section.totalSkipped }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stacked Bar Chart -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4" *ngIf="barChartData.labels && barChartData.labels.length > 0">
+                <div class="card-body p-4">
+                    <div style="height: 400px;">
+                        <canvas baseChart
+                            [data]="barChartData"
+                            [options]="barChartOptions"
+                            type="bar">
+                        </canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="sectionAnalytics.length === 0 && (!barChartData.labels || barChartData.labels.length === 0)"
+                class="text-center text-muted py-5">
+                <i class="fa-solid fa-chart-bar fs-1 mb-3 d-block opacity-50"></i>
+                <p>No analytics data available</p>
+            </div>
         </div>
     </div>
 </div>

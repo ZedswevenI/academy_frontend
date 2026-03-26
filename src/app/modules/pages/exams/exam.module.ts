@@ -13,6 +13,7 @@ import { TestimportComponent } from './testimport/testimport.component';
 import { QuestionViewComponent } from './question-view/question-view.component';
 import { QuestionArrangementComponent } from './question-arrange/question-arange.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { ExamInstructionsComponent } from './instructions/instructions.component';
 import { ExamPassageComponent } from './passage/passage.component';
 import { ExamQuestionsComponent } from './questions/questions.component';
@@ -21,7 +22,8 @@ import { ResultViewComponent } from './result-view/result-view.component';
 
 @NgModule({
   declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent,QuestionArrangementComponent, ExamInstructionsComponent, ExamPassageComponent, ExamQuestionsComponent, ResultBatchComponent, ResultViewComponent],
-  imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass,DragDropModule],
+  imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass,DragDropModule, BaseChartDirective],
+  providers: [provideCharts(withDefaultRegisterables())],
   exports: []
 })
 export class ExamModule {}
