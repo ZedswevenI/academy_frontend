@@ -90,8 +90,7 @@ export class createActivityComponent implements OnInit {
       activityName:    ['', Validators.required],
       startDate:       ['', Validators.required],
       endDate:         ['', Validators.required],
-      actualStartDate: [''],
-      actualEndDate:   [''],
+      actualDate: [''],
       remarks:         [''],
       status:          ['']   // only in edit
     });
@@ -144,11 +143,10 @@ export class createActivityComponent implements OnInit {
       activityName:    d.activityName,
       startDate:       this.tsToDateInput(d.startDate),
       endDate:         this.tsToDateInput(d.endDate),
-      actualStartDate: d.actualStartDate ? this.tsToDateInput(d.actualStartDate) : '',
-      actualEndDate:   d.actualEndDate   ? this.tsToDateInput(d.actualEndDate)   : '',
+      actualDate: d.actualDate ? this.tsToDateInput(d.actualDate) : '',
       remarks:         d.remarks,
       status:          d.status
-    }, { emitEvent: false });
+    });
 
     // Disable fields that shouldn't change in edit
     this.activityForm.get('batchCode')?.disable();
@@ -214,11 +212,8 @@ export class createActivityComponent implements OnInit {
       status:       f.status
     };
 
-    if (f.actualStartDate) {
-      payload.actualStartDate = this.toTimestamp(f.actualStartDate);
-    }
-    if (f.actualEndDate) {
-      payload.actualEndDate = this.toTimestamp(f.actualEndDate);
+    if (f.actualDate) {
+      payload.actualDate = this.toTimestamp(f.actualDate);
     }
 
     this.loading = true;

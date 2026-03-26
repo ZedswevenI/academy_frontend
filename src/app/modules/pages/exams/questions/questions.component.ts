@@ -91,6 +91,14 @@ export class ExamQuestionsComponent implements OnInit {
     },
     {
       type: 'icon',
+      icon: 'fa-regular fa-pen-to-square',
+      tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.editQuestion(row)
+    },
+    {
+      type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
       color: '#6B7280',
@@ -346,6 +354,15 @@ export class ExamQuestionsComponent implements OnInit {
   }
 
   /* ================= NAVIGATION ================= */
+
+  editQuestion(row: any): void {
+    this.router.navigate(['/app/exams/exams/question-create'], {
+      state: {
+        bank: true,
+        question: { recId: row._id }
+      }
+    });
+  }
 
   goToCreate(): void {
     this.router.navigate(['/app/exams/exams/question-create'], { state: { bank: true } });

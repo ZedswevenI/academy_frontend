@@ -18,13 +18,9 @@ export class RoleGuard implements CanActivate {
       return false;
     }
     const role = this.auth.getRole() as RoleLevel;
-    console.log('role ', role);
     const segments = state.url.replace(/^\/app\//, '').split('/');
-    console.log('segments ', segments);
     const topSegment = segments[0];
-    console.log('topSegment ', topSegment);
     if (!canAccessRoute(role, topSegment)) {
-      console.log('false condition called');
       this.router.navigate(['/auth/login']);
       return false;
     }

@@ -59,21 +59,12 @@
                         </formfield>
                     </div>
 
-                    <!-- Actual Start Date (edit only) -->
+                    <!-- Actual Date (edit only) -->
                     <div class="col-md-6" *ngIf="isEditMode">
-                        <formfield label="Actual Start Date" type="date" formControlName="actualStartDate"
-                            [control]="activityForm.get('actualStartDate')"
+                        <formfield label="Actual Date" type="date" formControlName="actualDate"
+                            [control]="activityForm.get('actualDate')"
                             [min]="activityForm.get('startDate')?.value || todayDate"
-                            placeholder="Select Actual Start Date">
-                        </formfield>
-                    </div>
-
-                    <!-- Actual End Date (edit only) -->
-                    <div class="col-md-6" *ngIf="isEditMode">
-                        <formfield label="Actual End Date" type="date" formControlName="actualEndDate"
-                            [control]="activityForm.get('actualEndDate')"
-                            [min]="activityForm.get('actualStartDate')?.value || activityForm.get('startDate')?.value || todayDate"
-                            placeholder="Select Actual End Date">
+                            placeholder="Select Actual Date">
                         </formfield>
                     </div>
 

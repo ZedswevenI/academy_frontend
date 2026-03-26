@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators, ValueChangeEvent } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
@@ -25,7 +26,10 @@ interface MatrixPair {
 export class QuestionCreatorComponent implements OnInit {
   questionForm!: FormGroup;
   showPassagePopup = false;
-  testId = ''
+  testId = '';
+  showPreviewModal = false;
+  previewTitle = '';
+  previewHtml: SafeHtml = '';
 
   isEditMode = false;
   isBankMode = false;
@@ -64,7 +68,8 @@ export class QuestionCreatorComponent implements OnInit {
   ];
 
   constructor(private fb: FormBuilder, private breadcrump: BredcrumpService,
-    private commonApi: CommonapiService, private alert: AlertService, private router: Router) {
+    private commonApi: CommonapiService, private alert: AlertService, private router: Router,
+    private sanitizer: DomSanitizer) {
     this.initializeForm();
 
     const state: any = history.state;
@@ -73,7 +78,13 @@ export class QuestionCreatorComponent implements OnInit {
     if (state?.bank) {
       // Bank mode — no exam/section context
       this.isBankMode = true;
-      this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Add Question' }]);
+      if (state.question?.recId) {
+        this.isEditMode = true;
+        this.recId = state.question.recId;
+        this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Edit Question' }]);
+      } else {
+        this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Add Question' }]);
+      }
     } else if (state?.question) {
       this.testId = state.question.testId;
       this.examId = state.question.examId || state.question.testId || '';
@@ -286,7 +297,7 @@ export class QuestionCreatorComponent implements OnInit {
 
     try {
       const res: any = await firstValueFrom(
-        this.commonApi.fetchData(body, 'exam/question', 'view')
+        this.commonApi.fetchData(body, 'exam/questions', 'view')
       );
 
       if (res?.status) {
@@ -299,23 +310,48 @@ export class QuestionCreatorComponent implements OnInit {
         const solutionHtml = await this.replaceDownloadUrls(q.solutionHtml);
 
         this.questionForm.patchValue({
+          sectionId: q.sectionId || '',
+          questionId: q.questionId || '',
+          sortOrder: q.sortOrder || 1,
           questionType: q.questionType,
           questionText: questionHtml,
           positiveMarks: q.positiveMarks,
           negativeMarks: q.negativeMarks,
+          hasPartialMarking: q.hasPartialMarking || false,
+          numericMin: q.numericMin ?? null,
+          numericMax: q.numericMax ?? null,
           difficulty: q.difficulty,
+          enablePassage: !!(q.passageId || q.passageHtml),
+          enableInstruction: !!q.instructionHtml,
+          enableSolution: !!q.solutionHtml,
+          passageId: q.passageId || null,
+          passageText: q.passageHtml || '',
           instruction: instructionHtml,
-          solution: solutionHtml
+          solution: solutionHtml,
+          trueFalseAnswer: q.questionType === 'true_false' ? q.correctAnswer === 'true' : null,
+          subjectiveAnswer: q.subjectiveAnswer || q.correctAnswer || '',
+          bankSubjectId: q.subjectId || '',
+          topicId: q.topicId || '',
+          subTopicId: q.subTopicId || ''
         });
 
-        // 🔥 Inject into editor
-        setTimeout(() => {
+        // Set selectedSubjectId from patched sectionId
+        this.onSectionChange();
 
+        // Inject into editor
+        setTimeout(() => {
           const questionEditor = document.getElementById('questionEditor');
           if (questionEditor) {
             questionEditor.innerHTML = questionHtml || '';
           }
 
+          // Inject subjective answer
+          if (q.questionType === 'subjective' || q.questionType === 'integer' || q.questionType === 'numeric') {
+            const subjectiveEditor = document.getElementById('subjectiveEditor');
+            if (subjectiveEditor) {
+              subjectiveEditor.innerHTML = q.subjectiveAnswer || q.correctAnswer || '';
+            }
+          }
         }, 0);
 
         // 🔥 Load options
@@ -323,19 +359,15 @@ export class QuestionCreatorComponent implements OnInit {
 
           this.options.clear();
 
-          const correctArray = q.correctAnswer?.split(';') || [];
-
           for (let i = 0; i < q.questionOptions.length; i++) {
 
             const opt = q.questionOptions[i];
             const processedOptionHtml = await this.replaceDownloadUrls(opt.textHtml);
 
-            const letter = String.fromCharCode(97 + i);
-
             this.options.push(
               this.fb.group({
                 text: processedOptionHtml,
-                isCorrect: correctArray.includes(letter)
+                isCorrect: opt.isCorrect || false
               })
             );
 
@@ -344,6 +376,24 @@ export class QuestionCreatorComponent implements OnInit {
               if (optionEditor) {
                 optionEditor.innerHTML = processedOptionHtml || '';
               }
+            }, 0);
+          }
+        }
+
+        // Load matrix pairs
+        if (q.questionType === 'matrix' && q.matrixLeft?.length) {
+          this.matrixLeft.clear();
+          this.matrixRight.clear();
+          for (let i = 0; i < q.matrixLeft.length; i++) {
+            const leftHtml = await this.replaceDownloadUrls(q.matrixLeft[i] || '');
+            const rightHtml = await this.replaceDownloadUrls(q.matrixRight?.[i] || '');
+            this.matrixLeft.push(this.fb.group({ text: leftHtml }));
+            this.matrixRight.push(this.fb.group({ text: rightHtml }));
+            setTimeout(() => {
+              const leftEditor = document.getElementById('matrixLeftEditor-' + i);
+              const rightEditor = document.getElementById('matrixRightEditor-' + i);
+              if (leftEditor) leftEditor.innerHTML = leftHtml || '';
+              if (rightEditor) rightEditor.innerHTML = rightHtml || '';
             }, 0);
           }
         }
@@ -516,7 +566,7 @@ export class QuestionCreatorComponent implements OnInit {
 
         this.commonApi.fetchData(
           finalPayload,
-          'exam/question',
+          'exam/questions',
           'update'
         ).subscribe({
           next: (res: any) => {
@@ -1247,16 +1297,105 @@ export class QuestionCreatorComponent implements OnInit {
     this.showPassagePopup = true;
   }
 
-  onPassageSelected(passage: any): void {
+  async onPassageSelected(passage: any): Promise<void> {
+    const rawHtml = passage.passageHtml || passage.content || '';
+    const processedHtml = await this.replaceDownloadUrls(rawHtml);
     this.questionForm.patchValue({
       passageId: passage._id || passage.passageId,
-      passageText: passage.passageHtml || passage.content
+      passageText: processedHtml
     });
     this.showPassagePopup = false;
   }
 
   closePassagePopup(): void {
     this.showPassagePopup = false;
+  }
+
+  openPreview(title: string, editorId: string): void {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    this.previewTitle = title;
+    this.showPreviewModal = true;
+    this.previewHtml = '';
+    setTimeout(() => {
+      const previewBody = document.getElementById('previewBody');
+      if (previewBody) {
+        previewBody.innerHTML = editor.innerHTML;
+        this.renderPreviewMath(previewBody);
+      }
+    }, 50);
+  }
+
+  openPreviewFromValue(title: string, formControlName: string): void {
+    const value = this.questionForm.get(formControlName)?.value || '';
+    if (!value) {
+      this.alert.error('No content to preview');
+      return;
+    }
+    this.previewTitle = title;
+    this.showPreviewModal = true;
+    this.previewHtml = '';
+    setTimeout(() => {
+      const previewBody = document.getElementById('previewBody');
+      if (previewBody) {
+        previewBody.innerHTML = value;
+        this.renderPreviewMath(previewBody);
+      }
+    }, 50);
+  }
+
+  private renderPreviewMath(container: HTMLElement): void {
+    const latexSpans = container.querySelectorAll('.latex, .latex-formula');
+    if (latexSpans.length === 0) return;
+
+    this.loadKatex().then(() => {
+      const katex = (window as any).katex;
+      if (!katex) return;
+      latexSpans.forEach((span: any) => {
+        let tex = span.textContent || '';
+        const isDisplay = tex.startsWith('$$') && tex.endsWith('$$');
+        tex = tex.replace(/^\$\$?([\s\S]*?)\$?\$$/s, '$1').trim();
+        if (!tex) return;
+        try {
+          span.innerHTML = katex.renderToString(tex, { throwOnError: false, displayMode: isDisplay });
+        } catch (e) {
+          console.error('KaTeX render error:', e);
+        }
+      });
+    });
+  }
+
+  private katexLoaded = false;
+  private loadKatex(): Promise<void> {
+    if (this.katexLoaded && (window as any).katex) return Promise.resolve();
+    return new Promise((resolve) => {
+      if (!document.getElementById('katex-css')) {
+        const link = document.createElement('link');
+        link.id = 'katex-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+        document.head.appendChild(link);
+      }
+      if ((window as any).katex) {
+        this.katexLoaded = true;
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+      script.onload = () => {
+        this.katexLoaded = true;
+        resolve();
+      };
+      script.onerror = () => resolve();
+      document.head.appendChild(script);
+    });
+  }
+
+  closePreview(): void {
+    this.showPreviewModal = false;
+    this.previewHtml = '';
+    this.previewTitle = '';
   }
 
 }

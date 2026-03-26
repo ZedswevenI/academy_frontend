@@ -43,6 +43,7 @@ export class KnowledgeCreateComponent implements OnInit {
   selectedBatchCodes: string[] = [];
   selectAllBatches = false;
   studentBatchCode = '';
+  private allSelectedStudentIds: Set<string> = new Set();
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -228,6 +229,10 @@ export class KnowledgeCreateComponent implements OnInit {
   // ── Batch → Students ──────────────────────────────────────────────────────
 
   onBatchChange(batchId: any): void {
+    // Save currently selected students before switching
+    const currentIds: string[] = this.knowledgeForm.get('studentIds')?.value || [];
+    currentIds.forEach(id => this.allSelectedStudentIds.add(id));
+
     this.studentBatchCode = batchId || '';
     this.studentOptions = [];
     this.knowledgeForm.patchValue({ studentIds: [] }, { emitEvent: false });
@@ -241,8 +246,32 @@ export class KnowledgeCreateComponent implements OnInit {
           label: `${s.student.name} (${s.admissionNo})`,
           value: s.studentId
         }));
+
+        // Auto-select previously selected students for this batch
+        const validIds = this.studentOptions
+          .filter(opt => this.allSelectedStudentIds.has(opt.value))
+          .map(opt => opt.value);
+        if (validIds.length > 0) {
+          setTimeout(() => {
+            this.knowledgeForm.patchValue({ studentIds: validIds }, { emitEvent: false });
+          }, 0);
+        }
       }
     });
+  }
+
+  private getAllSelectedStudentIds(): string[] {
+    // Merge currently visible selections into the accumulated set
+    const currentIds: string[] = this.knowledgeForm.get('studentIds')?.value || [];
+    // First, remove any students from current batch that are NOT selected (user may have deselected)
+    const currentBatchStudentIds = this.studentOptions.map(opt => opt.value);
+    currentBatchStudentIds.forEach(id => {
+      if (!currentIds.includes(id)) {
+        this.allSelectedStudentIds.delete(id);
+      }
+    });
+    currentIds.forEach(id => this.allSelectedStudentIds.add(id));
+    return Array.from(this.allSelectedStudentIds);
   }
 
   // ── Loaders ───────────────────────────────────────────────────────────────
@@ -335,6 +364,9 @@ export class KnowledgeCreateComponent implements OnInit {
     this.selectedBatchCodes = d.batchIds || [];
     this.selectAllBatches = this.selectedBatchCodes.length === this.batch_options.length;
 
+    // Store saved studentIds for auto-selection when switching batches
+    (d.studentIds || []).forEach((id: string) => this.allSelectedStudentIds.add(id));
+
     // Build topics dropdown for reference (user can still switch to select mode)
     this.onSubjectChange(subjectId);
 
@@ -345,6 +377,8 @@ export class KnowledgeCreateComponent implements OnInit {
   private loadStudentsForEdit(batchId: string, selectedStudentIds: string[]): Promise<void> {
     return new Promise(resolve => {
       if (!batchId) { resolve(); return; }
+
+      this.studentBatchCode = batchId;
 
       this.commonApi.fetchData({ entiId: this.tenantId }, 'student',
         `list?list=full&batchCode=${batchId}`
@@ -392,7 +426,7 @@ export class KnowledgeCreateComponent implements OnInit {
       topicId: topicText,
       subTopicId: subTopicText,
       batchIds: this.selectedBatchCodes,
-      studentIds: (f.studentIds || []).map((s: any) => typeof s === 'string' ? s : s.value),
+      studentIds: this.getAllSelectedStudentIds(),
       availableFrom: new Date(f.availableFrom).getTime(),
       availableUntil: new Date(f.availableUntil).getTime(),
       attachmentUrl: f.attachmentUrl,

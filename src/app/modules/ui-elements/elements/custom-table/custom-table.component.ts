@@ -68,8 +68,10 @@ export class CustomTableComponent {
         date: col.date ?? false
       }));
     }
-    this.emitRequest();
     this.updatePagination();
+    // Defer initial data request to avoid ExpressionChangedAfterItHasBeenCheckedError
+    // Parent sets loading=true in response, which changes bindings during the same CD cycle
+    setTimeout(() => this.emitRequest(), 0);
   }
 
   onOpenFilters() {

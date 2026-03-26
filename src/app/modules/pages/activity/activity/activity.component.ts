@@ -82,7 +82,7 @@ export class ActivityComponent implements OnInit {
     'BatchCode': 'BatchCode', 'Activity': 'Activity',
     'StartDate': 'StartDate', 'EndDate': 'EndDate',
     'Remarks': 'Remarks', 'CentCode': 'CentCode',
-    'sno': 'sno', 'ActualStartDate': 'ActualStartDate', 'ActualEndDate': 'ActualEndDate'
+    'sno': 'sno', 'ActualDate': 'ActualDate'
   };
 
   requiredColumns = ['BatchCode', 'Activity', 'StartDate', 'EndDate', 'CentCode', 'sno'];
@@ -361,7 +361,7 @@ export class ActivityComponent implements OnInit {
       'BatchCode': '1154A3', 'Activity': 'Phase 4 Orientation',
       'StartDate': '2018-10-17 00:00:00', 'EndDate': '2019-01-06 00:00:00',
       'Remarks': 'Mandatory for all new joins', 'CentCode': '64',
-      'sno': '1', 'ActualStartDate': 'NULL', 'ActualEndDate': 'NULL'
+      'sno': '1', 'ActualDate': 'NULL'
     }];
     const ws = XLSX.utils.json_to_sheet(sample);
     const wb = XLSX.utils.book_new();
