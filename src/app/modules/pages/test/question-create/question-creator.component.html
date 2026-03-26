@@ -78,31 +78,31 @@
 
             <!-- ================= PASSAGE ================= -->
             <div *ngIf="questionForm.get('enablePassage')?.value" class="mb-4">
-              <button type="button" class="btn btn-outline-primary" (click)="openPassagePopup()">
-                <i class="fas fa-search"></i>
-              </button>
-              <app-rich-text-editor class="w-full" label="Passage" [value]="questionForm.value.passageText"
+              <div class="d-flex align-items-center mb-1">
+                <span class="form-label fw-bold mb-0 me-2">Passage</span>
+                <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openPassagePopup()" title="Select Passage">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button type="button" class="btn btn-outline-info btn-sm" (click)="openPreviewFromValue('Passage', 'passageText')" title="Preview">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <app-rich-text-editor class="w-full" [value]="questionForm.value.passageText"
                 [readOnly]="true">
               </app-rich-text-editor>
-
-              <div class="input-group w-full">
-
-
-
-              </div>
-
-              <!-- <small class="text-muted">
-                <i class="fas fa-lock"></i> Passage is master data and not editable
-              </small> -->
             </div>
 
             <!-- ================= INSTRUCTION ================= -->
             <div *ngIf="questionForm.get('enableInstruction')?.value" class="mb-4">
-              <!-- <label class="form-label fw-bold">Instruction</label> -->
-              <app-rich-text-editor label="Instruction"
+              <div class="d-flex align-items-center mb-1">
+                <span class="form-label fw-bold mb-0 me-2">Instruction</span>
+                <button type="button" class="btn btn-outline-info btn-sm" (click)="openPreviewFromValue('Instruction', 'instruction')" title="Preview">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <app-rich-text-editor
                 (valueChange)="questionForm.get('instruction')?.setValue($event)">
               </app-rich-text-editor>
-
             </div>
 
             <!-- Question Text Editor -->
@@ -173,6 +173,12 @@
                       <button type="button" class="btn btn-outline-secondary"
                         (click)="execCommand('removeFormat', null);" title="Clear Formatting">
                         <i class="fas fa-remove-format"></i>
+                      </button>
+                    </div>
+
+                    <div class="btn-group btn-group-sm ms-2" role="group">
+                      <button type="button" class="btn btn-outline-info" (click)="openPreview('Question', 'questionEditor')" title="Preview">
+                        <i class="fas fa-eye"></i>
                       </button>
                     </div>
                   </div>
@@ -294,6 +300,12 @@
                                   </button>
                                 </div>
 
+                                <div class="btn-group btn-group-sm ms-2" role="group">
+                                  <button type="button" class="btn btn-outline-info" (click)="openPreview('Option ' + (i + 1), 'optionEditor-' + i)" title="Preview">
+                                    <i class="fas fa-eye"></i>
+                                  </button>
+                                </div>
+
                               </div>
 
                             </div>
@@ -412,6 +424,12 @@
                                 </button>
                               </div>
 
+                              <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-info" (click)="openPreview('Matrix Left ' + (i + 1), 'matrixLeftEditor-' + i)" title="Preview">
+                                  <i class="fas fa-eye"></i>
+                                </button>
+                              </div>
+
                             </div>
 
                           </div>
@@ -461,6 +479,12 @@
                                 </button>
                               </div>
 
+                              <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-info" (click)="openPreview('Matrix Right ' + (i + 1), 'matrixRightEditor-' + i)" title="Preview">
+                                  <i class="fas fa-eye"></i>
+                                </button>
+                              </div>
+
                             </div>
 
                           </div>
@@ -500,7 +524,13 @@
 
             <!-- ================= SOLUTION ================= -->
             <div *ngIf="questionForm.get('enableSolution')?.value" class="mb-4">
-              <app-rich-text-editor label="Solution" (valueChange)="questionForm.get('solution')?.setValue($event)">
+              <div class="d-flex align-items-center mb-1">
+                <span class="form-label fw-bold mb-0 me-2">Solution</span>
+                <button type="button" class="btn btn-outline-info btn-sm" (click)="openPreviewFromValue('Solution', 'solution')" title="Preview">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <app-rich-text-editor (valueChange)="questionForm.get('solution')?.setValue($event)">
               </app-rich-text-editor>
 
               <small class="text-muted">
@@ -533,5 +563,28 @@
   <app-passage-selector *ngIf="showPassagePopup" [passages]="passages" (selected)="onPassageSelected($event)"
     (closed)="closePassagePopup()">
   </app-passage-selector>
+
+  <!-- Preview Modal -->
+  <div *ngIf="showPreviewModal" class="modal-backdrop fade show" (click)="closePreview()"></div>
+  <div *ngIf="showPreviewModal" class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content rounded-4">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold">
+            <i class="fas fa-eye text-info me-2"></i>{{ previewTitle }} Preview
+          </h5>
+          <button type="button" class="btn-close" (click)="closePreview()"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div id="previewBody" class="preview-content"
+            style="min-height: 100px; font-size: 16px; line-height: 1.6;">
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-secondary rounded-pill" (click)="closePreview()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div>

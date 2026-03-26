@@ -85,8 +85,8 @@
                 <!-- Load Students by Batch -->
                 <div class="col-md-6" *ngIf="selectedBatchCodes.length > 0">
                     <label class="form-label fw-medium">Load Students from Batch</label>
-                    <select class="form-select" [value]="studentBatchCode"
-                        (change)="onBatchChange($any($event.target).value)">
+                    <select class="form-select" [(ngModel)]="studentBatchCode" [ngModelOptions]="{standalone: true}"
+                        (ngModelChange)="onBatchChange($event)">
                         <option value="">-- Select Batch --</option>
                         <ng-container *ngFor="let b of batch_options">
                             <option *ngIf="isBatchSelected(b.value)" [value]="b.value">

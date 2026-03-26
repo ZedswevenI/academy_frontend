@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators, ValueChangeEvent } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
@@ -25,7 +26,10 @@ interface MatrixPair {
 export class QuestionCreatorComponent implements OnInit {
   questionForm!: FormGroup;
   showPassagePopup = false;
-  testId = ''
+  testId = '';
+  showPreviewModal = false;
+  previewTitle = '';
+  previewHtml: SafeHtml = '';
 
   isEditMode = false;
   recId: string = '';
@@ -45,7 +49,8 @@ export class QuestionCreatorComponent implements OnInit {
   ];
 
   constructor(private fb: FormBuilder, private breadcrump: BredcrumpService,
-    private commonApi: CommonapiService, private alert: AlertService, private router: Router) {
+    private commonApi: CommonapiService, private alert: AlertService, private router: Router,
+    private sanitizer: DomSanitizer) {
     this.initializeForm();
 
     // const navigation = this.router.getCurrentNavigation();
@@ -87,6 +92,7 @@ export class QuestionCreatorComponent implements OnInit {
 
 
   ngOnInit(): void {
+    this.loadPassages();
 
     if (this.isEditMode) {
       this.loadQuestionForEdit();
@@ -1031,25 +1037,125 @@ export class QuestionCreatorComponent implements OnInit {
 
 
 
-  passages = [
-    { id: 1, title: 'Physics Passage 1', content: '<p>Newton’s laws...</p>' },
-    { id: 2, title: 'Chemistry Passage', content: '<table border=\"1\" style=\"width: 100%;\"><tbody><tr><td style=\"padding: 10px; border-width: 1px; border-color: rgb(221, 221, 221); border-image: initial;\">fdfdff</td><td style=\"padding: 10px; border-width: 1px; border-color: rgb(221, 221, 221); border-image: initial;\">fd</td></tr><tr><td style=\"padding: 10px; border-width: 1px; border-color: rgb(221, 221, 221); border-image: initial;\">fdfd</td><td style=\"padding: 10px; border-width: 1px; border-color: rgb(221, 221, 221); border-image: initial;\">fdfd</td></tr></tbody></table><p></p>' }
-  ];
+  passages: any[] = [];
+
+  loadPassages(): void {
+    this.commonApi.fetchData(
+      { entiId: this.entiId },
+      'exam/passage',
+      'list?list=full&status=active'
+    ).subscribe({
+      next: (res: any) => {
+        this.passages = res?.data || [];
+      },
+      error: () => this.alert.error('Error loading passages')
+    });
+  }
 
   openPassagePopup(): void {
     this.showPassagePopup = true;
   }
 
-  onPassageSelected(passage: any): void {
+  async onPassageSelected(passage: any): Promise<void> {
+    const rawHtml = passage.passageHtml || passage.content || '';
+    const processedHtml = await this.replaceDownloadUrls(rawHtml);
     this.questionForm.patchValue({
-      passageId: passage.id,
-      passageText: passage.content
+      passageId: passage._id || passage.passageId,
+      passageText: processedHtml
     });
     this.showPassagePopup = false;
   }
 
   closePassagePopup(): void {
     this.showPassagePopup = false;
+  }
+
+  openPreview(title: string, editorId: string): void {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    this.previewTitle = title;
+    this.showPreviewModal = true;
+    this.previewHtml = '';
+    setTimeout(() => {
+      const previewBody = document.getElementById('previewBody');
+      if (previewBody) {
+        previewBody.innerHTML = editor.innerHTML;
+        this.renderPreviewMath(previewBody);
+      }
+    }, 50);
+  }
+
+  openPreviewFromValue(title: string, formControlName: string): void {
+    const value = this.questionForm.get(formControlName)?.value || '';
+    if (!value) {
+      this.alert.error('No content to preview');
+      return;
+    }
+    this.previewTitle = title;
+    this.showPreviewModal = true;
+    this.previewHtml = '';
+    setTimeout(() => {
+      const previewBody = document.getElementById('previewBody');
+      if (previewBody) {
+        previewBody.innerHTML = value;
+        this.renderPreviewMath(previewBody);
+      }
+    }, 50);
+  }
+
+  private renderPreviewMath(container: HTMLElement): void {
+    const latexSpans = container.querySelectorAll('.latex, .latex-formula');
+    if (latexSpans.length === 0) return;
+
+    this.loadKatex().then(() => {
+      const katex = (window as any).katex;
+      if (!katex) return;
+      latexSpans.forEach((span: any) => {
+        let tex = span.textContent || '';
+        // Remove $$ or $ delimiters
+        const isDisplay = tex.startsWith('$$') && tex.endsWith('$$');
+        tex = tex.replace(/^\$\$?([\s\S]*?)\$?\$$/s, '$1').trim();
+        if (!tex) return;
+        try {
+          span.innerHTML = katex.renderToString(tex, { throwOnError: false, displayMode: isDisplay });
+        } catch (e) {
+          console.error('KaTeX render error:', e);
+        }
+      });
+    });
+  }
+
+  private katexLoaded = false;
+  private loadKatex(): Promise<void> {
+    if (this.katexLoaded && (window as any).katex) return Promise.resolve();
+    return new Promise((resolve) => {
+      if (!document.getElementById('katex-css')) {
+        const link = document.createElement('link');
+        link.id = 'katex-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+        document.head.appendChild(link);
+      }
+      if ((window as any).katex) {
+        this.katexLoaded = true;
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+      script.onload = () => {
+        this.katexLoaded = true;
+        resolve();
+      };
+      script.onerror = () => resolve();
+      document.head.appendChild(script);
+    });
+  }
+
+  closePreview(): void {
+    this.showPreviewModal = false;
+    this.previewHtml = '';
+    this.previewTitle = '';
   }
 
 }

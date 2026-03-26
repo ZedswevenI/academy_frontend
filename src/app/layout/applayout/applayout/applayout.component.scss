@@ -22,15 +22,9 @@ app-header {
 /* BODY */
 .app-body {
   display: flex;
-  height: calc(100vh -  56px);
-  margin-top:  56px;
+  height: calc(100vh - 56px);
+  margin-top: 56px;
   overflow: hidden;
-  scrollbar-width: none;        
-  -ms-overflow-style: none;
-}
-.app-body ::-webkit-scrollbar {
-  width: 0;
-  height: 0;
 }
 
 /* SIDEBAR */
@@ -40,24 +34,24 @@ app-header {
   top: 56px;
   bottom: 0;
   left: 0;
- background: linear-gradient(90deg,
+  background: linear-gradient(90deg,
       #364e81 5%,
       #0B1220 90%) !important;
-  transition: transform 0.3s ease;
   z-index: 1040;
 }
 
-/* Desktop */
+/* Desktop — no transition, sidebar always visible */
 @media (min-width: 992px) {
   .app-sidebar {
     transform: translateX(0);
   }
 }
 
-/* Mobile */
+/* Mobile — transition only for slide-in */
 @media (max-width: 991px) {
   .app-sidebar {
     transform: translateX(-100%);
+    transition: transform 0.3s ease;
   }
 
   .app-sidebar.open {
