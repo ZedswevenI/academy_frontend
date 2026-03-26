@@ -1,0 +1,12 @@
+.nav-pills .nav-link {
+  color: #6B7280;
+  font-weight: 500;
+  &.active {
+    background-color: #0066FF;
+    color: #fff;
+  }
+}
+
+.fs-18 {
+  font-size: 18px;
+}
