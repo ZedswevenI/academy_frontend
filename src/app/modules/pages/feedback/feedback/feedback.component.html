@@ -38,8 +38,8 @@
 
         <!-- Table -->
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="true"
-            success="ACTIVE" primary="DRAFT" [totalRecords]="totalRecords" (requestData)="loadTableData($event)"
-            [actions]="actions" [searchPlaceholder]="'Search title, category...'">
+            success="ACTIVE" [success]="'CLOSED'" primary="DRAFT" [totalRecords]="totalRecords"
+            (requestData)="loadTableData($event)" [actions]="actions" [searchPlaceholder]="'Search title, category...'">
         </custom-table>
 
     </div>

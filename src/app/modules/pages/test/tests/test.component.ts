@@ -35,12 +35,12 @@ export class TestComponent implements OnInit, OnDestroy {
 
   /* ================= TABLE COLUMNS ================= */
   columnsArray = [
-    { key: 'testNumber', label: 'Test No', sortable: true },
+    { key: 'testNumber', label: 'Test No', sortable: false },
     { key: 'classNo', label: 'Class', sortable: true },
-    { key: 'subject', label: 'Subject', sortable: true },
-    { key: 'topicName', label: 'Topic', sortable: true },
-    { key: 'subTopicName', label: 'Subtopic', sortable: true },
-    { key: 'level', label: 'Level', sortable: true }
+    { key: 'subject', label: 'Subject', sortable: false },
+    { key: 'topicName', label: 'Topic', sortable: false },
+    { key: 'subTopicName', label: 'Subtopic', sortable: false },
+    { key: 'level', label: 'Level', sortable: false }
   ];
 
   dataArray: any[] = [];
@@ -50,14 +50,14 @@ export class TestComponent implements OnInit, OnDestroy {
   showFilters = false;
 
   classOptions = [
-    { label: '6', value: 6 },
-    { label: '7', value: 7 },
-    { label: '8', value: 8 },
-    { label: '9', value: 9 },
-    { label: '10', value: 10 },
-    { label: '11', value: 11 },
-    { label: '12', value: 12 },
-    { label: '13', value: 13 }
+    { label: '6th', value: 6 },
+    { label: '7th', value: 7 },
+    { label: '8th', value: 8 },
+    { label: '9th', value: 9 },
+    { label: '10th', value: 10 },
+    { label: '11th', value: 11 },
+    { label: '12th', value: 12 },
+    { label: '12th pass', value: 13 }
   ];
 
   topicOptions: any[] = [];
@@ -120,10 +120,10 @@ export class TestComponent implements OnInit, OnDestroy {
     private alert: AlertService,
     private fb: FormBuilder,
     public authService: AuthService
-  ) { 
+  ) {
 
-    if(this.authService.assignmentRole()) {
-      this.actions.pop(); 
+    if (this.authService.assignmentRole()) {
+      this.actions.pop();
     }
   }
 
@@ -433,8 +433,8 @@ export class TestComponent implements OnInit, OnDestroy {
       );
       if (res?.status && res?.data?.length) {
         const data = res.data[0];
-        console.log("Subebder",data?.subjectId?.subjectName);
-        
+        console.log("Subebder", data?.subjectId?.subjectName);
+
         return {
           meta: {
             testId: data.testId,
@@ -530,7 +530,7 @@ export class TestComponent implements OnInit, OnDestroy {
           optionsHtml = `<table class="options-table">${rows.join('')}</table>`;
         }
 
-          const answerRow = withAnswer
+        const answerRow = withAnswer
           ? `<div class="answer-box">
              <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
            </div>`

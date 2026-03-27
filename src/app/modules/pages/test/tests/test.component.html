@@ -27,15 +27,14 @@
                         <form [formGroup]="filterForm" class="row g-3 align-items-end">
 
                             <!-- Class -->
-                          
-
-                            <div class="col-6 col-md-2">
+                            <div class="col-6 col-md-3">
                                 <selectbox label="Class" formControlName="classNo" [control]="filterForm.get('classNo')"
                                     [options]="classOptions" optionLabel="label" optionValue="value">
                                 </selectbox>
                             </div>
 
-                            <div class="col-6 col-md-2">
+                            <!-- Subject -->
+                            <div class="col-6 col-md-3">
                                 <selectbox label="Subject" formControlName="subjectId"
                                     [control]="filterForm.get('subjectId')" [options]="subjectOptions"
                                     optionLabel="label" optionValue="value">
@@ -43,14 +42,14 @@
                             </div>
 
                             <!-- Topic -->
-                            <div class="col-6 col-md-2">
+                            <div class="col-6 col-md-3">
                                 <selectbox label="Topic" formControlName="topicId" [control]="filterForm.get('topicId')"
                                     [options]="topicOptions" optionLabel="label" optionValue="value">
                                 </selectbox>
                             </div>
 
                             <!-- Subtopic -->
-                            <div class="col-6 col-md-2">
+                            <div class="col-6 col-md-3">
                                 <selectbox label="Subtopic" formControlName="subtopicId"
                                     [control]="filterForm.get('subtopicId')" [options]="subtopicOptions"
                                     optionLabel="label" optionValue="value">
@@ -58,29 +57,28 @@
                             </div>
 
                             <!-- Buttons -->
-                            <div class="col-md-2 d-flex justify-content-end gap-2 ms-2">
-                                  <div class="btn-group me-2">
-                                <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    🖨️ Print
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item" (click)="printAllFilteredTests(false)">
-                                            📄 Without Answer <small class="text-muted">(for students)</small>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" (click)="printAllFilteredTests(true)">
-                                            📄 With Answer <small class="text-muted">(answer key)</small>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
+                            <div class="col-12 d-flex justify-content-end gap-2">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-print me-1"></i> Print
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" (click)="printAllFilteredTests(false)">
+                                                Without Answer <small class="text-muted">(for students)</small>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" (click)="printAllFilteredTests(true)">
+                                                With Answer <small class="text-muted">(answer key)</small>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
                                     Clear
                                 </button>
-
                                 <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">
                                     Search
                                 </button>

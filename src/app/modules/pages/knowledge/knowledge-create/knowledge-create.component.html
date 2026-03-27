@@ -120,7 +120,7 @@
 
                 <!-- Upload -->
                 <div class="col-md-6">
-                    <importfiles label="Upload Material" [multiple]="false"
+                    <importfiles label="Upload Material" [required]="true" [multiple]="false"
                         formControlName="attachmentUrl" accept=".pdf"
                         [existingFiles]="isEditMode ? uploadedFiles : []"
                         (filesChanged)="onFilesSelected($event)">

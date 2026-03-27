@@ -52,11 +52,9 @@ export class TemplateComponent implements OnInit {
       callback: (row: any) => this.openEditModal(row),
     },
     {
-      type: 'icon',
-      icon: 'fa-solid fa-toggle-on',
+      type: 'toggle',
       tooltip: 'Toggle Status',
-      color: '#6B7280',
-      hoverColor: '#854F0B',
+      isActive: (row: any) => row.status !== 'INACTIVE',
       callback: (row: any) => this.toggleStatus(row),
     },
     {

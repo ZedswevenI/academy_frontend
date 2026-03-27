@@ -16,7 +16,7 @@ export class createActivityComponent implements OnInit {
   activityForm!: FormGroup;
 
   tenantId: any;
-  isEditMode   = false;
+  isEditMode = false;
   activityId: string | null = null;
   editActivity: any = null;
 
@@ -24,13 +24,13 @@ export class createActivityComponent implements OnInit {
   todayDate = new Date().toISOString().split('T')[0];
   minEndDate = this.todayDate;
 
-  batch_options:  any[] = [];
+  batch_options: any[] = [];
   center_options: any[] = [];
   status_options = [
-    { label: 'Planned',     value: 'PLANNED'     },
-    { label: 'In Progress', value: 'IN_PROGRESS'  },
-    { label: 'Completed',   value: 'COMPLETED'   },
-    { label: 'Cancelled',   value: 'CANCELLED'   }
+    { label: 'Planned', value: 'PLANNED' },
+    { label: 'In Progress', value: 'IN_PROGRESS' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'Cancelled', value: 'CANCELLED' }
   ];
 
   constructor(
@@ -42,12 +42,12 @@ export class createActivityComponent implements OnInit {
   ) {
     this.tenantId = localStorage.getItem('tenantId');
 
-    const nav           = this.router.getCurrentNavigation();
+    const nav = this.router.getCurrentNavigation();
     const stateActivity = nav?.extras?.state?.['activity'];
 
     if (stateActivity) {
-      this.isEditMode   = true;
-      this.activityId   = stateActivity.activityId;
+      this.isEditMode = true;
+      this.activityId = stateActivity.activityId;
       this.editActivity = stateActivity;
       this.breadcrumb.set([
         { label: 'Activity', link: '/app/activity' },
@@ -85,14 +85,14 @@ export class createActivityComponent implements OnInit {
 
   private buildForm(): void {
     this.activityForm = this.fb.group({
-      batchCode:       ['', Validators.required],
-      centerCode:      ['', Validators.required],
-      activityName:    ['', Validators.required],
-      startDate:       ['', Validators.required],
-      endDate:         ['', Validators.required],
-      actualDate: [''],
-      remarks:         [''],
-      status:          ['']   // only in edit
+      batchCode: ['', Validators.required],
+      centerCode: ['', Validators.required],
+      activityName: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      actualStartDate: [''],
+      remarks: [''],
+      status: ['']   // only in edit
     });
   }
 
@@ -138,14 +138,14 @@ export class createActivityComponent implements OnInit {
 
   private patchEditData(d: any): void {
     this.activityForm.patchValue({
-      batchCode:       d.batchCode,
-      centerCode:      d.centerCode,
-      activityName:    d.activityName,
-      startDate:       this.tsToDateInput(d.startDate),
-      endDate:         this.tsToDateInput(d.endDate),
-      actualDate: d.actualDate ? this.tsToDateInput(d.actualDate) : '',
-      remarks:         d.remarks,
-      status:          d.status
+      batchCode: d.batchCode,
+      centerCode: d.centerCode,
+      activityName: d.activityName,
+      startDate: this.tsToDateInput(d.startDate),
+      endDate: this.tsToDateInput(d.endDate),
+      actualStartDate: d.actualStartDate ? this.tsToDateInput(d.actualStartDate) : '',
+      remarks: d.remarks,
+      status: d.status
     });
 
     // Disable fields that shouldn't change in edit
@@ -175,13 +175,13 @@ export class createActivityComponent implements OnInit {
 
   private createActivity(f: any): void {
     const payload = {
-      tenantId:     this.tenantId,
-      batchCode:    f.batchCode,
-      centerCode:   f.centerCode,
+      tenantId: this.tenantId,
+      batchCode: f.batchCode,
+      centerCode: f.centerCode,
       activityName: f.activityName,
-      startDate:    this.toTimestamp(f.startDate),
-      endDate:      this.toTimestamp(f.endDate),
-      remarks:      f.remarks || ''
+      startDate: this.toTimestamp(f.startDate),
+      endDate: this.toTimestamp(f.endDate),
+      remarks: f.remarks || ''
     };
 
     this.loading = true;
@@ -203,17 +203,17 @@ export class createActivityComponent implements OnInit {
 
   private updateActivity(f: any): void {
     const payload: any = {
-      tenantId:     this.tenantId,
-      activityId:   this.activityId,
+      tenantId: this.tenantId,
+      activityId: this.activityId,
       activityName: f.activityName,
-      startDate:    this.toTimestamp(f.startDate),
-      endDate:      this.toTimestamp(f.endDate),
-      remarks:      f.remarks || '',
-      status:       f.status
+      startDate: this.toTimestamp(f.startDate),
+      endDate: this.toTimestamp(f.endDate),
+      remarks: f.remarks || '',
+      status: f.status
     };
 
-    if (f.actualDate) {
-      payload.actualDate = this.toTimestamp(f.actualDate);
+    if (f.actualStartDate) {
+      payload.actualStartDate = this.toTimestamp(f.actualStartDate);
     }
 
     this.loading = true;
@@ -226,9 +226,9 @@ export class createActivityComponent implements OnInit {
             this.router.navigate(['/app/activity']);
           }
         },
-        error: ( err: any) => {
+        error: (err: any) => {
           this.loading = false;
-           this.alert.error(err?.error?.message)
+          this.alert.error(err?.error?.message)
         }
       });
   }
@@ -239,7 +239,7 @@ export class createActivityComponent implements OnInit {
 
   private tsToDateInput(ts: number): string {
     if (!ts) return '';
-    const d   = new Date(ts);
+    const d = new Date(ts);
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }

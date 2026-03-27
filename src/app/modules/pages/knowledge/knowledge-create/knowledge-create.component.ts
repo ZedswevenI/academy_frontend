@@ -27,7 +27,7 @@ export class KnowledgeCreateComponent implements OnInit {
   uploadedFiles: any[] = [];
 
   class_options = Array.from({ length: 8 }, (_, i) => ({
-    label: (i + 6).toString(), value: i + 6
+    label: (i + 6) === 13 ? '12th Pass' : (i + 6).toString(), value: i + 6
   }));
 
   batch_options: any[] = [];
@@ -116,7 +116,7 @@ export class KnowledgeCreateComponent implements OnInit {
 
             // Classes
             this.class_options = (data.classes || []).map((c: any) => ({
-              label: c.classNo.toString(),
+              label: c.classNo === 13 ? '12th Pass' : c.classNo.toString(),
               value: c.classNo
             }));
 

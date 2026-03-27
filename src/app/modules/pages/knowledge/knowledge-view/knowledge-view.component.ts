@@ -26,6 +26,11 @@ export class KnowledgeViewComponent implements OnInit {
   selectAllStudents = false;
   studentsLoading = false;
 
+  // Batch student view
+  selectedBatchCode = '';
+  batchStudents: any[] = [];
+  batchStudentsLoading = false;
+
   constructor(
     private commonApi: CommonapiService,
     private breadcrumb: BredcrumpService,
@@ -145,6 +150,37 @@ export class KnowledgeViewComponent implements OnInit {
           this.alert.error('Error adding batch');
         }
       });
+  }
+
+  onBatchClick(batchCode: string): void {
+    if (this.selectedBatchCode === batchCode) {
+      this.selectedBatchCode = '';
+      this.batchStudents = [];
+      return;
+    }
+    this.selectedBatchCode = batchCode;
+    this.batchStudents = [];
+    this.batchStudentsLoading = true;
+    const tenantId = localStorage.getItem('tenantId');
+    this.commonApi.fetchData({ entiId: tenantId }, 'student',
+      `list?list=full&batchCode=${batchCode}`
+    ).subscribe({
+      next: (res: any) => {
+        this.batchStudentsLoading = false;
+        this.batchStudents = (res?.data || []).map((s: any) => ({
+          studentId: s.studentId,
+          name: s.student?.name || s.studentName || '',
+          admissionNo: s.admissionNo || ''
+        }));
+      },
+      error: () => {
+        this.batchStudentsLoading = false;
+      }
+    });
+  }
+
+  isAssignedStudent(studentId: string): boolean {
+    return (this.material?.studentIds || []).includes(studentId);
   }
 
   formatDate(timestamp: number): string {
