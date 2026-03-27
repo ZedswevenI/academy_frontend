@@ -87,7 +87,7 @@ export class PackCreateComponent implements OnInit {
         packageCode: [''],
         title: ['', Validators.required],
         description: [''],
-        attachmentUrl: ['']
+        attachmentUrl: ['', Validators.required]
       });
     } else {
       this.packageForm = this.fb.group({
@@ -96,7 +96,7 @@ export class PackCreateComponent implements OnInit {
         packageCode: ['', Validators.required],
         title: ['', Validators.required],
         description: [''],
-        attachmentUrl: ['']
+        attachmentUrl: ['', Validators.required]
       });
     }
   }

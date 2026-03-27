@@ -20,51 +20,46 @@
                     <!-- Batch -->
                     <div class="col-md-6">
                         <selectbox label="Batch" placeholder="Select Batch" [options]="batch_options"
-                            formControlName="batchCode" [control]="activityForm.get('batchCode')"
-                            [required]="true">
+                            formControlName="batchCode" [control]="activityForm.get('batchCode')" [required]="true">
                         </selectbox>
                     </div>
 
                     <!-- Center -->
                     <div class="col-md-6">
                         <selectbox label="Center" placeholder="Select Center" [options]="center_options"
-                            formControlName="centerCode" [control]="activityForm.get('centerCode')"
-                            [required]="true">
+                            formControlName="centerCode" [control]="activityForm.get('centerCode')" [required]="true">
                         </selectbox>
                     </div>
 
                     <!-- Activity Name -->
                     <div class="col-md-6">
                         <formfield label="Activity Name" formControlName="activityName"
-                            [control]="activityForm.get('activityName')"
-                            placeholder="Enter Activity Name" [required]="true">
+                            [control]="activityForm.get('activityName')" placeholder="Enter Activity Name"
+                            [required]="true">
                         </formfield>
                     </div>
 
                     <!-- Start Date -->
                     <div class="col-md-6">
                         <formfield label="Start Date" type="date" formControlName="startDate"
-                            [control]="activityForm.get('startDate')"
-                            [min]="todayDate"
-                            placeholder="Select Start Date" [required]="true">
+                            [control]="activityForm.get('startDate')" [min]="todayDate" placeholder="Select Start Date"
+                            [required]="true">
                         </formfield>
                     </div>
 
                     <!-- End Date -->
                     <div class="col-md-6">
                         <formfield label="End Date" type="date" formControlName="endDate"
-                            [control]="activityForm.get('endDate')"
-                            [min]="minEndDate"
-                            placeholder="Select End Date" [required]="true">
+                            [control]="activityForm.get('endDate')" [min]="minEndDate" placeholder="Select End Date"
+                            [required]="true">
                         </formfield>
                     </div>
 
                     <!-- Actual Date (edit only) -->
                     <div class="col-md-6" *ngIf="isEditMode">
-                        <formfield label="Actual Date" type="date" formControlName="actualDate"
-                            [control]="activityForm.get('actualDate')"
-                            [min]="activityForm.get('startDate')?.value || todayDate"
-                            placeholder="Select Actual Date">
+                        <formfield label="Actual Date" type="date" formControlName="actualStartDate"
+                            [control]="activityForm.get('actualStartDate')"
+                            [min]="activityForm.get('startDate')?.value || todayDate" placeholder="Select Actual Date">
                         </formfield>
                     </div>
 
@@ -77,8 +72,7 @@
 
                     <!-- Remarks -->
                     <div class="col-md-12">
-                        <description label="Remarks" formControlName="remarks"
-                            [control]="activityForm.get('remarks')"
+                        <description label="Remarks" formControlName="remarks" [control]="activityForm.get('remarks')"
                             placeholder="Enter remarks (optional)">
                         </description>
                     </div>
@@ -87,15 +81,15 @@
 
                 <!-- Actions -->
                 <div class="col-12 text-end mt-4">
-                    <button type="button" class="btn closebutton px-4 me-2"
-                        style="border-radius: 30px;" (click)="cancel()">
+                    <button type="button" class="btn closebutton px-4 me-2" style="border-radius: 30px;"
+                        (click)="cancel()">
                         Back
                     </button>
-                    <button type="button" class="btn submitbutton px-4"
-                        [disabled]="activityForm.invalid || loading"
+                    <button type="button" class="btn submitbutton px-4" [disabled]="activityForm.invalid || loading"
                         (click)="submit()" style="border-radius: 30px;">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                        {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Submit') }}
+                        {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Submit')
+                        }}
                     </button>
                 </div>
 

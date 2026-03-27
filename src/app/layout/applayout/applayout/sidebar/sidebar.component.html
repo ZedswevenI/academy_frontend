@@ -19,7 +19,7 @@
         </div>
         <div class="submenu" *ngIf="menu.expanded">
           <a *ngFor="let child of menu.children" class="sidebar-link child" [routerLink]="child.route"
-            routerLinkActive="active" style="text-decoration: none">
+            routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" style="text-decoration: none">
             <i [class]="child.icon + ' me-2'"></i>
             {{ child.label }}
           </a>

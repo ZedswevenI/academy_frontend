@@ -60,7 +60,7 @@ export class FeedbackComponent implements OnInit {
     },
     {
       type: 'icon',
-      icon: 'fa-solid fa-toggle-on',
+      icon: 'fa-solid fa-arrows-rotate',
       tooltip: 'Change Status',
       color: '#6B7280',
       hoverColor: '#854F0B',

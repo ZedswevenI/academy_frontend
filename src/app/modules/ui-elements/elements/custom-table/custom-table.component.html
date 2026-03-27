@@ -140,6 +140,15 @@
 
 
 
+                  <!-- TOGGLE SWITCH -->
+                  <div *ngIf="action.type === 'toggle' && (!action.hidden || !action.hidden(row))"
+                    class="form-check form-switch mb-0 d-flex align-items-center"
+                    [title]="action.tooltip || ''">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                      [checked]="action.isActive ? action.isActive(row) : false"
+                      (change)="action.callback(row)">
+                  </div>
+
                   <!-- DROPDOWN BUTTON -->
                   <div *ngIf="action.type === 'dropdown' && (!action.hidden || !action.hidden(row))" class="btn-group action-btn-group">
 

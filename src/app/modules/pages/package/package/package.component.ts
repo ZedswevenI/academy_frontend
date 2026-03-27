@@ -105,7 +105,7 @@ export class PackageComponent implements OnInit {
   ngOnInit(): void {
     this.buildEnableForm();
     this.loadBatches();
-    this.fetchList(1, 10);
+    // this.fetchList(1, 10);
   }
 
   private buildEnableForm(): void {
@@ -255,7 +255,7 @@ export class PackageComponent implements OnInit {
           if (res?.status) {
             this.alert.success('Enablement disabled successfully');
             this.fetchEnablements(this.selectedPackage.packageId);
-            this.fetchList(1, 10);
+            this.fetchList(1, 5);
           }
         },
         error: () => {

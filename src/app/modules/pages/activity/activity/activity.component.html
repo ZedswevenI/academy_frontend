@@ -193,10 +193,7 @@
                         <div class="text-muted small">End Date</div>
                         <div class="fw-semibold">{{ selectedActivity.endDateFormatted }}</div>
                     </div>
-                    <div class="col-6">
-                        <div class="text-muted small">Actual Start</div>
-                        <div class="fw-semibold">{{ selectedActivity.actualStartFormatted }}</div>
-                    </div>
+
                     <div class="col-6">
                         <div class="text-muted small">Status</div>
                         <span class="badge" [class.bg-success]="selectedActivity.status === 'COMPLETED'"
@@ -215,7 +212,8 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
                     data-bs-dismiss="modal">Close</button>
-                <button *ngIf="selectedActivity.status !== 'COMPLETED'" type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal"
+                <button *ngIf="selectedActivity.status !== 'COMPLETED'" type="button"
+                    class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal"
                     (click)="router.navigate(['/app/activity/create'], { state: { activity: selectedActivity } })">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Edit
                 </button>

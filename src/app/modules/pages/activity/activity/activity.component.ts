@@ -23,27 +23,27 @@ export class ActivityComponent implements OnInit {
   totalRecords = 0;
 
   // ── Track current page so delete + modal actions reload same page ─────────
-  private lastPage   = 1;
-  private lastLimit  = 10;
+  private lastPage = 1;
+  private lastLimit = 10;
   private lastSearch?: string;
 
   // Dropdowns
   batch_options: any[] = [];
   center_options: any[] = [];
   status_options = [
-    { label: 'Planned',     value: 'PLANNED'     },
+    { label: 'Planned', value: 'PLANNED' },
     { label: 'In Progress', value: 'IN_PROGRESS' },
-    { label: 'Completed',   value: 'COMPLETED'   },
-    { label: 'Cancelled',   value: 'CANCELLED'   }
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'Cancelled', value: 'CANCELLED' }
   ];
 
   columnsArray = [
-    { key: 'activityName',        label: 'Activity',     sortable: true  },
-    { key: 'startDateFormatted',  label: 'Start Date',   sortable: false },
-    { key: 'endDateFormatted',    label: 'End Date',      sortable: false },
-    { key: 'actualStartFormatted',label: 'Actual Start', sortable: false },
-    { key: 'remarks',             label: 'Remarks',      sortable: false },
-    { key: 'status',              label: 'Status',       sortable: false }
+    { key: 'activityName', label: 'Activity', sortable: true },
+    { key: 'startDateFormatted', label: 'Start Date', sortable: false },
+    { key: 'endDateFormatted', label: 'End Date', sortable: false },
+    { key: 'actualStartFormatted', label: 'Actual Start', sortable: false },
+    { key: 'remarks', label: 'Remarks', sortable: false },
+    { key: 'status', label: 'Status', sortable: false }
   ];
 
   actions = [
@@ -72,11 +72,11 @@ export class ActivityComponent implements OnInit {
   activityToDelete: any = null;
 
   // ── Import ─────────────────────────────────────────────────────────────────
-  isDragging    = false;
-  fileName      = '';
+  isDragging = false;
+  fileName = '';
   importLoading = false;
-  parsedRows:   any[] = [];
-  errorRows:    any[] = [];
+  parsedRows: any[] = [];
+  errorRows: any[] = [];
 
   columnMap: { [key: string]: string } = {
     'BatchCode': 'BatchCode', 'Activity': 'Activity',
@@ -88,23 +88,23 @@ export class ActivityComponent implements OnInit {
   requiredColumns = ['BatchCode', 'Activity', 'StartDate', 'EndDate', 'CentCode', 'sno'];
 
   previewColumns = [
-    { field: 'BatchCode', header: 'Batch'    },
-    { field: 'Activity',  header: 'Activity' },
-    { field: 'StartDate', header: 'Start'    },
-    { field: 'EndDate',   header: 'End'      },
-    { field: 'CentCode',  header: 'Center'   },
-    { field: 'Remarks',   header: 'Remarks'  },
-    { field: 'sno',       header: 'S.No'     }
+    { field: 'BatchCode', header: 'Batch' },
+    { field: 'Activity', header: 'Activity' },
+    { field: 'StartDate', header: 'Start' },
+    { field: 'EndDate', header: 'End' },
+    { field: 'CentCode', header: 'Center' },
+    { field: 'Remarks', header: 'Remarks' },
+    { field: 'sno', header: 'S.No' }
   ];
 
   columnMapDisplay = Object.keys(this.columnMap).map(k => ({ excel: k, api: this.columnMap[k] }));
 
   constructor(
     private breadcrump: BredcrumpService,
-    private fb:         FormBuilder,
-    public  router:     Router,
-    private commonApi:  CommonapiService,
-    private alert:      AlertService,
+    private fb: FormBuilder,
+    public router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService,
     private authService: AuthService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
@@ -113,9 +113,9 @@ export class ActivityComponent implements OnInit {
 
   ngOnInit(): void {
     this.filterForm = this.fb.group({
-      batchCode:  [''],
+      batchCode: [''],
       centerCode: [''],
-      status:     ['']
+      status: ['']
     });
 
     Promise.all([this.loadBatches(), this.loadCenters()]);
@@ -144,7 +144,7 @@ export class ActivityComponent implements OnInit {
         });
       } else {
         this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full').subscribe({
-          next:  (res: any) => { this.batch_options  = (res?.data || []).map((b: any) => ({ label: b.batchName,  value: b.batchCode  })); resolve(); },
+          next: (res: any) => { this.batch_options = (res?.data || []).map((b: any) => ({ label: b.batchName, value: b.batchCode })); resolve(); },
           error: () => resolve()
         });
       }
@@ -154,7 +154,7 @@ export class ActivityComponent implements OnInit {
   private loadCenters(): Promise<void> {
     return new Promise(resolve => {
       this.commonApi.fetchData({ entiId: this.tenantId }, 'ims/center', 'list?list=full').subscribe({
-        next:  (res: any) => { this.center_options = (res?.data || []).map((c: any) => ({ label: c.centerName, value: c.centerCode })); resolve(); },
+        next: (res: any) => { this.center_options = (res?.data || []).map((c: any) => ({ label: c.centerName, value: c.centerCode })); resolve(); },
         error: () => resolve()
       });
     });
@@ -170,25 +170,25 @@ export class ActivityComponent implements OnInit {
 
   fetchList(page: number, limit: number, search?: string): void {
     // Always persist so any reload (delete, import) comes back to same page
-    this.lastPage   = page;
-    this.lastLimit  = limit;
+    this.lastPage = page;
+    this.lastLimit = limit;
     this.lastSearch = search;
 
     const { batchCode, centerCode, status } = this.filterForm.value;
     this.loading = true;
 
     let query = `list?page=${page}&limit=${limit}`;
-    if (batchCode)  query += `&batchCode=${batchCode}`;
+    if (batchCode) query += `&batchCode=${batchCode}`;
     if (centerCode) query += `&centerCode=${centerCode}`;
-    if (status)     query += `&status=${status}`;
-    if (search)     query += `&search=${search}`;
+    if (status) query += `&status=${status}`;
+    if (search) query += `&search=${search}`;
 
     this.commonApi.fetchData({ tenantId: this.tenantId }, 'institue/activity', query).subscribe({
       next: (res: any) => {
         this.dataArray = (res?.data || []).map((a: any) => ({
           ...a,
-          startDateFormatted:   this.formatDate(a.startDate),
-          endDateFormatted:     this.formatDate(a.endDate),
+          startDateFormatted: this.formatDate(a.startDate),
+          endDateFormatted: this.formatDate(a.endDate),
           actualStartFormatted: a.actualStartDate ? this.formatDate(a.actualStartDate) : '-'
         }));
         this.totalRecords = res?.count || this.dataArray.length;
@@ -260,15 +260,15 @@ export class ActivityComponent implements OnInit {
   }
 
   resetImport(): void {
-    this.fileName     = '';
-    this.parsedRows   = [];
-    this.errorRows    = [];
-    this.isDragging   = false;
+    this.fileName = '';
+    this.parsedRows = [];
+    this.errorRows = [];
+    this.isDragging = false;
     this.importLoading = false;
   }
 
-  onDragOver(event: DragEvent): void  { event.preventDefault(); this.isDragging = true; }
-  onDragLeave(): void                  { this.isDragging = false; }
+  onDragOver(event: DragEvent): void { event.preventDefault(); this.isDragging = true; }
+  onDragLeave(): void { this.isDragging = false; }
 
   onDrop(event: DragEvent): void {
     event.preventDefault();
@@ -280,9 +280,9 @@ export class ActivityComponent implements OnInit {
   onImportFileSelected(files: File[]): void {
     const file = files?.[0];
     if (!file) return;
-    this.fileName   = file.name;
+    this.fileName = file.name;
     this.parsedRows = [];
-    this.errorRows  = [];
+    this.errorRows = [];
     this.processFile(file);
   }
 
@@ -293,9 +293,9 @@ export class ActivityComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = (e: any) => {
       try {
-        const data      = new Uint8Array(e.target.result);
-        const workbook  = XLSX.read(data, { type: 'array' });
-        const sheet     = workbook.Sheets[workbook.SheetNames[0]];
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
         if (!rawRows.length) { this.alert.error('File is empty'); return; }
@@ -347,7 +347,7 @@ export class ActivityComponent implements OnInit {
             this.alert.success(`${this.parsedRows.length} activity(s) imported successfully`);
             this.closeModal('activityImportModal');
             this.resetImport();
-             this.reloadCurrentPage();  // ← stays on current page
+            this.reloadCurrentPage();  // ← stays on current page
           } else {
             this.alert.error(res?.message || 'Import failed');
           }
@@ -359,9 +359,9 @@ export class ActivityComponent implements OnInit {
   downloadTemplate(): void {
     const sample = [{
       'BatchCode': '1154A3', 'Activity': 'Phase 4 Orientation',
-      'StartDate': '2018-10-17 00:00:00', 'EndDate': '2019-01-06 00:00:00',
+      'StartDate': '12-Mar-2026', 'EndDate': '12-Mar-2026',
       'Remarks': 'Mandatory for all new joins', 'CentCode': '64',
-      'sno': '1', 'ActualDate': 'NULL'
+      'sno': '1',
     }];
     const ws = XLSX.utils.json_to_sheet(sample);
     const wb = XLSX.utils.book_new();
