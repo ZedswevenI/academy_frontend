@@ -3,6 +3,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 @Component({
   selector: 'app-task',
@@ -12,12 +13,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 })
 export class TaskComponent implements OnInit {
   tenantId = localStorage.getItem('tenantId');
-
   columnsArray = [{ key: 'taskName', label: 'Task Name', sortable: false }, { key: 'assignedDate', label: 'Assigned Date', sortable: false }, { key: 'dueDate', label: 'Due Date', sortable: false }, { key: 'status', label: 'Status', sortable: false }];
-
   dataArray: any[] = [];
   totalRecords = 0;
-
   actions = [
     {
       type: 'icon',
@@ -38,26 +36,25 @@ export class TaskComponent implements OnInit {
     }
   ];
 
-  constructor(private breadcrump: BredcrumpService, private router: Router, private commonApi: CommonapiService, private alert: AlertService) {
+  constructor(private breadcrump: BredcrumpService, private router: Router, private commonApi: CommonapiService, private alert: AlertService, private authService: AuthService) {
     this.breadcrump.set([{ label: 'Task' }]);
   }
 
-  ngOnInit(): void {
-    // this.loadTableData({ page: 1, pageSize: 10 });
-  }
-
-  // ================================
-  // LOAD TASK LIST FROM API
-  // ================================
+  ngOnInit(): void {}
 
   loadTableData(req: { page: number; pageSize: number; search?: string; sortKey?: string; sortDirection?: 'asc' | 'desc' }) {
-    const endpoint = `list?page=${req.page}&limit=${req.pageSize}&search=${req.search}`;
-
+    let endpoint = '';
+    if (this.authService.getRole() === 'L4') {
+      const staffId = this.authService.getStaffId();
+      console.log('staffId ', staffId);
+      endpoint = `list?staffId=${staffId}&page=${req.page}&limit=${req.pageSize}&search=${req.search}`;
+    } else {
+      endpoint = `list?page=${req.page}&limit=${req.pageSize}&search=${req.search}`;
+    }
     this.commonApi.fetchData({ entiId: this.tenantId }, 'teacher/task', endpoint).subscribe({
       next: (res: any) => {
         if (res.status) {
           this.totalRecords = res.count;
-
           this.dataArray = res.data.map((task: any) => ({
             ...task,
             taskName: task.taskName,
@@ -73,18 +70,10 @@ export class TaskComponent implements OnInit {
     });
   }
 
-  // ================================
-  // FORMAT DATE
-  // ================================
-
   formatDate(date: any): string {
     if (!date) return '-';
     return new Date(date).toISOString().split('T')[0];
   }
-
-  // ================================
-  // FORMAT STATUS (Optional Styling)
-  // ================================
 
   formatStatus(status: string): string {
     switch (status) {
@@ -92,6 +81,10 @@ export class TaskComponent implements OnInit {
         return 'Pending';
       case 'IN_PROGRESS':
         return 'In Progress';
+      case 'NEED_MORE_TIME':
+        return 'NEED MORE TIME';
+      case 'NOT_COMPLETED':
+        return 'NOT COMPLETED';
       case 'COMPLETED':
         return 'Completed';
       default:
@@ -99,20 +92,12 @@ export class TaskComponent implements OnInit {
     }
   }
 
-  // ================================
-  // VIEW TASK
-  // ================================
   viewTask(row: any) {
-    console.log('row cav', row);
-
     this.router.navigate(['/app/task/view'], {
+      queryParams: { taskId: row.taskId },
       state: { taskData: row }
     });
   }
-
-  // ================================
-  // EDIT TASK
-  // ================================
 
   editTask(row: any) {
     this.router.navigate(['/app/task/create'], {
