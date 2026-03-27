@@ -1,243 +1,823 @@
-<div class="topic-page">
-    <div class="card mb-3 shadow-sm border-0">
+<style>
+    .exam-page {
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    }
 
-        <!-- ── Card Header ──────────────────────────────────────────────────── -->
-        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    /* ── Stat chips ── */
+    .stat-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    /* ── Exam cards ── */
+    .exam-card {
+        background: #fff;
+        border: 1px solid #e8ecf0;
+        border-radius: 14px;
+        padding: 20px;
+        transition: box-shadow 0.18s, transform 0.18s;
+        cursor: default;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .exam-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #6366f1);
+        opacity: 0;
+        transition: opacity 0.18s;
+    }
+
+    .exam-card:hover {
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.09);
+        transform: translateY(-2px);
+    }
+
+    .exam-card:hover::before {
+        opacity: 1;
+    }
+
+    .exam-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 4px;
+        line-height: 1.3;
+    }
+
+    .exam-meta {
+        font-size: 0.78rem;
+        color: #64748b;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .exam-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Match bar */
+    .match-bar-wrap {
+        margin-bottom: 14px;
+    }
+
+    .match-bar-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.73rem;
+        color: #64748b;
+        margin-bottom: 4px;
+    }
+
+    .match-bar-track {
+        height: 6px;
+        background: #f1f5f9;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .match-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #6366f1);
+        border-radius: 4px;
+        transition: width 0.4s ease;
+    }
+
+    /* Subject pills */
+    .subject-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 14px;
+    }
+
+    .subject-pill {
+        padding: 2px 10px;
+        border-radius: 12px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 0.72rem;
+        font-weight: 500;
+    }
+
+    /* Card actions */
+    .card-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-card-view {
+        flex: 1;
+        padding: 7px 0;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #3b82f6;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .btn-card-view:hover {
+        background: #eff6ff;
+    }
+
+    .btn-card-delete {
+        padding: 7px 12px;
+        background: #fff5f5;
+        border: 1px solid #fee2e2;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: #ef4444;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .btn-card-delete:hover {
+        background: #fef2f2;
+    }
+
+    /* ── Upload modal ── */
+    .upload-modal-body {
+        max-height: 72vh;
+        overflow-y: auto;
+    }
+
+    .file-drop-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 32px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        background: #fafbfc;
+    }
+
+    .file-drop-zone:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+
+    .file-drop-zone input {
+        display: none;
+    }
+
+    /* Preview table */
+    .preview-table {
+        font-size: 0.78rem;
+    }
+
+    .preview-table th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .mark-absent {
+        color: #ef4444;
+        font-weight: 600;
+    }
+
+    .mark-present {
+        color: #1e293b;
+    }
+
+    /* ── View modal ── */
+    .view-subject-header {
+        background: #3b82f6;
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 6px 10px;
+        text-align: center;
+    }
+
+    .view-table td,
+    .view-table th {
+        vertical-align: middle;
+        font-size: 0.82rem;
+    }
+
+    .view-table .absent-mark {
+        color: #ef4444;
+        font-weight: 700;
+    }
+
+    /* ── Import result ── */
+    .result-stat {
+        text-align: center;
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .result-stat .num {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .result-stat .lbl {
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 4px;
+        opacity: 0.75;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+        padding: 60px 20px;
+        text-align: center;
+    }
+
+    .empty-icon {
+        font-size: 3.5rem;
+        opacity: 0.18;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .empty-sub {
+        font-size: 0.85rem;
+        color: #94a3b8;
+    }
+
+    /* ── Pagination ── */
+    .page-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #475569;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+        background: #eff6ff;
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+
+    .page-btn.active {
+        background: #3b82f6;
+        border-color: #3b82f6;
+        color: #fff;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="exam-page p-3">
+
+    <!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
             <div>
-                <h5 class="mb-1 fw-semibold">School Exam Master</h5>
-                <p class="mb-0 text-muted small">Manage school exams mapped to Class &amp; Academic Year.</p>
+                <h1 class="fw-bold mb-1" style="font-size:1.75rem;color:#1e293b">
+                    <i class="fa-solid fa-graduation-cap me-2" style="color:#3b82f6"></i>School Exams
+                </h1>
+                <p class="mb-0 text-muted small">Upload and manage term exam marks for all batches</p>
             </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openImport()"
-                    [disabled]="loading || saving || importing">
-                    <i class="fa-solid fa-file-import"></i>
-                    <span>Import Exams</span>
-                </button>
-                <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="add()"
-                    [disabled]="loading || saving || importing">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>Add Exam</span>
-                </button>
-            </div>
+            <button class="btn btn-primary px-4 py-2 fw-semibold" style="border-radius:10px" (click)="openUpload()">
+                <i class="fa-solid fa-cloud-arrow-up me-2"></i>Import Marks
+            </button>
         </div>
 
-        <!-- ── Table ────────────────────────────────────────────────────────── -->
-        <div class="card-body pt-0">
-            <custom-table [autoFitChars]="true" [columns]="columns" [data]="tableData" [actions]="actions"
-                [loading]="loading" [totalRecords]="totalRecords" [pageSizeOptions]="[10, 20, 50]" [success]="'PLANNED'"
-                [warn]="'COMPLETED'" [danger]="'CANCELLED'" (requestData)="fetchTableData($event)">
-            </custom-table>
+        <!-- Filters -->
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Exam Name</label>
+                <input class="form-control form-control-sm" [(ngModel)]="filterExamName" placeholder="e.g. Mid Term"
+                    (keyup.enter)="applyFilters()" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Batch</label>
+                <select class="form-select form-select-sm" [(ngModel)]="filterBatchCode">
+                    <option value="">All Batches</option>
+                    <option *ngFor="let b of batchesFull" [value]="b.batchCode">{{ b.batchName || b.batchCode }}
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Academic Year</label>
+                <input class="form-control form-control-sm" [(ngModel)]="filterAcademicYear" placeholder="2025-26" />
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary flex-fill" (click)="resetFilters()">
+                    <i class="fa-solid fa-rotate-left me-1"></i>Reset
+                </button>
+                <button class="btn btn-sm btn-primary flex-fill" [disabled]="loading" (click)="applyFilters()">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-magnifying-glass me-1" *ngIf="!loading"></i>Search
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-       MODAL: CREATE / EDIT
-  ════════════════════════════════════════════════════════════════════════ -->
-    <div class="app-modal-backdrop" *ngIf="showForm">
-        <div class="app-modal" style="max-width: 680px">
-
-            <div class="app-modal-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-semibold">
-                        {{ formMode === 'create' ? 'Create School Exam' : 'Edit School Exam' }}
-                    </h6>
-                    <span class="text-muted small">
-                        {{ formMode === 'create' ? 'Add a new school exam' : 'Update exam details' }}
-                    </span>
-                </div>
-                <button type="button" class="btn-close" (click)="cancel()" [disabled]="saving"></button>
-            </div>
-
-            <div class="app-modal-body">
-                <form [formGroup]="form" (ngSubmit)="save()">
-                    <div class="row g-3">
-
-                        <!-- EXAM NAME -->
-                        <div class="col-md-8">
-                            <formfield label="Exam Name" [required]="true" [control]="form.get('examName')"
-                                formControlName="examName" placeholder="e.g. Midterm, Quarterly, Annual">
-                            </formfield>
-                        </div>
-
-                        <!-- CLASS -->
-                        <div class="col-md-4">
-                            <selectbox label="Class" [required]="true" [options]="classOptions" optionLabel="label"
-                                optionValue="value" [control]="form.get('classNo')" formControlName="classNo">
-                            </selectbox>
-                        </div>
-
-                        <!-- ACADEMIC YEAR -->
-                        <div class="col-md-4">
-                            <formfield label="Academic Year" [required]="true" [control]="form.get('academicYear')"
-                                formControlName="academicYear" placeholder="2025-2026">
-                            </formfield>
-                            <div class="form-text">Format: YYYY-YYYY</div>
-                        </div>
-
-                        <!-- START DATE -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Start Date</label>
-                            <input type="date" class="form-control" formControlName="startDate">
-                        </div>
-
-                        <!-- END DATE -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">End Date</label>
-                            <input type="date" class="form-control" formControlName="endDate">
-                        </div>
-
-                        <!-- STATUS (edit only) -->
-                        <div class="col-md-4" *ngIf="formMode === 'edit'">
-                            <selectbox label="Status" [required]="false" [options]="statusOptions" optionLabel="label"
-                                optionValue="value" [control]="form.get('status')" formControlName="status">
-                            </selectbox>
-                        </div>
-
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving">
-                            <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
-                                aria-hidden="true"></span>
-                            {{ formMode === 'create' ? 'Save' : 'Update' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
+    <!-- ══ LOADING ═══════════════════════════════════════════════════════════ -->
+    <div *ngIf="loading" class="d-flex justify-content-center py-5">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3"></div>
+            <div class="text-muted small">Loading exams...</div>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-       MODAL: IMPORT
-  ════════════════════════════════════════════════════════════════════════ -->
-    <div class="app-modal-backdrop" *ngIf="showImport">
-        <div class="app-modal" style="max-width: 1000px">
+    <!-- ══ EMPTY / PROMPT ════════════════════════════════════════════════════ -->
+    <div *ngIf="!loading && !hasSearched" class="empty-state bg-white rounded-4 shadow-sm">
+        <div class="empty-icon"><i class="fa-solid fa-file-circle-question"></i></div>
+        <div class="empty-title">Search for Exams</div>
+        <div class="empty-sub">Use the filters above and click <strong>Search</strong> to load exams</div>
+    </div>
 
-            <div class="app-modal-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-semibold">Import School Exams (Excel)</h6>
-                    <span class="text-muted small">Upload Excel to bulk upsert school exams.</span>
-                </div>
-                <button type="button" class="btn-close" (click)="closeImport()" [disabled]="importing"></button>
-            </div>
+    <div *ngIf="!loading && hasSearched && !exams.length" class="empty-state bg-white rounded-4 shadow-sm">
+        <div class="empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+        <div class="empty-title">No Exams Found</div>
+        <div class="empty-sub">No exam records match your filters. Try importing marks first.</div>
+        <button class="btn btn-primary mt-3 px-4" (click)="openUpload()">
+            <i class="fa-solid fa-cloud-arrow-up me-2"></i>Import Marks
+        </button>
+    </div>
 
-            <div class="app-modal-body">
+    <!-- ══ EXAM CARDS ════════════════════════════════════════════════════════ -->
+    <div *ngIf="!loading && hasSearched && exams.length">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="text-muted small"><strong class="text-dark">{{ totalRecords }}</strong> exam(s) found</div>
+        </div>
 
-                <!-- Instructions -->
-                <div class="alert alert-info py-2 small mb-3">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                            <div class="fw-semibold mb-1">Required columns in Excel:</div>
-                            <div class="text-muted">
-                                <span class="me-2">Exam Name</span> |
-                                <span class="mx-2">Academic Year</span> |
-                                <span class="mx-2">Class</span> |
-                                <span class="mx-2">Start Date</span> |
-                                <span class="mx-2">End Date</span> |
-                                <span class="mx-2">Status</span>
-                            </div>
-                            <div class="text-muted mt-1">
-                                Academic Year format: <b>YYYY-YYYY</b> &nbsp;|&nbsp;
-                                Status: <b>PLANNED</b> / <b>COMPLETED</b> / <b>CANCELLED</b> (defaults to PLANNED).<br>
-                                Existing records with same Exam Name + Academic Year + Class will be <b>updated</b>.
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadSampleExcel()"
-                            [disabled]="importing">
-                            <i class="fa-solid fa-download me-1"></i> Download Sample
-                        </button>
-                    </div>
-                </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6 col-lg-4" *ngFor="let exam of exams">
+                <div class="exam-card">
 
-                <!-- File picker + actions -->
-                <div class="row g-3 align-items-end mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Excel File</label>
-                        <input type="file" class="form-control" accept=".xlsx,.xls" (change)="onExcelSelected($event)"
-                            [disabled]="importing" />
-                        <div class="form-text" *ngIf="importFileName">Selected: {{ importFileName }}</div>
+                    <!-- Title + badges -->
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <div class="exam-title">{{ exam.examName }}</div>
+                        <span *ngIf="exam.academicYear" class="badge bg-primary-subtle text-primary"
+                            style="font-size:0.68rem;white-space:nowrap">{{ exam.academicYear }}</span>
                     </div>
 
-                    <div class="col-md-6 d-flex gap-2 justify-content-end">
-                        <button type="button" class="btn btn-outline-secondary" (click)="resetImport()"
-                            [disabled]="!importPreviewRows.length || importing">
-                            Reset
-                        </button>
-                        <button type="button" class="btn btn-primary" (click)="confirmImport()"
-                            [disabled]="!importPreviewRows.length || importHasInvalidRows || importing">
-                            <span *ngIf="importing" class="spinner-border spinner-border-sm me-2" role="status"
-                                aria-hidden="true"></span>
-                            <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!importing"></i>
-                            Import Now
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Row count summary -->
-                <div *ngIf="importPreviewRows.length" class="mb-2 d-flex justify-content-between align-items-center">
-                    <div class="small text-muted">
-                        Rows: <span class="fw-semibold">{{ importPreviewRows.length }}</span>
-                        <span class="ms-2" *ngIf="importHasInvalidRows">
-                            | Invalid: <span class="fw-semibold text-danger">{{ importInvalidCount }}</span>
+                    <!-- Meta -->
+                    <div class="exam-meta">
+                        <span *ngIf="exam.examDate">
+                            <i class="fa-regular fa-calendar"></i>{{ formatDate(exam.examDate) }}
                         </span>
+                        <span *ngIf="exam.batchCode">
+                            <i class="fa-solid fa-users"></i>{{ exam.batchCode }}
+                        </span>
+                        <span *ngIf="exam.classNo">
+                            <i class="fa-solid fa-layer-group"></i>Class {{ exam.classNo }}
+                        </span>
+                    </div>
+
+                    <!-- Match bar -->
+                    <div class="match-bar-wrap">
+                        <div class="match-bar-label">
+                            <span>Student Match</span>
+                            <span class="fw-semibold" [style.color]="getMatchPct(exam) >= 80 ? '#22c55e' : '#f59e0b'">
+                                {{ exam.matchedCount }}/{{ exam.totalStudents }} ({{ getMatchPct(exam) }}%)
+                            </span>
+                        </div>
+                        <div class="match-bar-track">
+                            <div class="match-bar-fill" [style.width.%]="getMatchPct(exam)"></div>
+                        </div>
+                    </div>
+
+                    <!-- Subjects -->
+                    <div class="subject-pills" *ngIf="exam.subjectNames?.length">
+                        <span class="subject-pill" *ngFor="let s of exam.subjectNames">{{ s }}</span>
+                    </div>
+
+                    <!-- Unmatched warning -->
+                    <div *ngIf="exam.unmatchedCount > 0" class="d-flex align-items-center gap-2 mb-3 p-2 rounded-3"
+                        style="background:#fef9c3;border:1px solid #fde047;font-size:0.75rem;color:#854d0e">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        {{ exam.unmatchedCount }} student(s) not matched to profile
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card-actions">
+                        <button class="btn-card-view" (click)="openView(exam)">
+                            <i class="fa-regular fa-eye me-1"></i>View Results
+                        </button>
+                        <button class="btn-card-delete" (click)="openDelete(exam)" title="Delete exam">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center gap-1" *ngIf="totalPages > 1">
+            <button class="page-btn" (click)="onPageChange(currentPage-1)" [disabled]="currentPage === 1">
+                <i class="fa-solid fa-chevron-left" style="font-size:0.7rem"></i>
+            </button>
+            <ng-container *ngFor="let p of pages">
+                <span *ngIf="p === 0" class="page-btn" style="cursor:default;border:none">…</span>
+                <button *ngIf="p !== 0" class="page-btn" [class.active]="p === currentPage" (click)="onPageChange(p)">
+                    {{ p }}
+                </button>
+            </ng-container>
+            <button class="page-btn" (click)="onPageChange(currentPage+1)" [disabled]="currentPage === totalPages">
+                <i class="fa-solid fa-chevron-right" style="font-size:0.7rem"></i>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     UPLOAD MODAL
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="app-modal-backdrop" *ngIf="showUpload">
+    <div class="app-modal" style="max-width:860px;max-height:94vh;display:flex;flex-direction:column;">
+
+        <div class="app-modal-header d-flex justify-content-between align-items-center flex-shrink-0">
+            <div>
+                <h6 class="mb-0 fw-bold"><i class="fa-solid fa-cloud-arrow-up me-2 text-primary"></i>Import Exam Marks
+                </h6>
+                <span class="text-muted small">Upload Excel with student marks — subjects auto-detected from
+                    columns</span>
+            </div>
+            <button class="btn-close" (click)="closeUpload()" [disabled]="uploading || parsing"></button>
+        </div>
+
+        <div class="app-modal-body upload-modal-body flex-grow-1 position-relative">
+
+            <!-- Overlay loader -->
+            <div *ngIf="parsing || uploading"
+                class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                style="background:rgba(255,255,255,0.82);z-index:5;border-radius:14px;">
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-2"></div>
+                    <div class="small text-muted fw-semibold">{{ parsing ? 'Parsing file…' : 'Importing marks…' }}</div>
+                </div>
+            </div>
+
+            <!-- ── Step 1: Exam details ─────────────────────────────────────────── -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold">Exam Name <span class="text-danger">*</span></label>
+                    <input class="form-control" [(ngModel)]="uploadExamName" placeholder="e.g. Mid Term 2026"
+                        [class.is-invalid]="!uploadExamName && parsedPayload.length > 0" />
+                    <div class="invalid-feedback">Exam name is required</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Exam Date <span class="text-danger">*</span></label>
+                    <input class="form-control" type="date" [(ngModel)]="uploadExamDateStr"
+                        [class.is-invalid]="!uploadExamDateStr && parsedPayload.length > 0" />
+                    <div class="invalid-feedback">Exam date is required</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Academic Year</label>
+                    <input class="form-control" [(ngModel)]="uploadAcademicYear" placeholder="2025-26" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold">Batch <span
+                            class="text-muted fw-normal">(optional)</span></label>
+                    <select class="form-select" [(ngModel)]="uploadBatchCode">
+                        <option value="">— Select batch —</option>
+                        <option *ngFor="let b of batchesFull" [value]="b.batchCode">{{ b.batchName || b.batchCode }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ── Step 2: File upload ─────────────────────────────────────────── -->
+            <label class="file-drop-zone d-block mb-3" for="examFile">
+                <input type="file" id="examFile" accept=".xlsx,.xls,.csv" (change)="onFileChange($event)" />
+                <i class="fa-solid fa-file-excel mb-2 d-block" style="font-size:2rem;color:#22c55e;opacity:0.7"></i>
+                <div class="fw-semibold text-muted small">Click to upload Excel / CSV</div>
+                <div class="text-muted" style="font-size:0.72rem">Columns: Student Eno, Student Id, Student Name, Class,
+                    [Subject1], [Subject2]…, Total marks</div>
+            </label>
+
+            <!-- Parse error -->
+            <div *ngIf="parseError" class="alert alert-danger small py-2 mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ parseError }}
+            </div>
+
+            <!-- ── Preview ────────────────────────────────────────────────────── -->
+            <div *ngIf="parsedPayload.length && !parseError">
+
+                <!-- Stats -->
+                <div class="d-flex flex-wrap gap-3 mb-3">
+                    <div class="stat-chip" style="background:#eff6ff;color:#3b82f6">
+                        <i class="fa-solid fa-users"></i>{{ parsedStats.total }} Students
+                    </div>
+                    <div class="stat-chip" style="background:#f0fdf4;color:#16a34a" *ngIf="parsedSubjects.length">
+                        <i class="fa-solid fa-book-open"></i>{{ parsedSubjects.length }} Subjects
+                    </div>
+                    <div class="stat-chip" style="background:#fef9c3;color:#854d0e" *ngIf="parsedStats.absent > 0">
+                        <i class="fa-solid fa-user-slash"></i>{{ parsedStats.absent }} Absent entries
+                    </div>
+                </div>
+
+                <!-- Subject pills detected -->
+                <div class="mb-3">
+                    <div class="text-muted small mb-1 fw-semibold">Detected Subjects:</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span *ngFor="let s of parsedSubjects" class="badge bg-primary-subtle text-primary border">{{ s
+                            }}</span>
                     </div>
                 </div>
 
                 <!-- Preview table -->
-                <div *ngIf="importPreviewRows.length" class="table-responsive border rounded">
-                    <table class="table table-sm table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width:50px">#</th>
-                                <th>Exam Name</th>
-                                <th style="width:130px">Academic Year</th>
-                                <th style="width:80px">Class</th>
-                                <th style="width:120px">Start Date</th>
-                                <th style="width:120px">End Date</th>
-                                <th style="width:110px">Status</th>
-                                <th style="width:200px">Validation</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let r of importPreviewRows" [class.table-danger]="!r._valid">
-                                <td>{{ r._rowNo }}</td>
-                                <td>{{ r.examName || '—' }}</td>
-                                <td>{{ r.academicYear|| '—' }}</td>
-                                <td>{{ r.classNo || '—' }}</td>
-                                <td>{{ r.startDateLabel }}</td>
-                                <td>{{ r.endDateLabel }}</td>
-                                <td>{{ r.status }}</td>
-                                <td>
-                                    <span *ngIf=" r._valid" class="badge bg-success">OK</span>
-                                    <span *ngIf="!r._valid" class="badge bg-danger">
-                                        {{ r._errors?.join(', ') }}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div *ngIf="importPreviewRows.length && importHasInvalidRows" class="alert alert-warning mt-3 small">
-                    Fix invalid rows in Excel and upload again. Import is disabled until all rows are valid.
-                </div>
-
-                <div class="small text-muted mt-2" *ngIf="importPreviewRows.length">
-                    Uses <b>school/exam/import</b> API (bulkUploadSchoolExams) — existing records are updated, new ones
-                    are created.
+                <div class="border rounded-3 overflow-hidden">
+                    <div class="px-3 py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold small">
+                            <i class="fa-solid fa-table me-1 text-primary"></i>
+                            Preview — first {{ parsedRows.length }} row(s)
+                        </span>
+                        <span *ngIf="previewTruncated" class="badge bg-warning-subtle text-warning border small">
+                            Showing {{ parsedRows.length }} of {{ parsedPayload.length }} rows
+                        </span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0 preview-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Admission No</th>
+                                    <th>School ID</th>
+                                    <th>Student Name</th>
+                                    <th>Class</th>
+                                    <th *ngFor="let s of parsedSubjects">{{ s }}</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let row of parsedRows; let i = index">
+                                    <td class="text-muted">{{ i+1 }}</td>
+                                    <td class="fw-semibold">{{ row.admissionNo || '-' }}</td>
+                                    <td>{{ row.studentSchoolId || '-' }}</td>
+                                    <td>{{ row.studentName || '-' }}</td>
+                                    <td>{{ row.classNo || '-' }}</td>
+                                    <td *ngFor="let s of parsedSubjects">
+                                        <ng-container *ngFor="let sub of row.subjects">
+                                            <span *ngIf="sub.subjectName === s" [class.mark-absent]="sub.isAbsent"
+                                                [class.mark-present]="!sub.isAbsent">
+                                                {{ sub.isAbsent ? 'AB' : (sub.marks !== null ? sub.marks : '-') }}
+                                            </span>
+                                        </ng-container>
+                                    </td>
+                                    <td class="fw-semibold">{{ row.totalMarks }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="app-modal-footer d-flex justify-content-between align-items-center flex-shrink-0 p-3 border-top">
+            <div class="small text-muted" *ngIf="parsedPayload.length">
+                <i class="fa-solid fa-circle-info me-1 text-primary"></i>
+                Re-uploading same exam+date+batch will <strong>overwrite</strong> previous marks
+            </div>
+            <div class="d-flex gap-2 ms-auto">
+                <button class="btn btn-outline-secondary" (click)="closeUpload()" [disabled]="uploading">Cancel</button>
+                <button class="btn btn-primary px-4 fw-semibold" (click)="submitUpload()"
+                    [disabled]="!canSubmit || uploading || parsing">
+                    <span *ngIf="uploading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!uploading"></i>
+                    {{ uploading ? 'Importing…' : 'Import Marks' }}
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     VIEW MODAL
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="app-modal-backdrop" *ngIf="showView">
+    <div class="app-modal" style="max-width:960px;max-height:94vh;display:flex;flex-direction:column;">
+
+        <div class="app-modal-header d-flex justify-content-between align-items-center flex-shrink-0">
+            <div>
+                <h6 class="mb-0 fw-bold">
+                    <i class="fa-solid fa-list-check me-2 text-primary"></i>
+                    {{ viewExam?.examName || 'Exam Results' }}
+                </h6>
+                <span class="text-muted small" *ngIf="viewExam">
+                    {{ formatDate(viewExam.examDate) }}
+                    <span *ngIf="viewExam.batchCode"> &bull; {{ viewExam.batchCode }}</span>
+                    <span *ngIf="viewExam.academicYear"> &bull; {{ viewExam.academicYear }}</span>
+                </span>
+            </div>
+            <button class="btn-close" (click)="closeView()"></button>
+        </div>
+
+        <div class="app-modal-body flex-grow-1" style="overflow-y:auto;">
+
+            <!-- Loading -->
+            <div *ngIf="viewLoading" class="text-center py-5">
+                <div class="spinner-border text-primary mb-2"></div>
+                <div class="text-muted small">Loading results…</div>
+            </div>
+
+            <ng-container *ngIf="!viewLoading && viewExam">
+
+                <!-- Summary stats -->
+                <div class="row g-3 mb-4">
+                    <div class="col-4 col-md-2">
+                        <div class="result-stat" style="background:#eff6ff">
+                            <div class="num" style="color:#3b82f6">{{ viewExam.totalStudents }}</div>
+                            <div class="lbl" style="color:#3b82f6">Total</div>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="result-stat" style="background:#f0fdf4">
+                            <div class="num" style="color:#16a34a">{{ viewExam.matchedCount }}</div>
+                            <div class="lbl" style="color:#16a34a">Matched</div>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2" *ngIf="viewExam.unmatchedCount > 0">
+                        <div class="result-stat" style="background:#fef9c3">
+                            <div class="num" style="color:#d97706">{{ viewExam.unmatchedCount }}</div>
+                            <div class="lbl" style="color:#d97706">Unmatched</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results table -->
+                <div class="border rounded-3 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover mb-0 view-table">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:40px">#</th>
+                                    <th style="min-width:110px">Admission No</th>
+                                    <th style="min-width:140px">Name</th>
+                                    <th style="min-width:60px">Class</th>
+                                    <th *ngFor="let s of viewExam.subjectNames" class="view-subject-header text-center"
+                                        style="min-width:80px">{{ s }}</th>
+                                    <th class="text-center fw-bold"
+                                        style="min-width:70px;background:#1e293b;color:#fff">Total</th>
+                                    <th class="text-center" style="min-width:70px">Matched</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let r of viewExam.results; let i = index">
+                                    <td class="text-muted">{{ i+1 }}</td>
+                                    <td class="fw-semibold">{{ r.admissionNo || '-' }}</td>
+                                    <td>{{ r.studentName || '-' }}</td>
+                                    <td class="text-center">{{ r.classNo || '-' }}</td>
+                                    <td *ngFor="let s of viewExam.subjectNames" class="text-center">
+                                        <span [class.absent-mark]="getSubjectMark(r, s) === 'AB'">
+                                            {{ getSubjectMark(r, s) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center fw-bold">{{ r.totalMarks ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <span *ngIf="r.isMatched" class="badge bg-success-subtle text-success">
+                                            <i class="fa-solid fa-check me-1"></i>Yes
+                                        </span>
+                                        <span *ngIf="!r.isMatched" class="badge bg-warning-subtle text-warning">
+                                            <i class="fa-solid fa-question me-1"></i>No
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </ng-container>
+        </div>
+
+        <div class="app-modal-footer d-flex justify-content-end p-3 border-top flex-shrink-0">
+            <button class="btn btn-outline-secondary" (click)="closeView()">Close</button>
         </div>
     </div>
+</div>
 
-    <!-- Delete modal -->
-    <delete [title]="'Delete School Exam'" [message]="deleteMessage" [(visible)]="deleteModalVisible"
-        (closed)="onDeleteModalClosed($event)">
-    </delete>
 
+<!-- ════════════════════════════════════════════════════════════════════════════
+     DELETE CONFIRM
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="app-modal-backdrop" *ngIf="showDeleteConfirm">
+    <div class="app-modal" style="max-width:440px">
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold text-danger">
+                <i class="fa-solid fa-trash me-2"></i>Delete Exam
+            </h6>
+            <button class="btn-close" (click)="closeDelete()" [disabled]="deleting"></button>
+        </div>
+        <div class="app-modal-body">
+            <div class="alert alert-danger small">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                This will permanently delete <strong>{{ deleteTarget?.examName }}</strong>
+                and all student marks. This cannot be undone.
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button class="btn btn-outline-secondary" (click)="closeDelete()" [disabled]="deleting">Cancel</button>
+                <button class="btn btn-danger fw-semibold" (click)="confirmDelete()" [disabled]="deleting">
+                    <span *ngIf="deleting" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-trash me-1" *ngIf="!deleting"></i>
+                    {{ deleting ? 'Deleting…' : 'Yes, Delete' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     IMPORT RESULT MODAL
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="app-modal-backdrop" *ngIf="showImportResult && importResult">
+    <div class="app-modal" style="max-width:480px">
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold text-success">
+                <i class="fa-solid fa-circle-check me-2"></i>Import Successful
+            </h6>
+            <button class="btn-close" (click)="closeImportResult()"></button>
+        </div>
+        <div class="app-modal-body">
+
+            <div class="row g-3 mb-3" *ngIf="importResult.data">
+                <div class="col-4">
+                    <div class="result-stat" style="background:#eff6ff">
+                        <div class="num" style="color:#3b82f6">{{ importResult.data.totalStudents }}</div>
+                        <div class="lbl" style="color:#3b82f6">Total</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="result-stat" style="background:#f0fdf4">
+                        <div class="num" style="color:#16a34a">{{ importResult.data.matchedCount }}</div>
+                        <div class="lbl" style="color:#16a34a">Matched</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="result-stat" style="background:#fef9c3">
+                        <div class="num" style="color:#d97706">{{ importResult.data.unmatchedCount }}</div>
+                        <div class="lbl" style="color:#d97706">Unmatched</div>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="importResult.data?.profilesUpdated > 0" class="alert alert-success small py-2 mb-3">
+                <i class="fa-solid fa-id-card me-2"></i>
+                <strong>{{ importResult.data.profilesUpdated }}</strong> student profile(s) updated with School ID
+            </div>
+
+            <!-- Warnings -->
+            <div *ngIf="importResult.warnings?.length" class="border rounded-3 overflow-hidden mb-3">
+                <div class="px-3 py-2 bg-warning-subtle border-bottom d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                    <span class="fw-semibold small">{{ importResult.warnings.length }} Unmatched Student(s)</span>
+                </div>
+                <div style="max-height:160px;overflow-y:auto">
+                    <div *ngFor="let w of importResult.warnings"
+                        class="px-3 py-2 border-bottom small d-flex align-items-center gap-2">
+                        <span class="badge bg-warning-subtle text-warning">{{ w.admissionNo }}</span>
+                        <span class="text-muted">{{ w.message }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-primary px-4 fw-semibold" (click)="closeImportResult()">Done</button>
+            </div>
+        </div>
+    </div>
 </div>
