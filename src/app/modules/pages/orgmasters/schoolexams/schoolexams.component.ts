@@ -1,10 +1,56 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
+import { Router } from '@angular/router';
 import * as XLSX from 'xlsx';
-import { finalize } from 'rxjs/operators';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AuthService } from '../../../../service/auth/auth.service';
+ 
+const safeTrim = (v: any): string => (v == null ? '' : String(v).trim());
+ 
+// Non-subject columns — everything else treated as subject
+const META_COLS = new Set([
+  'exam name','examname','exam date','examdate',
+  'student eno','studenteno','student_eno','enrollment no',
+  'student id','studentid','student_id','student name',
+  'studentname','name','class','classno','total marks','totalmarks','total'
+]);
+const isMetaCol = (col: string) => META_COLS.has(safeTrim(col).toLowerCase());
+ 
+const parseMarks = (val: any): { marks: number | null; isAbsent: boolean } => {
+  if (val === null || val === undefined || val === '') return { marks: null, isAbsent: false };
+  const s = safeTrim(String(val)).toUpperCase();
+  if (['AB','ABS','ABSENT','-'].includes(s)) return { marks: null, isAbsent: true };
+  const n = Number(String(val).replace(/,/g, '').trim());
+  return { marks: Number.isFinite(n) ? n : null, isAbsent: false };
+};
+ 
+const parseExcelDate = (val: any): number | null => {
+  if (!val) return null;
+  if (typeof val === 'number' && val > 1000) {
+    const ms = (val - 25569) * 86400 * 1000;
+    const d  = new Date(ms);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  }
+  const s = safeTrim(String(val));
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.getTime();
+};
+ 
+const epochToDateStr = (ms: number): string => {
+  if (!ms) return '';
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+};
+ 
+const dateStrToEpoch = (s: string): number | null => {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+};
 
 @Component({
   selector: 'app-schoolexams',
@@ -12,437 +58,360 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
   templateUrl: './schoolexams.component.html',
   styleUrl: './schoolexams.component.scss'
 })
-export class SchoolexamsComponent implements OnInit {
-  private moduleName = 'ims';
-  entiId: any;
-
-  form!: FormGroup;
-
-  // ── Dropdown options ─────────────────────────────────────────────────────
-  classOptions = Array.from({ length: 8 }, (_, i) => 6 + i).map((n) => ({
-    label: `Class ${n}`,
-    value: n,
-  }));
-
-  statusOptions = [
-    { label: 'Planned',   value: 'PLANNED'   },
-    { label: 'Completed', value: 'COMPLETED' },
-    { label: 'Cancelled', value: 'CANCELLED' },
-  ];
-
-  // ── Table ────────────────────────────────────────────────────────────────
-  loading      = false;
-  totalRecords = 0;
-  tableData: any[] = [];
-
-  columns = [
-    { key: 'examName',    label: 'Exam Name',      sortable: true  },
-    { key: 'academicYear',label: 'Academic Year',  sortable: true  },
-    { key: 'classNo',     label: 'Class',          sortable: true  },
-    { key: 'startDate',   label: 'Start Date',     sortable: false },
-    { key: 'endDate',     label: 'End Date',       sortable: false },
-    { key: 'status',      label: 'Status',         sortable: false },
-  ];
-
-  actions = [
-    {
-      type: 'icon',
-      icon: 'fa-regular fa-pen-to-square',
-      tooltip: 'Edit',
-      callback: (r: any) => this.edit(r),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-regular fa-trash-can',
-      tooltip: 'Delete',
-      callback: (r: any) => this.openDelete(r),
-    },
-  ];
-
-  // ── Create / Edit modal ──────────────────────────────────────────────────
-  showForm  = false;
-  formMode: 'create' | 'edit' = 'create';
-  saving    = false;
-
-  // ── Delete modal ─────────────────────────────────────────────────────────
-  deleteModalVisible = false;
-  deleteTarget: any  = null;
-  deleteMessage      = '';
-
-  // ── Import ───────────────────────────────────────────────────────────────
-  showImport        = false;
-  importFileName    = '';
-  importPreviewRows: any[] = [];
-  importHasInvalidRows = false;
-  importInvalidCount   = 0;
-  importing            = false;
-
+export class SchoolexamsComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private readonly moduleName = 'school';
+ 
+  tenantId = '';
+  loading  = false;
+ 
+  // ── List state ────────────────────────────────────────────────────────────
+  exams:        any[] = [];
+  totalRecords  = 0;
+  currentPage   = 1;
+  pageSize      = 10;
+  hasSearched   = false;
+ 
+  // ── Filters ───────────────────────────────────────────────────────────────
+  filterExamName    = '';
+  filterBatchCode   = '';
+  filterAcademicYear= '';
+ 
+  // ── Batch / center dropdowns ──────────────────────────────────────────────
+  batchesFull:  any[] = [];
+  centersFull:  any[] = [];
+ 
+  // ── Upload modal ──────────────────────────────────────────────────────────
+  showUpload    = false;
+  uploading     = false;
+  parseError    = '';
+  parsing       = false;
+ 
+  // Upload form
+  uploadExamName     = '';
+  uploadExamDateStr  = '';
+  uploadBatchCode    = '';
+  uploadAcademicYear = '';
+ 
+  // Parsed preview
+  parsedRows:      any[] = [];
+  parsedSubjects:  string[] = [];
+  parsedStats      = { total: 0, matched: 0, absent: 0 };
+  previewTruncated = false;
+  private readonly PREVIEW_LIMIT = 20;
+  public parsedPayload: any[] = [];  // full rows for submission
+ 
+  // ── View / delete modal ───────────────────────────────────────────────────
+  showView       = false;
+  viewExam:      any = null;
+  viewLoading    = false;
+ 
+  showDeleteConfirm = false;
+  deleteTarget:  any = null;
+  deleting       = false;
+ 
+  // ── Import result ─────────────────────────────────────────────────────────
+  showImportResult  = false;
+  importResult:  any = null;
+ 
   constructor(
-    private fb: FormBuilder,
-    private breadcrumb: BredcrumpService,
-    private alert: AlertService,
     private commonApi: CommonapiService,
+    private alert:     AlertService,
+    private breadcrumb:BredcrumpService,
+    private router:    Router,
+    private authService: AuthService
   ) {
-    this.entiId = localStorage.getItem('tenantId');
-    this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Masters' },
-      { label: 'School Exams' },
-    ]);
+    this.tenantId = localStorage.getItem('tenantId') || localStorage.getItem('entiId') || '';
+    this.breadcrumb.set([{ label: 'Control Panel' }, { label: 'School Exams' }]);
   }
-
+ 
   ngOnInit(): void {
-    this.initForm();
-    this.fetchTableData({ page: 1, pageSize: 10 });
+    this.loadLookups();
   }
-
-  // ── Form init ────────────────────────────────────────────────────────────
-  private initForm() {
-    this.form = this.fb.group({
-      examId:       [null],
-      examName:     ['', [Validators.required, Validators.maxLength(120)]],
-      academicYear: ['', [Validators.required, Validators.pattern(/^\d{4}-\d{4}$/)]],
-      classNo:      [null, Validators.required],
-      startDate:    [''],
-      endDate:      [''],
-      status:       ['PLANNED'],
-    });
+ 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
-
-  // ── List ─────────────────────────────────────────────────────────────────
-  fetchTableData(event?: {
-    page: number;
-    pageSize: number;
-    search?: string;
-    sortKey?: string;
-    sortDirection?: 'asc' | 'desc';
-  }) {
-    const page  = event?.page     || 1;
-    const limit = event?.pageSize || 10;
-
-    const payload: any = { entiId: this.entiId, page, limit };
-
+ 
+  // ── Lookups ───────────────────────────────────────────────────────────────
+  loadLookups(): void {
+    this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: (r: any) => { this.batchesFull = r?.data || []; } });
+    this.commonApi.fetchData({ entiId: this.tenantId }, 'ims', 'center/list?list=full')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: (r: any) => { this.centersFull = r?.data || []; } });
+  }
+ 
+  // ── List ──────────────────────────────────────────────────────────────────
+  loadExams(): void {
     this.loading = true;
-
-    this.commonApi
-      .fetchData(payload, this.moduleName, 'school/exam/list')
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (res: any) => {
-          const rows = Array.isArray(res?.data) ? res.data : [];
-          this.totalRecords = res?.count || 0;
-
-          this.tableData = rows.map((x: any) => ({
-            examId:      x.examId,
-            examName:    x.examName    || '—',
-            academicYear:x.academicYear|| '—',
-            classNo:     x.classNo     != null ? `Class ${x.classNo}` : '—',
-            startDate:   x.startDate   ? this.epochToDate(x.startDate) : '—',
-            endDate:     x.endDate     ? this.epochToDate(x.endDate)   : '—',
-            status:      x.status      || 'PLANNED',
-            _raw: x,
-          }));
-        },
-        error: () => this.alert.error('Failed to load school exams'),
-      });
-  }
-
-  // ── Add ──────────────────────────────────────────────────────────────────
-  add() {
-    this.formMode = 'create';
-    this.form.reset({
-      examId:       null,
-      examName:     '',
-      academicYear: '',
-      classNo:      null,
-      startDate:    '',
-      endDate:      '',
-      status:       'PLANNED',
-    });
-    this.showForm = true;
-  }
-
-  // ── Edit ─────────────────────────────────────────────────────────────────
-  edit(row: any) {
-    const x = row?._raw || row;
-    this.formMode = 'edit';
-    this.form.patchValue({
-      examId:       x.examId,
-      examName:     x.examName     || '',
-      academicYear: x.academicYear || '',
-      classNo:      x.classNo      ?? null,
-      startDate:    x.startDate    ? this.epochToInputDate(x.startDate) : '',
-      endDate:      x.endDate      ? this.epochToInputDate(x.endDate)   : '',
-      status:       x.status       || 'PLANNED',
-    });
-    this.showForm = true;
-  }
-
-  // ── Save ─────────────────────────────────────────────────────────────────
-  save() {
-    if (this.saving) return;
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.alert.error('Please fill required fields');
-      return;
-    }
-
-    const v = this.form.value || {};
-
-    // Validate date range
-    if (v.startDate && v.endDate) {
-      const sd = new Date(v.startDate).getTime();
-      const ed = new Date(v.endDate).getTime();
-      if (sd > ed) {
-        this.alert.error('Start date cannot be after end date');
-        return;
-      }
-    }
-
-    const payload: any = {
-      entiId:       this.entiId,
-      userId:       localStorage.getItem('userId') || '',
-      examName:     (v.examName     || '').toString().trim(),
-      academicYear: (v.academicYear || '').toString().trim(),
-      classNo:      Number(v.classNo),
-      startDate:    v.startDate ? new Date(v.startDate).getTime() : null,
-      endDate:      v.endDate   ? new Date(v.endDate).getTime()   : null,
-      status:       v.status    || 'PLANNED',
+    const body: any = {
+      tenantId: this.tenantId,
+      page:  this.currentPage,
+      limit: this.pageSize
     };
-
-    const endpoint = this.formMode === 'create' ? 'school/exam/create' : 'school/exam/update';
-    if (this.formMode === 'edit') payload.examId = v.examId;
-
-    this.saving = true;
-
-    this.commonApi
-      .fetchData(payload, this.moduleName, endpoint)
-      .pipe(finalize(() => (this.saving = false)))
+    if (this.filterExamName)     body.examName     = this.filterExamName;
+    if (this.filterBatchCode)    body.batchCode    = this.filterBatchCode;
+    if (this.filterAcademicYear) body.academicYear = this.filterAcademicYear;
+ 
+    this.commonApi.fetchData(body, this.moduleName, 'exam/list')
+      .pipe(takeUntil(this.destroy$), finalize(() => { this.loading = false; this.hasSearched = true; }))
       .subscribe({
-        next: (res: any) => {
-          if (res?.status === false) {
-            this.alert.error(res?.message || 'Save failed');
-            return;
-          }
-          this.alert.success(this.formMode === 'create' ? 'School exam created' : 'School exam updated');
-          this.showForm = false;
-          this.fetchTableData({ page: 1, pageSize: 10 });
+        next: (r: any) => {
+          this.exams       = r?.data  || [];
+          this.totalRecords= r?.count || 0;
         },
-        error: (err: any) => this.alert.error(err?.error?.message || 'Save failed'),
+        error: () => this.alert.error('Failed to load exams')
       });
   }
-
-  cancel() {
-    if (this.saving) return;
-    this.showForm = false;
+ 
+  applyFilters(): void {
+    this.currentPage = 1;
+    this.loadExams();
   }
-
+ 
+  resetFilters(): void {
+    this.filterExamName = '';
+    this.filterBatchCode = '';
+    this.filterAcademicYear = '';
+    this.currentPage = 1;
+    this.hasSearched = false;
+    this.exams = [];
+    this.totalRecords = 0;
+  }
+ 
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadExams();
+  }
+ 
+  // ── View ──────────────────────────────────────────────────────────────────
+  openView(exam: any): void {
+    this.showView   = true;
+    this.viewExam   = null;
+    this.viewLoading= true;
+    this.commonApi.fetchData({ tenantId: this.tenantId, examLogId: exam.examLogId }, this.moduleName, 'exam/upload')
+      .pipe(takeUntil(this.destroy$), finalize(() => this.viewLoading = false))
+      .subscribe({
+        next: (r: any) => { this.viewExam = r?.data || null; },
+        error: () => { this.alert.error('Failed to load exam details'); this.showView = false; }
+      });
+  }
+ 
+  closeView(): void { this.showView = false; this.viewExam = null; }
+ 
   // ── Delete ────────────────────────────────────────────────────────────────
-  openDelete(row: any) {
-    const x = row?._raw || row;
-    this.deleteTarget  = { examId: x.examId, examName: x.examName };
-    this.deleteMessage = `Are you sure you want to delete "${x.examName}"?`;
-    this.deleteModalVisible = true;
+  openDelete(exam: any): void {
+    this.deleteTarget       = exam;
+    this.showDeleteConfirm  = true;
   }
-
-  onDeleteModalClosed(confirmed: boolean) {
-    this.deleteModalVisible = false;
-    if (!confirmed || !this.deleteTarget) return;
-
-    const payload = {
-      entiId:  this.entiId,
-      userId:  localStorage.getItem('userId') || '',
-      examId:  this.deleteTarget.examId,
-    };
-
-    this.commonApi
-      .fetchData(payload, this.moduleName, 'school/exam/delete')
-      .subscribe({
-        next: (res: any) => {
-          if (res?.status === false) {
-            this.alert.error(res?.message || 'Delete failed');
-            return;
-          }
-          this.alert.success('School exam deleted');
-          this.fetchTableData({ page: 1, pageSize: 10 });
-        },
-        error: (err: any) => this.alert.error(err?.error?.message || 'Delete failed'),
-      });
-
-    this.deleteTarget = null;
+ 
+  closeDelete(): void {
+    this.showDeleteConfirm = false;
+    this.deleteTarget      = null;
   }
-
-  // ── Import ────────────────────────────────────────────────────────────────
-  openImport() {
-    if (this.importing) return;
-    this.showImport = true;
-    this.resetImport();
-  }
-
-  closeImport() {
-    if (this.importing) return;
-    this.showImport = false;
-  }
-
-  resetImport() {
-    if (this.importing) return;
-    this.importFileName      = '';
-    this.importPreviewRows   = [];
-    this.importHasInvalidRows = false;
-    this.importInvalidCount  = 0;
-  }
-
-  onExcelSelected(ev: any) {
-    if (this.importing) return;
-    const file: File = ev?.target?.files?.[0];
-    if (!file) return;
-
-    const name = (file.name || '').toLowerCase();
-    if (!name.endsWith('.xlsx') && !name.endsWith('.xls')) {
-      this.alert.error('Please upload a valid Excel file (.xlsx / .xls)');
-      return;
-    }
-
-    this.importFileName = file.name;
-
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      try {
-        const wb  = XLSX.read(e.target.result, { type: 'binary' });
-        const ws  = wb.Sheets[wb.SheetNames[0]];
-        const raw: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' }) as any[];
-        this.importPreviewRows = raw.map((r, idx) => this.mapExcelRow(r, idx + 2));
-        this.computeImportValidation();
-      } catch {
-        this.alert.error('Unable to read Excel file');
-        this.importPreviewRows = [];
-        this.computeImportValidation();
-      }
-    };
-    reader.onerror = () => this.alert.error('Unable to read file');
-    reader.readAsBinaryString(file);
-  }
-
-  private mapExcelRow(r: any, rowNo: number) {
-    const get = (...keys: string[]) => {
-      for (const k of keys) {
-        if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '')
-          return String(r[k]).trim();
-      }
-      return '';
-    };
-
-    const examName    = get('Exam Name', 'ExamName', 'examName');
-    const academicYear = get('Academic Year', 'AcademicYear', 'academicYear');
-    const classRaw    = get('Class', 'classNo', 'ClassNo');
-    const classNo     = Number(String(classRaw).trim());
-    const statusRaw   = get('Status', 'status').toUpperCase() || 'PLANNED';
-    const VALID_STATUS = ['PLANNED', 'COMPLETED', 'CANCELLED'];
-    const status      = VALID_STATUS.includes(statusRaw) ? statusRaw : 'PLANNED';
-
-    // Parse dates — accept DD-MM-YYYY, YYYY-MM-DD, or Excel serial numbers
-    const parseDateToEpoch = (val: string): number | null => {
-      if (!val) return null;
-      // Excel serial number
-      const serial = Number(val);
-      if (!isNaN(serial) && serial > 40000) {
-        return new Date(Math.round((serial - 25569) * 86400 * 1000)).getTime();
-      }
-      const d = new Date(val);
-      return isNaN(d.getTime()) ? null : d.getTime();
-    };
-
-    const startDateRaw = get('Start Date', 'StartDate', 'startDate');
-    const endDateRaw   = get('End Date', 'EndDate', 'endDate');
-    const startDate    = parseDateToEpoch(startDateRaw);
-    const endDate      = parseDateToEpoch(endDateRaw);
-
-    const errors: string[] = [];
-
-    if (!examName)    errors.push('Exam Name required');
-    if (!academicYear || !/^\d{4}-\d{4}$/.test(academicYear))
-      errors.push('Academic Year must be YYYY-YYYY');
-    if (!Number.isFinite(classNo) || classNo < 6 || classNo > 13)
-      errors.push('Invalid Class (6–13)');
-    if (startDate && endDate && startDate > endDate)
-      errors.push('Start Date after End Date');
-
-    return {
-      _rowNo:      rowNo,
-      _valid:      errors.length === 0,
-      _errors:     errors,
-      examName,
-      academicYear,
-      classNo:     Number.isFinite(classNo) ? classNo : classRaw,
-      startDate,
-      endDate,
-      startDateLabel: startDateRaw || '—',
-      endDateLabel:   endDateRaw   || '—',
-      status,
-    };
-  }
-
-  private computeImportValidation() {
-    const invalid = (this.importPreviewRows || []).filter(x => !x._valid);
-    this.importInvalidCount   = invalid.length;
-    this.importHasInvalidRows = invalid.length > 0;
-  }
-
-  confirmImport() {
-    if (this.importing) return;
-    if (!this.importPreviewRows.length) { this.alert.error('Upload an Excel file first'); return; }
-    if (this.importHasInvalidRows)      { this.alert.error('Fix invalid rows before importing'); return; }
-
-    const rows = this.importPreviewRows.map(x => ({
-      examName:     (x.examName     || '').toString().trim(),
-      academicYear: (x.academicYear || '').toString().trim(),
-      classNo:      Number(x.classNo),
-      startDate:    x.startDate || null,
-      endDate:      x.endDate   || null,
-      status:       x.status    || 'PLANNED',
-    }));
-
-    const payload = { entiId: this.entiId, userId: localStorage.getItem('userId') || '', rows };
-
-    this.importing = true;
-
-    this.commonApi
-      .fetchData(payload, this.moduleName, 'school/exam/import')
-      .pipe(finalize(() => (this.importing = false)))
-      .subscribe({
-        next: (res: any) => {
-          if (res?.status === false) { this.alert.error(res?.message || 'Import failed'); return; }
-          const inserted = res?.data?.inserted ?? 0;
-          const updated  = res?.data?.updated  ?? 0;
-          this.alert.success(`Import completed — Inserted: ${inserted}, Updated: ${updated}`);
-          this.showImport = false;
-          this.resetImport();
-          this.fetchTableData({ page: 1, pageSize: 10 });
-        },
-        error: (err: any) => this.alert.error(err?.error?.message || 'Import failed'),
-      });
-  }
-
-  downloadSampleExcel() {
-    const rows = [
-      { 'Exam Name': 'Midterm', 'Academic Year': '2025-2026', 'Class': 9,  'Start Date': '2025-09-01', 'End Date': '2025-09-05', 'Status': 'PLANNED' },
-      { 'Exam Name': 'Quarterly', 'Academic Year': '2025-2026', 'Class': 10, 'Start Date': '2025-10-10', 'End Date': '2025-10-15', 'Status': 'PLANNED' },
-      { 'Exam Name': 'Annual', 'Academic Year': '2025-2026', 'Class': 11, 'Start Date': '',            'End Date': '',            'Status': 'PLANNED' },
-    ];
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'SchoolExams');
-    XLSX.writeFile(wb, 'SchoolExam_Import_Sample.xlsx');
-  }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  private epochToDate(epoch: number): string {
-    return new Date(epoch).toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric',
+ 
+  confirmDelete(): void {
+    if (!this.deleteTarget) return;
+    this.deleting = true;
+    this.commonApi.fetchData(
+      { tenantId: this.tenantId, examLogId: this.deleteTarget.examLogId, userId: localStorage.getItem('userId') },
+      this.moduleName, 'exam/delete'
+    )
+    .pipe(takeUntil(this.destroy$), finalize(() => { this.deleting = false; this.closeDelete(); }))
+    .subscribe({
+      next: () => { this.alert.success('Exam deleted'); this.loadExams(); },
+      error: (err: any) => this.alert.error(err?.error?.message || 'Delete failed')
     });
   }
-
-  private epochToInputDate(epoch: number): string {
-    return new Date(epoch).toISOString().split('T')[0];
+ 
+  // ── Upload modal ──────────────────────────────────────────────────────────
+  openUpload(): void {
+    this.showUpload = true;
+    this._resetUpload();
+  }
+ 
+  closeUpload(): void {
+    this.showUpload = false;
+    this._resetUpload();
+  }
+ 
+  private _resetUpload(): void {
+    this.uploadExamName     = '';
+    this.uploadExamDateStr  = '';
+    this.uploadBatchCode    = '';
+    this.uploadAcademicYear = '';
+    this.parsedRows         = [];
+    this.parsedSubjects     = [];
+    this.parsedPayload      = [];
+    this.parsedStats        = { total: 0, matched: 0, absent: 0 };
+    this.parseError         = '';
+    this.parsing            = false;
+    this.previewTruncated   = false;
+  }
+ 
+  onFileChange(e: any): void {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    this.parseError   = '';
+    this.parsedRows   = [];
+    this.parsedPayload= [];
+    const name = f.name.toLowerCase();
+    if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.csv')) {
+      this.parseError = 'Please upload a .xlsx, .xls or .csv file';
+      return;
+    }
+    this.parsing = true;
+    const reader = new FileReader();
+    reader.onload = (evt: any) => {
+      try {
+        const wb    = XLSX.read(new Uint8Array(evt.target.result as ArrayBuffer), { type: 'array', cellDates: false });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        if (!sheet) { this.parseError = 'Excel has no sheets'; return; }
+        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+        if (!rows.length) { this.parseError = 'Excel file is empty'; return; }
+        this._processRows(rows);
+      } catch {
+        this.parseError = 'Failed to parse file. Please check the format.';
+      } finally {
+        this.parsing = false;
+      }
+    };
+    reader.onerror = () => { this.parsing = false; this.parseError = 'Failed to read file.'; };
+    reader.readAsArrayBuffer(f);
+  }
+ 
+  private _processRows(rawRows: any[]): void {
+    const headers = Object.keys(rawRows[0]);
+ 
+    // Find meta columns
+    const colExamName    = headers.find(h => ['exam name','examname'].includes(safeTrim(h).toLowerCase()));
+    const colExamDate    = headers.find(h => ['exam date','examdate'].includes(safeTrim(h).toLowerCase()));
+    const colStudentEno  = headers.find(h => ['student eno','studenteno','enrollment no','admissionno'].includes(safeTrim(h).toLowerCase()));
+    const colStudentId   = headers.find(h => ['student id','studentid'].includes(safeTrim(h).toLowerCase()));
+    const colStudentName = headers.find(h => ['student name','studentname','name'].includes(safeTrim(h).toLowerCase()));
+    const colClass       = headers.find(h => ['class','classno'].includes(safeTrim(h).toLowerCase()));
+    const colTotal       = headers.find(h => ['total marks','totalmarks','total'].includes(safeTrim(h).toLowerCase()));
+ 
+    // Subject columns
+    const subjectCols = headers.filter(h => !isMetaCol(h));
+    if (!subjectCols.length) { this.parseError = 'No subject columns found. Check column headers.'; return; }
+ 
+    this.parsedSubjects = subjectCols.map(c => safeTrim(c));
+ 
+    // Auto-fill exam name / date from Excel if not already set
+    if (!this.uploadExamName && colExamName) {
+      this.uploadExamName = safeTrim(rawRows[0][colExamName]);
+    }
+    if (!this.uploadExamDateStr && colExamDate) {
+      const ms = parseExcelDate(rawRows[0][colExamDate]);
+      if (ms) this.uploadExamDateStr = epochToDateStr(ms);
+    }
+ 
+    // Build payload
+    let absentCount = 0;
+    this.parsedPayload = rawRows.map(row => {
+      const admissionNo = colStudentEno  ? safeTrim(row[colStudentEno])  : '';
+      const schoolId    = colStudentId   ? safeTrim(row[colStudentId])   : '';
+      const studentName = colStudentName ? safeTrim(row[colStudentName]) : '';
+      const classNo     = colClass       ? (Number(row[colClass]) || null) : null;
+      const excelTotal  = colTotal       ? (Number(row[colTotal])  || null) : null;
+ 
+      const subjects = subjectCols.map(col => {
+        const { marks, isAbsent } = parseMarks(row[col]);
+        if (isAbsent) absentCount++;
+        return { subjectName: safeTrim(col), marks, isAbsent };
+      });
+ 
+      const autoTotal  = subjects.reduce((s, x) => s + (x.marks ?? 0), 0);
+      const totalMarks = excelTotal !== null ? excelTotal : autoTotal;
+ 
+      return { admissionNo, studentSchoolId: schoolId, studentName, classNo, subjects, totalMarks };
+    });
+ 
+    this.parsedStats = {
+      total:   this.parsedPayload.length,
+      matched: 0,
+      absent:  absentCount
+    };
+ 
+    // Preview
+    this.previewTruncated = this.parsedPayload.length > this.PREVIEW_LIMIT;
+    this.parsedRows       = this.parsedPayload.slice(0, this.PREVIEW_LIMIT);
+  }
+ 
+  // Validate before submit
+  get canSubmit(): boolean {
+    return !!this.uploadExamName && !!this.uploadExamDateStr &&
+           this.parsedPayload.length > 0 && !this.parseError;
+  }
+ 
+  submitUpload(): void {
+    if (!this.canSubmit) {
+      this.alert.warning('Please fill Exam Name, Exam Date and upload a valid file.');
+      return;
+    }
+    const examDate = dateStrToEpoch(this.uploadExamDateStr);
+    if (!examDate) { this.alert.error('Invalid exam date'); return; }
+ 
+    const payload: any = {
+      tenantId:     this.tenantId,
+      examName:     this.uploadExamName,
+      examDate,
+      batchCode:    this.uploadBatchCode    || null,
+      academicYear: this.uploadAcademicYear || null,
+      data:         this.parsedPayload,
+      userId:       localStorage.getItem('userId')
+    };
+ 
+    this.uploading = true;
+    this.commonApi.fetchData(payload, this.moduleName, 'exam/import')
+      .pipe(takeUntil(this.destroy$), finalize(() => this.uploading = false))
+      .subscribe({
+        next: (r: any) => {
+          this.closeUpload();
+          this.importResult   = r;
+          this.showImportResult = true;
+          this.loadExams();
+        },
+        error: (err: any) => this.alert.error(err?.error?.message || 'Import failed')
+      });
+  }
+ 
+  closeImportResult(): void {
+    this.showImportResult = false;
+    this.importResult     = null;
+  }
+ 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  formatDate(ms: number): string {
+    if (!ms) return '-';
+    return new Date(ms).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  }
+ 
+  getMatchPct(exam: any): number {
+    if (!exam?.totalStudents) return 0;
+    return Math.round((exam.matchedCount / exam.totalStudents) * 100);
+  }
+ 
+  getSubjectMark(result: any, subjectName: string): string {
+    const s = (result.subjects || []).find((x: any) => x.subjectName === subjectName);
+    if (!s) return '-';
+    return s.isAbsent ? 'AB' : (s.marks !== null ? String(s.marks) : '-');
+  }
+ 
+  get totalPages(): number {
+    return Math.ceil(this.totalRecords / this.pageSize);
+  }
+ 
+  get pages(): number[] {
+    const total = this.totalPages;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    if (this.currentPage <= 4) return [1,2,3,4,5,0,total];
+    if (this.currentPage >= total - 3) return [1,0,total-4,total-3,total-2,total-1,total];
+    return [1,0,this.currentPage-1,this.currentPage,this.currentPage+1,0,total];
   }
 }
+ 
