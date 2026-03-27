@@ -1,75 +1,51 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
         <div class="d-flex align-items-center justify-content-between mb-4">
             <h1 class="fw-bold mb-0" style="font-size: 30px;">
                 <i class="fa-solid fa-list-check me-2"></i>
                 {{ isEditMode ? 'Edit Task' : 'Create Task' }}
             </h1>
         </div>
-
         <form [formGroup]="taskForm">
             <div class="row g-3">
-
                 <div class="col-md-6">
-                    <formfield label="Task" formControlName="taskName"
-                        [control]="taskForm.get('taskName')"
+                    <formfield label="Task" formControlName="taskName" [control]="taskForm.get('taskName')"
                         placeholder="Enter Task" [required]="true">
                     </formfield>
                 </div>
-
                 <div class="col-md-6" *ngIf="!isL4">
-                    <selectbox label="Faculty" [options]="faculty_options"
-                        formControlName="staffId"
+                    <selectbox label="Faculty" [options]="faculty_options" formControlName="staffId"
                         [control]="taskForm.get('staffId')" [required]="true">
                     </selectbox>
                 </div>
-
                 <div class="col-md-6">
                     <formfield label="Due Date" type="date" formControlName="dueDate"
-                        [control]="taskForm.get('dueDate')"  [min]="minDateTime" [required]="true">
+                        [control]="taskForm.get('dueDate')" [min]="minDateTime" [required]="true">
                     </formfield>
                 </div>
-
-                <!-- File upload — formControlName="file" matches buildForm()
-                     existingFiles shows current attachment in edit mode
-                     isUploading disables submit while upload is in progress -->
                 <div class="col-md-6">
-                    <importfiles
-                        label="Upload Material"
-                        [multiple]="false"
-                        formControlName="file"
+                    <importfiles label="Upload File" [multiple]="false" formControlName="file"
                         [existingFiles]="isEditMode ? uploadedAttachments : []"
                         (filesChanged)="onFilesSelected($event)">
                     </importfiles>
-
-                    <!-- Upload in progress indicator -->
                     <div *ngIf="isUploading" class="d-flex align-items-center gap-2 mt-1">
                         <span class="spinner-border spinner-border-sm text-primary"></span>
                         <small class="text-muted">Uploading file...</small>
                     </div>
                 </div>
-
                 <div class="col-12">
-                    <doceditor label="Description" placeholder="Type here...."
-                        formControlName="description"
-                        [control]="taskForm.get('description')"
-                        [modules]="descriptionModules"
-                        id="taskDescription" height="200px" width="100%">
+                    <doceditor label="Description" placeholder="Type here...." formControlName="description"
+                        [control]="taskForm.get('description')" [modules]="descriptionModules" id="taskDescription"
+                        height="200px" width="100%">
                     </doceditor>
                 </div>
-
             </div>
-
             <div class="col-12 text-end mt-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn closebutton px-4"
-                    style="border-radius: 30px;" routerLink="/app/task">
+                <button type="button" class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/task">
                     Back
                 </button>
                 <button *ngIf="editData?.status !== 'Completed'" type="button" class="btn submitbutton px-4"
-                    [disabled]="taskForm.invalid || isUploading"
-                    (click)="submitTask()"
-                    style="border-radius: 30px;">
+                    [disabled]="taskForm.invalid || isUploading" (click)="submitTask()" style="border-radius: 30px;">
                     <span *ngIf="isUploading">
                         <span class="spinner-border spinner-border-sm me-1"></span>
                         Uploading...
@@ -79,7 +55,6 @@
                     </span>
                 </button>
             </div>
-
         </form>
     </div>
 </div>

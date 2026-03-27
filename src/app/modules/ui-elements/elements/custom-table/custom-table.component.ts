@@ -289,12 +289,11 @@ export class CustomTableComponent {
   @Input() warningLimit!: number;
   @Input() success!: string;
   @Input() warn!: string;
+  @Input() warn1!: string;
   @Input() danger!: string;
   @Input() primary!: string;
 
   getNetStyle(value: number | string | null, colKey?: string) {
-
-    // String Condition
     if (typeof value === 'string') {
       if (value === this.success) {
         return {
@@ -305,6 +304,14 @@ export class CustomTableComponent {
           borderRadius: '30px'
         }
       } else if (value === this.warn) {
+        return {
+          backgroundColor: '#fff5d6',
+          color: '#ffc107',
+          fontWeight: 'bold',
+          padding: '6px',
+          borderRadius: '30px'
+        };
+      }else if (value === this.warn1) {
         return {
           backgroundColor: '#fff5d6',
           color: '#ffc107',
