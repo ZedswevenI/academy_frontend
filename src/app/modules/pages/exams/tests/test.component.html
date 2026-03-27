@@ -184,3 +184,41 @@
         </button>
     </div>
 </div>
+
+<!-- ================= PUBLISH RESULT MODAL ================= -->
+<div class="app-modal-backdrop" *ngIf="showPublishResultModal">
+    <div class="app-modal" style="max-width: 480px;">
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0 fw-semibold">
+                    <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Publish Result
+                </h6>
+                <span class="text-muted small" *ngIf="publishResultRow">
+                    {{ publishResultRow.examName }}
+                </span>
+            </div>
+            <button type="button" class="btn-close" (click)="cancelPublishResult()"
+                [disabled]="publishingResult"></button>
+        </div>
+        <div class="app-modal-body">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Note</label>
+                <textarea class="form-control" rows="3" [(ngModel)]="publishResultNote"
+                    placeholder="Enter a note (e.g. First publish, Re-publish after correction...)"
+                    [disabled]="publishingResult"></textarea>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary" (click)="cancelPublishResult()"
+                    [disabled]="publishingResult">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="confirmPublishResult()"
+                    [disabled]="publishingResult">
+                    <span *ngIf="publishingResult" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <i class="fa-solid fa-bullhorn me-1" *ngIf="!publishingResult"></i>
+                    Publish Result
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

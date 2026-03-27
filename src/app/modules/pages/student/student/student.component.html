@@ -7,11 +7,19 @@
           <h1 class="fw-bold mb-0" style="font-size: 30px;">
             <i class="fa-solid fa-user-graduate me-2"></i> My Student
           </h1>
-          <!-- <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button">
-            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
-            Add Student</button> -->
           <!-- Right Actions -->
-          <div class="d-flex align-items-center gap-3">
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+              (click)="openBulkUpload()">
+              <i class="fa-solid fa-file-import"></i>
+              <span>Import Students</span>
+            </button>
+
+            <button class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+              (click)="openImageUpload()">
+              <i class="fa-solid fa-images"></i>
+              <span>Upload Photos</span>
+            </button>
 
             <div class="view-switch">
               <button class="view-btn active" type="button" [ngClass]="{ active: activeTab === 'list' }"
@@ -31,15 +39,196 @@
       </div>
     </div>
     <div class="mt-3">
-      <!-- <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
-        [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-        (requestData)="loadTableData($event)"></custom-table> -->
       <ng-container *ngIf="activeTab === 'list'">
         <app-table-list></app-table-list>
       </ng-container>
       <ng-container *ngIf="activeTab === 'grid'">
         <app-grid-list></app-grid-list>
       </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: BULK EXCEL UPLOAD ================= -->
+<div class="app-modal-backdrop" *ngIf="showBulkUpload">
+  <div class="app-modal" style="max-width: 1100px;">
+    <div class="app-modal-header d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-0 fw-semibold">Import Student Details (Excel)</h6>
+        <span class="text-muted small">Upload Excel to bulk update student information.</span>
+      </div>
+      <button type="button" class="btn-close" (click)="closeBulkUpload()" [disabled]="bulkUploading"></button>
+    </div>
+
+    <div class="app-modal-body">
+      <div class="alert alert-info py-2 small mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <div class="fw-semibold mb-1">Required columns in Excel:</div>
+            <div class="text-muted">
+              <span class="me-2">Enrolment Number *</span> |
+              <span class="mx-2">Full Name</span> |
+              <span class="mx-2">Mobile</span> |
+              <span class="mx-2">Email</span> |
+              <span class="mx-2">Parent Name</span> |
+              <span class="mx-2">Parent Mobile</span>
+            </div>
+            <div class="text-muted mt-1">
+              <b>Enrolment Number</b> is mandatory and used to match existing students.
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadBulkSample()"
+            [disabled]="bulkUploading">
+            <i class="fa-solid fa-download me-1"></i>
+            Download Sample Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Excel File</label>
+          <input type="file" class="form-control" accept=".xlsx,.xls" (change)="onBulkExcelSelected($event)"
+            [disabled]="bulkUploading" />
+          <div class="form-text" *ngIf="bulkFileName">Selected: {{ bulkFileName }}</div>
+        </div>
+
+        <div class="col-md-6 d-flex gap-2 justify-content-end">
+          <button type="button" class="btn btn-outline-secondary" (click)="resetBulkUpload()"
+            [disabled]="!bulkPreviewRows.length || bulkUploading">
+            Reset
+          </button>
+
+          <button type="button" class="btn btn-primary" (click)="confirmBulkUpload()"
+            [disabled]="!bulkPreviewRows.length || bulkHasInvalidRows || bulkUploading">
+            <span *ngIf="bulkUploading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!bulkUploading"></i>
+            Import Now
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="bulkPreviewRows.length" class="mb-2 d-flex justify-content-between align-items-center">
+        <div class="small text-muted">
+          Rows: <span class="fw-semibold">{{ bulkPreviewRows.length }}</span>
+          <span class="ms-2" *ngIf="bulkHasInvalidRows">
+            | Invalid: <span class="fw-semibold text-danger">{{ bulkInvalidCount }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="bulkPreviewRows.length" class="table-responsive border rounded" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+            <tr>
+              <th style="width:50px;">#</th>
+              <th>Enrolment No.</th>
+              <th>Full Name</th>
+              <th>Mobile</th>
+              <th>Email</th>
+              <th>Parent Name</th>
+              <th>Parent Mobile</th>
+              <th style="width:180px;">Validation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of bulkPreviewRows" [class.table-danger]="!r._valid">
+              <td>{{ r._rowNo }}</td>
+              <td>{{ r.admissionNo }}</td>
+              <td>{{ r.fullName }}</td>
+              <td>{{ r.mobile }}</td>
+              <td>{{ r.email }}</td>
+              <td>{{ r.parentName }}</td>
+              <td>{{ r.parentMobile }}</td>
+              <td>
+                <span *ngIf="r._valid" class="badge bg-success">OK</span>
+                <span *ngIf="!r._valid" class="badge bg-danger">{{ r._errors?.join(', ') }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="bulkPreviewRows.length && bulkHasInvalidRows" class="alert alert-warning mt-3 small">
+        Fix invalid rows in Excel and upload again. Import is disabled until all rows are valid.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: BULK IMAGE UPLOAD ================= -->
+<div class="app-modal-backdrop" *ngIf="showImageUpload">
+  <div class="app-modal" style="max-width: 900px;">
+    <div class="app-modal-header d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-0 fw-semibold">Upload Student Photos</h6>
+        <span class="text-muted small">Upload images named by Admission Number (e.g. ADM001.jpg)</span>
+      </div>
+      <button type="button" class="btn-close" (click)="closeImageUpload()" [disabled]="imageUploading"></button>
+    </div>
+
+    <div class="app-modal-body">
+      <div class="alert alert-info py-2 small mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <div class="fw-semibold mb-1">Instructions:</div>
+            <div class="text-muted">
+              1. Name each image as the student's <b>Admission/Enrolment Number</b> (e.g. ADM001.jpg)<br>
+              2. Supported formats: <b>JPG, JPEG, PNG</b><br>
+              3. Maximum <b>100 images</b> per upload
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadImageSample()"
+            [disabled]="imageUploading">
+            <i class="fa-solid fa-download me-1"></i>
+            Download Instructions
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Select Images</label>
+          <input type="file" class="form-control" accept="image/jpeg,image/jpg,image/png" multiple
+            (change)="onImagesSelected($event)" [disabled]="imageUploading" />
+          <div class="form-text" *ngIf="imageFiles.length">{{ imageFiles.length }} image(s) selected</div>
+        </div>
+
+        <div class="col-md-6 d-flex gap-2 justify-content-end">
+          <button type="button" class="btn btn-outline-secondary" (click)="resetImageUpload()"
+            [disabled]="!imageFiles.length || imageUploading">
+            Reset
+          </button>
+
+          <button type="button" class="btn btn-primary" (click)="confirmImageUpload()"
+            [disabled]="!imageFiles.length || imageUploading">
+            <span *ngIf="imageUploading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!imageUploading"></i>
+            Upload Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Image Preview Grid -->
+      <div *ngIf="imagePreviewList.length" class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
+        <div class="row g-3">
+          <div *ngFor="let img of imagePreviewList; let i = index" class="col-md-3 col-sm-4 col-6">
+            <div class="card border shadow-sm h-100">
+              <img [src]="img.preview" class="card-img-top" style="height: 120px; object-fit: cover;" alt="Preview">
+              <div class="card-body p-2 text-center">
+                <div class="fw-semibold small text-truncate" title="{{ img.admissionNo }}">{{ img.admissionNo }}</div>
+                <div class="text-muted small text-truncate" title="{{ img.name }}">{{ img.name }}</div>
+                <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeImage(i)"
+                  [disabled]="imageUploading" title="Remove">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

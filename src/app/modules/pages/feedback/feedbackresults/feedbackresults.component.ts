@@ -61,7 +61,7 @@ export class FeedbackresultsComponent implements OnInit {
   fetchResults(formId: string): void {
     this.loading = true;
     this.commonApi
-      .fetchData({ tenantId: this.tenantId, formId }, 'ims/feedback', 'results')
+      .fetchData({ tenantId: this.tenantId, formId }, 'feedback', 'results')
       .subscribe({
         next: (res: any) => {
           if (res?.status) {

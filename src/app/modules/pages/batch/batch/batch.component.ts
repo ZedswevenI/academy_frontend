@@ -30,41 +30,41 @@ export class BatchComponent implements OnInit {
 
   // ── options ────────────────────────────────────────────────────────────────
   statusOptions = [
-    { label: 'ALL',      value: 'ALL'      },
-    { label: 'DRAFT',    value: 'DRAFT'    },
-    { label: 'ACTIVE',   value: 'ACTIVE'   },
-    { label: 'CLOSED',   value: 'CLOSED'   },
+    { label: 'ALL', value: 'ALL' },
+    { label: 'DRAFT', value: 'DRAFT' },
+    { label: 'ACTIVE', value: 'ACTIVE' },
+    { label: 'CLOSED', value: 'CLOSED' },
     { label: 'INACTIVE', value: 'INACTIVE' },
   ];
   statusEditorOptions = [
-    { label: 'DRAFT',    value: 'DRAFT'    },
-    { label: 'ACTIVE',   value: 'ACTIVE'   },
-    { label: 'CLOSED',   value: 'CLOSED'   },
+    { label: 'DRAFT', value: 'DRAFT' },
+    { label: 'ACTIVE', value: 'ACTIVE' },
+    { label: 'CLOSED', value: 'CLOSED' },
     { label: 'INACTIVE', value: 'INACTIVE' },
   ];
   filterAcademicYearOptions: any[] = [{ label: 'All', value: '' }];
-  programsFull:           any[] = [];
-  centersFull:            any[] = [];
-  programOptions:         any[] = [{ label: 'All', value: '' }];
-  centerOptions:          any[] = [{ label: 'All', value: '' }];
-  programOptionsForEditor:any[] = [{ label: 'Select', value: '' }];
+  programsFull: any[] = [];
+  centersFull: any[] = [];
+  programOptions: any[] = [{ label: 'All', value: '' }];
+  centerOptions: any[] = [{ label: 'All', value: '' }];
+  programOptionsForEditor: any[] = [{ label: 'Select', value: '' }];
   centerOptionsForEditor: any[] = [{ label: 'Select', value: '' }];
   courseStartYearOptions: any[] = [{ label: 'Select', value: '' }];
   ayInfoDoc: any | null = null;
 
   // ── table columns / actions ────────────────────────────────────────────────
   columns = [
-    { key: 'batchName',    label: 'Batch Name', sortable: true  },
-    { key: 'batchCode',    label: 'Code',       sortable: true  },
-    { key: 'academicYear', label: 'AY',         sortable: true  },
-    { key: 'programName',  label: 'Program',    sortable: false },
-    { key: 'centerName',   label: 'Center',     sortable: false },
+    { key: 'batchName', label: 'Batch Name', sortable: false },
+    { key: 'batchCode', label: 'Code', sortable: false },
+    { key: 'academicYear', label: 'AY', sortable: false },
+    { key: 'programName', label: 'Program', sortable: false },
+    { key: 'centerName', label: 'Center', sortable: false },
     {
-      key: 'status', label: 'Status', sortable: true, type: 'badge',
+      key: 'status', label: 'Status', sortable: false, type: 'badge',
       badgeColors: {
-        ACTIVE:   'badge bg-success-subtle text-success',
-        DRAFT:    'badge bg-secondary-subtle text-secondary',
-        CLOSED:   'badge bg-danger-subtle text-danger',
+        ACTIVE: 'badge bg-success-subtle text-success',
+        DRAFT: 'badge bg-secondary-subtle text-secondary',
+        CLOSED: 'badge bg-danger-subtle text-danger',
         INACTIVE: 'badge bg-dark-subtle text-dark',
       },
     },
@@ -114,70 +114,70 @@ export class BatchComponent implements OnInit {
 
   // ── create/edit modal ──────────────────────────────────────────────────────
   showEditorModal = false;
-  isEditMode      = false;          // ✅ FIX: track create vs edit
-  editingBatchId  = '';             // ✅ FIX: keep batchId for update call
+  isEditMode = false;          // ✅ FIX: track create vs edit
+  editingBatchId = '';             // ✅ FIX: keep batchId for update call
 
   // ── assign students modal ──────────────────────────────────────────────────
-  showAssignModal          = false;
-  activeBatch:             any      = null;
-  eligibleStudents:        any[]    = [];
-  eligibleStudentsFiltered:any[]    = [];
-  eligibleSearch           = '';
-  selectedStudentIds       = new Set<string>();
+  showAssignModal = false;
+  activeBatch: any = null;
+  eligibleStudents: any[] = [];
+  eligibleStudentsFiltered: any[] = [];
+  eligibleSearch = '';
+  selectedStudentIds = new Set<string>();
 
   // ── staff map modal ────────────────────────────────────────────────────────
-  showStaffModal        = false;
-  activeBatchForStaff:  any | null = null;
-  staffListFull:        any[]      = [];
-  staffOptions:         any[]      = [{ label: 'Select', value: '' }];
-  staffOptionsAll:      any[]      = [{ label: 'Select', value: '' }];
-  staffOptionsFiltered: any[]      = [{ label: 'Select', value: '' }];
-  batchSubjectOptions:  any[]      = [{ label: 'Select', value: '' }];
-  staffDraft:           any        = { subjectId: '', staffId: '' };
-  staffMapRows:         any[]      = [];
+  showStaffModal = false;
+  activeBatchForStaff: any | null = null;
+  staffListFull: any[] = [];
+  staffOptions: any[] = [{ label: 'Select', value: '' }];
+  staffOptionsAll: any[] = [{ label: 'Select', value: '' }];
+  staffOptionsFiltered: any[] = [{ label: 'Select', value: '' }];
+  batchSubjectOptions: any[] = [{ label: 'Select', value: '' }];
+  staffDraft: any = { subjectId: '', staffId: '' };
+  staffMapRows: any[] = [];
 
   // ── promote modal ──────────────────────────────────────────────────────────
-  showPromoteModal  = false;
+  showPromoteModal = false;
   promoteBatch: any = null;
 
   // ── late entry modal ───────────────────────────────────────────────────────
-  showLateModal   = false;
+  showLateModal = false;
   lateEntryBatch: any = null;
   lateForm!: FormGroup;
   lateTypeOptions = [
-    { label: 'Staff',   value: 'STAFF'   },
+    { label: 'Staff', value: 'STAFF' },
     { label: 'Student', value: 'STUDENT' },
   ];
   // For student late entry — load batch students
-  batchStudents:       any[] = [];
+  batchStudents: any[] = [];
   batchStudentsLoading = false;
   // For staff late entry — reuse staffListFull (loaded on init)
 
   // ── special class modal ────────────────────────────────────────────────────
-  showSpecialClassModal  = false;
+  showSpecialClassModal = false;
   specialClassBatch: any = null;
   specialClassForm!: FormGroup;
   specialClassSubjectOptions: any[] = [{ label: 'Select', value: '' }];
-  specialClassStaffOptions:   any[] = [{ label: 'Select', value: '' }];
+  specialClassStaffOptions: any[] = [{ label: 'Select', value: '' }];
   periodTypeOptions = [
-    { label: 'Lecture',  value: 'LECTURE'  },
-    { label: 'Lab',      value: 'LAB'      },
+    { label: 'Lecture', value: 'LECTURE' },
+    { label: 'Lab', value: 'LAB' },
     { label: 'Tutorial', value: 'TUTORIAL' },
-    { label: 'Test',     value: 'TEST'     },
+    { label: 'Test', value: 'TEST' },
     { label: 'Revision', value: 'REVISION' },
-    { label: 'Exam',     value: 'EXAM'     },
+    { label: 'Exam', value: 'EXAM' },
   ];
   modeOptions = [
     { label: 'Offline', value: 'OFFLINE' },
-    { label: 'Online',  value: 'ONLINE'  },
+    { label: 'Online', value: 'ONLINE' },
   ];
 
   constructor(
-    private fb:         FormBuilder,
+    private fb: FormBuilder,
     private breadcrumb: BredcrumpService,
-    private alert:      AlertService,
-    private commonApi:  CommonapiService,
-    private router:     Router,
+    private alert: AlertService,
+    private commonApi: CommonapiService,
+    private router: Router,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -217,53 +217,53 @@ export class BatchComponent implements OnInit {
   // ── form init ───────────────────────────────────────────────────────────────
   initForms() {
     this.filterForm = this.fb.group({
-      search:      [''],
-      status:      ['ALL'],
-      academicYear:[''],
-      programId:   [''],
-      centerId:    [''],
+      search: [''],
+      status: ['ALL'],
+      academicYear: [''],
+      programId: [''],
+      centerId: [''],
     });
 
     this.editorForm = this.fb.group({
-      batchName:       ['', [Validators.required]],
-      batchCode:       ['', [Validators.required]],
+      batchName: ['', [Validators.required]],
+      batchCode: ['', [Validators.required]],
       courseStartYear: ['', [Validators.required]],
-      cohortAy:        [''],
-      academicYear:    [''],
-      programId:       ['', [Validators.required]],
-      programName:     [''],
-      programCode:     [''],
-      centerId:        ['', [Validators.required]],
-      centerName:      [''],
-      centerCode:      [''],
-      startDate:       ['', [Validators.required]],
-      endDate:         [''],
-      status:          ['ACTIVE', [Validators.required]],
-      remarks:         [''],
+      cohortAy: [''],
+      academicYear: [''],
+      programId: ['', [Validators.required]],
+      programName: [''],
+      programCode: [''],
+      centerId: ['', [Validators.required]],
+      centerName: [''],
+      centerCode: [''],
+      startDate: ['', [Validators.required]],
+      endDate: [''],
+      status: ['ACTIVE', [Validators.required]],
+      remarks: [''],
     });
 
     this.lateForm = this.fb.group({
-      type:               ['STAFF', [Validators.required]],
-      personId:           ['',      [Validators.required]],
-      timetableId:        ['',      [Validators.required]],
-      periodNo:           [1,       [Validators.required, Validators.min(1)]],
-      scheduledStartMin:  [0,       [Validators.required, Validators.min(0)]],
-      delayMinutes:       [0,       [Validators.required, Validators.min(0)]],
-      reason:             [''],
+      type: ['STAFF', [Validators.required]],
+      personId: ['', [Validators.required]],
+      timetableId: ['', [Validators.required]],
+      periodNo: [1, [Validators.required, Validators.min(1)]],
+      scheduledStartMin: [0, [Validators.required, Validators.min(0)]],
+      delayMinutes: [0, [Validators.required, Validators.min(0)]],
+      reason: [''],
     });
 
     this.specialClassForm = this.fb.group({
-      date:        ['', [Validators.required]],
-      periodNo:    [1,  [Validators.required, Validators.min(1)]],
-      startTime:   ['', [Validators.required]],
-      endTime:     ['', [Validators.required]],
-      subjectId:   ['', [Validators.required]],
-      staffId:     ['', [Validators.required]],
-      periodType:  ['LECTURE', [Validators.required]],
-      mode:        ['OFFLINE', [Validators.required]],
-      topic:       [''],
-      venue:       [''],
-      zoomUrl:     [''],
+      date: ['', [Validators.required]],
+      periodNo: [1, [Validators.required, Validators.min(1)]],
+      startTime: ['', [Validators.required]],
+      endTime: ['', [Validators.required]],
+      subjectId: ['', [Validators.required]],
+      staffId: ['', [Validators.required]],
+      periodType: ['LECTURE', [Validators.required]],
+      mode: ['OFFLINE', [Validators.required]],
+      topic: [''],
+      venue: [''],
+      zoomUrl: [''],
     });
   }
 
@@ -312,7 +312,7 @@ export class BatchComponent implements OnInit {
     const n = Number(ms);
     if (!Number.isFinite(n) || n <= 0) return '';
     const d = new Date(n);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   /** Convert "HH:MM" string → minutes from midnight */
@@ -324,7 +324,7 @@ export class BatchComponent implements OnInit {
   /** Convert minutes from midnight → "HH:MM" */
   private minToTimeStr(min: number): string {
     const h = Math.floor(min / 60), m = min % 60;
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   private buildCourseStartYearOptions() {
@@ -343,12 +343,12 @@ export class BatchComponent implements OnInit {
           label: `${p?.programCodes || p?.code || '-'} - ${p?.programName || p?.name || '-'}`,
           value: safeTrim(p?.programId || p?._id),
         }));
-        this.programOptions          = [{ label: 'All', value: '' }, ...opts];
+        this.programOptions = [{ label: 'All', value: '' }, ...opts];
         this.programOptionsForEditor = [{ label: 'Select', value: '' }, ...opts];
       },
       error: () => {
-        this.programsFull            = [];
-        this.programOptions          = [{ label: 'All', value: '' }];
+        this.programsFull = [];
+        this.programOptions = [{ label: 'All', value: '' }];
         this.programOptionsForEditor = [{ label: 'Select', value: '' }];
       },
     });
@@ -362,12 +362,12 @@ export class BatchComponent implements OnInit {
           label: `${c?.centerName || c?.name || '-'} (${c?.centerCode || c?.code || '-'})`,
           value: safeTrim(c?.centerId || c?._id),
         }));
-        this.centerOptions          = [{ label: 'All', value: '' }, ...opts];
+        this.centerOptions = [{ label: 'All', value: '' }, ...opts];
         this.centerOptionsForEditor = [{ label: 'Select', value: '' }, ...opts];
       },
       error: () => {
-        this.centersFull            = [];
-        this.centerOptions          = [{ label: 'All', value: '' }];
+        this.centersFull = [];
+        this.centerOptions = [{ label: 'All', value: '' }];
         this.centerOptionsForEditor = [{ label: 'Select', value: '' }];
       },
     });
@@ -405,44 +405,44 @@ export class BatchComponent implements OnInit {
             value: safeTrim(s?.staffId || s?._id),
           })),
         ];
-        this.staffOptions         = opts;
-        this.staffOptionsAll      = [...opts];
+        this.staffOptions = opts;
+        this.staffOptionsAll = [...opts];
         this.staffOptionsFiltered = [...opts];
         // Also populate special class staff options
         this.specialClassStaffOptions = [...opts];
       },
       error: () => {
-        this.staffListFull        = [];
-        this.staffOptions         = [{ label: 'Select', value: '' }];
-        this.staffOptionsAll      = [{ label: 'Select', value: '' }];
+        this.staffListFull = [];
+        this.staffOptions = [{ label: 'Select', value: '' }];
+        this.staffOptionsAll = [{ label: 'Select', value: '' }];
         this.staffOptionsFiltered = [{ label: 'Select', value: '' }];
       },
     });
   }
 
   loadBatches(event?: { page: number; pageSize: number; search?: string }) {
-    const page  = event?.page     || 1;
+    const page = event?.page || 1;
     const limit = event?.pageSize || 20;
-    const f     = this.filterForm?.value || {};
-    const search      = safeTrim(event?.search || f.search);
-    const status      = safeTrim(f.status);
-    const academicYear= this.normalizeAy(f.academicYear);
-    const programId   = safeTrim(f.programId);
-    const centerId    = safeTrim(f.centerId);
+    const f = this.filterForm?.value || {};
+    const search = safeTrim(event?.search || f.search);
+    const status = safeTrim(f.status);
+    const academicYear = this.normalizeAy(f.academicYear);
+    const programId = safeTrim(f.programId);
+    const centerId = safeTrim(f.centerId);
     const qp = this.buildQueryParams({
       page, limit,
-      ...(search       ? { search }       : {}),
+      ...(search ? { search } : {}),
       ...(status && status !== 'ALL' ? { status } : {}),
       ...(academicYear ? { academicYear } : {}),
-      ...(programId    ? { programId }    : {}),
-      ...(centerId     ? { centerId }     : {}),
+      ...(programId ? { programId } : {}),
+      ...(centerId ? { centerId } : {}),
     });
     this.loading = true;
     this.commonApi.fetchData({ entiId: this.entiId }, this.moduleName, `list${qp}`).subscribe({
       next: (res: any) => {
-        this.loading      = false;
+        this.loading = false;
         this.totalRecords = Number(res?.count || 0);
-        this.batchRows    = (res?.data || []).map((b: any) => ({ ...b, _raw: b }));
+        this.batchRows = (res?.data || []).map((b: any) => ({ ...b, _raw: b }));
       },
       error: (err: any) => {
         this.loading = false;
@@ -453,9 +453,9 @@ export class BatchComponent implements OnInit {
 
   // ── CREATE BATCH ─────────────────────────────────────────────────────────────
   openCreate() {
-    this.isEditMode     = false;
+    this.isEditMode = false;
     this.editingBatchId = '';
-    this.ayInfoDoc      = null;
+    this.ayInfoDoc = null;
     this.editorForm.reset({
       batchName: '', batchCode: '', courseStartYear: '', cohortAy: '',
       academicYear: '', programId: '', programName: '', programCode: '',
@@ -463,7 +463,7 @@ export class BatchComponent implements OnInit {
       startDate: '', endDate: '', status: 'ACTIVE', remarks: '',
     });
     // Re-enable all fields for create
-    ['programId','centerId','courseStartYear'].forEach(f => this.editorForm.get(f)?.enable());
+    ['programId', 'centerId', 'courseStartYear'].forEach(f => this.editorForm.get(f)?.enable());
     this.showEditorModal = true;
   }
 
@@ -473,31 +473,31 @@ export class BatchComponent implements OnInit {
   // ✅ FIX: set isEditMode=true, store batchId, prevent AY overwrite
   openEdit(row: any) {
     const b = row?._raw || row;
-    this.isEditMode     = true;
+    this.isEditMode = true;
     this.editingBatchId = safeTrim(b?.batchId);
-    this.ayInfoDoc      = null;
+    this.ayInfoDoc = null;
 
     this.editorForm.patchValue({
-      batchName:       b.batchName,
-      batchCode:       b.batchCode,
+      batchName: b.batchName,
+      batchCode: b.batchCode,
       courseStartYear: Number(String(b.academicYear || '').split('-')[0]) || '',
-      cohortAy:        b.cohortAy    || '',
-      academicYear:    b.academicYear|| '',
-      programId:       b.programId,
-      programName:     b.programName || '',
-      programCode:     b.programCode || '',
-      centerId:        b.centerId,
-      centerName:      b.centerName  || '',
-      centerCode:      b.centerCode  || '',
-      remarks:         b.remarks     || '',
-      startDate:       this.epochMsToDateInput(b.startDate),
-      endDate:         this.epochMsToDateInput(b.endDate),
-      status:          b.status,
+      cohortAy: b.cohortAy || '',
+      academicYear: b.academicYear || '',
+      programId: b.programId,
+      programName: b.programName || '',
+      programCode: b.programCode || '',
+      centerId: b.centerId,
+      centerName: b.centerName || '',
+      centerCode: b.centerCode || '',
+      remarks: b.remarks || '',
+      startDate: this.epochMsToDateInput(b.startDate),
+      endDate: this.epochMsToDateInput(b.endDate),
+      status: b.status,
     });
 
     // Disable core fields if students assigned (backend also enforces this)
     const hasStudents = (b.studentCount || 0) > 0;
-    ['programId','centerId','courseStartYear'].forEach(f => {
+    ['programId', 'centerId', 'courseStartYear'].forEach(f => {
       hasStudents ? this.editorForm.get(f)?.disable() : this.editorForm.get(f)?.enable();
     });
 
@@ -529,8 +529,8 @@ export class BatchComponent implements OnInit {
   private onCreateInputsChanged() {
     if (!this.showEditorModal || this.isEditMode) return;
     const v = this.editorForm.getRawValue() || {};
-    const programId  = safeTrim(v.programId);
-    const startYear  = Number(v.courseStartYear);
+    const programId = safeTrim(v.programId);
+    const startYear = Number(v.courseStartYear);
     if (!programId || !Number.isFinite(startYear) || startYear <= 0) {
       this.ayInfoDoc = null;
       this.editorForm.patchValue({ cohortAy: '', academicYear: '', startDate: '', endDate: '' }, { emitEvent: false });
@@ -544,7 +544,7 @@ export class BatchComponent implements OnInit {
       return;
     }
     const cohortAy = this.buildCohortAy(startYear, duration);
-    const firstAy  = this.normalizeAy(this.buildFirstAcademicYear(startYear));
+    const firstAy = this.normalizeAy(this.buildFirstAcademicYear(startYear));
     this.editorForm.patchValue({ cohortAy, academicYear: firstAy }, { emitEvent: false });
     this.fetchAyInfoAndApply(programId, startYear, cohortAy, firstAy);
   }
@@ -565,8 +565,8 @@ export class BatchComponent implements OnInit {
         this.applyAyInfoToEditor(doc, courseStartYear, firstAy);
       },
       error: (err: any) => {
-        this.loading  = false;
-        this.ayInfoDoc= null;
+        this.loading = false;
+        this.ayInfoDoc = null;
         this.alert.error(err?.error?.message || 'Failed to load AY config');
       },
     });
@@ -577,7 +577,7 @@ export class BatchComponent implements OnInit {
     const yr = yearsArr.find((y: any) => this.normalizeAy(y?.academicYear) === this.normalizeAy(firstAy)) || yearsArr[0] || null;
     const patch: any = {};
     if (yr?.startOn && Number(yr.startOn) > 0) patch.startDate = this.epochMsToDateInput(yr.startOn);
-    if (yr?.endOn   && Number(yr.endOn)   > 0) patch.endDate   = this.epochMsToDateInput(yr.endOn);
+    if (yr?.endOn && Number(yr.endOn) > 0) patch.endDate = this.epochMsToDateInput(yr.endOn);
     if (Object.keys(patch).length) this.editorForm.patchValue(patch, { emitEvent: false });
   }
 
@@ -588,21 +588,21 @@ export class BatchComponent implements OnInit {
     if (!this.isEditMode) this.onCreateInputsChanged();
     if (this.editorForm.invalid) { this.editorForm.markAllAsTouched(); this.alert.error('Please fill all required fields'); return; }
 
-    const v          = this.editorForm.getRawValue() || {};
-    const programId  = safeTrim(v.programId);
-    const centerId   = safeTrim(v.centerId);
+    const v = this.editorForm.getRawValue() || {};
+    const programId = safeTrim(v.programId);
+    const centerId = safeTrim(v.centerId);
 
     if (this.isEditMode) {
       // ── UPDATE ──
       const startMs = this.dateToEpochMs(v.startDate);
-      const endMs   = this.dateToEpochMs(v.endDate);
+      const endMs = this.dateToEpochMs(v.endDate);
       if (!startMs) { this.alert.error('Start Date is required'); return; }
-      if (!endMs)   { this.alert.error('End Date is required');   return; }
+      if (!endMs) { this.alert.error('End Date is required'); return; }
       if (startMs >= endMs) { this.alert.error('End Date must be after Start Date'); return; }
 
       const payload: any = {
-        entiId:    this.entiId,
-        batchId:   this.editingBatchId,
+        entiId: this.entiId,
+        batchId: this.editingBatchId,
         batchName: safeTrim(v.batchName),
         batchCode: safeTrim(v.batchCode),
         programId,
@@ -611,10 +611,10 @@ export class BatchComponent implements OnInit {
         centerId,
         centerName: safeTrim(v.centerName) || null,
         centerCode: safeTrim(v.centerCode) || null,
-        startDate:  startMs,
-        endDate:    endMs,
-        status:     safeTrim(v.status) || 'ACTIVE',
-        remarks:    safeTrim(v.remarks) || null,
+        startDate: startMs,
+        endDate: endMs,
+        status: safeTrim(v.status) || 'ACTIVE',
+        remarks: safeTrim(v.remarks) || null,
       };
       this.loading = true;
       this.commonApi.fetchData(payload, this.moduleName, 'update').subscribe({
@@ -628,7 +628,7 @@ export class BatchComponent implements OnInit {
         this.alert.error('Program, Center and Course Start Year are required');
         return;
       }
-      const cohortAy     = safeTrim(v.cohortAy);
+      const cohortAy = safeTrim(v.cohortAy);
       const academicYear = this.normalizeAy(v.academicYear);
       const programStartAy = this.normalizeAy(this.buildFirstAcademicYear(courseStartYear));
       if (!cohortAy || !academicYear || !programStartAy) {
@@ -636,29 +636,29 @@ export class BatchComponent implements OnInit {
         return;
       }
       const startMs = this.dateToEpochMs(v.startDate);
-      const endMs   = this.dateToEpochMs(v.endDate);
+      const endMs = this.dateToEpochMs(v.endDate);
       if (!startMs) { this.alert.error('Start Date is required'); return; }
-      if (!endMs)   { this.alert.error('End Date is required');   return; }
+      if (!endMs) { this.alert.error('End Date is required'); return; }
       if (startMs >= endMs) { this.alert.error('End Date must be after Start Date'); return; }
 
       const payload: any = {
-        entiId:       this.entiId,
-        batchName:    safeTrim(v.batchName),
-        batchCode:    safeTrim(v.batchCode),
+        entiId: this.entiId,
+        batchName: safeTrim(v.batchName),
+        batchCode: safeTrim(v.batchCode),
         programId,
-        programName:  safeTrim(v.programName) || null,
-        programCode:  safeTrim(v.programCode) || null,
+        programName: safeTrim(v.programName) || null,
+        programCode: safeTrim(v.programCode) || null,
         centerId,
-        centerName:   safeTrim(v.centerName) || null,
-        centerCode:   safeTrim(v.centerCode) || null,
+        centerName: safeTrim(v.centerName) || null,
+        centerCode: safeTrim(v.centerCode) || null,
         cohortAy,
         programStartAy,
         academicYear,
-        startDate:    startMs,
-        endDate:      endMs,
-        duration:     Number(this.ayInfoDoc?.duration || 0) || null,
-        status:       safeTrim(v.status) || 'ACTIVE',
-        remarks:      safeTrim(v.remarks) || null,
+        startDate: startMs,
+        endDate: endMs,
+        duration: Number(this.ayInfoDoc?.duration || 0) || null,
+        status: safeTrim(v.status) || 'ACTIVE',
+        remarks: safeTrim(v.remarks) || null,
       };
       this.loading = true;
       this.commonApi.fetchData(payload, this.moduleName, 'create').subscribe({
@@ -675,18 +675,18 @@ export class BatchComponent implements OnInit {
     this.activeBatch = b;
     this.showAssignModal = true;
     this.selectedStudentIds.clear();
-    this.eligibleSearch           = '';
-    this.eligibleStudents         = [];
+    this.eligibleSearch = '';
+    this.eligibleStudents = [];
     this.eligibleStudentsFiltered = [];
     this.loadEligibleStudents();
   }
 
   closeAssignModal() {
-    this.showAssignModal          = false;
-    this.activeBatch              = null;
-    this.eligibleStudents         = [];
+    this.showAssignModal = false;
+    this.activeBatch = null;
+    this.eligibleStudents = [];
     this.eligibleStudentsFiltered = [];
-    this.eligibleSearch           = '';
+    this.eligibleSearch = '';
     this.selectedStudentIds.clear();
   }
 
@@ -696,7 +696,7 @@ export class BatchComponent implements OnInit {
     this.loading = true;
     this.commonApi.fetchData({ entiId: this.entiId, batchId }, 'batch', 'students/eligible').subscribe({
       next: (res: any) => {
-        this.loading          = false;
+        this.loading = false;
         this.eligibleStudents = res?.data || [];
         this.applyEligibleFilter(true);
       },
@@ -708,9 +708,9 @@ export class BatchComponent implements OnInit {
     const q = safeTrim(this.eligibleSearch).toLowerCase();
     this.eligibleStudentsFiltered = q
       ? this.eligibleStudents.filter((s: any) =>
-          safeTrim(s?.student?.name).toLowerCase().includes(q) ||
-          safeTrim(s?.student?.phone).toLowerCase().includes(q) ||
-          safeTrim(s?.admissionNo).toLowerCase().includes(q))
+        safeTrim(s?.student?.name).toLowerCase().includes(q) ||
+        safeTrim(s?.student?.phone).toLowerCase().includes(q) ||
+        safeTrim(s?.admissionNo).toLowerCase().includes(q))
       : [...this.eligibleStudents];
   }
 
@@ -740,20 +740,20 @@ export class BatchComponent implements OnInit {
     const batchId = safeTrim(b?.batchId);
     if (!batchId) return;
     this.activeBatchForStaff = b;
-    this.showStaffModal      = true;
-    this.staffOptionsAll      = [...(this.staffOptions || [{ label: 'Select', value: '' }])];
+    this.showStaffModal = true;
+    this.staffOptionsAll = [...(this.staffOptions || [{ label: 'Select', value: '' }])];
     this.staffOptionsFiltered = [...this.staffOptionsAll];
     this.staffMapRows = Array.isArray(b?.staffMap) ? b.staffMap.map((x: any) => ({ ...x })) : [];
-    this.staffDraft   = { subjectId: '', staffId: '' };
+    this.staffDraft = { subjectId: '', staffId: '' };
     this.loadBatchSubjects(batchId);
   }
 
   closeStaffModal() {
-    this.showStaffModal      = false;
+    this.showStaffModal = false;
     this.activeBatchForStaff = null;
     this.batchSubjectOptions = [{ label: 'Select', value: '' }];
-    this.staffDraft          = { subjectId: '', staffId: '' };
-    this.staffMapRows        = [];
+    this.staffDraft = { subjectId: '', staffId: '' };
+    this.staffMapRows = [];
   }
 
   private loadBatchSubjects(batchId: string) {
@@ -775,19 +775,19 @@ export class BatchComponent implements OnInit {
   }
 
   addStaffMapRow() {
-    const subjId  = safeTrim(this.staffDraft.subjectId);
+    const subjId = safeTrim(this.staffDraft.subjectId);
     const staffId = safeTrim(this.staffDraft.staffId);
     if (!subjId || !staffId) { this.alert.error('Select subject and staff'); return; }
     if (this.staffMapRows.some((r: any) => safeTrim(r?.subjectId) === subjId)) {
       this.alert.error('This subject is already mapped. Remove and re-add.'); return;
     }
-    const subjOpt  = this.batchSubjectOptions.find((x: any) => safeTrim(x?.value) === subjId);
+    const subjOpt = this.batchSubjectOptions.find((x: any) => safeTrim(x?.value) === subjId);
     const staffOpt = this.staffOptions.find((x: any) => safeTrim(x?.value) === staffId);
     this.staffMapRows.push({
-      subjectId:   subjId,
+      subjectId: subjId,
       subjectName: subjOpt?.label || null,
-      staffId:     staffId,
-      staffName:   staffOpt?.label || null,
+      staffId: staffId,
+      staffName: staffOpt?.label || null,
     });
     this.staffDraft = { subjectId: '', staffId: '' };
   }
@@ -801,13 +801,13 @@ export class BatchComponent implements OnInit {
     const batchId = safeTrim(this.activeBatchForStaff?.batchId);
     if (!batchId) return;
     const payload = {
-      entiId:   this.entiId,
+      entiId: this.entiId,
       batchId,
       staffMap: this.staffMapRows.map((x: any) => ({
-        subjectId:   safeTrim(x?.subjectId),
+        subjectId: safeTrim(x?.subjectId),
         subjectName: safeTrim(x?.subjectName) || null,
-        staffId:     safeTrim(x?.staffId),
-        staffName:   safeTrim(x?.staffName) || null,
+        staffId: safeTrim(x?.staffId),
+        staffName: safeTrim(x?.staffName) || null,
       })),
     };
     this.loading = true;
@@ -845,8 +845,8 @@ export class BatchComponent implements OnInit {
       this.alert.error('Only ACTIVE batches can be promoted.');
       return;
     }
-    this.promoteBatch    = b;
-    this.showPromoteModal= true;
+    this.promoteBatch = b;
+    this.showPromoteModal = true;
   }
 
   closePromoteModal() { this.showPromoteModal = false; this.promoteBatch = null; }
@@ -893,7 +893,7 @@ export class BatchComponent implements OnInit {
           this.lateForm.patchValue({ timetableId: safeTrim(latest?._id) }, { emitEvent: false });
         }
       },
-      error: () => {},
+      error: () => { },
     });
   }
 
@@ -938,8 +938,8 @@ export class BatchComponent implements OnInit {
   submitLateEntry() {
     if (this.loading) return;
     if (this.lateForm.invalid) { this.lateForm.markAllAsTouched(); this.alert.error('Please fill all required fields'); return; }
-    const v        = this.lateForm.value;
-    const type     = safeTrim(v.type).toUpperCase();
+    const v = this.lateForm.value;
+    const type = safeTrim(v.type).toUpperCase();
     const personId = safeTrim(v.personId);
     // Resolve person name
     let personName = '';
@@ -951,17 +951,17 @@ export class BatchComponent implements OnInit {
       personName = safeTrim(s?.student?.name || '');
     }
     const payload = {
-      entiId:           this.entiId,
+      entiId: this.entiId,
       type,
       personId,
       personName,
-      timetableId:      safeTrim(v.timetableId),
-      batchCode:        safeTrim(this.lateEntryBatch?.batchCode),
-      date:             Date.now(),       // today — or make it a date picker field
-      periodNo:         Number(v.periodNo),
-      scheduledStartMin:Number(v.scheduledStartMin),
-      delayMinutes:     Number(v.delayMinutes),
-      reason:           safeTrim(v.reason) || null,
+      timetableId: safeTrim(v.timetableId),
+      batchCode: safeTrim(this.lateEntryBatch?.batchCode),
+      date: Date.now(),       // today — or make it a date picker field
+      periodNo: Number(v.periodNo),
+      scheduledStartMin: Number(v.scheduledStartMin),
+      delayMinutes: Number(v.delayMinutes),
+      reason: safeTrim(v.reason) || null,
     };
     this.loading = true;
     this.commonApi.fetchData(payload, 'timetable', 'late-entry/log').subscribe({
@@ -1003,40 +1003,40 @@ export class BatchComponent implements OnInit {
     if (this.loading) return;
     if (this.specialClassForm.invalid) { this.specialClassForm.markAllAsTouched(); this.alert.error('Please fill all required fields'); return; }
 
-    const v         = this.specialClassForm.value;
-    const dateMs    = this.dateToEpochMs(v.date);
-    const startMin  = this.timeStrToMin(v.startTime);
-    const endMin    = this.timeStrToMin(v.endTime);
+    const v = this.specialClassForm.value;
+    const dateMs = this.dateToEpochMs(v.date);
+    const startMin = this.timeStrToMin(v.startTime);
+    const endMin = this.timeStrToMin(v.endTime);
 
     if (!dateMs) { this.alert.error('Date is required'); return; }
     if (endMin <= startMin) { this.alert.error('End time must be after start time'); return; }
 
     const subjectOpt = this.specialClassSubjectOptions.find((x: any) => safeTrim(x?.value) === safeTrim(v.subjectId));
-    const staffOpt   = this.specialClassStaffOptions.find((x: any) => safeTrim(x?.value) === safeTrim(v.staffId));
+    const staffOpt = this.specialClassStaffOptions.find((x: any) => safeTrim(x?.value) === safeTrim(v.staffId));
 
     // We use timetable/period/add endpoint to add a special period to the batch timetable
     const payload = {
-      entiId:      this.entiId,
-      batchCode:   safeTrim(this.specialClassBatch?.batchCode),
-      date:        dateMs,
-      day:         this.getDayName(dateMs),
+      entiId: this.entiId,
+      batchCode: safeTrim(this.specialClassBatch?.batchCode),
+      date: dateMs,
+      day: this.getDayName(dateMs),
       period: {
-        periodNo:    Number(v.periodNo),
-        periodType:  safeTrim(v.periodType),
-        mode:        safeTrim(v.mode),
+        periodNo: Number(v.periodNo),
+        periodType: safeTrim(v.periodType),
+        mode: safeTrim(v.mode),
         time: {
           startMin,
           endMin,
           startLabel: v.startTime,
-          endLabel:   v.endTime,
+          endLabel: v.endTime,
         },
-        facultyId:   safeTrim(v.staffId),
+        facultyId: safeTrim(v.staffId),
         facultyName: staffOpt?.label || null,
-        subjectId:   safeTrim(v.subjectId),
+        subjectId: safeTrim(v.subjectId),
         subjectName: subjectOpt?.label || null,
-        topic:       safeTrim(v.topic)   || null,
-        venue:       safeTrim(v.venue)   || null,
-        zoomUrl:     safeTrim(v.zoomUrl) || null,
+        topic: safeTrim(v.topic) || null,
+        venue: safeTrim(v.venue) || null,
+        zoomUrl: safeTrim(v.zoomUrl) || null,
       },
     };
 
@@ -1047,9 +1047,9 @@ export class BatchComponent implements OnInit {
       'timetable', 'list-by-batch'
     ).subscribe({
       next: (res: any) => {
-        const rows   = res?.data || [];
+        const rows = res?.data || [];
         const wkDate = this.getPreviousMonday(dateMs);
-        const tt     = rows.find((t: any) => Number(t?.wkStartOn) === wkDate && t?.status === 'Active');
+        const tt = rows.find((t: any) => Number(t?.wkStartOn) === wkDate && t?.status === 'Active');
         if (!tt) {
           this.loading = false;
           this.alert.error('No active timetable found for this batch on the selected date. Publish a timetable first.');
@@ -1070,12 +1070,12 @@ export class BatchComponent implements OnInit {
   }
 
   private getDayName(epochMs: number): string {
-    const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+    const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     return days[new Date(epochMs).getDay()];
   }
 
   private getPreviousMonday(epochMs: number): number {
-    const d   = new Date(epochMs);
+    const d = new Date(epochMs);
     const day = d.getUTCDay();
     const diff = day === 0 ? -6 : 1 - day;
     d.setUTCDate(d.getUTCDate() + diff);

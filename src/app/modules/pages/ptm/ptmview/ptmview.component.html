@@ -16,10 +16,17 @@
                     </div>
                 </div>
             </div>
-            <button class="btn btn-outline-primary rounded-pill fs-16 fw-medium" (click)="openFeedbackImportModal()"
-                title="Bulk import staff feedback via Excel" data-bs-toggle="tooltip" data-bs-placement="left">
-                <i class="fa-solid fa-file-import me-2"></i>Import Feedback
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-success rounded-pill fs-16 fw-medium" (click)="exportPtmData()"
+                    [disabled]="exporting" title="Export PTM data to Excel">
+                    <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <i class="fa-solid fa-file-export me-2" *ngIf="!exporting"></i>Export
+                </button>
+                <button class="btn btn-outline-primary rounded-pill fs-16 fw-medium" (click)="openFeedbackImportModal()"
+                    title="Bulk import staff feedback via Excel" data-bs-toggle="tooltip" data-bs-placement="left">
+                    <i class="fa-solid fa-file-import me-2"></i>Import Feedback
+                </button>
+            </div>
         </div>
 
         <!-- ── Session Info Panel ─────────────────────────── -->

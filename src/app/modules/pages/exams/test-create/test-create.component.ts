@@ -32,7 +32,7 @@ export class TestCreateComponent implements OnInit {
 
   mediumOptions = [
     { label: 'English', value: 'en' },
-    { label: 'Hindi', value: 'hi' },
+    // { label: 'Hindi', value: 'hi' },
     { label: 'Tamil', value: 'ta' }
   ];
 
@@ -229,7 +229,7 @@ export class TestCreateComponent implements OnInit {
       this.commonApi.fetchData({ entiId: this.tenantId }, 'ims/subject', 'list?list=full')
         .subscribe({
           next: (res: any) => { this.subjects = res?.data || []; resolve(); },
-          error: (err: any) => { this.alert.error('Error loading subjects'); reject(err); }
+          error: (err: any) => { this.alert.error(err?.error?.message || 'Error loading subjects'); reject(err); }
         });
     });
   }
@@ -239,7 +239,7 @@ export class TestCreateComponent implements OnInit {
       this.commonApi.fetchData({ entiId: this.tenantId }, 'exam/instruction', 'list?list=full')
         .subscribe({
           next: (res: any) => { this.instructions = res?.data || []; resolve(); },
-          error: (err: any) => { this.alert.error('Error loading instructions'); reject(err); }
+          error: (err: any) => { this.alert.error(err?.error?.message || 'Error loading instructions'); reject(err); }
         });
     });
   }
@@ -358,7 +358,7 @@ export class TestCreateComponent implements OnInit {
             this.router.navigate(['/app/exams/exams']);
           }
         },
-        error: () => this.alert.error('Error updating exam')
+        error: (err: any) => this.alert.error(err?.error?.message || 'Error updating exam')
       });
     } else {
       this.commonApi.fetchData(payload, 'exam', 'create').subscribe({
@@ -368,7 +368,7 @@ export class TestCreateComponent implements OnInit {
             this.router.navigate(['/app/exams/exams']);
           }
         },
-        error: () => this.alert.error('Error creating exam')
+        error: (err: any) => this.alert.error(err?.error?.message || 'Error creating exam')
       });
     }
   }

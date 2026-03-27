@@ -6,6 +6,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import * as XLSX from 'xlsx';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -1026,5 +1027,65 @@ export class ViewBatchComponent implements OnInit {
           );
         },
       });
+  }
+
+  // ====================================================
+  // EXPORT BATCH DATA
+  // ====================================================
+  exportBatch(): void {
+    if (!this.batch) return;
+    const b = this.batch;
+    const formatDate = (ts: number | null) => {
+      if (!ts) return '';
+      return new Date(ts).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Batch Info
+    const infoRows = [
+      { Field: 'Batch Name', Value: b.batchName || '' },
+      { Field: 'Batch Code', Value: b.batchCode || '' },
+      { Field: 'Program', Value: b.programName || '' },
+      { Field: 'Center', Value: b.centerName || '' },
+      { Field: 'Center Code', Value: b.centerCode || '' },
+      { Field: 'Academic Year', Value: b.academicYear || '' },
+      { Field: 'Class', Value: b.classNo || '' },
+      { Field: 'Year No', Value: b.yearNo || '' },
+      { Field: 'Start Date', Value: formatDate(b.startDate) },
+      { Field: 'End Date', Value: formatDate(b.endDate) },
+      { Field: 'Status', Value: b.status || '' },
+      { Field: 'Student Count', Value: b.studentCount || this.students.length },
+      { Field: 'Remarks', Value: b.remarks || '' },
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(infoRows), 'Batch Info');
+
+    // Sheet 2: Faculty
+    const staffRows = (this.staffMap || []).map((s: any) => ({
+      'Subject': s.subjectName || '',
+      'Staff Name': s.staffName || '',
+    }));
+    if (staffRows.length) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(staffRows), 'Faculty');
+    }
+
+    // Sheet 3: Students
+    const studentRows = (this.students || []).map((s: any) => ({
+      'Admission No': s.admissionNo || '',
+      'Registration No': s.registrationNumber || '',
+      'Student Name': s.student?.name || '',
+      'Phone': s.student?.phone || '',
+      'Email': s.student?.email || '',
+      'Parent Phone': s.student?.parentPhone || '',
+      'Address': s.student?.address || '',
+      'City': s.student?.city || '',
+      'State': s.student?.state || '',
+      'Pincode': s.student?.pincode || '',
+    }));
+    if (studentRows.length) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(studentRows), 'Students');
+    }
+
+    XLSX.writeFile(wb, `Batch_${b.batchCode || b.batchName}.xlsx`);
   }
 }

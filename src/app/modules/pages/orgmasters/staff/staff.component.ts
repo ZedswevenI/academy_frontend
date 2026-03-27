@@ -751,8 +751,8 @@ export class StaffComponent implements OnInit {
             Number(summary?.failed || 0) ||
             (results.length
               ? results.filter(
-                  (x: any) => !(x?.ok === true || x?.status === true),
-                ).length
+                (x: any) => !(x?.ok === true || x?.status === true),
+              ).length
               : 0);
           this.importing = false;
           const msg = `Import completed. Inserted: ${inserted}, Updated: ${upserted}, Failed: ${failedComputed}`;
@@ -779,15 +779,15 @@ export class StaffComponent implements OnInit {
               ).length;
             this.alert.error(
               resp?.message ||
-                `Import completed with errors. Inserted: ${inserted}, Updated: ${upserted}, Failed: ${failed}`,
+              `Import completed with errors. Inserted: ${inserted}, Updated: ${upserted}, Failed: ${failed}`,
             );
             return;
           }
           this.alert.error(
             resp?.message ||
-              resp?.error?.message ||
-              err?.message ||
-              'Import failed',
+            resp?.error?.message ||
+            err?.message ||
+            'Import failed',
           );
         },
       });
@@ -803,7 +803,7 @@ export class StaffComponent implements OnInit {
         Phone: '9876543210',
         Email: 'rajesh@example.com',
         'Center Code': '64',
-        'Joining Date': '2026-01-01',
+        'Joining Date': '01-Jan-2026',
         'Relieving Date': '',
         Payroll: 'z7i',
         Department: 'ACADEMICS',

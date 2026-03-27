@@ -933,6 +933,55 @@ export class PhaseListComponent implements OnInit {
     return (this.getTotalHours() / topics.length).toFixed(1);
   }
 
+  exportPhase(): void {
+    if (!this.selectedPhase) return;
+    const phase = this.selectedPhase;
+    const subjectName = phase.subjectId?.subjectName || phase.subjectName || '';
+    const topics = phase.topics || [];
+
+    const rows = topics.map((t: any, i: number) => ({
+      'Phase Name': i === 0 ? phase.phaseName : '',
+      'Class': i === 0 ? phase.classNo : '',
+      'Subject': i === 0 ? subjectName : '',
+      'Status': i === 0 ? phase.status : '',
+      'Sort Order (Phase)': i === 0 ? phase.sortOrder : '',
+      'Topic Name': t.topicName || '',
+      'Est. Hours': t.estHours || 0,
+      'Sort Order (Topic)': t.sortOrder || 0,
+    }));
+
+    if (!rows.length) {
+      rows.push({
+        'Phase Name': phase.phaseName,
+        'Class': phase.classNo,
+        'Subject': subjectName,
+        'Status': phase.status,
+        'Sort Order (Phase)': phase.sortOrder,
+        'Topic Name': '',
+        'Est. Hours': 0,
+        'Sort Order (Topic)': 0,
+      });
+    }
+
+    // Add summary row
+    rows.push({});
+    rows.push({
+      'Phase Name': 'Summary',
+      'Class': '',
+      'Subject': '',
+      'Status': '',
+      'Sort Order (Phase)': '',
+      'Topic Name': `Total Topics: ${topics.length}`,
+      'Est. Hours': this.getTotalHours(),
+      'Sort Order (Topic)': '',
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Phase Plan');
+    XLSX.writeFile(wb, `Phase_${phase.phaseName}_${subjectName}.xlsx`);
+  }
+
   // ====================================================
   // IMPORT MODAL
   // ====================================================

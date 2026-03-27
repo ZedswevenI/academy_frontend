@@ -205,7 +205,7 @@
 //               value: b.batchCode,
 //             }));
 //           },
-//           error: () => this.alert.error('Error loading batches'),
+//           error: (err: any) => this.alert.error(err?.error?.message || 'Error loading batches'),
 //         });
 //     }
 //   }
@@ -634,7 +634,7 @@ export class PtmComponent implements OnInit {
               value: b.batchCode,
             }));
           },
-          error: () => this.alert.error('Error loading batches'),
+          error: (err: any) => this.alert.error(err?.error?.message || 'Error loading batches'),
         });
     }
   }
@@ -670,8 +670,8 @@ export class PtmComponent implements OnInit {
         this.totalRecords = res?.count || this.dataArray.length;
         this.loading = false;
       },
-      error: () => {
-        this.alert.error('Error loading PTM sessions');
+      error: (err: any) => {
+        this.alert.error(err?.error?.message || 'Error loading PTM sessions');
         this.loading = false;
       },
     });
@@ -729,7 +729,7 @@ export class PtmComponent implements OnInit {
           this.fetchSessions(1, 10);
         }
       },
-      error: () => this.alert.error('Error deleting PTM session'),
+      error: (err: any) => this.alert.error(err?.error?.message || 'Error deleting PTM session'),
     });
   }
 
@@ -827,9 +827,9 @@ export class PtmComponent implements OnInit {
             this.alert.error(res?.message || 'Import failed');
           }
         },
-        error: () => {
+        error: (err: any) => {
           this.importLoading = false;
-          this.alert.error('Error importing PTM data');
+          this.alert.error(err?.error?.message || 'Error importing PTM data');
         },
       });
   }

@@ -22,6 +22,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   entiId!: string;
   testId!: string;
   questionData!: any;
+  isDraft = false;
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
@@ -83,6 +84,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.entiId = ent || '';
     this.testId = state.questions.examId;
     this.questionData = state.questions;
+    this.isDraft = (state.questions?.status || '').toUpperCase() === 'DRAFT';
     if (this.testId) {
       this.loadQuestions();
     }

@@ -241,9 +241,9 @@ export class CreatePTMComponent implements OnInit {
         }));
         this.studentsLoading = false;
       },
-      error: () => {
+      error: (err: any) => {
         this.studentsLoading = false;
-        this.alert.error('Error loading students');
+        this.alert.error(err?.error?.message || 'Error loading students');
       }
     });
   }

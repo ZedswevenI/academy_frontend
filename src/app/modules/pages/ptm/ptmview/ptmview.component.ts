@@ -32,6 +32,7 @@ export class PtmviewComponent implements OnInit {
   questionsLoading = false;
   questionsPtmData: any = null;
   activeTab = 'pre';
+  exporting = false;
   importLoading = false;
   parsedRows: any[] = [];
   errorRows: any[] = [];
@@ -137,8 +138,8 @@ export class PtmviewComponent implements OnInit {
           this.dataArray.every((s) => s.enablePostPtmFeedback);
         this.loading = false;
       },
-      error: () => {
-        this.alert.error('Error loading students');
+      error: (err: any) => {
+        this.alert.error(err?.error?.message || 'Error loading students');
         this.loading = false;
       },
     });
@@ -150,6 +151,116 @@ export class PtmviewComponent implements OnInit {
     search?: string;
   }): void {
     this.fetchStudents(req.page, req.pageSize, req.search);
+  }
+
+  // ====================================================
+  // EXPORT PTM DATA
+  // ====================================================
+  exportPtmData(): void {
+    if (this.exporting || !this.session) return;
+    this.exporting = true;
+
+    const body: any = { tenantId: this.tenantId };
+    let query = `liststudents?list=full`;
+    query += `&batchCode=${this.session.batchCode}`;
+    query += `&ptmDate=${this.session.ptmDate}`;
+    query += `&startTime=${this.session.startTime}`;
+
+    this.commonApi.fetchData(body, 'ims/ptm', query).subscribe({
+      next: (res: any) => {
+        this.exporting = false;
+        const students: any[] = res?.data || [];
+        if (!students.length) {
+          this.alert.error('No data to export');
+          return;
+        }
+        this.generateExcel(students);
+      },
+      error: (err: any) => {
+        this.exporting = false;
+        this.alert.error(err?.error?.message || 'Error exporting PTM data');
+      },
+    });
+  }
+
+  private generateExcel(students: any[]): void {
+    const formatDate = (ts: number | null) => {
+      if (!ts) return '';
+      const d = new Date(ts);
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+    const formatTime = (ts: number | null) => {
+      if (!ts) return '';
+      const d = new Date(ts);
+      return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    };
+    const formatFieldValue = (val: any) => {
+      if (val === null || val === undefined) return '';
+      if (Array.isArray(val)) return val.join(', ');
+      return String(val);
+    };
+
+    // Collect all unique pre/post question texts
+    const preQuestions: string[] = [];
+    const postQuestions: string[] = [];
+
+    for (const s of students) {
+      if (s.prePtmQuestions?.length && !preQuestions.length) {
+        for (const q of s.prePtmQuestions) {
+          preQuestions.push(q.fieldText);
+        }
+      }
+      if (s.postPtmQuestions?.length && !postQuestions.length) {
+        for (const q of s.postPtmQuestions) {
+          postQuestions.push(q.fieldText);
+        }
+      }
+      if (preQuestions.length && postQuestions.length) break;
+    }
+
+    const rows = students.map((s: any) => {
+      const row: any = {
+        'Admission No': s.admissionNo || '',
+        'Student Name': s.studentName || '',
+        'Status': s.status || '',
+        'Meeting Mode': s.meetingMode || '',
+        'Venue': s.venue || '',
+        'PTM Date': formatDate(s.ptmDate),
+        'Start Time': formatTime(s.startTime),
+        'End Time': formatTime(s.endTime),
+        'Staff Remarks': s.staffRemarks || '',
+      };
+
+      // Pre-PTM questions
+      if (preQuestions.length) {
+        row['Pre-PTM Remarks'] = s.prePtmRemarks || '';
+        row['Pre-PTM Submitted'] = s.prePtmSubmittedAt ? 'Yes' : 'No';
+        for (let i = 0; i < preQuestions.length; i++) {
+          const q = s.prePtmQuestions?.[i];
+          row[`Pre: ${preQuestions[i]}`] = q ? formatFieldValue(q.fieldValue) : '';
+        }
+      }
+
+      // Post-PTM questions
+      if (postQuestions.length) {
+        row['Post-PTM Remarks'] = s.postPtmRemarks || '';
+        row['Post-PTM Submitted'] = s.postPtmSubmittedAt ? 'Yes' : 'No';
+        for (let i = 0; i < postQuestions.length; i++) {
+          const q = s.postPtmQuestions?.[i];
+          row[`Post: ${postQuestions[i]}`] = q ? formatFieldValue(q.fieldValue) : '';
+        }
+      }
+
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'PTM Data');
+
+    const fileName = `PTM_${this.session.batchCode}_${formatDate(this.session.ptmDate).replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    this.alert.success('PTM data exported successfully');
   }
 
   onMasterToggle(enabled: boolean): void {
@@ -176,8 +287,8 @@ export class PtmviewComponent implements OnInit {
           }
           this.masterToggling = false;
         },
-        error: () => {
-          this.alert.error('Error updating post-PTM feedback');
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Error updating post-PTM feedback');
           this.masterToggling = false;
           this.masterPostFeedback = !enabled;
         },
@@ -212,10 +323,10 @@ export class PtmviewComponent implements OnInit {
             row.postPtmEnabled = prev ? 'Yes' : 'No';
           }
         },
-        error: () => {
+        error: (err: any) => {
           row.enablePostPtmFeedback = prev;
           row.postPtmEnabled = prev ? 'Yes' : 'No';
-          this.alert.error('Error updating student');
+          this.alert.error(err?.error?.message || 'Error updating student');
         },
       });
   }
@@ -262,8 +373,8 @@ export class PtmviewComponent implements OnInit {
           }
           this.staffSaving = false;
         },
-        error: () => {
-          this.alert.error('Error saving staff feedback');
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Error saving staff feedback');
           this.staffSaving = false;
         },
       });
@@ -286,8 +397,8 @@ export class PtmviewComponent implements OnInit {
           this.questionsPtmData = res?.data || null;
           this.questionsLoading = false;
         },
-        error: () => {
-          this.alert.error('Error loading PTM details');
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Error loading PTM details');
           this.questionsLoading = false;
         },
       });
@@ -466,9 +577,9 @@ export class PtmviewComponent implements OnInit {
             this.alert.error(res?.message || 'Import failed');
           }
         },
-        error: () => {
+        error: (err: any) => {
           this.importLoading = false;
-          this.alert.error('Error importing feedback');
+          this.alert.error(err?.error?.message || 'Error importing feedback');
         },
       });
   }
