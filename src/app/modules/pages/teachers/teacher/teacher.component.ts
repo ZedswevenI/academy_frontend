@@ -20,12 +20,12 @@ export class TeacherComponent implements OnInit {
   dataArray: any[] = [];
 
   columns = [
-    { key: 'staffCode',   label: 'Staff Code',   sortable: true  },
-    { key: 'staffName',   label: 'Teacher Name', sortable: true  },
-    { key: 'joiningDate', label: 'Joined On',    sortable: false },
-    { key: 'phone',       label: 'Phone',        sortable: false },
-    { key: 'subject.subjectName',     label: 'Subject',      sortable: false },
-    { key: 'department',  label: 'Department',   sortable: false },
+    { key: 'staffCode', label: 'Staff Code', sortable: false },
+    { key: 'staffName', label: 'Teacher Name', sortable: false },
+    { key: 'joiningDate', label: 'Joined On', sortable: false },
+    { key: 'phone', label: 'Phone', sortable: false },
+    { key: 'subject.subjectName', label: 'Subject', sortable: false },
+    { key: 'department', label: 'Department', sortable: false },
   ];
 
   actions = [
@@ -58,9 +58,9 @@ export class TeacherComponent implements OnInit {
     sortKey?: string;
     sortDirection?: 'asc' | 'desc';
   }) {
-    const page   = event?.page     || 1;
-    const limit  = event?.pageSize || 10;
-    const search = (event?.search  || '').toString().trim();
+    const page = event?.page || 1;
+    const limit = event?.pageSize || 10;
+    const search = (event?.search || '').toString().trim();
     const payload: any = {
       entiId: this.entiId,
       page,
@@ -77,17 +77,17 @@ export class TeacherComponent implements OnInit {
           this.totalRecords = res?.count || 0;
 
           this.dataArray = rows.map((s: any) => ({
-            staffId:     s.staffId,
-            staffCode:   s.staffCode  || s.employeeId || '—',
-            staffName:   s.staffName  || '—',
+            staffId: s.staffId,
+            staffCode: s.staffCode || s.employeeId || '—',
+            staffName: s.staffName || '—',
             joiningDate: s.joiningDate
               ? new Date(s.joiningDate).toLocaleDateString('en-GB', {
-                  day: '2-digit', month: 'short', year: 'numeric',
-                })
+                day: '2-digit', month: 'short', year: 'numeric',
+              })
               : '—',
-            phone:       s.phone  || '—',
-            subject:     s.subject || '—',
-            department:  s.department?.departmentName || '—',
+            phone: s.phone || '—',
+            subject: s.subject || '—',
+            department: s.department?.departmentName || '—',
             _raw: s,
           }));
         },

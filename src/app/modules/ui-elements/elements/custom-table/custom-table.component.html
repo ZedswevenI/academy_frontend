@@ -158,13 +158,15 @@
                     </button>
 
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                      <li *ngFor="let sub of action.dropdown">
-                        <a class="dropdown-item d-flex align-items-center gap-2" data-bs-dismiss="dropdown"
-                          (click)="sub.callback(row)">
-                          <i *ngIf="sub.icon" [class]="sub.icon" class="icon-14"></i>
-                          {{ sub.text }}
-                        </a>
-                      </li>
+                      <ng-container *ngFor="let sub of action.dropdown">
+                        <li *ngIf="!sub.hidden || !sub.hidden(row)">
+                          <a class="dropdown-item d-flex align-items-center gap-2" data-bs-dismiss="dropdown"
+                            (click)="sub.callback(row)">
+                            <i *ngIf="sub.icon" [class]="sub.icon" class="icon-14"></i>
+                            {{ sub.text }}
+                          </a>
+                        </li>
+                      </ng-container>
                     </ul>
                   </div>
                 </ng-container>

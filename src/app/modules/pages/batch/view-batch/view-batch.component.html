@@ -40,6 +40,9 @@
             [disabled]="batch?.status !== 'ACTIVE'">
             <i class="fa-solid fa-arrow-up-right-dots"></i> Promote
         </button>
+        <button class="btn btn-outline-success btn-sm rounded-pill" (click)="exportBatch()">
+            <i class="fa-solid fa-file-export"></i> Export
+        </button>
         <button class="btn btn-primary btn-sm rounded-pill" (click)="openOffcanvas('edit')">
             <i class="fa-solid fa-pen-to-square"></i> Edit
         </button>

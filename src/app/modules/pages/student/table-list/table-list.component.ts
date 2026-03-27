@@ -24,12 +24,12 @@ interface Chat {
 export class TableListComponent {
   isChat: boolean = false;
   columnsArray = [
-    { key: 'student.name', label: 'Student Name', sortable: true },
-    { key: 'admissionNo', label: 'Admission No.', sortable: true },
-    { key: 'programName', label: 'Program', sortable: true },
-    { key: 'centerName', label: 'Center', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
-    { key: 'student.phone', label: 'Mobile', sortable: true },
+    { key: 'student.name', label: 'Student Name', sortable: false },
+    { key: 'admissionNo', label: 'Admission No.', sortable: false },
+    { key: 'programName', label: 'Program', sortable: false },
+    { key: 'centerName', label: 'Center', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
+    { key: 'student.phone', label: 'Mobile', sortable: false },
   ];
 
   dataArray: any[] = [];
@@ -65,7 +65,7 @@ export class TableListComponent {
     this.breadcrump.set([{ label: 'Student' }])
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   fetchTableData(params: {
     page: number;

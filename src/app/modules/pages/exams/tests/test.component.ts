@@ -50,7 +50,7 @@ export class TestComponent implements OnInit, OnDestroy {
     { key: 'totalQuestions', label: 'Questions', sortable: true },
     { key: 'totalMarks', label: 'Marks', sortable: true },
     { key: 'duration', label: 'Duration (min)', sortable: true },
-    { key: 'statusDisplay', label: 'Status', sortable: true }
+    { key: 'statusDisplay', label: 'Status', sortable: false }
   ];
 
   dataArray: any[] = [];
@@ -78,6 +78,12 @@ export class TestComponent implements OnInit, OnDestroy {
     { label: 'Tamil', value: 'ta' }
   ];
 
+  /* ================= PUBLISH RESULT MODAL ================= */
+  showPublishResultModal = false;
+  publishResultNote = '';
+  publishResultRow: any = null;
+  publishingResult = false;
+
   /* ================= ACTIONS ================= */
   actions = [
     {
@@ -94,6 +100,7 @@ export class TestComponent implements OnInit, OnDestroy {
       tooltip: 'Import Questions',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      hidden: (row: any) => row.status !== 'draft',
       callback: (row: any) => this.importQuestions(row)
     },
     {
@@ -102,6 +109,7 @@ export class TestComponent implements OnInit, OnDestroy {
       tooltip: 'Add Question',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      hidden: (row: any) => row.status !== 'draft',
       callback: (row: any) => this.addQuestions(row)
     },
     {
@@ -110,14 +118,15 @@ export class TestComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       dropdown: [
-        { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.editExam(row) },
-        { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', callback: (row: any) => this.publishExam(row) },
-        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
-        { text: 'Add Question', icon: 'fa-solid fa-file-import', callback: (row: any) => this.addQuestions(row) },
-        { text: 'Import Questions', icon: 'fa-solid fa-file-import', callback: (row: any) => this.importQuestions(row) },
-        { text: 'Assign Batch', icon: 'fa-solid fa-users', callback: (row: any) => this.openBatchModal(row) },
-        { text: 'Result', icon: 'fa-solid fa-chart-bar', callback: (row: any) => this.viewResult(row) },
-        { text: 'Delete', icon: 'fa-regular fa-trash-can', callback: (row: any) => this.deleteExam(row) }
+        { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.editExam(row) },
+        { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.publishExam(row) },
+        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.rearrange(row) },
+        { text: 'Add Question', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.addQuestions(row) },
+        { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importQuestions(row) },
+        { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
+        { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published', callback: (row: any) => this.publishResult(row) },
+        { text: 'Result', icon: 'fa-solid fa-chart-bar', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.viewResult(row) },
+        { text: 'Delete', icon: 'fa-regular fa-trash-can', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.deleteExam(row) }
       ]
     }
   ];
@@ -248,6 +257,49 @@ export class TestComponent implements OnInit, OnDestroy {
         }
       },
       error: () => this.alert.error('Error publishing exam')
+    });
+  }
+
+  publishResult(row: any) {
+    this.publishResultRow = row;
+    this.publishResultNote = '';
+    this.showPublishResultModal = true;
+  }
+
+  cancelPublishResult() {
+    this.showPublishResultModal = false;
+    this.publishResultRow = null;
+    this.publishResultNote = '';
+  }
+
+  confirmPublishResult() {
+    if (this.publishingResult || !this.publishResultRow) return;
+
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      examId: this.publishResultRow.examId,
+      publishedAt: Date.now(),
+      note: this.publishResultNote.trim() || 'Result published'
+    };
+
+    this.publishingResult = true;
+    this.commonApi.fetchData(payload, 'exam', 'publish-result').subscribe({
+      next: (res: any) => {
+        this.publishingResult = false;
+        if (res?.status) {
+          this.alert.success('Result published successfully');
+          this.showPublishResultModal = false;
+          this.publishResultRow = null;
+          this.publishResultNote = '';
+          if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+        } else {
+          this.alert.error(res?.message || 'Failed to publish result');
+        }
+      },
+      error: (err: any) => {
+        this.publishingResult = false;
+        this.alert.error(err?.error?.message || 'Error publishing result');
+      }
     });
   }
 

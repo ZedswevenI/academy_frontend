@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-package',
@@ -20,10 +21,10 @@ export class PackageComponent implements OnInit {
   totalRecords = 0;
 
   columnsArray = [
-    { key: 'packageCode', label: 'Code', sortable: true },
+    { key: 'packageCode', label: 'Code', sortable: false },
     { key: 'classNo', label: 'Class', sortable: false },
     { key: 'subjectName', label: 'Subject', sortable: false },
-    { key: 'title', label: 'Title', sortable: true },
+    { key: 'title', label: 'Title', sortable: false },
     { key: 'status', label: 'Status', sortable: false }
   ];
 
@@ -205,9 +206,67 @@ export class PackageComponent implements OnInit {
   // VIEW
   // ====================================================
 
+  viewEnablements: any[] = [];
+  viewEnablementsLoading = false;
+
   onView(row: any): void {
     this.selectedPackage = row;
+    this.viewEnablements = [];
+    this.viewEnablementsLoading = true;
+    this.commonApi.fetchData(
+      { tenantId: this.tenantId, packageId: row.packageId },
+      'ims/package',
+      'list/enadisa'
+    ).subscribe({
+      next: (res: any) => {
+        this.viewEnablements = res?.data || [];
+        this.viewEnablementsLoading = false;
+      },
+      error: () => {
+        this.viewEnablementsLoading = false;
+      }
+    });
     this.openModal('packageViewModal');
+  }
+
+  exportPackage(): void {
+    if (!this.selectedPackage) return;
+    const pkg = this.selectedPackage;
+    const formatDate = (ts: number | null) => {
+      if (!ts) return '';
+      return new Date(ts).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Package Details
+    const infoRows = [
+      { Field: 'Package Code', Value: pkg.packageCode || '' },
+      { Field: 'Title', Value: pkg.title || '' },
+      { Field: 'Class', Value: pkg.classNo || '' },
+      { Field: 'Subject', Value: pkg.subjectName || '' },
+      { Field: 'Description', Value: pkg.description || '' },
+      { Field: 'Status', Value: pkg.status || '' },
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(infoRows), 'Details');
+
+    // Sheet 2: Enablements
+    const enableRows: any[] = [];
+    for (const en of this.viewEnablements) {
+      const targets = (en.resolvedTargets || []).map((t: any) => t.name).join(', ');
+      enableRows.push({
+        'Scope': en.scope || '',
+        'Status': en.status || '',
+        'Targets': targets,
+        'Enable Date': formatDate(en.enableDate),
+        'Disable Date': formatDate(en.disableDate),
+      });
+    }
+    if (enableRows.length) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(enableRows), 'Enablements');
+    }
+
+    XLSX.writeFile(wb, `StudyMaterial_${pkg.packageCode || pkg.title}.xlsx`);
   }
 
   // ====================================================
