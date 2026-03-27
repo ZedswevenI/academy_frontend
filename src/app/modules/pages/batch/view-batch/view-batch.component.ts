@@ -20,25 +20,16 @@ export class ViewBatchComponent implements OnInit {
   loading = false;
   entiId: any;
   batchId = '';
-
-  // ── batch data ─────────────────────────────────────────────────────────────
   batch: any = null;
   students: any[] = [];
   staffMap: any[] = [];
-
-  // ── active tab ─────────────────────────────────────────────────────────────
   activeTab: 'students' | 'faculty' = 'students';
-
-  // ── offcanvas ──────────────────────────────────────────────────────────────
   showOffcanvas = false;
-  offcanvasMode: 'edit' | 'staff' | 'assign' | 'shuffle' = 'edit';
-
-  // shared reference lists
+  offcanvasMode: 'edit' | 'staff' | 'assign' | 'shuffle' | 'classTeacher' =
+    'edit';
   programsFull: any[] = [];
   centersFull: any[] = [];
   staffListFull: any[] = [];
-
-  // ── edit form ──────────────────────────────────────────────────────────────
   editForm!: FormGroup;
   programOptionsForEditor: any[] = [{ label: 'Select', value: '' }];
   centerOptionsForEditor: any[] = [{ label: 'Select', value: '' }];
@@ -48,26 +39,19 @@ export class ViewBatchComponent implements OnInit {
     { label: 'CLOSED', value: 'CLOSED' },
     { label: 'INACTIVE', value: 'INACTIVE' },
   ];
-
-  // ── staff form (offcanvas) ─────────────────────────────────────────────────
   staffOptionsAll: any[] = [{ label: 'Select', value: '' }];
   staffOptionsFiltered: any[] = [{ label: 'Select', value: '' }];
   batchSubjectOptions: any[] = [{ label: 'Select', value: '' }];
   staffDraft = { subjectId: '', staffId: '' };
   staffMapRows: any[] = [];
-
-  // ── assign form (offcanvas) ────────────────────────────────────────────────
   eligibleStudents: any[] = [];
   eligibleStudentsFiltered: any[] = [];
   eligibleSearch = '';
   selectedStudentIds = new Set<string>();
-
-  // ── shuffle form (offcanvas) ──────────────────────────────────────────────
   shuffleForm!: FormGroup;
-  shuffleTargetBatchId = ''; // ✅ FIX: bound separately, not via shuffleForm.value
+  shuffleTargetBatchId = '';
   batchesForShuffle: any[] = [];
-
-  // ✅ FIX: computed in TS — Angular template parser rejects spread (...) in bindings
+  classTeacherId: string = '';
   get shuffleBatchOptions(): any[] {
     return [
       { label: 'Select', value: '' },
@@ -78,11 +62,7 @@ export class ViewBatchComponent implements OnInit {
     ];
   }
   studentsForShuffle: any[] = [];
-
-  // ── promote modal ──────────────────────────────────────────────────────────
   showPromoteModal = false;
-
-  // ── late entry modal ───────────────────────────────────────────────────────
   showLateModal = false;
   lateForm!: FormGroup;
   lateTypeOptions = [
@@ -91,8 +71,6 @@ export class ViewBatchComponent implements OnInit {
   ];
   batchStudentsLoading = false;
   lateTimetableId = '';
-
-  // ── special class modal ────────────────────────────────────────────────────
   showSpecialClassModal = false;
   specialClassForm!: FormGroup;
   specialClassSubjectOptions: any[] = [{ label: 'Select', value: '' }];
@@ -134,7 +112,6 @@ export class ViewBatchComponent implements OnInit {
     this.loadBatch();
   }
 
-  // ── form init ───────────────────────────────────────────────────────────────
   private initForms() {
     this.editForm = this.fb.group({
       batchName: ['', [Validators.required]],
@@ -181,9 +158,7 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
-  // ── reference data ──────────────────────────────────────────────────────────
   private loadReferenceData() {
-    // ✅ FIX: Load subjects AND staff together via forkJoin to eliminate race condition
     forkJoin({
       programs: this.commonApi
         .fetchData({ entiId: this.entiId }, 'ims', 'program/list?list=full')
@@ -195,7 +170,6 @@ export class ViewBatchComponent implements OnInit {
         .fetchData({ entiId: this.entiId }, 'ims', 'staff/list?list=full')
         .pipe(catchError(() => of({ data: [] }))),
     }).subscribe(({ programs, centers, staff }: any) => {
-      // Programs
       this.programsFull = programs?.data || [];
       this.programOptionsForEditor = [
         { label: 'Select', value: '' },
@@ -204,8 +178,6 @@ export class ViewBatchComponent implements OnInit {
           value: safeTrim(p?.programId || p?._id),
         })),
       ];
-
-      // Centers
       this.centersFull = centers?.data || [];
       this.centerOptionsForEditor = [
         { label: 'Select', value: '' },
@@ -214,8 +186,6 @@ export class ViewBatchComponent implements OnInit {
           value: safeTrim(c?.centerId || c?._id),
         })),
       ];
-
-      // Staff — TEACHING only
       this.staffListFull = (staff?.data || []).filter(
         (s: any) => safeTrim(s?.facultyType).toUpperCase() === 'TEACHING',
       );
@@ -232,7 +202,6 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
-  // ── load batch ──────────────────────────────────────────────────────────────
   loadBatch() {
     if (!this.batchId) {
       this.alert.error('No batch ID');
@@ -253,9 +222,7 @@ export class ViewBatchComponent implements OnInit {
           this.batch = doc;
           this.students = doc?.students || [];
           this.staffMap = Array.isArray(doc?.staffMap) ? doc.staffMap : [];
-          // Load subjects for this batch (needed for staff map + special class)
           this.loadBatchSubjects();
-          // Load sibling batches for shuffle
           this.loadBatchesForShuffle();
         },
         error: (err: any) => {
@@ -315,7 +282,6 @@ export class ViewBatchComponent implements OnInit {
       });
   }
 
-  // ── helpers ────────────────────────────────────────────────────────────────
   goBack() {
     this.router.navigate(['/app/batch']);
   }
@@ -334,7 +300,7 @@ export class ViewBatchComponent implements OnInit {
       ACTIVE: 'badge bg-success-subtle text-success',
       DRAFT: 'badge bg-secondary-subtle text-secondary',
       CLOSED: 'badge bg-danger-subtle text-danger',
-      INACTIVE: 'badge bg-dark-subtle text-dark', // ✅ FIX: added INACTIVE
+      INACTIVE: 'badge bg-dark-subtle text-dark',
     };
     return (
       map[safeTrim(status).toUpperCase()] ||
@@ -392,8 +358,7 @@ export class ViewBatchComponent implements OnInit {
     return d.getTime();
   }
 
-  // ── offcanvas open/close ────────────────────────────────────────────────────
-  openOffcanvas(mode: 'edit' | 'staff' | 'assign' | 'shuffle') {
+  openOffcanvas(mode: 'edit' | 'staff' | 'assign' | 'shuffle' | 'classTeacher') {
     this.offcanvasMode = mode;
     if (mode === 'edit') {
       const b = this.batch;
@@ -430,6 +395,9 @@ export class ViewBatchComponent implements OnInit {
         _selected: false,
       }));
     }
+    if (mode === 'classTeacher') {
+      this.classTeacherId = safeTrim(this.batch?.classTeacherId) || '';
+    }
     this.showOffcanvas = true;
   }
 
@@ -437,7 +405,6 @@ export class ViewBatchComponent implements OnInit {
     this.showOffcanvas = false;
   }
 
-  // ── edit batch ─────────────────────────────────────────────────────────────
   onEditProgramChanged(programId: any) {
     const p = this.programsFull.find(
       (x: any) => safeTrim(x?.programId || x?._id) === safeTrim(programId),
@@ -513,10 +480,8 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
-  // ── staff map ──────────────────────────────────────────────────────────────
   onStaffDraftSubjectChanged(subjectId: any) {
     const sid = safeTrim(subjectId);
-    // ✅ FIX: coerce staff.subject ObjectId to string for comparison
     const filtered = sid
       ? this.staffListFull.filter(
           (st: any) => safeTrim(String(st?.subject)) === sid,
@@ -529,7 +494,6 @@ export class ViewBatchComponent implements OnInit {
         value: safeTrim(s?.staffId || s?._id),
       })),
     ];
-    // Clear invalid selection
     const ok = this.staffOptionsFiltered.some(
       (o: any) => o.value === this.staffDraft.staffId,
     );
@@ -593,7 +557,6 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
-  // ── assign students ────────────────────────────────────────────────────────
   private loadEligibleStudents() {
     this.loading = true;
     this.commonApi
@@ -665,7 +628,6 @@ export class ViewBatchComponent implements OnInit {
       });
   }
 
-  // ── shuffle ────────────────────────────────────────────────────────────────
   toggleShuffleStudent(studentId: any, checked: boolean) {
     const s = this.studentsForShuffle.find(
       (x: any) => safeTrim(x?.studentId) === safeTrim(studentId),
@@ -718,7 +680,6 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
-  // ── promote ────────────────────────────────────────────────────────────────
   openPromoteModal() {
     if (safeTrim(this.batch?.status) !== 'ACTIVE') {
       this.alert.error('Only ACTIVE batches can be promoted');
@@ -754,10 +715,9 @@ export class ViewBatchComponent implements OnInit {
       });
   }
 
-  // ── late entry ─────────────────────────────────────────────────────────────
   openLateEntry() {
     this.lateForm.reset({
-      type: 'STAFF',
+      type: 'STUDENT',
       personId: '',
       timetableId: '',
       date: this.epochMsToDateInput(Date.now()),
@@ -768,8 +728,6 @@ export class ViewBatchComponent implements OnInit {
     });
     this.showLateModal = true;
     this.loadLatestTimetable();
-
-    // react to type changes
     this.lateForm
       .get('type')
       ?.valueChanges.subscribe(() => this.onLateTypeChanged());
@@ -808,7 +766,6 @@ export class ViewBatchComponent implements OnInit {
     this.lateForm.patchValue({ personId: '' }, { emitEvent: false });
     if (type === 'STUDENT' && !this.students.length) {
       this.batchStudentsLoading = true;
-      // Students already loaded from loadBatch; just refresh if empty
       this.commonApi
         .fetchData(
           { entiId: this.entiId, batchId: this.batchId, includeStudents: true },
@@ -899,7 +856,6 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
-  // ── special class ───────────────────────────────────────────────────────────
   openSpecialClass() {
     this.specialClassForm.reset({
       date: '',
@@ -941,15 +897,12 @@ export class ViewBatchComponent implements OnInit {
       this.alert.error('End time must be after start time');
       return;
     }
-
     const subjectOpt = this.specialClassSubjectOptions.find(
       (x: any) => safeTrim(x?.value) === safeTrim(v.subjectId),
     );
     const staffOpt = this.specialClassStaffOptions.find(
       (x: any) => safeTrim(x?.value) === safeTrim(v.staffId),
     );
-
-    // Find active timetable for the week containing selected date
     this.loading = true;
     this.commonApi
       .fetchData(
@@ -1038,6 +991,39 @@ export class ViewBatchComponent implements OnInit {
         error: (err: any) => {
           this.loading = false;
           this.alert.error(err?.error?.message || 'Remove failed');
+        },
+      });
+  }
+
+  // ── assign class teacher ───────────────────────────────────────────────────
+  assignClassTeacher() {
+    if (this.loading) return;
+    const staffOpt = this.staffOptionsAll.find(
+      (s: any) => s.value === this.classTeacherId,
+    );
+    const staffName =
+      staffOpt && this.classTeacherId ? staffOpt.label.split(' (')[0] : '';
+    const payload = {
+      entiId: this.entiId,
+      batchId: this.batchId,
+      staffId: this.classTeacherId,
+      staffName: staffName,
+    };
+    this.loading = true;
+    this.commonApi
+      .fetchData(payload, 'batch', 'class-teacher/assign')
+      .subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          this.alert.success(res?.message || 'Class teacher updated');
+          this.closeOffcanvas();
+          this.loadBatch();
+        },
+        error: (err: any) => {
+          this.loading = false;
+          this.alert.error(
+            err?.error?.message || 'Failed to update class teacher',
+          );
         },
       });
   }
