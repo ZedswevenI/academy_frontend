@@ -16,6 +16,16 @@
             &nbsp;·&nbsp; AY: {{ batch?.academicYear || '-' }}
         </div>
     </div>
+    <div class="mt-2 d-flex align-items-center gap-2 small">
+        <div class="bg-light border rounded px-2 py-1">
+            <i class="fa-solid fa-user-tie text-primary me-1"></i> Class Teacher:
+            <strong class="text-dark ms-1">{{ batch?.classTeacherName || 'Not Assigned' }}</strong>
+        </div>
+        <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none"
+            (click)="openOffcanvas('classTeacher')">
+            {{ batch?.classTeacherId ? 'Change' : 'Assign' }}
+        </button>
+    </div>
     <div class="d-flex gap-2 flex-wrap">
         <button class="btn btn-outline-secondary btn-sm rounded-pill" (click)="openOffcanvas('shuffle')">
             <i class="fa-solid fa-shuffle"></i> Shuffle
@@ -193,6 +203,8 @@
                     <span *ngSwitchCase="'staff'"><i class="fa-solid fa-users-gear me-1"></i> Faculty Mapping</span>
                     <span *ngSwitchCase="'assign'"><i class="fa-solid fa-user-plus me-1"></i> Assign Students</span>
                     <span *ngSwitchCase="'shuffle'"><i class="fa-solid fa-shuffle me-1"></i> Shuffle Students</span>
+                    <span *ngSwitchCase="'classTeacher'"><i class="fa-solid fa-user-tie me-1"></i> Assign Class
+                        Teacher</span>
                 </ng-container>
             </h6>
             <div class="text-muted small">{{ batch?.batchName }} ({{ batch?.batchCode }})</div>
@@ -351,6 +363,17 @@
             </div>
             <div class="text-muted small mt-2">Selected: {{ shuffleSelectedCount }}</div>
         </ng-container>
+        <ng-container *ngIf="offcanvasMode === 'classTeacher'">
+            <div class="alert alert-light border-0 small mb-3">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Select a teaching staff member to be the primary in-charge of this batch.
+            </div>
+            <div class="mb-3">
+                <selectbox label="Class Teacher" [options]="staffOptionsAll" optionLabel="label" optionValue="value"
+                    [(ngModel)]="classTeacherId">
+                </selectbox>
+            </div>
+        </ng-container>
 
     </div>
 
@@ -372,6 +395,10 @@
         <button *ngIf="offcanvasMode === 'shuffle'" class="btn btn-sm btn-warning" (click)="saveShuffleBatch()"
             [disabled]="loading || !shuffleSelectedCount">
             <i class="fa-solid fa-shuffle me-1"></i> Shuffle
+        </button>
+        <button *ngIf="offcanvasMode === 'classTeacher'" class="btn btn-sm btn-primary" (click)="assignClassTeacher()"
+            [disabled]="loading">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Save Teacher
         </button>
     </div>
 </div>
@@ -447,7 +474,7 @@
                 <form [formGroup]="lateForm" class="row g-3">
 
                     <!-- Type toggle -->
-                    <div class="col-12">
+                    <!-- <div class="col-12">
                         <label class="form-label small fw-medium">Entry Type <span class="text-danger">*</span></label>
                         <div class="d-flex gap-3">
                             <div class="form-check" *ngFor="let opt of lateTypeOptions">
@@ -456,7 +483,7 @@
                                 <label class="form-check-label" [for]="'lateType_' + opt.value">{{ opt.label }}</label>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
 
                     <!-- Person -->
                     <div class="col-12">
