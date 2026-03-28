@@ -391,6 +391,12 @@ export const MENU_ITEMS: MenuItem[] = [
     ]
   },
   {
+    label: 'School Exams',
+    icon: 'fa-solid fa-chalkboard-user',
+    route: '/app/org-master/school/exams',
+    roles: ['L1']
+  },
+  {
     label: 'Org Masters',
     icon: 'fa-solid fa-sitemap',
     roles: ['L1'],
@@ -450,29 +456,23 @@ export const MENU_ITEMS: MenuItem[] = [
         roles: ['L1']
       },
       {
-        label: 'School Exams',
-        icon: 'fa-solid fa-chalkboard-user',
-        route: '/app/org-master/school/exams',
-        roles: ['L1']
-      },
-      {
         label: 'Users',
         icon: 'fa-solid fa-user',
         route: '/app/org-master/users',
         roles: ['L1']
-      },
-      {
-        label: 'CGPA Config',
-        icon: 'fa-solid fa-cogs',
-        route: '/app/org-master/cgpa',
-        roles: ['L1']
-      },
-      {
-        label: 'Exam Config',
-        icon: 'fa-solid fa-sliders-h',
-        route: '/app/org-master/exam',
-        roles: ['L1']
       }
+      // {
+      //   label: 'CGPA Config',
+      //   icon: 'fa-solid fa-cogs',
+      //   route: '/app/org-master/cgpa',
+      //   roles: ['L1']
+      // },
+      // {
+      //   label: 'Exam Config',
+      //   icon: 'fa-solid fa-sliders-h',
+      //   route: '/app/org-master/exam',
+      //   roles: ['L1']
+      // }
     ]
   }
 ];
