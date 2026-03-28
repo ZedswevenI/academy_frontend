@@ -43,6 +43,14 @@
         <button class="btn btn-outline-success btn-sm rounded-pill" (click)="exportBatch()">
             <i class="fa-solid fa-file-export"></i> Export
         </button>
+        <button class="btn btn-outline-danger btn-sm rounded-pill" (click)="openCloseBatch()"
+            [disabled]="batch?.status === 'CLOSED'">
+            <i class="fa-solid fa-lock"></i> Close Batch
+        </button>
+        <button *ngIf="activeTab === 'report' && (subjectHours.length || phaseReport)"
+            class="btn btn-sm btn-outline-success rounded-pill" (click)="exportReport()">
+            <i class="fa-solid fa-file-excel me-1"></i> Export Report
+        </button>
         <button class="btn btn-primary btn-sm rounded-pill" (click)="openOffcanvas('edit')">
             <i class="fa-solid fa-pen-to-square"></i> Edit
         </button>
@@ -103,6 +111,12 @@
                     <span class="badge bg-secondary-subtle text-secondary ms-1">{{ staffMap.length }}</span>
                 </button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link" [class.active]="activeTab === 'report'"
+                    (click)="activeTab = 'report'; loadSubjectHours()">
+                    <i class="fa-solid fa-chart-bar me-1"></i> Timetable Allotments
+                </button>
+            </li>
         </ul>
         <div class="d-flex gap-2">
             <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-primary rounded-pill"
@@ -149,8 +163,12 @@
                             <td class="text-muted">{{ s?.student?.phone || '-' }}</td>
                             <td class="text-muted">{{ s?.academicYear || '-' }}</td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-danger" title="Remove"
+                                <!-- <button class="btn btn-sm btn-outline-danger" title="Remove"
                                     (click)="removeStudent(s?.studentId)">
+                                    <i class="fa-solid fa-user-minus"></i>
+                                </button> -->
+                                <button class="btn btn-sm btn-outline-danger" title="Remove"
+                                    (click)="openRemoveStudent(s?.studentId, s?.student?.name)">
                                     <i class="fa-solid fa-user-minus"></i>
                                 </button>
                             </td>
@@ -187,6 +205,213 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- ── REPORT TAB ──────────────────────────────────────────────────────────── -->
+        <div *ngIf="activeTab === 'report'">
+
+            <!-- Subject filter -->
+            <div class="d-flex align-items-end gap-3 mb-4 flex-wrap">
+                <div style="min-width:260px">
+                    <label class="form-label small text-muted mb-1 fw-semibold">
+                        Filter by Subject
+                    </label>
+                    <select class="form-select form-select-sm" [(ngModel)]="reportSubjectId"
+                        (ngModelChange)="onReportSubjectChanged($event)">
+                        <option value="">— All Subjects —</option>
+                        <option *ngFor="let s of batchSubjectOptions | slice:1" [value]="s.value">{{ s.label }}</option>
+                    </select>
+                </div>
+                <div *ngIf="reportLoading" class="text-muted small">
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading...
+                </div>
+            </div>
+
+            <!-- ── Subject Hours Section ─────────────────────────────────────────────── -->
+            <div class="mb-4" *ngIf="subjectHours.length">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-semibold mb-0">
+                        <i class="fa-solid fa-clock me-2 text-primary"></i>Subject Hours Allotted
+                    </h6>
+                    <span class="badge bg-primary-subtle text-primary">
+                        Total: {{ subjectHoursTotal }}h
+                    </span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-sm-6 col-lg-4" *ngFor="let s of subjectHours"
+                        [class.border-start]="reportSubjectId && s.subjectId === reportSubjectId"
+                        [style.border-color]="'#3b82f6'">
+                        <div class="border rounded-3 p-3 h-100"
+                            [class.bg-primary-subtle]="reportSubjectId && s.subjectId === reportSubjectId">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div class="fw-semibold small text-truncate" style="max-width:160px">
+                                    {{ s.subjectName || s.subjectCode || '-' }}
+                                </div>
+                                <span class="badge rounded-pill"
+                                    style="background:#eff6ff;color:#3b82f6;font-size:0.75rem;font-weight:700">
+                                    {{ s.allottedHours }}h
+                                </span>
+                            </div>
+                            <div class="text-muted" style="font-size:0.72rem">
+                                {{ s.subjectCode || '-' }}
+                            </div>
+                            <!-- simple bar -->
+                            <div class="mt-2" style="height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+                                <div style="height:100%;background:#3b82f6;border-radius:4px;transition:width 0.4s"
+                                    [style.width.%]="getProgressPct(s.allottedHours,
+                subjectHours[0]?.allottedHours ? subjectHoursMax : 1)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Phase Report Section ───────────────────────────────────────────────── -->
+            <div *ngIf="phaseReport && reportSubjectId">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-semibold mb-0">
+                        <i class="fa-solid fa-layer-group me-2 text-indigo"></i>
+                        Phase Plan Report
+                        <span class="text-muted fw-normal small ms-1">— {{ reportSubjectName }}</span>
+                    </h6>
+                </div>
+
+                <!-- Summary strip -->
+                <div class="row g-2 mb-4">
+                    <div class="col-4">
+                        <div class="rounded-3 p-3 text-center border" style="background:#f0fdf4">
+                            <div class="fw-bold" style="font-size:1.4rem;color:#16a34a">
+                                {{ phaseReport.summary?.totalEstHours ?? '-' }}h
+                            </div>
+                            <div class="small text-muted fw-semibold mt-1">Total Estimated</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="rounded-3 p-3 text-center border" style="background:#eff6ff">
+                            <div class="fw-bold" style="font-size:1.4rem;color:#3b82f6">
+                                {{ phaseReport.summary?.totalAllottedHours ?? 0 }}h
+                            </div>
+                            <div class="small text-muted fw-semibold mt-1">Total Allotted</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="rounded-3 p-3 text-center border"
+                            [style.background]="(phaseReport.summary?.totalRemainingHours ?? 0) < 0 ? '#fef2f2' : '#fefce8'">
+                            <div class="fw-bold" style="font-size:1.4rem"
+                                [style.color]="(phaseReport.summary?.totalRemainingHours ?? 0) < 0 ? '#ef4444' : '#d97706'">
+                                {{ phaseReport.summary?.totalRemainingHours ?? '-' }}h
+                            </div>
+                            <div class="small text-muted fw-semibold mt-1">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase rows -->
+                <div *ngFor="let ph of phaseReport.phases" class="border rounded-3 mb-3 overflow-hidden">
+
+                    <!-- Phase header -->
+                    <div class="px-3 py-3 d-flex align-items-center gap-3 cursor-pointer" style="background:#f8fafc"
+                        (click)="togglePhase(ph.phaseId)">
+
+                        <!-- Expand icon -->
+                        <i class="fa-solid fa-chevron-right text-muted"
+                            style="font-size:0.75rem;transition:transform 0.2s"
+                            [style.transform]="isPhaseExpanded(ph.phaseId) ? 'rotate(90deg)' : 'none'">
+                        </i>
+
+                        <!-- Phase name -->
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold small">{{ ph.phaseName }}</div>
+                            <div class="text-muted" style="font-size:0.72rem">
+                                {{ ph.topics?.length || 0 }} topic(s)
+                            </div>
+                        </div>
+
+                        <!-- Hours chips -->
+                        <div class="d-flex gap-2 align-items-center flex-shrink-0">
+                            <span class="badge bg-success-subtle text-success" style="font-size:0.72rem">
+                                Est: {{ ph.estHours ?? '-' }}h
+                            </span>
+                            <span class="badge bg-primary-subtle text-primary" style="font-size:0.72rem">
+                                Done: {{ ph.allottedHours ?? 0 }}h
+                            </span>
+                            <span class="badge"
+                                [style.background]="(ph.remainingHours ?? 0) < 0 ? '#fef2f2' : '#fefce8'"
+                                [style.color]="(ph.remainingHours ?? 0) < 0 ? '#ef4444' : '#d97706'"
+                                style="font-size:0.72rem">
+                                Left: {{ ph.remainingHours ?? '-' }}h
+                            </span>
+                        </div>
+
+                        <!-- Progress bar -->
+                        <div style="width:80px">
+                            <div style="height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+                                <div style="height:100%;border-radius:4px;transition:width 0.4s"
+                                    [style.width.%]="getProgressPct(ph.allottedHours, ph.estHours)"
+                                    [style.background]="getProgressColor(getProgressPct(ph.allottedHours, ph.estHours))">
+                                </div>
+                            </div>
+                            <div class="text-muted text-end mt-1" style="font-size:0.65rem">
+                                {{ getProgressPct(ph.allottedHours, ph.estHours) }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Topic rows (expanded) -->
+                    <div *ngIf="isPhaseExpanded(ph.phaseId)">
+                        <div *ngFor="let t of ph.topics; let last = last"
+                            class="px-4 py-2 d-flex align-items-center gap-3" [class.border-bottom]="!last"
+                            style="background:#fff">
+
+                            <i class="fa-solid fa-circle-dot text-muted" style="font-size:0.55rem;flex-shrink:0"></i>
+
+                            <div class="flex-grow-1 small">{{ t.topicName }}</div>
+
+                            <div class="d-flex gap-2 align-items-center flex-shrink-0">
+                                <span class="text-muted" style="font-size:0.72rem">
+                                    Est: {{ t.estHours ?? '-' }}h
+                                </span>
+                                <span class="text-primary fw-semibold" style="font-size:0.72rem">
+                                    Done: {{ t.allottedHours ?? 0 }}h
+                                </span>
+                                <span style="font-size:0.72rem"
+                                    [style.color]="(t.remainingHours ?? 0) < 0 ? '#ef4444' : '#94a3b8'">
+                                    Left: {{ t.remainingHours ?? '-' }}h
+                                </span>
+                            </div>
+
+                            <!-- Mini progress -->
+                            <div style="width:60px">
+                                <div style="height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+                                    <div style="height:100%;border-radius:4px"
+                                        [style.width.%]="getProgressPct(t.allottedHours, t.estHours)"
+                                        [style.background]="getProgressColor(getProgressPct(t.allottedHours, t.estHours))">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="!ph.topics?.length" class="px-4 py-2 text-muted small">
+                            No topics defined for this phase.
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="phaseReport.unassigned" class="border rounded-3 p-3 d-flex align-items-center gap-3"
+                    style="background:#fefce8;border-color:#fde047 !important">
+                    <i class="fa-solid fa-circle-question text-warning"></i>
+                    <div class="flex-grow-1 small fw-semibold text-warning">Unassigned Hours</div>
+                    <span class="badge bg-warning-subtle text-warning">
+                        {{ phaseReport.unassigned.allottedHours }}h allotted without a phase
+                    </span>
+                </div>
+            </div>
+            <div *ngIf="!reportLoading && !subjectHours.length && !phaseReport" class="text-center py-5 text-muted">
+                <i class="fa-solid fa-chart-bar fa-2x mb-2 d-block opacity-20"></i>
+                <div class="fw-semibold">Select a subject to view the report</div>
+                <div class="small mt-1">Hours allotted and phase plan progress will appear here</div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -474,21 +699,7 @@
                 <button type="button" class="btn-close" (click)="closeLateModal()"></button>
             </div>
             <div class="modal-body">
-                <form [formGroup]="lateForm" class="row g-3">
-
-                    <!-- Type toggle -->
-                    <!-- <div class="col-12">
-                        <label class="form-label small fw-medium">Entry Type <span class="text-danger">*</span></label>
-                        <div class="d-flex gap-3">
-                            <div class="form-check" *ngFor="let opt of lateTypeOptions">
-                                <input class="form-check-input" type="radio" formControlName="type" [value]="opt.value"
-                                    [id]="'lateType_' + opt.value" />
-                                <label class="form-check-label" [for]="'lateType_' + opt.value">{{ opt.label }}</label>
-                            </div>
-                        </div>
-                    </div> -->
-
-                    <!-- Person -->
+                <!-- <form [formGroup]="lateForm" class="row g-3">
                     <div class="col-12">
                         <selectbox label="Person" [required]="true" formControlName="personId"
                             [control]="lateForm.get('personId')" [options]="latePersonOptions" optionLabel="label"
@@ -498,20 +709,14 @@
                             <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading students...
                         </div>
                     </div>
-
-                    <!-- Date -->
                     <div class="col-6">
                         <formfield label="Date" [required]="true" formControlName="date"
                             [control]="lateForm.get('date')" type="date"></formfield>
                     </div>
-
-                    <!-- Timetable ID (auto-filled) -->
                     <div class="col-6">
                         <formfield label="Timetable ID" [required]="true" formControlName="timetableId"
                             [control]="lateForm.get('timetableId')" placeholder="Auto-filled"></formfield>
                     </div>
-
-                    <!-- Period + Scheduled Start -->
                     <div class="col-4">
                         <formfield label="Period No" [required]="true" formControlName="periodNo"
                             [control]="lateForm.get('periodNo')" type="number" placeholder="1"></formfield>
@@ -525,11 +730,58 @@
                         <formfield label="Delay (min)" [required]="true" formControlName="delayMinutes"
                             [control]="lateForm.get('delayMinutes')" type="number" placeholder="e.g. 15"></formfield>
                     </div>
-
-                    <!-- Reason -->
                     <div class="col-12">
                         <formfield label="Reason" formControlName="reason" [control]="lateForm.get('reason')"
                             placeholder="Optional reason"></formfield>
+                    </div>
+                </form> -->
+                <form [formGroup]="lateForm" class="row g-3">
+
+                    <!-- Student -->
+                    <div class="col-12">
+                        <selectbox label="Student" [required]="true" formControlName="personId"
+                            [control]="lateForm.get('personId')" [options]="latePersonOptions" optionLabel="label"
+                            optionValue="value">
+                        </selectbox>
+                        <div *ngIf="batchStudentsLoading" class="text-muted small mt-1">
+                            <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading students...
+                        </div>
+                    </div>
+
+                    <!-- Date — triggers period reload -->
+                    <div class="col-6">
+                        <formfield label="Date" [required]="true" formControlName="date"
+                            [control]="lateForm.get('date')" type="date"
+                            (change)="onLateDateChanged(lateForm.get('date')?.value)">
+                        </formfield>
+                    </div>
+
+                    <!-- Period dropdown -->
+                    <div class="col-6">
+                        <label class="form-label small fw-medium">
+                            Period <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select form-select-sm" formControlName="periodNo"
+                            (change)="onLatePeriodSelected(lateForm.get('periodNo')?.value)">
+                            <option value="">Select Period</option>
+                            <option *ngFor="let opt of latePeriodOptions | slice:1" [value]="opt.value">
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Delay -->
+                    <div class="col-6">
+                        <formfield label="Delay (minutes)" [required]="true" formControlName="delayMinutes"
+                            [control]="lateForm.get('delayMinutes')" type="number" placeholder="e.g. 15">
+                        </formfield>
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="col-6">
+                        <formfield label="Reason" formControlName="reason" [control]="lateForm.get('reason')"
+                            placeholder="Optional reason">
+                        </formfield>
                     </div>
 
                 </form>
@@ -570,11 +822,19 @@
 
                     <div class="col-6 col-md-4">
                         <formfield label="Date" [required]="true" formControlName="date"
-                            [control]="specialClassForm.get('date')" type="date"></formfield>
+                            [control]="specialClassForm.get('date')" type="date" (change)="onSpecialClassDateChanged()">
+                        </formfield>
                     </div>
                     <div class="col-6 col-md-2">
                         <formfield label="Period No" [required]="true" formControlName="periodNo"
-                            [control]="specialClassForm.get('periodNo')" type="number" placeholder="e.g. 7"></formfield>
+                            [control]="specialClassForm.get('periodNo')" type="number"
+                            (input)="specialClassPeriodConflict = false" (change)="checkSpecialClassPeriodConflict()">
+                        </formfield>
+                        <div *ngIf="specialClassPeriodConflict" class="alert alert-warning small py-1 px-2 mt-1 mb-0">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            Period {{ specialClassForm.get('periodNo')?.value }} already exists on this date.
+                            Choose a different period number.
+                        </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <formfield label="Start Time" [required]="true" formControlName="startTime"
@@ -588,7 +848,9 @@
                     <div class="col-12 col-md-6">
                         <selectbox label="Subject" [required]="true" formControlName="subjectId"
                             [control]="specialClassForm.get('subjectId')" [options]="specialClassSubjectOptions"
-                            optionLabel="label" optionValue="value"></selectbox>
+                            optionLabel="label" optionValue="value"
+                            (ngModelChange)="onSpecialClassSubjectChanged($event)"> ← add this
+                        </selectbox>
                     </div>
                     <div class="col-12 col-md-6">
                         <selectbox label="Faculty" [required]="true" formControlName="staffId"
@@ -605,6 +867,17 @@
                         <selectbox label="Mode" [required]="true" formControlName="mode"
                             [control]="specialClassForm.get('mode')" [options]="modeOptions" optionLabel="label"
                             optionValue="value"></selectbox>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-medium">
+                            <i class="fa-solid fa-layer-group me-1"></i>Phase
+                            <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <select class="form-select form-select-sm" formControlName="phaseId">
+                            <option *ngFor="let ph of specialClassPhaseOptions" [value]="ph.value">
+                                {{ ph.label }}
+                            </option>
+                        </select>
                     </div>
 
                     <div class="col-12 col-md-8">
@@ -626,8 +899,67 @@
             <div class="modal-footer">
                 <button class="btn btn-sm btn-outline-secondary" (click)="closeSpecialClassModal()">Cancel</button>
                 <button class="btn btn-sm btn-success" (click)="submitSpecialClass()"
-                    [disabled]="loading || specialClassForm.invalid">
+                    [disabled]="loading || specialClassForm.invalid || specialClassPeriodConflict">
                     <i class="fa-solid fa-calendar-plus me-1"></i> Add Special Class
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop fade show" *ngIf="showRemoveConfirm"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showRemoveConfirm">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h6 class="modal-title fw-semibold text-danger">
+                    <i class="fa-solid fa-user-minus me-1"></i>Remove Student
+                </h6>
+                <button class="btn-close" (click)="closeRemoveConfirm()"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Remove <strong>{{ removeStudentName }}</strong> from this batch? This cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-sm btn-outline-secondary" (click)="closeRemoveConfirm()">Cancel</button>
+                <button class="btn btn-sm btn-danger" (click)="confirmRemoveStudent()" [disabled]="loading">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop fade show" *ngIf="showCloseConfirm"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showCloseConfirm">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h6 class="modal-title fw-semibold text-danger">
+                    <i class="fa-solid fa-lock me-1"></i>Close Batch
+                </h6>
+                <button class="btn-close" (click)="closeCloseBatchModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger small mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    Closing this batch will <strong>release all assigned students</strong>
+                    and set the batch to CLOSED. This cannot be undone.
+                </div>
+                <div class="border rounded-3 p-3 bg-light small">
+                    <div><span class="text-muted">Batch:</span> <strong>{{ batch?.batchName }}</strong></div>
+                    <div><span class="text-muted">Students:</span> <strong>{{ batch?.studentCount || students.length
+                            }}</strong> will be released</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-sm btn-outline-secondary" (click)="closeCloseBatchModal()">Cancel</button>
+                <button class="btn btn-sm btn-danger" (click)="confirmCloseBatch()" [disabled]="loading">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-lock me-1" *ngIf="!loading"></i>
+                    Confirm Close
                 </button>
             </div>
         </div>

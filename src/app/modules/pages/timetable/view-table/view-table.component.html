@@ -303,14 +303,18 @@
                                                 <i class="fa-solid fa-chevron-down ms-1" style="font-size:0.6rem"></i>
                                             </button>
                                         </div>
+                                        <button class="btn btn-warning py-0 px-2" style="font-size:0.7rem"
+                                            title="Log Staff Late / Early Leave"
+                                            (click)="openStaffLateEntry(row, pNum, p); $event.stopPropagation()"
+                                            [disabled]="loading">
+                                            <i class="fa-solid fa-clock-rotate-left"></i>Add Staff Late Entry
+                                        </button>
                                     </div>
-
                                 </ng-container>
                                 <ng-template #freeCell>
                                     <div class="text-muted text-center p-3 opacity-25 small">Free</div>
                                 </ng-template>
                             </td>
-
                         </tr>
                     </tbody>
                 </table>
@@ -614,7 +618,7 @@
                                 </select>
                             </div>
                             <!-- Phase filtered by programId + subject -->
-                            <div class="col-md-6" *ngIf="rpPhasesFiltered.length">
+                            <!-- <div class="col-md-6" *ngIf="rpPhasesFiltered.length">
                                 <label class="form-label small text-muted mb-1">
                                     <i class="fa-solid fa-layer-group me-1"></i>Phase
                                     <span class="text-muted ms-1" style="font-size:0.65rem" *ngIf="rp.subjectCode">
@@ -625,6 +629,17 @@
                                     (change)="onReplacePhaseSelected()">
                                     <option value="">— No phase —</option>
                                     <option *ngFor="let ph of rpPhasesFiltered" [value]="ph.phaseId">{{ ph.phaseName }}
+                                    </option>
+                                </select>
+                            </div> -->
+                            <!-- CORRECT — per period ep.phaseId: -->
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted mb-1">Phase</label>
+                                <select class="form-select form-select-sm" [(ngModel)]="ep.phaseId"
+                                    (change)="onEditDayPhaseChange(ep)">
+                                    <option value="">— No phase —</option>
+                                    <option *ngFor="let ph of getEditDayPhasesForPeriod(ep)" [value]="ph.phaseId">
+                                        {{ ph.phaseName }}
                                     </option>
                                 </select>
                             </div>
@@ -1151,4 +1166,70 @@
             </ng-container>
         </ng-container>
     </ng-container>
+</div>
+
+<div class="app-modal-backdrop" *ngIf="showStaffLateModal">
+    <div class="app-modal timetable-modal" style="max-width:440px">
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0 fw-semibold">
+                    <i class="fa-solid fa-clock-rotate-left me-2 text-warning"></i>Staff Late Entry
+                </h6>
+                <div class="text-muted small">
+                    {{ staffLateEntry.facultyName }} &bull;
+                    Period {{ staffLateEntry.periodNo }} &bull;
+                    {{ staffLateEntry.startLabel }} – {{ staffLateEntry.endLabel }}
+                </div>
+            </div>
+            <button class="btn-close" (click)="closeStaffLateModal()"></button>
+        </div>
+        <div class="app-modal-body">
+
+            <!-- Entry type -->
+            <div class="mb-3">
+                <label class="form-label small fw-medium">Entry Type <span class="text-danger">*</span></label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" [(ngModel)]="staffLateEntry.entryType" value="LATE"
+                            id="sle_late" />
+                        <label class="form-check-label small" for="sle_late">Late Entry</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" [(ngModel)]="staffLateEntry.entryType"
+                            value="EARLY_LEAVE" id="sle_early" />
+                        <label class="form-check-label small" for="sle_early">Early Leaving</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delay minutes -->
+            <div class="mb-3">
+                <label class="form-label small fw-medium">
+                    {{ staffLateEntry.entryType === 'EARLY_LEAVE' ? 'Left Early By (minutes)' : 'Arrived Late By
+                    (minutes)' }}
+                    <span class="text-danger">*</span>
+                </label>
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="staffLateEntry.delayMinutes"
+                    [placeholder]="staffLateEntry.entryType === 'EARLY_LEAVE' ? 'e.g. 10' : 'e.g. 15'" min="1" />
+            </div>
+
+            <!-- Reason -->
+            <div class="mb-3">
+                <label class="form-label small fw-medium">Reason</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="staffLateEntry.reason"
+                    placeholder="Optional reason" />
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-sm btn-outline-secondary" (click)="closeStaffLateModal()">Cancel</button>
+                <button class="btn btn-sm btn-warning" (click)="submitStaffLateEntry()"
+                    [disabled]="loading || !staffLateEntry.delayMinutes">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-clock me-1" *ngIf="!loading"></i>
+                    Log {{ staffLateEntry.entryType === 'EARLY_LEAVE' ? 'Early Leave' : 'Late Entry' }}
+                </button>
+            </div>
+
+        </div>
+    </div>
 </div>

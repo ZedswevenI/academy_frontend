@@ -1,57 +1,89 @@
 <div class="ms-3 me-3 pt-1 pb-1">
   <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-    <div class="d-flex flex-column gap-4">
-      <!-- Header Section -->
-      <div class="d-flex flex-column gap-4">
-        <div class="d-flex align-items-center justify-content-between">
-          <h1 class="fw-bold mb-0" style="font-size: 30px;">
-            <i class="fa-solid fa-user-graduate me-2"></i> My Student
-          </h1>
-          <!-- Right Actions -->
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
-              (click)="openBulkUpload()">
-              <i class="fa-solid fa-file-import"></i>
-              <span>Import Students</span>
-            </button>
 
-            <button class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
-              (click)="openImageUpload()">
-              <i class="fa-solid fa-images"></i>
-              <span>Upload Photos</span>
-            </button>
-
-            <div class="view-switch">
-              <button class="view-btn active" type="button" [ngClass]="{ active: activeTab === 'list' }"
-                (click)="setTab('list')">
-                <i class="fa-solid fa-list"></i>
-                <span>List</span>
-              </button>
-
-              <button class="view-btn" type="button" [ngClass]="{ active: activeTab === 'grid' }"
-                (click)="setTab('grid')">
-                <i class="fa-solid fa-border-all"></i>
-                <span>Grid</span>
-              </button>
-            </div>
-          </div>
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h1 class="fw-bold mb-0" style="font-size:30px">
+        <i class="fa-solid fa-user-graduate me-2"></i> My Student
+      </h1>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openBulkUpload()">
+          <i class="fa-solid fa-file-import"></i>
+          <span>Import Students</span>
+        </button>
+        <button class="btn btn-sm btn-outline-success d-flex align-items-center gap-1" (click)="openImageUpload()">
+          <i class="fa-solid fa-images"></i>
+          <span>Upload Photos</span>
+        </button>
+        <div class="view-switch">
+          <button class="view-btn" type="button" [ngClass]="{ active: activeTab === 'list' }" (click)="setTab('list')">
+            <i class="fa-solid fa-list"></i>
+            <span>List</span>
+          </button>
+          <button class="view-btn" type="button" [ngClass]="{ active: activeTab === 'grid' }" (click)="setTab('grid')">
+            <i class="fa-solid fa-border-all"></i>
+            <span>Grid</span>
+          </button>
         </div>
       </div>
     </div>
-    <div class="mt-3">
+
+    <!-- Filters -->
+    <div class="row g-2 mb-3 align-items-end">
+      <div class="col-md-3">
+        <input class="form-control form-control-sm" placeholder="Search name / phone / admission no"
+          [(ngModel)]="filters.search" (keyup.enter)="triggerSearch()" />
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" [(ngModel)]="filters.programId">
+          <option value="">All Programs</option>
+          <option *ngFor="let p of programOptions" [value]="p.value">{{ p.label }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" [(ngModel)]="filters.centerId">
+          <option value="">All Centers</option>
+          <option *ngFor="let c of centerOptions" [value]="c.value">{{ c.label }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" [(ngModel)]="filters.status">
+          <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-sm btn-primary" (click)="triggerSearch()">
+          <i class="fa-solid fa-magnifying-glass me-1"></i>Search
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty state — shown before first search -->
+    <div *ngIf="!hasSearched" class="text-center py-5 text-muted">
+      <i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block opacity-30"></i>
+      <div class="fw-semibold">Use filters above and click Search</div>
+      <div class="small mt-1 text-muted">Results will appear here</div>
+    </div>
+
+    <!-- Results — only shown after search -->
+    <div *ngIf="hasSearched" class="mt-2">
       <ng-container *ngIf="activeTab === 'list'">
-        <app-table-list></app-table-list>
+        <app-table-list [hasSearched]="hasSearched" [filters]="filters"></app-table-list>
       </ng-container>
       <ng-container *ngIf="activeTab === 'grid'">
-        <app-grid-list></app-grid-list>
+        <app-grid-list [hasSearched]="hasSearched" [filters]="filters"></app-grid-list>
       </ng-container>
     </div>
+
   </div>
 </div>
 
 <!-- ================= MODAL: BULK EXCEL UPLOAD ================= -->
 <div class="app-modal-backdrop" *ngIf="showBulkUpload">
-  <div class="app-modal" style="max-width: 1100px;">
+  <div class="app-modal" style="max-width:1100px">
     <div class="app-modal-header d-flex justify-content-between align-items-center">
       <div>
         <h6 class="mb-0 fw-semibold">Import Student Details (Excel)</h6>
@@ -77,11 +109,9 @@
               <b>Enrolment Number</b> is mandatory and used to match existing students.
             </div>
           </div>
-
           <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadBulkSample()"
             [disabled]="bulkUploading">
-            <i class="fa-solid fa-download me-1"></i>
-            Download Sample Excel
+            <i class="fa-solid fa-download me-1"></i>Download Sample Excel
           </button>
         </div>
       </div>
@@ -93,16 +123,12 @@
             [disabled]="bulkUploading" />
           <div class="form-text" *ngIf="bulkFileName">Selected: {{ bulkFileName }}</div>
         </div>
-
         <div class="col-md-6 d-flex gap-2 justify-content-end">
           <button type="button" class="btn btn-outline-secondary" (click)="resetBulkUpload()"
-            [disabled]="!bulkPreviewRows.length || bulkUploading">
-            Reset
-          </button>
-
+            [disabled]="!bulkPreviewRows.length || bulkUploading">Reset</button>
           <button type="button" class="btn btn-primary" (click)="confirmBulkUpload()"
             [disabled]="!bulkPreviewRows.length || bulkHasInvalidRows || bulkUploading">
-            <span *ngIf="bulkUploading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span *ngIf="bulkUploading" class="spinner-border spinner-border-sm me-2"></span>
             <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!bulkUploading"></i>
             Import Now
           </button>
@@ -118,18 +144,19 @@
         </div>
       </div>
 
-      <div *ngIf="bulkPreviewRows.length" class="table-responsive border rounded" style="max-height: 400px; overflow-y: auto;">
+      <div *ngIf="bulkPreviewRows.length" class="table-responsive border rounded"
+        style="max-height:400px;overflow-y:auto">
         <table class="table table-sm table-hover align-middle mb-0">
-          <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+          <thead class="table-light" style="position:sticky;top:0;z-index:1">
             <tr>
-              <th style="width:50px;">#</th>
+              <th style="width:50px">#</th>
               <th>Enrolment No.</th>
               <th>Full Name</th>
               <th>Mobile</th>
               <th>Email</th>
               <th>Parent Name</th>
               <th>Parent Mobile</th>
-              <th style="width:180px;">Validation</th>
+              <th style="width:180px">Validation</th>
             </tr>
           </thead>
           <tbody>
@@ -143,7 +170,9 @@
               <td>{{ r.parentMobile }}</td>
               <td>
                 <span *ngIf="r._valid" class="badge bg-success">OK</span>
-                <span *ngIf="!r._valid" class="badge bg-danger">{{ r._errors?.join(', ') }}</span>
+                <span *ngIf="!r._valid" class="badge bg-danger">
+                  {{ r._errors?.join(', ') }}
+                </span>
               </td>
             </tr>
           </tbody>
@@ -159,11 +188,13 @@
 
 <!-- ================= MODAL: BULK IMAGE UPLOAD ================= -->
 <div class="app-modal-backdrop" *ngIf="showImageUpload">
-  <div class="app-modal" style="max-width: 900px;">
+  <div class="app-modal" style="max-width:900px">
     <div class="app-modal-header d-flex justify-content-between align-items-center">
       <div>
         <h6 class="mb-0 fw-semibold">Upload Student Photos</h6>
-        <span class="text-muted small">Upload images named by Admission Number (e.g. ADM001.jpg)</span>
+        <span class="text-muted small">
+          Upload images named by Admission Number (e.g. ADM001.jpg)
+        </span>
       </div>
       <button type="button" class="btn-close" (click)="closeImageUpload()" [disabled]="imageUploading"></button>
     </div>
@@ -174,16 +205,15 @@
           <div>
             <div class="fw-semibold mb-1">Instructions:</div>
             <div class="text-muted">
-              1. Name each image as the student's <b>Admission/Enrolment Number</b> (e.g. ADM001.jpg)<br>
+              1. Name each image as the student's
+              <b>Admission/Enrolment Number</b> (e.g. ADM001.jpg)<br>
               2. Supported formats: <b>JPG, JPEG, PNG</b><br>
               3. Maximum <b>100 images</b> per upload
             </div>
           </div>
-
           <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadImageSample()"
             [disabled]="imageUploading">
-            <i class="fa-solid fa-download me-1"></i>
-            Download Instructions
+            <i class="fa-solid fa-download me-1"></i>Download Instructions
           </button>
         </div>
       </div>
@@ -193,35 +223,32 @@
           <label class="form-label fw-semibold">Select Images</label>
           <input type="file" class="form-control" accept="image/jpeg,image/jpg,image/png" multiple
             (change)="onImagesSelected($event)" [disabled]="imageUploading" />
-          <div class="form-text" *ngIf="imageFiles.length">{{ imageFiles.length }} image(s) selected</div>
+          <div class="form-text" *ngIf="imageFiles.length">
+            {{ imageFiles.length }} image(s) selected
+          </div>
         </div>
-
         <div class="col-md-6 d-flex gap-2 justify-content-end">
           <button type="button" class="btn btn-outline-secondary" (click)="resetImageUpload()"
-            [disabled]="!imageFiles.length || imageUploading">
-            Reset
-          </button>
-
+            [disabled]="!imageFiles.length || imageUploading">Reset</button>
           <button type="button" class="btn btn-primary" (click)="confirmImageUpload()"
             [disabled]="!imageFiles.length || imageUploading">
-            <span *ngIf="imageUploading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span *ngIf="imageUploading" class="spinner-border spinner-border-sm me-2"></span>
             <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!imageUploading"></i>
             Upload Now
           </button>
         </div>
       </div>
 
-      <!-- Image Preview Grid -->
-      <div *ngIf="imagePreviewList.length" class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
+      <div *ngIf="imagePreviewList.length" class="border rounded p-3" style="max-height:400px;overflow-y:auto">
         <div class="row g-3">
           <div *ngFor="let img of imagePreviewList; let i = index" class="col-md-3 col-sm-4 col-6">
             <div class="card border shadow-sm h-100">
-              <img [src]="img.preview" class="card-img-top" style="height: 120px; object-fit: cover;" alt="Preview">
+              <img [src]="img.preview" class="card-img-top" style="height:120px;object-fit:cover" alt="Preview">
               <div class="card-body p-2 text-center">
                 <div class="fw-semibold small text-truncate" title="{{ img.admissionNo }}">{{ img.admissionNo }}</div>
                 <div class="text-muted small text-truncate" title="{{ img.name }}">{{ img.name }}</div>
                 <button type="button" class="btn btn-sm btn-outline-danger mt-1" (click)="removeImage(i)"
-                  [disabled]="imageUploading" title="Remove">
+                  [disabled]="imageUploading">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>

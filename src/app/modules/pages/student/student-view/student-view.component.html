@@ -8,12 +8,18 @@
 
     <ng-container *ngIf="!loading && student">
 
-        <!-- ── Header ───────────────────────────────────────────────────────── -->
+        <!-- ── Header ─────────────────────────────────────────────────────────── -->
         <div class="card shadow-sm mb-4 p-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
 
                 <div class="d-flex align-items-center gap-3">
-                    <div class="avatar">{{ getInitials(student.basic?.name) }}</div>
+                    <div class="avatar-wrap me-3">
+                        <img *ngIf="photoUrl" [src]="photoUrl" class="rounded-circle object-fit-cover border"
+                            style="width:56px;height:56px;" alt="Photo" />
+                        <div *ngIf="!photoUrl" class="avatar">
+                            {{ getInitials(student.basic?.name) }}
+                        </div>
+                    </div>
                     <div>
                         <h5 class="mb-1 fw-semibold">{{ student.basic?.name }}</h5>
                         <div class="text-muted small">
@@ -29,14 +35,11 @@
 
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <span class="badge px-3 py-1" [ngClass]="{
-              'bg-success-subtle text-success':   student.basic?.status === 'ACTIVE',
-              'bg-secondary-subtle text-secondary': student.basic?.status === 'INACTIVE',
-              'bg-danger-subtle text-danger':     student.basic?.status === 'DROPOUT'
-            }">
-                        {{ student.basic?.status }}
-                    </span>
+            'bg-success-subtle text-success':     student.basic?.status === 'ACTIVE',
+            'bg-secondary-subtle text-secondary': student.basic?.status === 'INACTIVE',
+            'bg-danger-subtle text-danger':       student.basic?.status === 'DROPOUT'
+          }">{{ student.basic?.status }}</span>
 
-                    <!-- Attendance % from report summary -->
                     <span class="text-muted" *ngIf="attendanceSummary">
                         Attendance: <strong>{{ attendanceSummary.attendancePercentage }}%</strong>
                     </span>
@@ -44,7 +47,7 @@
                     <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
                         <i class="fa-solid fa-arrow-left"></i> Back to Students
                     </button>
-                    <button class="btn btn-outline-primary btn-sm">
+                    <button class="btn btn-outline-primary btn-sm" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen"></i> Edit Profile
                     </button>
                 </div>
@@ -54,31 +57,26 @@
 
         <div class="row g-4">
 
-            <!-- ── Left Column ─────────────────────────────────────────────────── -->
+            <!-- ── Left Column ───────────────────────────────────────────────────── -->
             <div class="col-lg-4">
 
-                <!-- Profile -->
+                <!-- Profile card -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h6 class="fw-semibold mb-3">Profile</h6>
-
                         <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.mobile || '—' }}</p>
                         <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email || '—' }}</p>
-
                         <hr>
-
                         <p class="mb-1"><strong>Parent Name</strong></p>
                         <p>{{ student.basic?.parentName || '—' }}</p>
-
                         <p class="mb-1"><strong>Parent Mobile</strong></p>
                         <p>{{ student.basic?.parentMobile || '—' }}</p>
-
                         <ng-container *ngIf="student.basic?.addressLine1">
                             <p class="mb-1"><strong>Address</strong></p>
                             <p class="mb-0">
                                 {{ student.basic?.addressLine1 }}<br *ngIf="student.basic?.city">
-                                {{ student.basic?.city }}<span *ngIf="student.basic?.pincode"> - {{
-                                    student.basic?.pincode }}</span>
+                                {{ student.basic?.city }}
+                                <span *ngIf="student.basic?.pincode"> - {{ student.basic?.pincode }}</span>
                             </p>
                         </ng-container>
                     </div>
@@ -88,33 +86,24 @@
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h6 class="fw-semibold mb-3">Quick Stats</h6>
-
-                        <!-- Attendance from report API -->
                         <div class="d-flex justify-content-between mb-2">
                             <span>Attendance</span>
                             <span class="fw-semibold" *ngIf="attendanceSummary">
                                 {{ attendanceSummary.present }}/{{ attendanceSummary.totalPeriods }}
-                                <span class="text-muted small ms-1">({{ attendanceSummary.attendancePercentage
-                                    }}%)</span>
+                                <span class="text-muted small ms-1">
+                                    ({{ attendanceSummary.attendancePercentage }}%)
+                                </span>
                             </span>
                             <span class="fw-semibold text-muted" *ngIf="!attendanceSummary">—</span>
                         </div>
-
-                        <!-- Assignments from academic/summary -->
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Assignments Completed</span>
-                            <strong>
-                                {{ student.assignments?.completed || 0 }}/{{ student.assignments?.total || 0 }}
-                            </strong>
+                            <span>Tests Completed</span>
+                            <strong>{{ dataArray1.length || 0 }}</strong>
                         </div>
-
-                        <!-- Exams from academic/summary -->
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Average Score</span>
-                            <span class="fw-semibold">{{ student.exams?.averageScore || 0 }}%</span>
+                            <span>Late Entries</span>
+                            <strong>{{ lateEntries.length || 0 }}</strong>
                         </div>
-
-                        <!-- Fees from finance/summary -->
                         <div class="d-flex justify-content-between mb-2">
                             <span>Fees Paid</span>
                             <span class="fw-semibold text-success">
@@ -127,252 +116,247 @@
                                 ₹{{ (student.fees?.outstandingAmount || 0) | number:'1.0-0' }}
                             </span>
                         </div>
-
                     </div>
                 </div>
 
             </div>
 
-            <!-- ── Right Column ────────────────────────────────────────────────── -->
+            <!-- ── Right Column ──────────────────────────────────────────────────── -->
             <div class="col-lg-8">
                 <div class="card shadow-sm">
                     <div class="card-body">
 
                         <!-- Tabs -->
-                        <ul class="nav nav-tabs mb-3" role="tablist">
+                        <ul class="nav nav-tabs mb-3">
                             <li class="nav-item">
-                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#program">
-                                    Program
+                                <button class="nav-link" [class.active]="activeViewTab==='program'"
+                                    (click)="activeViewTab='program'">
+                                    <i class="fa-solid fa-graduation-cap me-1"></i>Program
                                 </button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance">
-                                    Attendance
+                                <button class="nav-link" [class.active]="activeViewTab==='attendance'"
+                                    (click)="activeViewTab='attendance'">
+                                    <i class="fa-solid fa-calendar-check me-1"></i>Attendance
                                     <span class="badge bg-primary ms-1" *ngIf="attendanceSummary">
                                         {{ attendanceSummary.attendancePercentage }}%
                                     </span>
                                 </button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#assignments">
-                                    Assignments
+                                <button class="nav-link" [class.active]="activeViewTab==='assignments'"
+                                    (click)="activeViewTab='assignments'">
+                                    <i class="fa-solid fa-file-pen me-1"></i>Assignments
                                 </button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#exam">
-                                    Exam Results
+                                <button class="nav-link" [class.active]="activeViewTab==='late'"
+                                    (click)="activeViewTab='late'">
+                                    <i class="fa-solid fa-clock me-1"></i>Late Entries
+                                    <span class="badge bg-warning text-dark ms-1" *ngIf="lateEntries.length">
+                                        {{ lateEntries.length }}
+                                    </span>
                                 </button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#perform">
-                                    Performance
-                                </button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ptm">
-                                    PTM
-                                </button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#feedback">
-                                    Remarks
+                                <button class="nav-link" [class.active]="activeViewTab==='remarks'"
+                                    (click)="activeViewTab='remarks'">
+                                    <i class="fa-solid fa-comment me-1"></i>Remarks
                                     <span class="badge bg-secondary ms-1" *ngIf="dataArray4.length">
                                         {{ dataArray4.length }}
                                     </span>
                                 </button>
                             </li>
-                            <!-- <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pack">
-                                    Payments
-                                    <span class="badge bg-secondary ms-1" *ngIf="dataArray5.length">
-                                        {{ dataArray5.length }}
-                                    </span>
-                                </button>
-                            </li> -->
                         </ul>
 
-                        <div class="tab-content">
-
-                            <!-- Program -->
-                            <div class="tab-pane fade show active" id="program">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Program Name</div>
-                                            <div class="fw-semibold">{{ student.program?.programName || '—' }}</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Academic Year</div>
-                                            <div class="fw-medium">{{ student.program?.academicYear || '—' }}</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Program Code</div>
-                                            <div class="fw-medium">{{ student.program?.programCode || '—' }}</div>
+                        <!-- ── PROGRAM TAB ──────────────────────────────────────────────── -->
+                        <div *ngIf="activeViewTab === 'program'">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <div class="text-muted small">Program Name</div>
+                                        <div class="fw-semibold">{{ student.program?.programName || '—' }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted small">Academic Year</div>
+                                        <div class="fw-medium">{{ student.program?.academicYear || '—' }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted small">Program Code</div>
+                                        <div class="fw-medium">{{ student.program?.programCode || '—' }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <div class="text-muted small">Current Batch</div>
+                                        <div class="fw-medium">
+                                            <i class="fa-solid fa-layer-group me-1 text-muted"></i>
+                                            {{ student.program?.batchName || '—' }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Current Batch</div>
-                                            <div class="fw-medium">
-                                                <i class="fa-solid fa-layer-group me-1 text-muted"></i>
-                                                {{ student.program?.batchName || '—' }}
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Joining Date</div>
-                                            <div class="fw-medium">{{ fmtEpoch(student.program?.joiningDate) }}</div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="text-muted small">Mentor / Faculty</div>
-                                            <div class="fw-medium">{{ student.program?.mentorName || 'Not Assigned' }}
-                                            </div>
-                                        </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted small">Joining Date</div>
+                                        <div class="fw-medium">{{ fmtEpoch(student.program?.joiningDate) }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="text-muted small">Mentor / Faculty</div>
+                                        <div class="fw-medium">{{ student.program?.mentorName || 'Not Assigned' }}</div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Attendance — wired to getattendance/report -->
-                            <div class="tab-pane fade" id="attendance">
-
-                                <!-- Summary bar -->
-                                <div *ngIf="attendanceSummary" class="row g-2 mb-3">
-                                    <div class="col-6 col-md-3">
-                                        <div class="border rounded p-2 text-center">
-                                            <div class="fw-bold text-primary">{{ attendanceSummary.totalPeriods }}</div>
-                                            <div class="small text-muted">Total</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <div class="border rounded p-2 text-center">
-                                            <div class="fw-bold text-success">{{ attendanceSummary.present }}</div>
-                                            <div class="small text-muted">Present</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <div class="border rounded p-2 text-center">
-                                            <div class="fw-bold text-danger">{{ attendanceSummary.absent }}</div>
-                                            <div class="small text-muted">Absent</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <div class="border rounded p-2 text-center">
-                                            <div class="fw-bold text-info">{{ attendanceSummary.attendancePercentage }}%
-                                            </div>
-                                            <div class="small text-muted">Percentage</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div *ngIf="!dataArray.length" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-calendar-check fa-2x mb-2 d-block"></i>
-                                    No attendance records found.
-                                </div>
-                                <custom-table *ngIf="dataArray.length" [autoFitChars]="true" [columns]="columnsArray"
-                                    [data]="dataArray" [showaction]="false" [success]="'PRESENT'" [danger]="'ABSENT'"
-                                    [warn]="'LATE'" [searchPlaceholder]="'Search attendance...'">
-                                </custom-table>
-                            </div>
-
-                            <!-- Assignments — no API yet -->
-                            <div class="tab-pane fade" id="assignments">
-                                <div *ngIf="!dataArray1.length" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-file-pen fa-2x mb-2 d-block"></i>
-                                    Assignment data will be available soon.
-                                </div>
-                                <custom-table *ngIf="dataArray1.length" [autoFitChars]="true" [columns]="columnsArray1"
-                                    [data]="dataArray1" [showaction]="false" [success]="'Completed'"
-                                    [danger]="'Overdue'" [warn]="'Pending'"
-                                    [searchPlaceholder]="'Search assignments...'">
-                                </custom-table>
-                            </div>
-
-                            <!-- Exam Results — no API yet -->
-                            <div class="tab-pane fade" id="exam">
-                                <div *ngIf="!dataArray2.length" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-graduation-cap fa-2x mb-2 d-block"></i>
-                                    Exam result data will be available soon.
-                                </div>
-                                <custom-table *ngIf="dataArray2.length" [autoFitChars]="true" [columns]="columnsArray2"
-                                    [data]="dataArray2" [showaction]="false" [success]="'Pass'" [danger]="'Fail'"
-                                    [searchPlaceholder]="'Search exam results...'">
-                                </custom-table>
-                            </div>
-
-                            <!-- Performance — no API yet -->
-                            <div class="tab-pane fade" id="perform">
-                                <div *ngIf="!dataArray6.length" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-chart-line fa-2x mb-2 d-block"></i>
-                                    Performance data will be available soon.
-                                </div>
-                                <custom-table *ngIf="dataArray6.length" [autoFitChars]="true" [columns]="columnsArray6"
-                                    [data]="dataArray6" [showaction]="false"
-                                    [searchPlaceholder]="'Search performance...'">
-                                </custom-table>
-                            </div>
-
-                            <!-- PTM — no API yet -->
-                            <div class="tab-pane fade" id="ptm">
-                                <div *ngIf="!dataArray3.length" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-people-arrows fa-2x mb-2 d-block"></i>
-                                    PTM records will be available soon.
-                                </div>
-                                <custom-table *ngIf="dataArray3.length" [autoFitChars]="true" [columns]="columnsArray3"
-                                    [data]="dataArray3" [showaction]="false"
-                                    [searchPlaceholder]="'Search PTM records...'">
-                                </custom-table>
-                            </div>
-
-                            <!-- Remarks — wired to student/remark/list -->
-                            <div class="tab-pane fade" id="feedback">
-                                <div *ngIf="!dataArray4.length" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-comment fa-2x mb-2 d-block"></i>
-                                    No remarks recorded for this student.
-                                </div>
-                                <custom-table *ngIf="dataArray4.length" [autoFitChars]="true" [columns]="columnsArray4"
-                                    [data]="dataArray4" [showaction]="false" [searchPlaceholder]="'Search remarks...'">
-                                </custom-table>
-                            </div>
-
-                            <!-- Payments — wired to finance/summary receipts -->
-                            <div class="tab-pane fade" id="pack">
-                                <div *ngIf="student.fees" class="row g-2 mb-3">
-                                    <div class="col-md-4">
-                                        <div class="border rounded p-2 text-center">
-                                            <div class="fw-bold text-primary">
-                                                ₹{{ (student.fees.totalAmount || 0) | number:'1.0-0' }}
-                                            </div>
-                                            <div class="small text-muted">Total Fee</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="border rounded p-2 text-center">
-                                            <div class="fw-bold text-success">
-                                                ₹{{ (student.fees.paidAmount || 0) | number:'1.0-0' }}
-                                            </div>
-                                            <div class="small text-muted">Paid</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="border rounded p-2 text-center">
-                                            <div class="fw-bold text-danger">
-                                                ₹{{ (student.fees.outstandingAmount || 0) | number:'1.0-0' }}
-                                            </div>
-                                            <div class="small text-muted">Outstanding</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div *ngIf="!dataArray5.length" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-receipt fa-2x mb-2 d-block"></i>
-                                    No payment records found.
-                                </div>
-                                <custom-table *ngIf="dataArray5.length" [autoFitChars]="true" [columns]="columnsArray5"
-                                    [data]="dataArray5" [showaction]="false" [success]="'CLEARED'" [warn]="'SUBMITTED'"
-                                    [danger]="'CANCELLED'" [searchPlaceholder]="'Search payments...'">
-                                </custom-table>
-                            </div>
-
                         </div>
+
+                        <!-- ── ATTENDANCE TAB ──────────────────────────────────────────── -->
+                        <div *ngIf="activeViewTab === 'attendance'">
+
+                            <div *ngIf="attendanceSummary" class="row g-2 mb-3">
+                                <div class="col-6 col-md-3">
+                                    <div class="border rounded p-2 text-center">
+                                        <div class="fw-bold text-primary">{{ attendanceSummary.totalPeriods }}</div>
+                                        <div class="small text-muted">Total</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="border rounded p-2 text-center">
+                                        <div class="fw-bold text-success">{{ attendanceSummary.present }}</div>
+                                        <div class="small text-muted">Present</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="border rounded p-2 text-center">
+                                        <div class="fw-bold text-danger">{{ attendanceSummary.absent }}</div>
+                                        <div class="small text-muted">Absent</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="border rounded p-2 text-center">
+                                        <div class="fw-bold text-info">{{ attendanceSummary.attendancePercentage }}%
+                                        </div>
+                                        <div class="small text-muted">Percentage</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="!dataArray.length" class="text-center text-muted py-4">
+                                <i class="fa-solid fa-calendar-check fa-2x mb-2 d-block"></i>
+                                No attendance records found.
+                            </div>
+                            <custom-table *ngIf="dataArray.length" [autoFitChars]="true" [columns]="columnsArray"
+                                [data]="dataArray" [showaction]="false" [success]="'PRESENT'" [danger]="'ABSENT'"
+                                [warn]="'LATE'" [searchPlaceholder]="'Search attendance...'">
+                            </custom-table>
+                        </div>
+
+                        <!-- ── ASSIGNMENTS TAB ─────────────────────────────────────────── -->
+                        <div *ngIf="activeViewTab === 'assignments'">
+
+                            <!-- Topic-wise summary cards -->
+                            <div *ngIf="topicSummaryKeys.length" class="row g-2 mb-3">
+                                <div class="col-12 col-sm-6 col-md-4" *ngFor="let topic of topicSummaryKeys">
+                                    <div class="border rounded-3 p-3">
+                                        <div class="fw-semibold small text-truncate mb-1">{{ topic }}</div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted small">Tests</span>
+                                            <span class="fw-semibold">
+                                                {{ topicSummary[topic].completed }}/{{ topicSummary[topic].total }}
+                                            </span>
+                                        </div>
+                                        <div class="mt-1"
+                                            style="height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+                                            <div style="height:100%;background:#3b82f6;border-radius:4px"
+                                                [style.width.%]="topicSummary[topic].total
+                          ? (topicSummary[topic].completed / topicSummary[topic].total) * 100
+                          : 0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="!dataArray1.length" class="text-center text-muted py-4">
+                                <i class="fa-solid fa-file-pen fa-2x mb-2 d-block"></i>
+                                No assignment results found.
+                            </div>
+                            <custom-table *ngIf="dataArray1.length" [autoFitChars]="true" [columns]="columnsArray1"
+                                [data]="dataArray1" [showaction]="false" [searchPlaceholder]="'Search results...'">
+                            </custom-table>
+                        </div>
+
+                        <!-- ── LATE ENTRIES TAB ────────────────────────────────────────── -->
+                        <div *ngIf="activeViewTab === 'late'">
+                            <div *ngIf="lateLoading" class="text-center py-4">
+                                <i class="fa-solid fa-spinner fa-spin fa-lg text-muted"></i>
+                            </div>
+                            <div *ngIf="!lateLoading && !lateEntries.length" class="text-center text-muted py-4">
+                                <i class="fa-solid fa-clock fa-2x mb-2 d-block"></i>
+                                No late entries recorded.
+                            </div>
+                            <custom-table *ngIf="!lateLoading && lateEntries.length" [autoFitChars]="true"
+                                [columns]="columnsLate" [data]="lateEntries" [showaction]="false"
+                                [searchPlaceholder]="'Search late entries...'">
+                            </custom-table>
+                        </div>
+
+                        <!-- ── REMARKS TAB ─────────────────────────────────────────────── -->
+                        <div *ngIf="activeViewTab === 'remarks'">
+
+                            <div class="d-flex justify-content-end mb-3">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill"
+                                    (click)="toggleRemarkForm()">
+                                    <i class="fa-solid fa-plus me-1"></i>
+                                    {{ showRemarkForm ? 'Cancel' : 'Add Remark' }}
+                                </button>
+                            </div>
+
+                            <div *ngIf="showRemarkForm" class="border rounded-3 p-3 mb-3 bg-light">
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-medium">Type</label>
+                                        <select class="form-select form-select-sm" [(ngModel)]="newRemark.type">
+                                            <option *ngFor="let t of remarkTypes" [value]="t">{{ t }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-medium">
+                                            Date <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="date" class="form-control form-control-sm"
+                                            [(ngModel)]="newRemark.dateOfIncident" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-medium">
+                                            Remark <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="newRemark.remark" placeholder="Enter remark" />
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="rbyp"
+                                                [(ngModel)]="newRemark.reportedByParent" />
+                                            <label class="form-check-label small" for="rbyp">By Parent</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 d-flex justify-content-end">
+                                        <button class="btn btn-sm btn-primary" (click)="submitRemark()"
+                                            [disabled]="remarkLoading">
+                                            <span *ngIf="remarkLoading"
+                                                class="spinner-border spinner-border-sm me-1"></span>
+                                            Save Remark
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="!dataArray4.length" class="text-center text-muted py-4">
+                                <i class="fa-solid fa-comment fa-2x mb-2 d-block"></i>
+                                No remarks recorded.
+                            </div>
+                            <custom-table *ngIf="dataArray4.length" [autoFitChars]="true" [columns]="columnsArray4"
+                                [data]="dataArray4" [showaction]="false" [searchPlaceholder]="'Search remarks...'">
+                            </custom-table>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -389,4 +373,76 @@
         </button>
     </div>
 
+</div>
+
+<!-- ── EDIT PROFILE MODAL ──────────────────────────────────────────────────── -->
+<div class="modal-backdrop fade show" *ngIf="showEditModal"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showEditModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h6 class="modal-title fw-semibold">
+                    <i class="fa-solid fa-pen me-1"></i> Edit Profile
+                </h6>
+                <button class="btn-close" (click)="closeEditModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="editForm" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">
+                            Name <span class="text-danger">*</span>
+                        </label>
+                        <input class="form-control form-control-sm" formControlName="name" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Phone</label>
+                        <input class="form-control form-control-sm" formControlName="phone" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Email</label>
+                        <input class="form-control form-control-sm" formControlName="email" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Gender</label>
+                        <select class="form-select form-select-sm" formControlName="gender">
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Date of Birth</label>
+                        <input type="date" class="form-control form-control-sm" formControlName="dob" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Parent Name</label>
+                        <input class="form-control form-control-sm" formControlName="parentName" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Parent Phone</label>
+                        <input class="form-control form-control-sm" formControlName="parentPhone" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Address</label>
+                        <input class="form-control form-control-sm" formControlName="addressLine1" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">City</label>
+                        <input class="form-control form-control-sm" formControlName="city" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm btn-outline-secondary" (click)="closeEditModal()">
+                    Cancel
+                </button>
+                <button class="btn btn-sm btn-primary" (click)="saveProfile()"
+                    [disabled]="editLoading || editForm.invalid">
+                    <span *ngIf="editLoading" class="spinner-border spinner-border-sm me-1"></span>
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
 </div>

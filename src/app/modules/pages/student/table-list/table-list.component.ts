@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
@@ -19,9 +19,22 @@ interface Chat {
   selector: 'app-table-list',
   standalone: false,
   templateUrl: './table-list.component.html',
-  styleUrl: './table-list.component.scss'
+  styleUrl: './table-list.component.scss',
 })
 export class TableListComponent {
+  // In table-list / grid-list:
+  @Input() hasSearched = false;
+  @Input() filters: any = {};
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (this.hasSearched) {
+      this.fetchTableData({
+        page: 1,
+        pageSize: 20,
+        search: this.filters?.search || '',
+      });
+    }
+  }
   isChat: boolean = false;
   columnsArray = [
     { key: 'student.name', label: 'Student Name', sortable: false },
@@ -37,7 +50,6 @@ export class TableListComponent {
   totalRecords = 0;
   loading = false;
 
-
   actions = [
     {
       type: 'icon',
@@ -45,7 +57,7 @@ export class TableListComponent {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.viewStudent(row)
+      callback: (row: any) => this.viewStudent(row),
     },
     {
       type: 'icon',
@@ -53,19 +65,20 @@ export class TableListComponent {
       tooltip: 'Chat',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.chatStudent(row)
+      callback: (row: any) => this.chatStudent(row),
     },
-  ]
+  ];
 
   constructor(
     private breadcrump: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
-    private alert: AlertService) {
-    this.breadcrump.set([{ label: 'Student' }])
+    private alert: AlertService,
+  ) {
+    this.breadcrump.set([{ label: 'Student' }]);
   }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {}
 
   fetchTableData(params: {
     page: number;
@@ -76,57 +89,44 @@ export class TableListComponent {
   }) {
     this.loading = true;
 
-    // Pagination & Sort
-    let sortParam = '';
-    if (params.sortKey) {
-      sortParam =
-        params.sortDirection === 'desc'
-          ? `-${params.sortKey}`
-          : params.sortKey;
-    }
-
     const query: any = {
       page: params.page,
-      limit: params.pageSize
+      limit: params.pageSize,
     };
-    if (sortParam) query.sort = sortParam;
-    if (params.search) query.search = params.search;
 
-    //filter (optional)
-    // if (this.statusFilter && this.statusFilter !== 'all') {
-    //   query.status = this.statusFilter;
-    // }
-    // if (this.selectedProgram) {
-    //   query.programId = this.selectedProgram;
-    // }
-    // if (this.selectedCenter) {
-    //   query.centerId = this.selectedCenter;
-    // }
+    // Apply search from params or filters
+    const search = params.search || this.filters?.search || '';
+    if (search) query.search = search;
 
-    // Build query string
+    // Apply filters from parent
+    if (this.filters?.programId) query.programId = this.filters.programId;
+    if (this.filters?.centerId) query.centerId = this.filters.centerId;
+    if (this.filters?.status && this.filters.status !== 'ALL')
+      query.status = this.filters.status;
+
+    if (params.sortKey) {
+      query.sort =
+        params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
+    }
+
     const queryString = Object.keys(query)
-      .map(
-        (key) => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`
-      )
+      .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
       .join('&');
 
-    const body = {
-      entiId: localStorage.getItem('tenantId')
-    };
+    const body = { entiId: localStorage.getItem('tenantId') };
 
     this.commonApi.fetchData(body, 'student', `list?${queryString}`).subscribe({
       next: (res: any) => {
-        this.dataArray = res.data;
+        this.dataArray = res.data || [];
         this.totalRecords = res?.count || 0;
         this.loading = false;
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.alert.error('Error loading admissions');
-      }
+        this.alert.error('Error loading students');
+      },
     });
   }
-
 
   viewStudent(row: any) {
     // this.router.navigate(['/app/student/view'])
@@ -140,20 +140,20 @@ export class TableListComponent {
 
   selectedChat: Chat | null = {
     name: 'Student Chat',
-    online: true
+    online: true,
   };
 
   messages: Message[] = [
     {
       text: 'Hello Sir 👋',
       sender: 'student',
-      time: '10:00 AM'
+      time: '10:00 AM',
     },
     {
       text: 'Hello! How can I help you?',
       sender: 'teacher',
-      time: '10:01 AM'
-    }
+      time: '10:01 AM',
+    },
   ];
 
   // New message
@@ -170,11 +170,10 @@ export class TableListComponent {
       sender: 'teacher',
       time: new Date().toLocaleTimeString([], {
         hour: '2-digit',
-        minute: '2-digit'
-      })
+        minute: '2-digit',
+      }),
     });
 
     this.newMessage = '';
   }
-
 }
