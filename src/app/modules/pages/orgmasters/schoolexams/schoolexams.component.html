@@ -329,10 +329,6 @@
                     </option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Academic Year</label>
-                <input class="form-control form-control-sm" [(ngModel)]="filterAcademicYear" placeholder="2025-26" />
-            </div>
             <div class="col-md-3 d-flex gap-2">
                 <button class="btn btn-sm btn-outline-secondary flex-fill" (click)="resetFilters()">
                     <i class="fa-solid fa-rotate-left me-1"></i>Reset
@@ -423,11 +419,14 @@
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         {{ exam.unmatchedCount }} student(s) not matched to profile
                     </div>
-
-                    <!-- Actions -->
+                    <!-- Replace card-actions div: -->
                     <div class="card-actions">
                         <button class="btn-card-view" (click)="openView(exam)">
                             <i class="fa-regular fa-eye me-1"></i>View Results
+                        </button>
+                        <button class="btn-card-view" style="color:#16a34a;border-color:#bbf7d0;background:#f0fdf4"
+                            (click)="exportExam(exam)" title="Export to Excel">
+                            <i class="fa-solid fa-file-excel me-1"></i>Export
                         </button>
                         <button class="btn-card-delete" (click)="openDelete(exam)" title="Delete exam">
                             <i class="fa-solid fa-trash"></i>
@@ -485,37 +484,46 @@
                     <div class="small text-muted fw-semibold">{{ parsing ? 'Parsing file…' : 'Importing marks…' }}</div>
                 </div>
             </div>
-
-            <!-- ── Step 1: Exam details ─────────────────────────────────────────── -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <label class="form-label small fw-semibold">Exam Name <span class="text-danger">*</span></label>
-                    <input class="form-control" [(ngModel)]="uploadExamName" placeholder="e.g. Mid Term 2026"
-                        [class.is-invalid]="!uploadExamName && parsedPayload.length > 0" />
-                    <div class="invalid-feedback">Exam name is required</div>
+            <!-- <div *ngIf="uploadExamName || uploadExamDateStr" class="d-flex flex-wrap gap-3 mb-3 p-3 rounded-3"
+                style="background:#f0fdf4;border:1px solid #bbf7d0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                    <span class="fw-semibold small text-success">Detected from Excel:</span>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Exam Date <span class="text-danger">*</span></label>
-                    <input class="form-control" type="date" [(ngModel)]="uploadExamDateStr"
-                        [class.is-invalid]="!uploadExamDateStr && parsedPayload.length > 0" />
-                    <div class="invalid-feedback">Exam date is required</div>
+                <span class="badge bg-white border text-dark fw-semibold" *ngIf="uploadExamName">
+                    <i class="fa-solid fa-file-pen me-1 text-primary"></i>{{ uploadExamName }}
+                </span>
+                <span class="badge bg-white border text-dark fw-semibold" *ngIf="uploadExamDateStr">
+                    <i class="fa-regular fa-calendar me-1 text-primary"></i>{{ uploadExamDateStr }}
+                </span>
+            </div> -->
+            <!-- Replace the single exam detected badge with: -->
+            <div *ngIf="parsedGroups.length" class="d-flex flex-wrap gap-2 mb-3 p-3 rounded-3"
+                style="background:#f0fdf4;border:1px solid #bbf7d0">
+                <div class="w-100 d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                    <span class="fw-semibold small text-success">
+                        {{ parsedGroups.length }} exam group(s) detected from Excel
+                    </span>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Academic Year</label>
-                    <input class="form-control" [(ngModel)]="uploadAcademicYear" placeholder="2025-26" />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label small fw-semibold">Batch <span
-                            class="text-muted fw-normal">(optional)</span></label>
-                    <select class="form-select" [(ngModel)]="uploadBatchCode">
-                        <option value="">— Select batch —</option>
-                        <option *ngFor="let b of batchesFull" [value]="b.batchCode">{{ b.batchName || b.batchCode }}
-                        </option>
-                    </select>
+                <div *ngFor="let g of parsedGroups"
+                    class="d-flex align-items-center gap-2 p-2 rounded-2 border bg-white" style="font-size:0.78rem">
+                    <i class="fa-solid fa-file-pen text-primary"></i>
+                    <strong>{{ g.examName }}</strong>
+                    <span class="text-muted">{{ g.examDateStr }}</span>
+                    <span class="badge bg-primary-subtle text-primary">{{ g.rows.length }} students</span>
                 </div>
             </div>
-
-            <!-- ── Step 2: File upload ─────────────────────────────────────────── -->
+            <!-- Add just before the file-drop-zone label -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="small text-muted fw-semibold">
+                    <i class="fa-solid fa-circle-info me-1 text-primary"></i>
+                    Replace <strong>Maths, Physics, Chemistry</strong> columns with your actual subject names
+                </div>
+                <button class="btn btn-sm btn-link text-decoration-none p-0" (click)="downloadSample()">
+                    <i class="fa-solid fa-download me-1"></i>Download Sample
+                </button>
+            </div>
             <label class="file-drop-zone d-block mb-3" for="examFile">
                 <input type="file" id="examFile" accept=".xlsx,.xls,.csv" (change)="onFileChange($event)" />
                 <i class="fa-solid fa-file-excel mb-2 d-block" style="font-size:2rem;color:#22c55e;opacity:0.7"></i>
@@ -523,16 +531,10 @@
                 <div class="text-muted" style="font-size:0.72rem">Columns: Student Eno, Student Id, Student Name, Class,
                     [Subject1], [Subject2]…, Total marks</div>
             </label>
-
-            <!-- Parse error -->
             <div *ngIf="parseError" class="alert alert-danger small py-2 mb-3">
                 <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ parseError }}
             </div>
-
-            <!-- ── Preview ────────────────────────────────────────────────────── -->
             <div *ngIf="parsedPayload.length && !parseError">
-
-                <!-- Stats -->
                 <div class="d-flex flex-wrap gap-3 mb-3">
                     <div class="stat-chip" style="background:#eff6ff;color:#3b82f6">
                         <i class="fa-solid fa-users"></i>{{ parsedStats.total }} Students
@@ -544,8 +546,6 @@
                         <i class="fa-solid fa-user-slash"></i>{{ parsedStats.absent }} Absent entries
                     </div>
                 </div>
-
-                <!-- Subject pills detected -->
                 <div class="mb-3">
                     <div class="text-muted small mb-1 fw-semibold">Detected Subjects:</div>
                     <div class="d-flex flex-wrap gap-2">
@@ -553,8 +553,6 @@
                             }}</span>
                     </div>
                 </div>
-
-                <!-- Preview table -->
                 <div class="border rounded-3 overflow-hidden">
                     <div class="px-3 py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
                         <span class="fw-semibold small">
@@ -624,13 +622,8 @@
     </div>
 </div>
 
-
-<!-- ════════════════════════════════════════════════════════════════════════════
-     VIEW MODAL
-════════════════════════════════════════════════════════════════════════════ -->
 <div class="app-modal-backdrop" *ngIf="showView">
     <div class="app-modal" style="max-width:960px;max-height:94vh;display:flex;flex-direction:column;">
-
         <div class="app-modal-header d-flex justify-content-between align-items-center flex-shrink-0">
             <div>
                 <h6 class="mb-0 fw-bold">
@@ -645,17 +638,13 @@
             </div>
             <button class="btn-close" (click)="closeView()"></button>
         </div>
-
         <div class="app-modal-body flex-grow-1" style="overflow-y:auto;">
-
             <!-- Loading -->
             <div *ngIf="viewLoading" class="text-center py-5">
                 <div class="spinner-border text-primary mb-2"></div>
                 <div class="text-muted small">Loading results…</div>
             </div>
-
             <ng-container *ngIf="!viewLoading && viewExam">
-
                 <!-- Summary stats -->
                 <div class="row g-3 mb-4">
                     <div class="col-4 col-md-2">
@@ -677,7 +666,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Results table -->
                 <div class="border rounded-3 overflow-hidden">
                     <div class="table-responsive">
@@ -720,16 +708,17 @@
                         </table>
                     </div>
                 </div>
-
             </ng-container>
         </div>
-
-        <div class="app-modal-footer d-flex justify-content-end p-3 border-top flex-shrink-0">
-            <button class="btn btn-outline-secondary" (click)="closeView()">Close</button>
+        <div class="app-modal-footer d-flex justify-content-between align-items-center p-3 border-top flex-shrink-0">
+            <button class="btn btn-outline-success fw-semibold" (click)="exportExam(viewExam)" [disabled]="viewLoading"
+                *ngIf="viewExam">
+                <i class="fa-solid fa-file-excel me-1"></i>Export Excel
+            </button>
+            <button class="btn btn-outline-secondary ms-auto" (click)="closeView()">Close</button>
         </div>
     </div>
 </div>
-
 
 <!-- ════════════════════════════════════════════════════════════════════════════
      DELETE CONFIRM
@@ -774,7 +763,7 @@
         </div>
         <div class="app-modal-body">
 
-            <div class="row g-3 mb-3" *ngIf="importResult.data">
+            <!-- <div class="row g-3 mb-3" *ngIf="importResult.data">
                 <div class="col-4">
                     <div class="result-stat" style="background:#eff6ff">
                         <div class="num" style="color:#3b82f6">{{ importResult.data.totalStudents }}</div>
@@ -793,8 +782,69 @@
                         <div class="lbl" style="color:#d97706">Unmatched</div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
+            <!-- Replace the stats row in import result modal: -->
+            <div class="row g-3 mb-3" *ngIf="importResult.data">
+                <!-- Multi-exam summary -->
+                <div class="col-12" *ngIf="importResult.data.totalGroups > 1">
+                    <div class="d-flex gap-3 flex-wrap mb-2">
+                        <div class="result-stat flex-fill" style="background:#eff6ff">
+                            <div class="num" style="color:#3b82f6">{{ importResult.data.successGroups }}</div>
+                            <div class="lbl" style="color:#3b82f6">Exams Imported</div>
+                        </div>
+                        <div class="result-stat flex-fill" style="background:#fef2f2"
+                            *ngIf="importResult.data.failedGroups > 0">
+                            <div class="num" style="color:#ef4444">{{ importResult.data.failedGroups }}</div>
+                            <div class="lbl" style="color:#ef4444">Failed</div>
+                        </div>
+                    </div>
+                    <!-- Per-exam breakdown -->
+                    <div class="border rounded-3 overflow-hidden mb-3" *ngIf="importResult.data.exams?.length">
+                        <div class="px-3 py-2 bg-light border-bottom fw-semibold small">Per Exam Summary</div>
+                        <div *ngFor="let e of importResult.data.exams"
+                            class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center small">
+                            <div class="fw-semibold">{{ e.examName }}</div>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-primary-subtle text-primary">{{ e.totalStudents }} students</span>
+                                <span class="badge bg-success-subtle text-success">{{ e.matchedCount }} matched</span>
+                                <span class="badge bg-warning-subtle text-warning" *ngIf="e.unmatchedCount > 0">
+                                    {{ e.unmatchedCount }} unmatched
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Failed groups -->
+                    <div *ngIf="importResult.data.failedGroupMessages?.length"
+                        class="alert alert-danger small py-2 mb-3">
+                        <div class="fw-semibold mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>Failed
+                            imports:</div>
+                        <div *ngFor="let f of importResult.data.failedGroupMessages">• {{ f }}</div>
+                    </div>
+                </div>
+
+                <!-- Single exam stats (same as before) -->
+                <ng-container *ngIf="importResult.data.totalGroups === 1">
+                    <div class="col-4">
+                        <div class="result-stat" style="background:#eff6ff">
+                            <div class="num" style="color:#3b82f6">{{ importResult.data.totalStudents }}</div>
+                            <div class="lbl" style="color:#3b82f6">Total</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="result-stat" style="background:#f0fdf4">
+                            <div class="num" style="color:#16a34a">{{ importResult.data.matchedCount }}</div>
+                            <div class="lbl" style="color:#16a34a">Matched</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="result-stat" style="background:#fef9c3">
+                            <div class="num" style="color:#d97706">{{ importResult.data.unmatchedCount }}</div>
+                            <div class="lbl" style="color:#d97706">Unmatched</div>
+                        </div>
+                    </div>
+                </ng-container>
+            </div>
             <div *ngIf="importResult.data?.profilesUpdated > 0" class="alert alert-success small py-2 mb-3">
                 <i class="fa-solid fa-id-card me-2"></i>
                 <strong>{{ importResult.data.profilesUpdated }}</strong> student profile(s) updated with School ID
