@@ -24,7 +24,7 @@ export class ViewBatchComponent implements OnInit {
   batch: any = null;
   students: any[] = [];
   staffMap: any[] = [];
-  activeTab: 'students' | 'faculty' = 'students';
+  activeTab: 'students' | 'faculty' | 'report' = 'students';
   showOffcanvas = false;
   offcanvasMode: 'edit' | 'staff' | 'assign' | 'shuffle' | 'classTeacher' =
     'edit';
@@ -83,11 +83,27 @@ export class ViewBatchComponent implements OnInit {
     { label: 'Test', value: 'TEST' },
     { label: 'Revision', value: 'REVISION' },
     { label: 'Exam', value: 'EXAM' },
+    { label: 'PT', value: 'PT' },
+    { label: 'Yoga', value: 'YOGA' },
   ];
   modeOptions = [
     { label: 'Offline', value: 'OFFLINE' },
     { label: 'Online', value: 'ONLINE' },
   ];
+  showRemoveConfirm = false;
+  removeStudentId = '';
+  removeStudentName = '';
+  latePeriodOptions: any[] = [];
+  showCloseConfirm = false;
+  reportSubjectId = '';
+  reportSubjectName = '';
+  reportLoading = false;
+  subjectHours: any[] = [];
+  phaseReport: any = null;
+  expandedPhases = new Set<string>();
+  specialClassExistingPeriods: number[] = [];
+  specialClassPeriodConflict = false;
+  specialClassPhaseOptions: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -134,7 +150,7 @@ export class ViewBatchComponent implements OnInit {
     });
 
     this.lateForm = this.fb.group({
-      type: ['STAFF', [Validators.required]],
+      type: ['STUDENT', [Validators.required]],
       personId: ['', [Validators.required]],
       timetableId: ['', [Validators.required]],
       date: ['', [Validators.required]],
@@ -153,10 +169,14 @@ export class ViewBatchComponent implements OnInit {
       staffId: ['', [Validators.required]],
       periodType: ['LECTURE', [Validators.required]],
       mode: ['OFFLINE', [Validators.required]],
+      phaseId: [''],
       topic: [''],
       venue: [''],
       zoomUrl: [''],
     });
+    this.lateForm
+      .get('type')
+      ?.valueChanges.subscribe(() => this.onLateTypeChanged());
   }
 
   private loadReferenceData() {
@@ -326,11 +346,19 @@ export class ViewBatchComponent implements OnInit {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  // private dateToEpochMs(s: any): number {
+  //   const v = safeTrim(s);
+  //   if (!v) return 0;
+  //   const t = new Date(`${v}T00:00:00`).getTime();
+  //   return isFinite(t) ? t : 0;
+  // }
+
   private dateToEpochMs(s: any): number {
     const v = safeTrim(s);
     if (!v) return 0;
-    const t = new Date(`${v}T00:00:00`).getTime();
-    return isFinite(t) ? t : 0;
+    const [yyyy, mm, dd] = v.split('-').map(Number);
+    if (!yyyy || !mm || !dd) return 0;
+    return Date.UTC(yyyy, mm - 1, dd);
   }
 
   private timeStrToMin(t: string): number {
@@ -359,7 +387,9 @@ export class ViewBatchComponent implements OnInit {
     return d.getTime();
   }
 
-  openOffcanvas(mode: 'edit' | 'staff' | 'assign' | 'shuffle' | 'classTeacher') {
+  openOffcanvas(
+    mode: 'edit' | 'staff' | 'assign' | 'shuffle' | 'classTeacher',
+  ) {
     this.offcanvasMode = mode;
     if (mode === 'edit') {
       const b = this.batch;
@@ -663,7 +693,7 @@ export class ViewBatchComponent implements OnInit {
     const payload = {
       entiId: this.entiId,
       sourceBatchId: this.batchId,
-      targetBatchId,
+      toBatchId: targetBatchId,
       studentIds: selectedIds,
     };
     this.loading = true;
@@ -716,22 +746,140 @@ export class ViewBatchComponent implements OnInit {
       });
   }
 
+  // openLateEntry() {
+  //   this.lateForm.reset({
+  //     type: 'STUDENT',
+  //     personId: '',
+  //     timetableId: '',
+  //     date: this.epochMsToDateInput(Date.now()),
+  //     periodNo: 1,
+  //     scheduledStartMin: 0,
+  //     delayMinutes: 0,
+  //     reason: '',
+  //   });
+  //   this.showLateModal = true;
+  //   this.loadLatestTimetable();
+  //   this.lateForm
+  //     .get('type')
+  //     ?.valueChanges.subscribe(() => this.onLateTypeChanged());
+  // }
+
   openLateEntry() {
     this.lateForm.reset({
       type: 'STUDENT',
       personId: '',
       timetableId: '',
       date: this.epochMsToDateInput(Date.now()),
-      periodNo: 1,
-      scheduledStartMin: 0,
+      periodNo: null,
+      scheduledStartMin: null,
       delayMinutes: 0,
       reason: '',
     });
     this.showLateModal = true;
-    this.loadLatestTimetable();
-    this.lateForm
-      .get('type')
-      ?.valueChanges.subscribe(() => this.onLateTypeChanged());
+    // Preload students if not already loaded
+    if (!this.students.length) {
+      this.batchStudentsLoading = true;
+      this.commonApi
+        .fetchData(
+          { entiId: this.entiId, batchId: this.batchId, includeStudents: true },
+          'batch',
+          'view',
+        )
+        .subscribe({
+          next: (res: any) => {
+            this.batchStudentsLoading = false;
+            this.students = res?.data?.students || [];
+          },
+          error: () => {
+            this.batchStudentsLoading = false;
+          },
+        });
+    }
+    this.onLateDateChanged(this.epochMsToDateInput(Date.now()));
+  }
+
+  onLateDateChanged(dateStr: string) {
+    this.latePeriodOptions = [];
+    this.lateForm.patchValue(
+      { timetableId: '', periodNo: null, scheduledStartMin: null },
+      { emitEvent: false },
+    );
+    if (!dateStr) return;
+
+    const dateMs = this.dateToEpochMs(dateStr);
+    const batchCode = safeTrim(this.batch?.batchCode);
+    if (!dateMs || !batchCode) return;
+
+    const wkStartOn = this.getPreviousMonday(dateMs);
+
+    // Step 1 — get timetableId from list-by-batch
+    this.commonApi
+      .fetchData(
+        { entiId: this.entiId, batchCode },
+        'timetable',
+        'list-by-batch',
+      )
+      .subscribe({
+        next: (ttRes: any) => {
+          const rows = ttRes?.data || [];
+          const tt = rows.find(
+            (t: any) =>
+              Number(t?.wkStartOn) === wkStartOn && t?.status === 'Active',
+          );
+          const timetableId = safeTrim(tt?._id || '');
+
+          if (timetableId) {
+            this.lateForm.patchValue({ timetableId }, { emitEvent: false });
+          }
+
+          // Step 2 — get day schedule for period dropdown
+          this.commonApi
+            .fetchData(
+              {
+                entiId: this.entiId,
+                batchCode,
+                fromDate: dateMs,
+                toDate: dateMs,
+              },
+              'timetable',
+              'viewbybatch',
+            )
+            .subscribe({
+              next: (res: any) => {
+                const daySchedule = (res?.data || [])[0];
+                const periods = (daySchedule?.periods || []).filter(
+                  (p: any) => !p.isCancelled && !daySchedule?.isHoliday,
+                );
+
+                this.latePeriodOptions = periods.map((p: any) => ({
+                  label: `Period ${p.periodNo} — ${p.time?.startLabel || ''} to ${p.time?.endLabel || ''}${p.subjectName ? '  (' + p.subjectName + ')' : ''}`,
+                  value: p.periodNo,
+                  startMin: p.time?.startMin || 0,
+                }));
+              },
+              error: () => {
+                this.latePeriodOptions = [];
+              },
+            });
+        },
+        error: () => {
+          this.latePeriodOptions = [];
+        },
+      });
+  }
+
+  onLatePeriodSelected(periodNo: any) {
+    const opt = this.latePeriodOptions.find(
+      (o: any) => o.value === Number(periodNo),
+    );
+    if (!opt) return;
+    this.lateForm.patchValue(
+      {
+        periodNo: opt.value,
+        scheduledStartMin: opt.startMin,
+      },
+      { emitEvent: false },
+    );
   }
 
   closeLateModal() {
@@ -799,6 +947,64 @@ export class ViewBatchComponent implements OnInit {
     return this.staffOptionsAll;
   }
 
+  // submitLateEntry() {
+  //   if (this.loading) return;
+  //   if (this.lateForm.invalid) {
+  //     this.lateForm.markAllAsTouched();
+  //     this.alert.error('Please fill all required fields');
+  //     return;
+  //   }
+  //   const v = this.lateForm.value;
+  //   const type = safeTrim(v.type).toUpperCase();
+  //   const personId = safeTrim(v.personId);
+
+  //   let personName = '';
+  //   if (type === 'STAFF') {
+  //     personName = safeTrim(
+  //       this.staffListFull.find(
+  //         (x: any) => safeTrim(x?.staffId || x?._id) === personId,
+  //       )?.staffName || '',
+  //     );
+  //   } else {
+  //     personName = safeTrim(
+  //       this.students.find((x: any) => safeTrim(x?.studentId) === personId)
+  //         ?.student?.name || '',
+  //     );
+  //   }
+
+  //   const dateMs = this.dateToEpochMs(v.date);
+  //   if (!dateMs) {
+  //     this.alert.error('Date is required');
+  //     return;
+  //   }
+
+  //   const payload = {
+  //     entiId: this.entiId,
+  //     type,
+  //     personId,
+  //     personName,
+  //     timetableId: safeTrim(v.timetableId),
+  //     batchCode: safeTrim(this.batch?.batchCode),
+  //     date: dateMs,
+  //     periodNo: Number(v.periodNo),
+  //     scheduledStartMin: Number(v.scheduledStartMin),
+  //     delayMinutes: Number(v.delayMinutes),
+  //     reason: safeTrim(v.reason) || null,
+  //   };
+  //   this.loading = true;
+  //   this.commonApi.fetchData(payload, 'timetable', 'late-entry/log').subscribe({
+  //     next: (res: any) => {
+  //       this.loading = false;
+  //       this.alert.success(res?.message || 'Late entry logged');
+  //       this.closeLateModal();
+  //     },
+  //     error: (err: any) => {
+  //       this.loading = false;
+  //       this.alert.error(err?.error?.message || 'Failed to log late entry');
+  //     },
+  //   });
+  // }
+
   submitLateEntry() {
     if (this.loading) return;
     if (this.lateForm.invalid) {
@@ -807,42 +1013,27 @@ export class ViewBatchComponent implements OnInit {
       return;
     }
     const v = this.lateForm.value;
-    const type = safeTrim(v.type).toUpperCase();
     const personId = safeTrim(v.personId);
-
-    let personName = '';
-    if (type === 'STAFF') {
-      personName = safeTrim(
-        this.staffListFull.find(
-          (x: any) => safeTrim(x?.staffId || x?._id) === personId,
-        )?.staffName || '',
-      );
-    } else {
-      personName = safeTrim(
-        this.students.find((x: any) => safeTrim(x?.studentId) === personId)
-          ?.student?.name || '',
-      );
-    }
-
-    const dateMs = this.dateToEpochMs(v.date);
-    if (!dateMs) {
-      this.alert.error('Date is required');
-      return;
-    }
-
+    const student = this.students.find(
+      (x: any) => safeTrim(x?.studentId) === personId,
+    );
     const payload = {
       entiId: this.entiId,
-      type,
+      type: 'STUDENT',
       personId,
-      personName,
+      personName: safeTrim(student?.student?.name || ''),
       timetableId: safeTrim(v.timetableId),
       batchCode: safeTrim(this.batch?.batchCode),
-      date: dateMs,
+      date: this.dateToEpochMs(v.date),
       periodNo: Number(v.periodNo),
       scheduledStartMin: Number(v.scheduledStartMin),
       delayMinutes: Number(v.delayMinutes),
       reason: safeTrim(v.reason) || null,
     };
+    if (!payload.date) {
+      this.alert.error('Date is required');
+      return;
+    }
     this.loading = true;
     this.commonApi.fetchData(payload, 'timetable', 'late-entry/log').subscribe({
       next: (res: any) => {
@@ -856,6 +1047,24 @@ export class ViewBatchComponent implements OnInit {
       },
     });
   }
+
+  // openSpecialClass() {
+  //   this.specialClassForm.reset({
+  //     date: '',
+  //     periodNo: 1,
+  //     startTime: '',
+  //     endTime: '',
+  //     subjectId: '',
+  //     staffId: '',
+  //     periodType: 'LECTURE',
+  //     mode: 'OFFLINE',
+  //     topic: '',
+  //     venue: '',
+  //     zoomUrl: '',
+  //   });
+  //   this.specialClassStaffOptions = [...this.staffOptionsAll];
+  //   this.showSpecialClassModal = true;
+  // }
 
   openSpecialClass() {
     this.specialClassForm.reset({
@@ -871,12 +1080,224 @@ export class ViewBatchComponent implements OnInit {
       venue: '',
       zoomUrl: '',
     });
-    this.specialClassStaffOptions = [...this.staffOptionsAll];
+    this.specialClassExistingPeriods = [];
+    this.specialClassPeriodConflict = false;
+    const mappedStaffIds = new Set(
+      (this.staffMap || []).map((m: any) => safeTrim(m.staffId)),
+    );
+    this.specialClassStaffOptions = mappedStaffIds.size
+      ? [
+          { label: 'Select', value: '' },
+          ...this.staffListFull
+            .filter((s: any) =>
+              mappedStaffIds.has(safeTrim(s?.staffId || s?._id)),
+            )
+            .map((s: any) => ({
+              label: `${s?.staffName || '-'} (${s?.staffCode || '-'})`,
+              value: safeTrim(s?.staffId || s?._id),
+            })),
+        ]
+      : [...this.staffOptionsAll];
     this.showSpecialClassModal = true;
+  }
+
+  onSpecialClassSubjectChanged(subjectId: string) {
+    const sid = safeTrim(subjectId);
+    this.specialClassForm.patchValue({ staffId: '' }, { emitEvent: false });
+    const mapped = (this.staffMap || []).find(
+      (m: any) => safeTrim(m.subjectId) === sid,
+    );
+    if (mapped) {
+      this.specialClassForm.patchValue(
+        { staffId: safeTrim(mapped.staffId) },
+        { emitEvent: false },
+      );
+      const staffRec = this.staffListFull.find(
+        (s: any) => safeTrim(s?.staffId || s?._id) === safeTrim(mapped.staffId),
+      );
+      this.specialClassStaffOptions = [
+        { label: 'Select', value: '' },
+        ...(staffRec
+          ? [
+              {
+                label: `${staffRec.staffName || '-'} (${staffRec.staffCode || '-'})`,
+                value: safeTrim(staffRec.staffId || staffRec._id),
+              },
+            ]
+          : []),
+      ];
+      // Add after staff resolution:
+      this.specialClassPhaseOptions = [];
+      this.specialClassForm.patchValue({ phaseId: '' }, { emitEvent: false });
+      if (sid && this.batch?.classNo) {
+        this.commonApi
+          .fetchData(
+            {
+              entiId: this.entiId,
+              programId: this.batch.programId,
+              classNo: this.batch.classNo,
+              subjectId: sid,
+            },
+            'institue',
+            'phase/list',
+          )
+          .subscribe({
+            next: (res: any) => {
+              this.specialClassPhaseOptions = [
+                { label: '— No Phase —', value: '' },
+                ...(res?.data || []).map((ph: any) => ({
+                  label: ph.phaseName,
+                  value: safeTrim(ph.phaseId),
+                })),
+              ];
+            },
+            error: () => {
+              this.specialClassPhaseOptions = [];
+            },
+          });
+      }
+    } else {
+      const mappedStaffIds = new Set(
+        (this.staffMap || []).map((m: any) => safeTrim(m.staffId)),
+      );
+      this.specialClassStaffOptions = [
+        { label: 'Select', value: '' },
+        ...this.staffListFull
+          .filter((s: any) =>
+            mappedStaffIds.has(safeTrim(s?.staffId || s?._id)),
+          )
+          .map((s: any) => ({
+            label: `${s?.staffName || '-'} (${s?.staffCode || '-'})`,
+            value: safeTrim(s?.staffId || s?._id),
+          })),
+      ];
+    }
   }
 
   closeSpecialClassModal() {
     this.showSpecialClassModal = false;
+  }
+
+  // submitSpecialClass() {
+  //   if (this.loading) return;
+  //   if (this.specialClassForm.invalid) {
+  //     this.specialClassForm.markAllAsTouched();
+  //     this.alert.error('Please fill all required fields');
+  //     return;
+  //   }
+  //   const v = this.specialClassForm.value;
+  //   const dateMs = this.dateToEpochMs(v.date);
+  //   const startMin = this.timeStrToMin(v.startTime);
+  //   const endMin = this.timeStrToMin(v.endTime);
+  //   if (!dateMs) {
+  //     this.alert.error('Date is required');
+  //     return;
+  //   }
+  //   if (endMin <= startMin) {
+  //     this.alert.error('End time must be after start time');
+  //     return;
+  //   }
+  //   const subjectOpt = this.specialClassSubjectOptions.find(
+  //     (x: any) => safeTrim(x?.value) === safeTrim(v.subjectId),
+  //   );
+  //   const staffOpt = this.specialClassStaffOptions.find(
+  //     (x: any) => safeTrim(x?.value) === safeTrim(v.staffId),
+  //   );
+  //   this.loading = true;
+  //   this.commonApi
+  //     .fetchData(
+  //       { entiId: this.entiId, batchCode: this.batch?.batchCode },
+  //       'timetable',
+  //       'list-by-batch',
+  //     )
+  //     .subscribe({
+  //       next: (res: any) => {
+  //         const wkDate = this.getPreviousMonday(dateMs);
+  //         const tt = (res?.data || []).find(
+  //           (t: any) =>
+  //             Number(t?.wkStartOn) === wkDate && t?.status === 'Active',
+  //         );
+  //         if (!tt) {
+  //           this.loading = false;
+  //           this.alert.error(
+  //             'No active timetable found for this batch on the selected date. Publish a timetable first.',
+  //           );
+  //           return;
+  //         }
+  //         const payload = {
+  //           entiId: this.entiId,
+  //           timetableId: safeTrim(tt._id),
+  //           batchCode: safeTrim(this.batch?.batchCode),
+  //           date: dateMs,
+  //           day: this.getDayName(dateMs),
+  //           period: {
+  //             periodNo: Number(v.periodNo),
+  //             periodType: safeTrim(v.periodType),
+  //             mode: safeTrim(v.mode),
+  //             time: {
+  //               startMin,
+  //               endMin,
+  //               startLabel: v.startTime,
+  //               endLabel: v.endTime,
+  //             },
+  //             facultyId: safeTrim(v.staffId),
+  //             facultyName: staffOpt?.label || null,
+  //             subjectId: safeTrim(v.subjectId),
+  //             subjectName: subjectOpt?.label || null,
+  //             topic: safeTrim(v.topic) || null,
+  //             venue: safeTrim(v.venue) || null,
+  //             zoomUrl: safeTrim(v.zoomUrl) || null,
+  //           },
+  //         };
+  //         this.commonApi
+  //           .fetchData(payload, 'timetable', 'period/add')
+  //           .subscribe({
+  //             next: (r: any) => {
+  //               this.loading = false;
+  //               this.alert.success(r?.message || 'Special class added');
+  //               this.closeSpecialClassModal();
+  //             },
+  //             error: (err: any) => {
+  //               this.loading = false;
+  //               this.alert.error(
+  //                 err?.error?.message || 'Failed to add special class',
+  //               );
+  //             },
+  //           });
+  //       },
+  //       error: (err: any) => {
+  //         this.loading = false;
+  //         this.alert.error(err?.error?.message || 'Failed to load timetable');
+  //       },
+  //     });
+  // }
+
+  // ── remove student ─────────────────────────────────────────────────────────
+  // removeStudent(studentId: string) {
+  //   if (!confirm('Remove this student from the batch?')) return;
+  //   this.loading = true;
+  //   this.commonApi
+  //     .fetchData(
+  //       { entiId: this.entiId, batchId: this.batchId, studentIds: [studentId] },
+  //       'batch',
+  //       'students/remove',
+  //     )
+  //     .subscribe({
+  //       next: () => {
+  //         this.loading = false;
+  //         this.alert.success('Student removed');
+  //         this.loadBatch();
+  //       },
+  //       error: (err: any) => {
+  //         this.loading = false;
+  //         this.alert.error(err?.error?.message || 'Remove failed');
+  //       },
+  //     });
+  // }
+
+  private _getUtcMidnight(epochMs: number): number {
+    const d = new Date(epochMs);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
   }
 
   submitSpecialClass() {
@@ -887,7 +1308,8 @@ export class ViewBatchComponent implements OnInit {
       return;
     }
     const v = this.specialClassForm.value;
-    const dateMs = this.dateToEpochMs(v.date);
+    // const dateMs = this.dateToEpochMs(v.date);
+    const dateMs = this._getUtcMidnight(this.dateToEpochMs(v.date));
     const startMin = this.timeStrToMin(v.startTime);
     const endMin = this.timeStrToMin(v.endTime);
     if (!dateMs) {
@@ -904,67 +1326,63 @@ export class ViewBatchComponent implements OnInit {
     const staffOpt = this.specialClassStaffOptions.find(
       (x: any) => safeTrim(x?.value) === safeTrim(v.staffId),
     );
+    const rawSubjectName = safeTrim(
+      this.batchSubjectOptions
+        .find((x: any) => safeTrim(x?.value) === safeTrim(v.subjectId))
+        ?.label?.split(' (')?.[0] || '',
+    );
+    const selectedPhase = this.specialClassPhaseOptions.find(
+      (x: any) => safeTrim(x?.value) === safeTrim(v.phaseId),
+    );
+    const period = {
+      periodNo: Number(v.periodNo),
+      periodType: safeTrim(v.periodType),
+      mode: safeTrim(v.mode),
+      time: { startMin, endMin, startLabel: v.startTime, endLabel: v.endTime },
+      facultyId: safeTrim(v.staffId),
+      facultyName: safeTrim(staffOpt?.label?.split(' (')?.[0] || ''),
+      subjectId: safeTrim(v.subjectId),
+      subjectName: rawSubjectName || null,
+      phaseId: safeTrim(v.phaseId) || null,
+      phaseName: selectedPhase?.label || null,
+      topic: safeTrim(v.topic) || null,
+      venue: safeTrim(v.venue) || null,
+      zoomUrl: safeTrim(v.zoomUrl) || null,
+    };
+    const batchCode = safeTrim(this.batch?.batchCode);
+    const wkStartOn = this.getPreviousMonday(dateMs);
+    const dayName = this.getDayName(dateMs);
     this.loading = true;
     this.commonApi
       .fetchData(
-        { entiId: this.entiId, batchCode: this.batch?.batchCode },
+        { entiId: this.entiId, batchCode },
         'timetable',
         'list-by-batch',
       )
       .subscribe({
         next: (res: any) => {
-          const wkDate = this.getPreviousMonday(dateMs);
-          const tt = (res?.data || []).find(
+          const rows = res?.data || [];
+          const tt = rows.find(
             (t: any) =>
-              Number(t?.wkStartOn) === wkDate && t?.status === 'Active',
+              Number(t?.wkStartOn) === wkStartOn && t?.status === 'Active',
           );
-          if (!tt) {
-            this.loading = false;
-            this.alert.error(
-              'No active timetable found for this batch on the selected date. Publish a timetable first.',
+          if (tt) {
+            this._addSpecialPeriod(
+              safeTrim(tt._id),
+              batchCode,
+              dateMs,
+              dayName,
+              period,
             );
-            return;
+          } else {
+            this._createTimetableAndAdd(
+              batchCode,
+              wkStartOn,
+              dateMs,
+              dayName,
+              period,
+            );
           }
-          const payload = {
-            entiId: this.entiId,
-            timetableId: safeTrim(tt._id),
-            batchCode: safeTrim(this.batch?.batchCode),
-            date: dateMs,
-            day: this.getDayName(dateMs),
-            period: {
-              periodNo: Number(v.periodNo),
-              periodType: safeTrim(v.periodType),
-              mode: safeTrim(v.mode),
-              time: {
-                startMin,
-                endMin,
-                startLabel: v.startTime,
-                endLabel: v.endTime,
-              },
-              facultyId: safeTrim(v.staffId),
-              facultyName: staffOpt?.label || null,
-              subjectId: safeTrim(v.subjectId),
-              subjectName: subjectOpt?.label || null,
-              topic: safeTrim(v.topic) || null,
-              venue: safeTrim(v.venue) || null,
-              zoomUrl: safeTrim(v.zoomUrl) || null,
-            },
-          };
-          this.commonApi
-            .fetchData(payload, 'timetable', 'period/add')
-            .subscribe({
-              next: (r: any) => {
-                this.loading = false;
-                this.alert.success(r?.message || 'Special class added');
-                this.closeSpecialClassModal();
-              },
-              error: (err: any) => {
-                this.loading = false;
-                this.alert.error(
-                  err?.error?.message || 'Failed to add special class',
-                );
-              },
-            });
         },
         error: (err: any) => {
           this.loading = false;
@@ -973,13 +1391,158 @@ export class ViewBatchComponent implements OnInit {
       });
   }
 
-  // ── remove student ─────────────────────────────────────────────────────────
-  removeStudent(studentId: string) {
-    if (!confirm('Remove this student from the batch?')) return;
+  private _addSpecialPeriod(
+    timetableId: string,
+    batchCode: string,
+    dateMs: number,
+    dayName: string,
+    period: any,
+  ) {
+    const payload = {
+      entiId: this.entiId,
+      timetableId,
+      batchCode,
+      date: dateMs,
+      day: dayName,
+      period,
+    };
+    this.commonApi.fetchData(payload, 'timetable', 'period/add').subscribe({
+      next: (r: any) => {
+        this.loading = false;
+        this.alert.success(r?.message || 'Special class added');
+        this.closeSpecialClassModal();
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(err?.error?.message || 'Failed to add special class');
+      },
+    });
+  }
+
+  // private _createTimetableAndAdd(
+  //   batchCode: string,
+  //   wkStartOn: number,
+  //   dateMs: number,
+  //   dayName: string,
+  //   period: any,
+  // ) {
+  //   const createPayload = {
+  //     entiId: this.entiId,
+  //     batchCode,
+  //     wkStartOn,
+  //     week: [
+  //       {
+  //         day: dayName,
+  //         periods: [period],
+  //       },
+  //     ],
+  //   };
+  //   this.commonApi.fetchData(createPayload, 'timetable', 'create').subscribe({
+  //     next: (res: any) => {
+  //       const timetableId = safeTrim(res?.data?._id);
+  //       if (!timetableId) {
+  //         this.loading = false;
+  //         this.alert.error('Timetable created but ID not returned');
+  //         return;
+  //       }
+  //       this.commonApi
+  //         .fetchData(
+  //           { entiId: this.entiId, timetableId },
+  //           'timetable',
+  //           'publish',
+  //         )
+  //         .subscribe({
+  //           next: () => {
+  //             this._addSpecialPeriod(
+  //               timetableId,
+  //               batchCode,
+  //               dateMs,
+  //               dayName,
+  //               period,
+  //             );
+  //           },
+  //           error: (err: any) => {
+  //             this._addSpecialPeriod(
+  //               timetableId,
+  //               batchCode,
+  //               dateMs,
+  //               dayName,
+  //               period,
+  //             );
+  //           },
+  //         });
+  //     },
+  //     error: (err: any) => {
+  //       this.loading = false;
+  //       this.alert.error(
+  //         err?.error?.message || 'Failed to create timetable for this week',
+  //       );
+  //     },
+  //   });
+  // }
+
+  private _createTimetableAndAdd(
+    batchCode: string,
+    wkStartOn: number,
+    dateMs: number,
+    dayName: string,
+    period: any,
+  ) {
+    const createPayload = {
+      entiId: this.entiId,
+      batchCode,
+      wkStartOn,
+      week: [
+        {
+          day: dayName,
+          periods: [period],
+        },
+      ],
+    };
+    this.commonApi.fetchData(createPayload, 'timetable', 'create').subscribe({
+      next: (res: any) => {
+        this.loading = false;
+        const timetableId = safeTrim(res?.data?._id);
+        if (!timetableId) {
+          this.alert.error('Timetable created but ID not returned');
+          return;
+        }
+        this.alert.success(
+          'Special class added (new timetable created for this week as DRAFT)',
+        );
+        this.closeSpecialClassModal();
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(
+          err?.error?.message || 'Failed to create timetable for this week',
+        );
+      },
+    });
+  }
+
+  openRemoveStudent(studentId: string, name: string) {
+    this.removeStudentId = studentId;
+    this.removeStudentName = name;
+    this.showRemoveConfirm = true;
+  }
+
+  closeRemoveConfirm() {
+    this.showRemoveConfirm = false;
+    this.removeStudentId = '';
+    this.removeStudentName = '';
+  }
+
+  confirmRemoveStudent() {
+    if (!this.removeStudentId) return;
     this.loading = true;
     this.commonApi
       .fetchData(
-        { entiId: this.entiId, batchId: this.batchId, studentIds: [studentId] },
+        {
+          entiId: this.entiId,
+          batchId: this.batchId,
+          studentIds: [this.removeStudentId],
+        },
         'batch',
         'students/remove',
       )
@@ -987,6 +1550,7 @@ export class ViewBatchComponent implements OnInit {
         next: () => {
           this.loading = false;
           this.alert.success('Student removed');
+          this.closeRemoveConfirm();
           this.loadBatch();
         },
         error: (err: any) => {
@@ -1037,7 +1601,11 @@ export class ViewBatchComponent implements OnInit {
     const b = this.batch;
     const formatDate = (ts: number | null) => {
       if (!ts) return '';
-      return new Date(ts).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return new Date(ts).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
     };
 
     const wb = XLSX.utils.book_new();
@@ -1058,15 +1626,23 @@ export class ViewBatchComponent implements OnInit {
       { Field: 'Student Count', Value: b.studentCount || this.students.length },
       { Field: 'Remarks', Value: b.remarks || '' },
     ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(infoRows), 'Batch Info');
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(infoRows),
+      'Batch Info',
+    );
 
     // Sheet 2: Faculty
     const staffRows = (this.staffMap || []).map((s: any) => ({
-      'Subject': s.subjectName || '',
+      Subject: s.subjectName || '',
       'Staff Name': s.staffName || '',
     }));
     if (staffRows.length) {
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(staffRows), 'Faculty');
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(staffRows),
+        'Faculty',
+      );
     }
 
     // Sheet 3: Students
@@ -1074,18 +1650,282 @@ export class ViewBatchComponent implements OnInit {
       'Admission No': s.admissionNo || '',
       'Registration No': s.registrationNumber || '',
       'Student Name': s.student?.name || '',
-      'Phone': s.student?.phone || '',
-      'Email': s.student?.email || '',
+      Phone: s.student?.phone || '',
+      Email: s.student?.email || '',
       'Parent Phone': s.student?.parentPhone || '',
-      'Address': s.student?.address || '',
-      'City': s.student?.city || '',
-      'State': s.student?.state || '',
-      'Pincode': s.student?.pincode || '',
+      Address: s.student?.address || '',
+      City: s.student?.city || '',
+      State: s.student?.state || '',
+      Pincode: s.student?.pincode || '',
     }));
     if (studentRows.length) {
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(studentRows), 'Students');
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(studentRows),
+        'Students',
+      );
     }
 
     XLSX.writeFile(wb, `Batch_${b.batchCode || b.batchName}.xlsx`);
+  }
+
+  openCloseBatch() {
+    if (safeTrim(this.batch?.status) === 'CLOSED') {
+      this.alert.error('Batch is already closed');
+      return;
+    }
+    this.showCloseConfirm = true;
+  }
+
+  closeCloseBatchModal() {
+    this.showCloseConfirm = false;
+  }
+
+  confirmCloseBatch() {
+    if (this.loading) return;
+    this.loading = true;
+    this.commonApi
+      .fetchData(
+        { entiId: this.entiId, batchId: this.batchId },
+        'batch',
+        'close',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          this.alert.success(res?.message || 'Batch closed');
+          this.closeCloseBatchModal();
+          this.loadBatch();
+        },
+        error: (err: any) => {
+          this.loading = false;
+          this.alert.error(err?.error?.message || 'Close failed');
+        },
+      });
+  }
+
+  onReportSubjectChanged(subjectId: string) {
+    this.reportSubjectId = safeTrim(subjectId);
+    this.reportSubjectName = safeTrim(
+      this.batchSubjectOptions
+        .find((x: any) => safeTrim(x?.value) === this.reportSubjectId)
+        ?.label?.split(' (')?.[0] || '',
+    );
+    this.phaseReport = null;
+    this.expandedPhases.clear();
+    if (this.reportSubjectId) {
+      this.loadSubjectHours();
+      this.loadPhaseReport();
+    } else {
+      this.subjectHours = [];
+    }
+  }
+
+  loadSubjectHours() {
+    this.reportLoading = true;
+    this.commonApi
+      .fetchData(
+        { entiId: this.entiId, batchCode: safeTrim(this.batch?.batchCode) },
+        'timetable',
+        'subject/report',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.reportLoading = false;
+          this.subjectHours = res?.data || [];
+        },
+        error: () => {
+          this.reportLoading = false;
+          this.subjectHours = [];
+        },
+      });
+  }
+
+  loadPhaseReport() {
+    if (!this.reportSubjectId || !this.batch?.classNo) return;
+    this.reportLoading = true;
+    this.commonApi
+      .fetchData(
+        {
+          entiId: this.entiId,
+          batchCode: safeTrim(this.batch?.batchCode),
+          subjectId: this.reportSubjectId,
+          classNo: this.batch.classNo,
+        },
+        'institue/phase',
+        'allotment/report',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.reportLoading = false;
+          this.phaseReport = res?.data || null;
+        },
+        error: () => {
+          this.reportLoading = false;
+          this.phaseReport = null;
+        },
+      });
+  }
+
+  togglePhase(phaseId: string) {
+    if (this.expandedPhases.has(phaseId)) this.expandedPhases.delete(phaseId);
+    else this.expandedPhases.add(phaseId);
+  }
+
+  isPhaseExpanded(phaseId: string): boolean {
+    return this.expandedPhases.has(phaseId);
+  }
+
+  getProgressPct(allotted: number, est: number): number {
+    if (!est || est <= 0) return 0;
+    return Math.min(Math.round((allotted / est) * 100), 100);
+  }
+
+  getProgressColor(pct: number): string {
+    if (pct >= 100) return '#ef4444';
+    if (pct >= 80) return '#f59e0b';
+    return '#3b82f6';
+  }
+
+  exportReport() {
+    if (!this.batch) return;
+    const wb = XLSX.utils.book_new();
+
+    // ── Sheet 1: Subject Hours ────────────────────────────────────────────────
+    if (this.subjectHours.length) {
+      const subjectRows = this.subjectHours.map((s: any) => ({
+        Subject: s.subjectName || s.subjectCode || '-',
+        'Subject Code': s.subjectCode || '-',
+        'Allotted Hours': s.allottedHours ?? 0,
+      }));
+      subjectRows.push({
+        Subject: 'TOTAL',
+        'Subject Code': '',
+        'Allotted Hours': this.subjectHours.reduce(
+          (sum: number, s: any) => sum + (s.allottedHours || 0),
+          0,
+        ),
+      });
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(subjectRows),
+        'Subject Hours',
+      );
+    }
+
+    // ── Sheet 2: Phase Report ─────────────────────────────────────────────────
+    if (this.phaseReport) {
+      const phaseRows: any[] = [];
+
+      // Summary row
+      phaseRows.push({
+        Phase: 'SUMMARY',
+        Topic: '',
+        'Est. Hours': this.phaseReport.summary?.totalEstHours ?? '',
+        'Allotted Hours': this.phaseReport.summary?.totalAllottedHours ?? '',
+        'Remaining Hours': this.phaseReport.summary?.totalRemainingHours ?? '',
+        'Progress %': '',
+      });
+
+      for (const ph of this.phaseReport.phases || []) {
+        // Phase row
+        phaseRows.push({
+          Phase: ph.phaseName,
+          Topic: '',
+          'Est. Hours': ph.estHours ?? '',
+          'Allotted Hours': ph.allottedHours ?? 0,
+          'Remaining Hours': ph.remainingHours ?? '',
+          'Progress %': this.getProgressPct(ph.allottedHours, ph.estHours),
+        });
+        // Topic rows
+        for (const t of ph.topics || []) {
+          phaseRows.push({
+            Phase: '',
+            Topic: '  ' + t.topicName,
+            'Est. Hours': t.estHours ?? '',
+            'Allotted Hours': t.allottedHours ?? 0,
+            'Remaining Hours': t.remainingHours ?? '',
+            'Progress %': this.getProgressPct(t.allottedHours, t.estHours),
+          });
+        }
+      }
+
+      // Unassigned bucket
+      if (this.phaseReport.unassigned) {
+        phaseRows.push({
+          Phase: 'Unassigned',
+          Topic: '',
+          'Est. Hours': '-',
+          'Allotted Hours': this.phaseReport.unassigned.allottedHours ?? 0,
+          'Remaining Hours': '-',
+          'Progress %': '-',
+        });
+      }
+
+      const sheetName = this.reportSubjectName
+        ? ('Phase_' + this.reportSubjectName).slice(0, 31)
+        : 'Phase Report';
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(phaseRows),
+        sheetName,
+      );
+    }
+
+    if (!wb.SheetNames.length) {
+      this.alert.warning('No report data to export. Select a subject first.');
+      return;
+    }
+
+    XLSX.writeFile(
+      wb,
+      `Report_${safeTrim(this.batch?.batchCode)}_${this.reportSubjectName || 'All'}.xlsx`,
+    );
+  }
+
+  get subjectHoursTotal(): number {
+    return this.subjectHours.reduce(
+      (sum: number, s: any) => sum + (s.allottedHours || 0),
+      0,
+    );
+  }
+
+  get subjectHoursMax(): number {
+    if (!this.subjectHours.length) return 0;
+    return Math.max(...this.subjectHours.map((s: any) => s.allottedHours || 0));
+  }
+
+  onSpecialClassDateChanged() {
+    const dateStr = this.specialClassForm.get('date')?.value;
+    const dateMs = this.dateToEpochMs(dateStr);
+    const batchCode = safeTrim(this.batch?.batchCode);
+    this.specialClassExistingPeriods = [];
+    this.specialClassPeriodConflict = false;
+    if (!dateMs || !batchCode) return;
+
+    this.commonApi
+      .fetchData(
+        { entiId: this.entiId, batchCode, fromDate: dateMs, toDate: dateMs },
+        'timetable',
+        'viewbybatch',
+      )
+      .subscribe({
+        next: (res: any) => {
+          const day = (res?.data || [])[0];
+          this.specialClassExistingPeriods = (day?.periods || [])
+            .filter((p: any) => !p.isCancelled)
+            .map((p: any) => p.periodNo);
+          this.checkSpecialClassPeriodConflict();
+        },
+        error: () => {
+          this.specialClassExistingPeriods = [];
+        },
+      });
+  }
+
+  checkSpecialClassPeriodConflict() {
+    const pNo = Number(this.specialClassForm.get('periodNo')?.value);
+    this.specialClassPeriodConflict =
+      !!pNo && this.specialClassExistingPeriods.includes(pNo);
   }
 }

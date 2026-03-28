@@ -9,7 +9,7 @@ import * as XLSX from 'xlsx';
   selector: 'app-student',
   standalone: false,
   templateUrl: './student.component.html',
-  styleUrl: './student.component.scss'
+  styleUrl: './student.component.scss',
 })
 export class StudentComponent {
   activeTab: 'list' | 'grid' = 'list';
@@ -27,20 +27,86 @@ export class StudentComponent {
   // Bulk Image Upload
   showImageUpload = false;
   imageFiles: File[] = [];
-  imagePreviewList: { name: string; admissionNo: string; preview: string }[] = [];
+  imagePreviewList: { name: string; admissionNo: string; preview: string }[] =
+    [];
   imageUploading = false;
+
+  hasSearched = false;
+  listLoading = false;
+  programOptions: any[] = [];
+  centerOptions: any[] = [];
+  batchOptions: any[] = [];
+  filters = {
+    search: '',
+    programId: '',
+    centerId: '',
+    batchCode: '',
+    status: 'ALL',
+  };
+  statusOptions = [
+    { label: 'All', value: 'ALL' },
+    { label: 'Active', value: 'ACTIVE' },
+    { label: 'Inactive', value: 'INACTIVE' },
+    { label: 'Dropout', value: 'DROPOUT' },
+  ];
 
   constructor(
     private breadcrump: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
-    private alert: AlertService
+    private alert: AlertService,
   ) {
     this.breadcrump.set([{ label: 'Student' }]);
   }
 
   setTab(tab: 'list' | 'grid') {
     this.activeTab = tab;
+  }
+
+  ngOnInit(): void {
+    this.loadFilterOptions();
+  }
+
+  loadFilterOptions() {
+    this.commonApi
+      .fetchData({ entiId: this.tenantId }, 'ims', 'program/list?list=full')
+      .subscribe({
+        next: (r: any) => {
+          this.programOptions = (r?.data || []).map((p: any) => ({
+            label: `${p.programCode || p.code} - ${p.programName || p.name}`,
+            value: p.programId || p._id,
+          }));
+        },
+        error: () => {},
+      });
+
+    this.commonApi
+      .fetchData({ entiId: this.tenantId }, 'ims', 'center/list?list=full')
+      .subscribe({
+        next: (r: any) => {
+          this.centerOptions = (r?.data || []).map((c: any) => ({
+            label: `${c.centerName} (${c.centerCode})`,
+            value: c.centerId || c._id,
+          }));
+        },
+        error: () => {},
+      });
+  }
+
+  triggerSearch() {
+    this.hasSearched = true;
+    // filters object is passed by reference so child picks up changes via ngOnChanges
+  }
+
+  clearFilters() {
+    this.filters = {
+      search: '',
+      programId: '',
+      centerId: '',
+      batchCode: '',
+      status: 'ALL',
+    };
+    this.hasSearched = false;
   }
 
   // ===================== BULK EXCEL UPLOAD =====================
@@ -64,8 +130,22 @@ export class StudentComponent {
 
   downloadBulkSample() {
     const rows = [
-      { 'Enrolment Number': 'ADM001', 'Full Name': 'John Doe', 'Mobile': '9876543210', 'Email': 'john@example.com', 'Parent Name': 'Jane Doe', 'Parent Mobile': '9876543211' },
-      { 'Enrolment Number': 'ADM002', 'Full Name': 'Alice Smith', 'Mobile': '9876543220', 'Email': 'alice@example.com', 'Parent Name': 'Bob Smith', 'Parent Mobile': '9876543221' },
+      {
+        'Enrolment Number': 'ADM001',
+        'Full Name': 'John Doe',
+        Mobile: '9876543210',
+        Email: 'john@example.com',
+        'Parent Name': 'Jane Doe',
+        'Parent Mobile': '9876543211',
+      },
+      {
+        'Enrolment Number': 'ADM002',
+        'Full Name': 'Alice Smith',
+        Mobile: '9876543220',
+        Email: 'alice@example.com',
+        'Parent Name': 'Bob Smith',
+        'Parent Mobile': '9876543221',
+      },
     ];
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -92,10 +172,14 @@ export class StudentComponent {
         const data = e.target.result;
         const wb = XLSX.read(data, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rawRows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' }) as any[];
+        const rawRows: any[] = XLSX.utils.sheet_to_json(ws, {
+          defval: '',
+        }) as any[];
 
         this.bulkPreviewRows = rawRows.map((r: any, idx: number) => {
-          const admissionNo = String(r['Enrolment Number'] || r['Admission No'] || '').trim();
+          const admissionNo = String(
+            r['Enrolment Number'] || r['Admission No'] || '',
+          ).trim();
           const fullName = String(r['Full Name'] || '').trim();
           const mobile = String(r['Mobile'] || r['Phone'] || '').trim();
           const email = String(r['Email'] || '').trim();
@@ -115,11 +199,11 @@ export class StudentComponent {
             email,
             parentName,
             parentMobile,
-            _raw: r
+            _raw: r,
           };
         });
 
-        const invalid = this.bulkPreviewRows.filter(r => !r._valid);
+        const invalid = this.bulkPreviewRows.filter((r) => !r._valid);
         this.bulkInvalidCount = invalid.length;
         this.bulkHasInvalidRows = invalid.length > 0;
       } catch {
@@ -133,14 +217,19 @@ export class StudentComponent {
   }
 
   confirmBulkUpload() {
-    if (this.bulkUploading || !this.bulkPreviewRows.length || this.bulkHasInvalidRows) return;
+    if (
+      this.bulkUploading ||
+      !this.bulkPreviewRows.length ||
+      this.bulkHasInvalidRows
+    )
+      return;
 
-    const students = this.bulkPreviewRows.map(r => r._raw);
+    const students = this.bulkPreviewRows.map((r) => r._raw);
 
     const payload = {
       tenantId: this.tenantId,
       userId: this.userId,
-      students
+      students,
     };
 
     this.bulkUploading = true;
@@ -149,7 +238,9 @@ export class StudentComponent {
         this.bulkUploading = false;
         if (res?.status) {
           const data = res.data || {};
-          this.alert.success(`Bulk update: ${data.successCount || 0} success, ${data.failedCount || 0} failed`);
+          this.alert.success(
+            `Bulk update: ${data.successCount || 0} success, ${data.failedCount || 0} failed`,
+          );
           this.showBulkUpload = false;
           this.resetBulkUpload();
         } else {
@@ -159,7 +250,7 @@ export class StudentComponent {
       error: (err: any) => {
         this.bulkUploading = false;
         this.alert.error(err?.error?.message || 'Bulk update failed');
-      }
+      },
     });
   }
 
@@ -221,7 +312,7 @@ export class StudentComponent {
       this.imagePreviewList.push({
         name: f.name,
         admissionNo,
-        preview: URL.createObjectURL(f)
+        preview: URL.createObjectURL(f),
       });
     }
 
@@ -249,22 +340,26 @@ export class StudentComponent {
     }
 
     this.imageUploading = true;
-    this.commonApi.uploadImage(formData, 'student', 'bulk-image-upload').subscribe({
-      next: (res: any) => {
-        this.imageUploading = false;
-        if (res?.status) {
-          const data = res.data || {};
-          this.alert.success(`Image upload: ${data.successCount || 0} success, ${data.failedCount || 0} failed`);
-          this.showImageUpload = false;
-          this.resetImageUpload();
-        } else {
-          this.alert.error(res?.message || 'Image upload failed');
-        }
-      },
-      error: (err: any) => {
-        this.imageUploading = false;
-        this.alert.error(err?.error?.message || 'Image upload failed');
-      }
-    });
+    this.commonApi
+      .uploadImage(formData, 'student', 'bulk-image-upload')
+      .subscribe({
+        next: (res: any) => {
+          this.imageUploading = false;
+          if (res?.status) {
+            const data = res.data || {};
+            this.alert.success(
+              `Image upload: ${data.successCount || 0} success, ${data.failedCount || 0} failed`,
+            );
+            this.showImageUpload = false;
+            this.resetImageUpload();
+          } else {
+            this.alert.error(res?.message || 'Image upload failed');
+          }
+        },
+        error: (err: any) => {
+          this.imageUploading = false;
+          this.alert.error(err?.error?.message || 'Image upload failed');
+        },
+      });
   }
 }

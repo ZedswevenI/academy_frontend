@@ -183,6 +183,21 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   batchClassNo = 0;
   batchStaffMap: any[] = [];
   rpPhases: any[] = [];
+  showStaffLateModal = false;
+  staffLateEntry: any = {
+    timetableId: '',
+    periodNo: 0,
+    facultyId: '',
+    facultyName: '',
+    scheduledStartMin: 0,
+    startLabel: '',
+    endLabel: '',
+    batchCode: '',
+    dateMs: 0,
+    delayMinutes: 0,
+    reason: '',
+    entryType: 'LATE',
+  };
 
   constructor(
     private router: Router,
@@ -697,6 +712,67 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     }
   }
 
+  // getRenderedPeriod(dayRow: any, pNum: number): any {
+  //   const day = String(dayRow?.day || '').toUpperCase();
+  //   if (!day) return null;
+  //   if (this.viewMode === 'range') {
+  //     if (dayRow?.__isHoliday)
+  //       return { __dayCancelled: true, isCancelled: true, time: {} };
+  //     const list = Array.isArray(dayRow?.periods) ? dayRow.periods : [];
+  //     return list.find((p: any) => toInt(p?.periodNo) === toInt(pNum)) || null;
+  //   }
+  //   if (this.isDraft) {
+  //     if (this.isDayCancelled(toInt(dayRow?.dateMs), day))
+  //       return { __dayCancelled: true, isCancelled: true, time: {} };
+  //     const dayData = (this.timetable?.week || []).find(
+  //       (d: any) => String(d?.day || '').toUpperCase() === day,
+  //     );
+  //     if (!dayData) return null;
+  //     const period = (dayData.periods || []).find(
+  //       (p: any) => toInt(p?.periodNo) === toInt(pNum),
+  //     );
+  //     return period || null;
+  //   }
+  //   const dateMs = toInt(dayRow?.dateMs);
+  //   if (this.isDayCancelled(dateMs, day))
+  //     return { __dayCancelled: true, isCancelled: true, time: {} };
+  //   const replacedPeriods = this.getDayReplacementPeriods(dateMs, day);
+  //   const basePeriods =
+  //     replacedPeriods ?? (Array.isArray(dayRow?.periods) ? dayRow.periods : []);
+  //   const baseMap = new Map<number, any>();
+  //   basePeriods.forEach((p: any) => {
+  //     const pn = toInt(p?.periodNo);
+  //     if (pn) baseMap.set(pn, p);
+  //   });
+  //   this.applyMoveOverrides(dateMs, day, baseMap);
+  //   const cancelOv = this.findPeriodOverride(
+  //     dateMs,
+  //     day,
+  //     pNum,
+  //     'CANCEL_PERIOD',
+  //   );
+  //   const replaceOv = this.findPeriodOverride(
+  //     dateMs,
+  //     day,
+  //     pNum,
+  //     'REPLACE_PERIOD',
+  //   );
+  //   let result = baseMap.get(pNum) || null;
+  //   if (cancelOv)
+  //     return { ...result, isCancelled: true, cancelReason: cancelOv.reason };
+  //   if (replaceOv) {
+  //     const modifiedFields = (CONTENT_FIELDS as string[]).filter(
+  //       (f) => replaceOv.period?.[f] !== result?.[f],
+  //     );
+  //     return {
+  //       ...replaceOv.period,
+  //       __modified: true,
+  //       __modifiedFields: modifiedFields,
+  //     };
+  //   }
+  //   return result;
+  // }
+
   getRenderedPeriod(dayRow: any, pNum: number): any {
     const day = String(dayRow?.day || '').toUpperCase();
     if (!day) return null;
@@ -730,6 +806,22 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       if (pn) baseMap.set(pn, p);
     });
     this.applyMoveOverrides(dateMs, day, baseMap);
+    const periodOvs = Array.isArray(this.timetable?.periodOverrides)
+      ? this.timetable.periodOverrides
+      : [];
+    const dayU = String(day || '').toUpperCase();
+    periodOvs
+      .filter(
+        (o: any) =>
+          safeTrim(o?.action) === 'ADD_PERIOD' &&
+          toInt(o?.date) === toInt(dateMs) &&
+          String(o?.day || '').toUpperCase() === dayU &&
+          o?.period != null,
+      )
+      .forEach((o: any) => {
+        const addedPNo = toInt(o?.period?.periodNo || o?.periodNo);
+        if (addedPNo) baseMap.set(addedPNo, { ...o.period, __added: true });
+      });
     const cancelOv = this.findPeriodOverride(
       dateMs,
       day,
@@ -756,6 +848,14 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       };
     }
     return result;
+  }
+
+  private dateToEpochMs(s: any): number {
+    const v = safeTrim(s);
+    if (!v) return 0;
+    const [yyyy, mm, dd] = v.split('-').map(Number);
+    if (!yyyy || !mm || !dd) return 0;
+    return Date.UTC(yyyy, mm - 1, dd);
   }
 
   private computeMaxPeriods(): number {
@@ -2072,6 +2172,85 @@ export class ViewTableComponent implements OnInit, OnDestroy {
           this.alert.error(
             err?.error?.message || 'Failed to load range schedule',
           );
+        },
+      });
+  }
+
+  getEditDayPhasesForPeriod(ep: any): any[] {
+    if (!ep?.subjectId || !this.batchProgramId || !this.batchClassNo) return [];
+    return this.phasesFull.filter(
+      (ph: any) =>
+        safeTrim(ph?.programId) === this.batchProgramId &&
+        toInt(ph?.classNo) === this.batchClassNo &&
+        safeTrim(ph?.subjectId?._id || ph?.subjectId) ===
+          safeTrim(ep.subjectId),
+    );
+  }
+
+  openStaffLateEntry(row: any, pNum: number, period: any) {
+    const dateMs = toInt(row?.dateMs);
+    this.staffLateEntry = {
+      timetableId: safeTrim(this.timetableId),
+      periodNo: toInt(pNum),
+      facultyId: safeTrim(period?.facultyId),
+      facultyName:
+        safeTrim(period?.facultyName) || this.resolveFacultyLabel(period),
+      scheduledStartMin: toInt(period?.time?.startMin),
+      startLabel: period?.time?.startLabel || '',
+      endLabel: period?.time?.endLabel || '',
+      batchCode: safeTrim(this.timetable?.batchCode || this.batchCode),
+      dateMs,
+      delayMinutes: 0,
+      reason: '',
+      entryType: 'LATE',
+    };
+    this.showStaffLateModal = true;
+    this.closeActionMenu();
+  }
+
+  closeStaffLateModal() {
+    this.showStaffLateModal = false;
+  }
+
+  submitStaffLateEntry() {
+    if (this.loading) return;
+    const e = this.staffLateEntry;
+    if (!e.delayMinutes || e.delayMinutes <= 0) {
+      this.alert.error('Enter delay minutes');
+      return;
+    }
+    if (!e.dateMs) {
+      this.alert.error('Date not available for this period');
+      return;
+    }
+    const payload = {
+      tenantId: this.tenantId,
+      type: 'STAFF',
+      personId: e.facultyId,
+      personName: e.facultyName,
+      timetableId: e.timetableId,
+      batchCode: e.batchCode,
+      date: e.dateMs,
+      periodNo: e.periodNo,
+      scheduledStartMin: e.scheduledStartMin,
+      delayMinutes: Number(e.delayMinutes),
+      entryType: safeTrim(e.entryType) || 'LATE',
+      reason: safeTrim(e.reason) || null,
+    };
+    this.loading = true;
+    this.commonApi
+      .fetchData(payload, 'timetable', 'late-entry/log')
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.alert.success(res?.message || 'Late entry logged');
+          this.closeStaffLateModal();
+        },
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Failed to log');
         },
       });
   }
