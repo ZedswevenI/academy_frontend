@@ -40,7 +40,7 @@
             [disabled]="batch?.status !== 'ACTIVE'">
             <i class="fa-solid fa-arrow-up-right-dots"></i> Promote
         </button>
-        <button class="btn btn-outline-success btn-sm rounded-pill" (click)="exportBatch()">
+        <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm rounded-pill" (click)="exportBatch()">
             <i class="fa-solid fa-file-export"></i> Export
         </button>
         <button class="btn btn-outline-danger btn-sm rounded-pill" (click)="openCloseBatch()"

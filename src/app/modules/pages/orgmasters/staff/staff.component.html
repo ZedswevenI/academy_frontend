@@ -9,7 +9,7 @@
                 <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openImport()">
                     <i class="fa-solid fa-file-import"></i><span>Import Staff</span>
                 </button>
-                <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="add()">
+                <button *appHasRole="['L6','L1']" class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="add()">
                     <i class="fa-solid fa-plus"></i><span>Add Staff</span>
                 </button>
             </div>

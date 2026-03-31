@@ -65,7 +65,7 @@
                             <th>Topic</th>
                             <th style="width: 180px;">Topic Code</th>
                             <th style="width: 140px;" class="text-center">Status</th>
-                            <th style="width: 260px;" class="text-end pe-3">Action</th>
+                            <th *appHasRole="['L4','L1','L3']" style="width: 260px;" class="text-end pe-3">Action</th>
                         </tr>
                     </thead>
 
@@ -79,7 +79,7 @@
                                     {{ t?.enabled ? 'ENABLED' : 'NOT ENABLED' }}
                                 </span>
                             </td>
-                            <td class="text-end pe-3">
+                            <td *appHasRole="['L4','L1','L3']" class="text-end pe-3">
                                 <button class="btn btn-sm btn-success" *ngIf="!t?.enabled" (click)="enableTopic(t)"
                                     [disabled]="loading || t?.enabling">
                                     {{ t?.enabling ? 'Enabling...' : 'Enable' }}

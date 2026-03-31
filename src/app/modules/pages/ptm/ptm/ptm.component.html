@@ -247,7 +247,7 @@
                 <button class="btn btn-outline-primary rounded-pill fs-16 fw-medium" (click)="openImportModal()">
                     <i class="fa-solid fa-file-import me-2"></i>Bulk Import
                 </button>
-                <button class="btn btn-newbutton rounded-pill fs-16 fw-medium" routerLink="/app/ptm/create">
+                <button *appHasRole="['L3','L1']" class="btn btn-newbutton rounded-pill fs-16 fw-medium" routerLink="/app/ptm/create">
                     <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">Add PTM
                 </button>
             </div>

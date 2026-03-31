@@ -108,7 +108,7 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
                     data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-outline-success rounded-pill px-4"
+                <button *appHasRole="['L1']" type="button" class="btn btn-outline-success rounded-pill px-4"
                     (click)="exportPackage()">
                     <i class="fa-solid fa-file-export me-2"></i>Export
                 </button>

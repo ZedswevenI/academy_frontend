@@ -204,14 +204,15 @@ export class AttendanceComponent implements OnInit, OnDestroy {
 
   mapAOData(raw: any[]): void {
     const today = this.getTodayUtcMs();
-    const isFuture = this.selectedDate! > today;
+    const isFuture = this.selectedDate! > today && (this.auth.getRole() === 'L1' || this.auth.getRole() === 'L3');
     this.originalData = raw.map((r: any) => this.enrichRow(r, !isFuture));
     this.buildActions();
     this.buildTableData();
   }
+  // 
 
   private enrichRow(r: any, showAction: boolean): any {
-    const isMarked = r.attendance?.isMarked === true;
+    const isMarked = r.attendance?.isMarked === true ;
     return {
       ...r,
       timeLabel: this.formatTimeLabel(r),
