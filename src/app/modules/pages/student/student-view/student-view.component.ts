@@ -380,6 +380,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import * as XLSX from 'xlsx';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -402,31 +403,31 @@ export class StudentViewComponent implements OnInit {
 
   // ── Edit Profile ──────────────────────────────────────────────────────────
   showEditModal = false;
-  editLoading   = false;
+  editLoading = false;
   editForm!: FormGroup;
 
   // ── Attendance ────────────────────────────────────────────────────────────
   columnsArray = [
-    { key: 'date',      label: 'Date',     sortable: false },
-    { key: 'period',    label: 'Period',   sortable: false },
-    { key: 'subject',   label: 'Subject',  sortable: false },
-    { key: 'topic',     label: 'Topic',    sortable: false },
-    { key: 'feedback',  label: 'Feedback', sortable: false },
-    { key: 'status',    label: 'Status',   sortable: false },
+    { key: 'date', label: 'Date', sortable: false },
+    { key: 'period', label: 'Period', sortable: false },
+    { key: 'subject', label: 'Subject', sortable: false },
+    { key: 'topic', label: 'Topic', sortable: false },
+    { key: 'feedback', label: 'Feedback', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
   ];
-  dataArray: any[]      = [];
+  dataArray: any[] = [];
   attendanceSummary: any = null;
-  totalRecords           = 0;
+  totalRecords = 0;
 
   // ── Assignment Results ────────────────────────────────────────────────────
   columnsArray1 = [
-    { key: 'testNo',      label: 'Test No',   sortable: false },
-    { key: 'testCode',    label: 'Test Code', sortable: false },
-    { key: 'subject',     label: 'Subject',   sortable: false },
-    { key: 'topic',       label: 'Topic',     sortable: false },
-    { key: 'subTopic',    label: 'Sub Topic', sortable: false },
-    { key: 'marks',       label: 'Marks',     sortable: false },
-    { key: 'completedAt', label: 'Date',      sortable: false },
+    { key: 'testNo', label: 'Test No', sortable: false },
+    { key: 'testCode', label: 'Test Code', sortable: false },
+    { key: 'subject', label: 'Subject', sortable: false },
+    { key: 'topic', label: 'Topic', sortable: false },
+    { key: 'subTopic', label: 'Sub Topic', sortable: false },
+    { key: 'marks', label: 'Marks', sortable: false },
+    { key: 'completedAt', label: 'Date', sortable: false },
   ];
   dataArray1: any[] = [];
 
@@ -435,37 +436,37 @@ export class StudentViewComponent implements OnInit {
 
   // ── Remarks ───────────────────────────────────────────────────────────────
   columnsArray4 = [
-    { key: 'date',             label: 'Date',               sortable: false },
-    { key: 'type',             label: 'Type',               sortable: false },
-    { key: 'remark',           label: 'Remark',             sortable: false },
+    { key: 'date', label: 'Date', sortable: false },
+    { key: 'type', label: 'Type', sortable: false },
+    { key: 'remark', label: 'Remark', sortable: false },
     { key: 'reportedByParent', label: 'Reported By Parent', sortable: false },
   ];
   dataArray4: any[] = [];
 
   // Add Remark
-  showRemarkForm  = false;
-  remarkLoading   = false;
-  remarkTypes     = ['ACADEMIC', 'BEHAVIOUR', 'ATTENDANCE', 'HEALTH', 'OTHER'];
-  newRemark       = { type: 'ACADEMIC', dateOfIncident: '', remark: '', reportedByParent: true };
+  showRemarkForm = false;
+  remarkLoading = false;
+  remarkTypes = ['ACADEMIC', 'BEHAVIOUR', 'ATTENDANCE', 'HEALTH', 'OTHER'];
+  newRemark = { type: 'ACADEMIC', dateOfIncident: '', remark: '', reportedByParent: true };
 
   // ── Late Entries ──────────────────────────────────────────────────────────
   columnsLate = [
-    { key: 'date',       label: 'Date',       sortable: false },
-    { key: 'periodNo',   label: 'Period',     sortable: false },
-    { key: 'entryType',  label: 'Type',       sortable: false },
-    { key: 'delay',      label: 'Delay (min)',sortable: false },
-    { key: 'reason',     label: 'Reason',     sortable: false },
+    { key: 'date', label: 'Date', sortable: false },
+    { key: 'periodNo', label: 'Period', sortable: false },
+    { key: 'entryType', label: 'Type', sortable: false },
+    { key: 'delay', label: 'Delay (min)', sortable: false },
+    { key: 'reason', label: 'Reason', sortable: false },
   ];
-  lateEntries: any[]  = [];
-  lateLoading         = false;
+  lateEntries: any[] = [];
+  lateLoading = false;
 
   // ── Payments ──────────────────────────────────────────────────────────────
   columnsArray5 = [
     { key: 'receiptNo', label: 'Receipt No', sortable: false },
-    { key: 'date',      label: 'Date',       sortable: false },
-    { key: 'mode',      label: 'Mode',       sortable: false },
-    { key: 'amount',    label: 'Amount',     sortable: false },
-    { key: 'status',    label: 'Status',     sortable: false },
+    { key: 'date', label: 'Date', sortable: false },
+    { key: 'mode', label: 'Mode', sortable: false },
+    { key: 'amount', label: 'Amount', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
   ];
   dataArray5: any[] = [];
 
@@ -484,7 +485,7 @@ export class StudentViewComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.entiId    = localStorage.getItem('tenantId');
+    this.entiId = localStorage.getItem('tenantId');
     this.studentId = safeTrim(this.route.snapshot.paramMap.get('id'));
 
     if (!this.studentId) {
@@ -500,30 +501,30 @@ export class StudentViewComponent implements OnInit {
   // ── Edit form ─────────────────────────────────────────────────────────────
   private initEditForm() {
     this.editForm = this.fb.group({
-      name:          ['', [Validators.required]],
-      phone:         [''],
-      email:         [''],
-      parentName:    [''],
-      parentPhone:   [''],
-      addressLine1:  [''],
-      city:          [''],
-      gender:        [''],
-      dob:           [''],
+      name: ['', [Validators.required]],
+      phone: [''],
+      email: [''],
+      parentName: [''],
+      parentPhone: [''],
+      addressLine1: [''],
+      city: [''],
+      gender: [''],
+      dob: [''],
     });
   }
 
   openEditProfile() {
     const b = this.student?.basic || {};
     this.editForm.patchValue({
-      name:         b.name         || '',
-      phone:        b.mobile       || '',
-      email:        b.email        || '',
-      parentName:   b.parentName   || '',
-      parentPhone:  b.parentMobile || '',
+      name: b.name || '',
+      phone: b.mobile || '',
+      email: b.email || '',
+      parentName: b.parentName || '',
+      parentPhone: b.parentMobile || '',
       addressLine1: b.addressLine1 || '',
-      city:         b.city         || '',
-      gender:       b.gender       || '',
-      dob:          b.dob ? this.epochToDateInput(b.dob) : '',
+      city: b.city || '',
+      gender: b.gender || '',
+      dob: b.dob ? this.epochToDateInput(b.dob) : '',
     });
     this.showEditModal = true;
   }
@@ -535,20 +536,20 @@ export class StudentViewComponent implements OnInit {
     if (this.editForm.invalid) { this.editForm.markAllAsTouched(); return; }
     const v = this.editForm.value;
     const payload: any = {
-      entiId:    this.entiId,
+      entiId: this.entiId,
       studentId: this.studentId,
-      name:         safeTrim(v.name),
-      phone:        safeTrim(v.phone)       || null,
-      email:        safeTrim(v.email)       || null,
-      parentName:   safeTrim(v.parentName)  || null,
+      name: safeTrim(v.name),
+      phone: safeTrim(v.phone) || null,
+      email: safeTrim(v.email) || null,
+      parentName: safeTrim(v.parentName) || null,
       parentMobile: safeTrim(v.parentPhone) || null,
-      addressLine1: safeTrim(v.addressLine1)|| null,
-      city:         safeTrim(v.city)        || null,
-      gender:       safeTrim(v.gender)      || null,
+      addressLine1: safeTrim(v.addressLine1) || null,
+      city: safeTrim(v.city) || null,
+      gender: safeTrim(v.gender) || null,
       dob: v.dob ? new Date(`${v.dob}T00:00:00`).getTime() : null,
     };
     this.editLoading = true;
-    this.commonApi.fetchData(payload, 'student', 'update-basic').subscribe({
+    this.commonApi.fetchData(payload, 'student', 'basic-details/update').subscribe({
       next: () => {
         this.editLoading = false;
         this.alert.success('Profile updated');
@@ -568,61 +569,61 @@ export class StudentViewComponent implements OnInit {
     const payload = { entiId: this.entiId, studentId: this.studentId };
 
     forkJoin({
-      profile:    this.commonApi.fetchData(payload, 'student', 'view'),
-      finance:    this.commonApi.fetchData(payload, 'student', 'finance/summary'),
+      profile: this.commonApi.fetchData(payload, 'student', 'view'),
+      finance: this.commonApi.fetchData(payload, 'student', 'finance/summary'),
       attendance: this.commonApi.fetchData(
         { entiId: this.entiId, studentNo: this.studentId },
         'student', 'getattendance/report'
       ),
     })
-    .pipe(finalize(() => (this.loading = false)))
-    .subscribe({
-      next: (results: any) => {
-        const p = results.profile?.data  || {};
-        const f = results.finance?.data  || {};
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
+        next: (results: any) => {
+          const p = results.profile?.data || {};
+          const f = results.finance?.data || {};
 
-        this.student = {
-          basic:   p.basic   || {},
-          program: p.program || {},
-          fees:    f         || {},
-        };
+          this.student = {
+            basic: p.basic || {},
+            program: p.program || {},
+            fees: f || {},
+          };
 
-        // Photo
-        this.photoUrl = p.basic?.photoUrl || null;
+          // Photo
+          this.photoUrl = p.basic?.photoUrl || null;
 
-        // Attendance
-        const attData         = results.attendance?.data || {};
-        this.attendanceSummary = attData.summary || null;
-        this.totalRecords      = (attData.details || []).length;
-        this.dataArray         = (attData.details || []).map((r: any) => ({
-          date:     r.date ? this.fmtEpoch(r.date) : '—',
-          period:   r.periodNo != null ? `Period ${r.periodNo}` : '—',
-          subject:  r.subjectId || '—',
-          topic:    r.topicTaught || '—',
-          feedback: r.feedback   || '—',
-          status:   r.status     || '—',
-        }));
+          // Attendance
+          const attData = results.attendance?.data || {};
+          this.attendanceSummary = attData.summary || null;
+          this.totalRecords = (attData.details || []).length;
+          this.dataArray = (attData.details || []).map((r: any) => ({
+            date: r.date ? this.fmtEpoch(r.date) : '—',
+            period: r.periodNo != null ? `Period ${r.periodNo}` : '—',
+            subject: r.subjectName || '—',
+            topic: r.topicTaught || '—',
+            feedback: r.feedback || '—',
+            status: r.status || '—',
+          }));
 
-        // Finance receipts
-        this.dataArray5 = (f.receipts || []).map((r: any) => ({
-          receiptNo: r.receiptNo || '—',
-          date:      r.date ? this.fmtEpoch(r.date) : '—',
-          mode:      r.mode   || '—',
-          amount:    r.amount != null ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '—',
-          status:    r.status || '—',
-        }));
+          // Finance receipts
+          this.dataArray5 = (f.receipts || []).map((r: any) => ({
+            receiptNo: r.receiptNo || '—',
+            date: r.date ? this.fmtEpoch(r.date) : '—',
+            mode: r.mode || '—',
+            amount: r.amount != null ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '—',
+            status: r.status || '—',
+          }));
 
-        // Load secondary data after profile is available
-        if (p.basic?.admissionNo) {
-          this.loadRemarks(p.basic.admissionNo);
-          this.loadAssignmentResults(p.basic.admissionNo);
-        }
-        this.loadLateEntries();
-      },
-      error: (err: any) => {
-        this.alert.error(err?.error?.message || 'Failed to load student details');
-      },
-    });
+          // Load secondary data after profile is available
+          if (p.basic?.admissionNo) {
+            this.loadRemarks(p.basic.admissionNo);
+            this.loadAssignmentResults(p.basic.admissionNo);
+          }
+          this.loadLateEntries();
+        },
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Failed to load student details');
+        },
+      });
   }
 
   // ── Remarks ───────────────────────────────────────────────────────────────
@@ -632,13 +633,13 @@ export class StudentViewComponent implements OnInit {
       .subscribe({
         next: (res: any) => {
           this.dataArray4 = (res?.data || []).map((r: any) => ({
-            date:             r.dateOfIncident ? this.fmtEpoch(r.dateOfIncident) : '—',
-            type:             r.type   || '—',
-            remark:           r.remark || '—',
+            date: r.dateOfIncident ? this.fmtEpoch(r.dateOfIncident) : '—',
+            type: r.type || '—',
+            remark: r.remark || '—',
             reportedByParent: r.reportedByParent ? 'Yes' : 'No',
           }));
         },
-        error: () => {},
+        error: () => { },
       });
   }
 
@@ -647,17 +648,17 @@ export class StudentViewComponent implements OnInit {
   submitRemark() {
     if (this.remarkLoading) return;
     if (!safeTrim(this.newRemark.remark)) { this.alert.error('Remark is required'); return; }
-    if (!this.newRemark.dateOfIncident)   { this.alert.error('Date is required');   return; }
+    if (!this.newRemark.dateOfIncident) { this.alert.error('Date is required'); return; }
 
     const admissionNo = safeTrim(this.student?.basic?.admissionNo);
     if (!admissionNo) return;
 
     const payload = {
-      entiId:           this.entiId,
+      entiId: this.entiId,
       admissionNo,
-      type:             this.newRemark.type,
-      dateOfIncident:   new Date(`${this.newRemark.dateOfIncident}T00:00:00`).getTime(),
-      remark:           safeTrim(this.newRemark.remark),
+      type: this.newRemark.type,
+      dateOfIncident: new Date(`${this.newRemark.dateOfIncident}T00:00:00`).getTime(),
+      remark: safeTrim(this.newRemark.remark),
       reportedByParent: this.newRemark.reportedByParent,
     };
 
@@ -688,12 +689,12 @@ export class StudentViewComponent implements OnInit {
 
         // Flat table rows
         this.dataArray1 = rows.map((r: any) => ({
-          testNo:      r.testNo      || '—',
-          testCode:    r.testCode    || '—',
-          subject:     r.subjectId   || '—',
-          topic:       r.topicId     || '—',
-          subTopic:    r.subTopicId  || '—',
-          marks:       r.answers
+          testNo: r.testNo || '—',
+          testCode: r.testCode || '—',
+          subject: r.subjectId || '—',
+          topic: r.topicId || '—',
+          subTopic: r.subTopicId || '—',
+          marks: r.answers
             ? `${r.answers.filter((a: any) => a.isCorrect).length}/${r.answers.length}`
             : '—',
           completedAt: r.completedAt ? this.fmtEpoch(r.completedAt) : '—',
@@ -725,11 +726,11 @@ export class StudentViewComponent implements OnInit {
       next: (res: any) => {
         this.lateLoading = false;
         this.lateEntries = (res?.data || []).map((r: any) => ({
-          date:      r.date      ? this.fmtEpoch(r.date)   : '—',
-          periodNo:  r.periodNo != null ? `Period ${r.periodNo}` : '—',
+          date: r.date ? this.fmtEpoch(r.date) : '—',
+          periodNo: r.periodNo != null ? `Period ${r.periodNo}` : '—',
           entryType: r.entryType || 'LATE',
-          delay:     r.delayMinutes ?? '—',
-          reason:    r.reason    || '—',
+          delay: r.delayMinutes ?? '—',
+          reason: r.reason || '—',
         }));
       },
       error: () => { this.lateLoading = false; this.lateEntries = []; },
@@ -755,5 +756,125 @@ export class StudentViewComponent implements OnInit {
     if (!n) return '';
     const d = new Date(n);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  // ── Excel Export ─────────────────────────────────────────────────────────
+  exportToExcel() {
+    if (!this.student) {
+      this.alert.error('No student data to export');
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const b = this.student.basic || {};
+    const p = this.student.program || {};
+    const f = this.student.fees || {};
+
+    // Sheet 1: Profile
+    const profileRows = [
+      { Field: 'Name', Value: b.name || '—' },
+      { Field: 'Admission No', Value: b.admissionNo || '—' },
+      { Field: 'Status', Value: b.status || '—' },
+      { Field: 'Mobile', Value: b.mobile || '—' },
+      { Field: 'Email', Value: b.email || '—' },
+      { Field: 'Parent Name', Value: b.parentName || '—' },
+      { Field: 'Parent Mobile', Value: b.parentMobile || '—' },
+      { Field: 'Gender', Value: b.gender || '—' },
+      { Field: 'DOB', Value: b.dob ? this.fmtEpoch(b.dob) : '—' },
+      { Field: 'Address', Value: b.addressLine1 || '—' },
+      { Field: 'City', Value: b.city || '—' },
+      { Field: 'Program', Value: p.programName || '—' },
+      { Field: 'Batch', Value: p.batchName || '—' },
+      { Field: 'Center', Value: p.centerName || '—' },
+      { Field: 'Academic Year', Value: p.academicYear || '—' },
+      { Field: 'Joining Date', Value: p.joiningDate ? this.fmtEpoch(p.joiningDate) : '—' },
+      { Field: 'Mentor', Value: p.mentorName || '—' },
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(profileRows), 'Profile');
+
+    // Sheet 2: Finance
+    const financeRows = [
+      { Field: 'Total Amount', Value: f.totalAmount ?? 0 },
+      { Field: 'Paid Amount', Value: f.paidAmount ?? 0 },
+      { Field: 'Outstanding Amount', Value: f.outstandingAmount ?? 0 },
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(financeRows), 'Finance');
+
+    // Sheet 3: Attendance
+    if (this.dataArray.length) {
+      const attRows = this.dataArray.map((r: any) => ({
+        Date: r.date,
+        Period: r.period,
+        Subject: r.subject,
+        Topic: r.topic,
+        Feedback: r.feedback,
+        Status: r.status,
+      }));
+      // Add summary row at top
+      if (this.attendanceSummary) {
+        const s = this.attendanceSummary;
+        attRows.unshift({
+          Date: `Total: ${s.totalPeriods}`,
+          Period: `Present: ${s.present}`,
+          Subject: `Absent: ${s.absent}`,
+          Topic: `Late: ${s.late}`,
+          Feedback: `Percentage: ${s.attendancePercentage}%`,
+          Status: '',
+        });
+      }
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), 'Attendance');
+    }
+
+    // Sheet 4: Assignments
+    if (this.dataArray1.length) {
+      const assRows = this.dataArray1.map((r: any) => ({
+        'Test No': r.testNo,
+        'Test Code': r.testCode,
+        Subject: r.subject,
+        Topic: r.topic,
+        'Sub Topic': r.subTopic,
+        Marks: r.marks,
+        Date: r.completedAt,
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(assRows), 'Assignments');
+    }
+
+    // Sheet 5: Remarks
+    if (this.dataArray4.length) {
+      const remRows = this.dataArray4.map((r: any) => ({
+        Date: r.date,
+        Type: r.type,
+        Remark: r.remark,
+        'Reported By Parent': r.reportedByParent,
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(remRows), 'Remarks');
+    }
+
+    // Sheet 6: Late Entries
+    if (this.lateEntries.length) {
+      const lateRows = this.lateEntries.map((r: any) => ({
+        Date: r.date,
+        Period: r.periodNo,
+        Type: r.entryType,
+        'Delay (min)': r.delay,
+        Reason: r.reason,
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lateRows), 'Late Entries');
+    }
+
+    // Sheet 7: Payments
+    if (this.dataArray5.length) {
+      const payRows = this.dataArray5.map((r: any) => ({
+        'Receipt No': r.receiptNo,
+        Date: r.date,
+        Mode: r.mode,
+        Amount: r.amount,
+        Status: r.status,
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(payRows), 'Payments');
+    }
+
+    const fileName = `Student_${b.admissionNo || b.name || 'Export'}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   }
 }

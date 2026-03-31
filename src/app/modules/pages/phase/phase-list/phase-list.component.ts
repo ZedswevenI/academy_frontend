@@ -738,7 +738,10 @@ export class PhaseListComponent implements OnInit {
             subjectName: s.subjectName,
             subjectCode: s.subjectCode || ''
           }));
-          this.subject_options = [...this.allSubjects];
+          this.subject_options = [
+            { _id: 'ALL', subjectName: 'All' },
+            ...this.allSubjects,
+          ];
         }
       },
       error: () => this.alert.error('Error loading teacher maps')
@@ -793,9 +796,12 @@ export class PhaseListComponent implements OnInit {
 
     // Filter subjects by program's subjects array (_id list)
     const programSubjectIds: string[] = this.selectedProgram.subjects || [];
-    this.subject_options = this.allSubjects.filter((s) =>
-      programSubjectIds.includes(s._id),
-    );
+    this.subject_options = [
+      { _id: 'ALL', subjectName: 'All' },
+      ...this.allSubjects.filter((s) =>
+        programSubjectIds.includes(s._id),
+      ),
+    ];
   }
 
   // ====================================================
@@ -832,7 +838,10 @@ export class PhaseListComponent implements OnInit {
       .subscribe({
         next: (res: any) => {
           this.allSubjects = res?.data || [];
-          this.subject_options = [...this.allSubjects];
+          this.subject_options = [
+            { _id: 'ALL', subjectName: 'All' },
+            ...this.allSubjects,
+          ];
         },
         error: () => this.alert.error('Error loading subjects'),
       });
@@ -852,11 +861,16 @@ export class PhaseListComponent implements OnInit {
     this.loading = true;
     this.isProceed = false;
 
+    let queryStr = `list?classNo=${classNo}&programId=${programId}`;
+    if (subjectId && subjectId !== 'ALL') {
+      queryStr += `&subjectId=${subjectId}`;
+    }
+
     this.commonApi
       .fetchData(
         { tenantId: this.tenantId },
         'institue/phase',
-        `list?classNo=${classNo}&subjectId=${subjectId}&programId=${programId}`,
+        queryStr,
       )
       .subscribe({
         next: (res: any) => {
