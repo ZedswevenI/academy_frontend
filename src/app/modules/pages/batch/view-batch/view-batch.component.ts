@@ -53,6 +53,7 @@ export class ViewBatchComponent implements OnInit {
   shuffleTargetBatchId = '';
   batchesForShuffle: any[] = [];
   classTeacherId: string = '';
+  classTeacherSection: string = '';
   get shuffleBatchOptions(): any[] {
     return [
       { label: 'Select', value: '' },
@@ -428,6 +429,7 @@ export class ViewBatchComponent implements OnInit {
     }
     if (mode === 'classTeacher') {
       this.classTeacherId = safeTrim(this.batch?.classTeacherId) || '';
+      this.classTeacherSection = safeTrim(this.batch?.section) || '';
     }
     this.showOffcanvas = true;
   }
@@ -1573,6 +1575,7 @@ export class ViewBatchComponent implements OnInit {
       batchId: this.batchId,
       staffId: this.classTeacherId,
       staffName: staffName,
+      section: safeTrim(this.classTeacherSection) || null,
     };
     this.loading = true;
     this.commonApi
