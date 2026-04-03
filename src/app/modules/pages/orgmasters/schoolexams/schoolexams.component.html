@@ -424,8 +424,9 @@
                         <button class="btn-card-view" (click)="openView(exam)">
                             <i class="fa-regular fa-eye me-1"></i>View Results
                         </button>
-                        <button class="btn-card-view" style="color:#16a34a;border-color:#bbf7d0;background:#f0fdf4"
-                            (click)="exportExam(exam)" title="Export to Excel">
+                        <button *appHasRole="['L1']" class="btn-card-view"
+                            style="color:#16a34a;border-color:#bbf7d0;background:#f0fdf4" (click)="exportExam(exam)"
+                            title="Export to Excel">
                             <i class="fa-solid fa-file-excel me-1"></i>Export
                         </button>
                         <button class="btn-card-delete" (click)="openDelete(exam)" title="Delete exam">
@@ -711,11 +712,20 @@
             </ng-container>
         </div>
         <div class="app-modal-footer d-flex justify-content-between align-items-center p-3 border-top flex-shrink-0">
-            <button class="btn btn-outline-success fw-semibold" (click)="exportExam(viewExam)" [disabled]="viewLoading"
+            <!-- <button class="btn btn-outline-success fw-semibold" (click)="exportExam(viewExam)" [disabled]="viewLoading"
                 *ngIf="viewExam">
                 <i class="fa-solid fa-file-excel me-1"></i>Export Excel
-            </button>
-            <button class="btn btn-outline-secondary ms-auto" (click)="closeView()">Close</button>
+            </button> -->
+            <!-- <button class="btn btn-outline-secondary ms-auto" (click)="closeView()">Close</button> -->
+            <ng-container *ngIf="viewExam">
+                <button class="btn btn-outline-success fw-semibold" (click)="exportExam(viewExam)"
+                    [disabled]="viewLoading" *appHasRole="['L3','L1']">
+
+                    <i class="fa-solid fa-file-excel me-1"></i>
+                    Export Excel
+                </button>
+                <button class="btn btn-outline-secondary ms-auto" (click)="closeView()">Close</button>
+            </ng-container>
         </div>
     </div>
 </div>

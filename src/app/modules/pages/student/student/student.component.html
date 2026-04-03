@@ -7,11 +7,11 @@
         <i class="fa-solid fa-user-graduate me-2"></i> My Student
       </h1>
       <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openBulkUpload()">
+        <button *appHasRole="['L1']" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openBulkUpload()">
           <i class="fa-solid fa-file-import"></i>
           <span>Import Students</span>
         </button>
-        <button class="btn btn-sm btn-outline-success d-flex align-items-center gap-1" (click)="openImageUpload()">
+        <button *appHasRole="['L1']" class="btn btn-sm btn-outline-success d-flex align-items-center gap-1" (click)="openImageUpload()">
           <i class="fa-solid fa-images"></i>
           <span>Upload Photos</span>
         </button>

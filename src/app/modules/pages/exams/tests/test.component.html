@@ -12,7 +12,8 @@
                             <i class="fa-solid fa-filter"></i>
                             {{ showFilters ? 'Hide Filters' : 'Filters' }}
                         </button>
-                        <button *ngIf="!authService.assignmentRole()"
+                         <!-- *ngIf="!authService.assignmentRole()" -->
+                        <button *appHasRole="['L5','L1']"
                             class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
                             routerLink="/app/exams/exams/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">

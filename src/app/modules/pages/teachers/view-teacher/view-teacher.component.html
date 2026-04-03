@@ -39,7 +39,7 @@
                             <button class="btn btn-outline-secondary btn-sm px-2" routerLink="/app/teacher">
                                 <i class="fa-solid fa-arrow-left"></i> Back to Teacher
                             </button>
-                            <button class="btn btn-outline-success btn-sm px-2" (click)="exportToExcel()">
+                            <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm px-2" (click)="exportToExcel()">
                                 <i class="fa-solid fa-file-excel"></i> Export Excel
                             </button>
                         </div>
