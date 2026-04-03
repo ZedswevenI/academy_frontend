@@ -198,6 +198,27 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     reason: '',
     entryType: 'LATE',
   };
+  showSpecialClass = false;
+  specialClassConflict = '';
+  scPhases: any[] = [];
+  sc: any = {
+    periodNo: null,
+    startTime: '',
+    endTime: '',
+    periodType: 'LECTURE',
+    mode: 'OFFLINE',
+    subjectCode: '',
+    subjectName: '',
+    subjectId: '',
+    facultyId: '',
+    facultyName: '',
+    phaseId: '',
+    phaseName: '',
+    topic: '',
+    venue: '',
+    zoomUrl: '',
+    __timeError: '',
+  };
 
   constructor(
     private router: Router,
@@ -924,20 +945,34 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   // private updateWeekNavFlags() {
-  //   const cur = toInt(this.timetable?.wkStartOn, 0);
-  //   const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
+  //   const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
+  //   const idx = this.weekIndex.findIndex(
+  //     (w) => toInt(w.wkStartOn) === toInt(cur),
+  //   );
   //   this.hasPrevWeek = idx > 0;
   //   this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
   // }
 
   private updateWeekNavFlags() {
-    // Use currentWkStartOn as fallback if timetable is null
+    if (!this.weekIndex.length) {
+      this.hasPrevWeek = false;
+      this.hasNextWeek = false;
+      return;
+    }
     const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
-    const idx = this.weekIndex.findIndex(
+    let idx = this.weekIndex.findIndex(
       (w) => toInt(w.wkStartOn) === toInt(cur),
     );
+    if (idx < 0) {
+      const beforeCount = this.weekIndex.filter(
+        (w) => toInt(w.wkStartOn) < toInt(cur),
+      ).length;
+      this.hasPrevWeek = beforeCount > 0;
+      this.hasNextWeek = beforeCount < this.weekIndex.length;
+      return;
+    }
     this.hasPrevWeek = idx > 0;
-    this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
+    this.hasNextWeek = idx < this.weekIndex.length - 1;
   }
 
   get currentWeekLabel(): string {
@@ -954,52 +989,65 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return `Week ${idx + 1} of ${this.weekIndex.length}`;
   }
 
-  //   navigateWeek(direction: 'prev' | 'next') {
-  //     const cur = toInt(this.timetable?.wkStartOn, 0);
-  //     const idx = this.weekIndex.findIndex((w) => w.wkStartOn === cur);
-  //     const target =
-  //       direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
-  //     if (!target) return;
-  //     this.weekNavLoading = true;
-  //     this.timetableId = target._id;
-  //     this.commonApi
-  //       .fetchData(
-  //         {
-  //           tenantId: this.tenantId,
-  //           batchCode: this.batchCode,
-  //           wkStartOn: target.wkStartOn,
-  //         },
-  //         this.moduleName,
-  //         'view',
-  //       )
-  //       .pipe(
-  //         takeUntil(this.destroy$),
-  //         finalize(() => (this.weekNavLoading = false)),
-  //       )
-  //       .subscribe({
-  //         next: (res: any) => {
-  //           this.timetable = res?.data || null;
-  //           this.lastWeeklyTimetable = this.timetable;
-  // this.timetableId = this.timetable?._id || '';
-  // this.currentWkStartOn = target.wkStartOn;
-  //           this.viewMode = 'week';
-  //           this.processSchedule();
-  //           this.updateWeekNavFlags();
-  //         },
-  //         error: (err: any) => {
-  //           this.alert.error(err?.error?.message || 'Failed to load week');
-  //         },
-  //       });
-  //   }
+  // navigateWeek(direction: 'prev' | 'next') {
+  //   const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
+  //   const idx = this.weekIndex.findIndex(
+  //     (w) => toInt(w.wkStartOn) === toInt(cur),
+  //   );
+  //   const target =
+  //     direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
+  //   if (!target) return;
+  //   this.weekNavLoading = true;
+  //   this.commonApi
+  //     .fetchData(
+  //       {
+  //         tenantId: this.tenantId,
+  //         batchCode: this.batchCode,
+  //         wkStartOn: target.wkStartOn,
+  //       },
+  //       this.moduleName,
+  //       'view',
+  //     )
+  //     .pipe(
+  //       takeUntil(this.destroy$),
+  //       finalize(() => (this.weekNavLoading = false)),
+  //     )
+  //     .subscribe({
+  //       next: (res: any) => {
+  //         this.timetable = res?.data || null;
+  //         this.timetableId = this.timetable?._id || '';
+  //         this.currentWkStartOn = toInt(target.wkStartOn);
+  //         this.lastWeeklyTimetable = this.timetable;
+  //         this.viewMode = 'week';
+  //         this.processSchedule();
+  //         this.updateWeekNavFlags();
+  //       },
+  //       error: (err: any) => {
+  //         this.alert.error(err?.error?.message || 'Failed to load week');
+  //       },
+  //     });
+  // }
 
   navigateWeek(direction: 'prev' | 'next') {
     const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
-    const idx = this.weekIndex.findIndex(
+    let idx = this.weekIndex.findIndex(
       (w) => toInt(w.wkStartOn) === toInt(cur),
     );
+
+    // No timetable this week — find virtual insertion point
+    if (idx < 0) {
+      const beforeCount = this.weekIndex.filter(
+        (w) => toInt(w.wkStartOn) < toInt(cur),
+      ).length;
+      // prev → last week before cur, next → first week after cur
+      idx = direction === 'prev' ? beforeCount : beforeCount - 1;
+    }
+
     const target =
       direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
+
     if (!target) return;
+
     this.weekNavLoading = true;
     this.commonApi
       .fetchData(
@@ -1026,7 +1074,18 @@ export class ViewTableComponent implements OnInit, OnDestroy {
           this.updateWeekNavFlags();
         },
         error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Failed to load week');
+          if (err?.status === 404) {
+            this.timetable = null;
+            this.timetableId = '';
+            this.currentWkStartOn = toInt(target.wkStartOn);
+            this.lastWeeklyTimetable = null;
+            this.viewMode = 'week';
+            this.sortedSchedule = [];
+            this.periodHeaders = [];
+            this.updateWeekNavFlags();
+          } else {
+            this.alert.error(err?.error?.message || 'Failed to load week');
+          }
         },
       });
   }
@@ -2251,6 +2310,214 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         },
         error: (err: any) => {
           this.alert.error(err?.error?.message || 'Failed to log');
+        },
+      });
+  }
+
+  openSpecialClass(row: any) {
+    this.activeDay = row;
+    this.sc = {
+      periodNo: this.maxPeriods + 1,
+      startTime: '',
+      endTime: '',
+      periodType: 'LECTURE',
+      mode: 'OFFLINE',
+      subjectCode: '',
+      subjectName: '',
+      subjectId: '',
+      facultyId: '',
+      facultyName: '',
+      phaseId: '',
+      phaseName: '',
+      topic: '',
+      venue: '',
+      zoomUrl: '',
+      __timeError: '',
+    };
+    this.scPhases = [];
+    this.specialClassConflict = '';
+    this.showSpecialClass = true;
+  }
+
+  closeSpecialClass() {
+    this.showSpecialClass = false;
+    this.activeDay = null;
+    this.scPhases = [];
+    this.specialClassConflict = '';
+    this.sc = {
+      periodNo: null,
+      startTime: '',
+      endTime: '',
+      periodType: 'LECTURE',
+      mode: 'OFFLINE',
+      subjectCode: '',
+      subjectName: '',
+      subjectId: '',
+      facultyId: '',
+      facultyName: '',
+      phaseId: '',
+      phaseName: '',
+      topic: '',
+      venue: '',
+      zoomUrl: '',
+      __timeError: '',
+    };
+  }
+
+  onSpecialClassTimeChange() {
+    this.sc.__timeError = '';
+    this.specialClassConflict = '';
+    if (!this.sc.startTime || !this.sc.endTime) return;
+    const startMin = timeStrToMin(this.sc.startTime);
+    const endMin = timeStrToMin(this.sc.endTime);
+    if (endMin <= startMin) {
+      this.sc.__timeError = 'End time must be after start time';
+      return;
+    }
+    if (!this.activeDay) return;
+    const day = String(this.activeDay.day || '').toUpperCase();
+    for (const pNum of this.periodHeaders) {
+      const p = this.getRenderedPeriod(this.activeDay, pNum);
+      if (!p || p.__dayCancelled || p.isCancelled) continue;
+      const pStart = toInt(p?.time?.startMin);
+      const pEnd = toInt(p?.time?.endMin);
+      if (!pStart || !pEnd) continue;
+      if (timesOverlap(startMin, endMin, pStart, pEnd)) {
+        this.specialClassConflict = `Time conflicts with Period ${pNum} (${p.time?.startLabel} – ${p.time?.endLabel})`;
+        return;
+      }
+    }
+  }
+
+  onSpecialClassSubjectChange() {
+    const sub = this.subjectByCode[safeTrim(this.sc.subjectCode)];
+    this.sc.subjectName = sub?.subjectName || '';
+    this.sc.subjectId = sub?._id || '';
+    this.sc.facultyId = '';
+    this.sc.facultyName = '';
+    this.sc.phaseId = '';
+    this.sc.phaseName = '';
+    this.scPhases = [];
+    this.specialClassConflict = '';
+    if (this.sc.subjectId) {
+      const mapped = this.batchStaffMap.find(
+        (sm: any) => safeTrim(sm?.subjectId) === safeTrim(this.sc.subjectId),
+      );
+      if (mapped) {
+        const staffRec = this.staffById[safeTrim(mapped.staffId)] || null;
+        this.sc.facultyId = staffRec
+          ? safeTrim(staffRec.staffCode)
+          : safeTrim(mapped.staffId);
+        this.sc.facultyName = staffRec
+          ? safeTrim(staffRec.staffName)
+          : safeTrim(mapped.staffName) || '';
+      }
+      this.loadScPhases(this.sc.subjectId);
+    }
+  }
+
+  onSpecialClassFacultyChange() {
+    const s = this.staffByCode[safeTrim(this.sc.facultyId)];
+    this.sc.facultyName = s?.staffName || '';
+  }
+
+  onSpecialClassPhaseChange() {
+    const ph = this.scPhases.find(
+      (p: any) => safeTrim(p?.phaseId) === safeTrim(this.sc.phaseId),
+    );
+    this.sc.phaseName = ph?.phaseName || '';
+  }
+
+  private loadScPhases(subjectId: string) {
+    if (!subjectId || !this.batchProgramId || !this.batchClassNo) return;
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId },
+        'institue',
+        `phase/list?classNo=${this.batchClassNo}&subjectId=${subjectId}&programId=${this.batchProgramId}`,
+      )
+      .pipe(
+        catchError(() => of({ data: [] })),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((res: any) => {
+        this.scPhases = Array.isArray(res) ? res : res?.data || [];
+      });
+  }
+
+  submitSpecialClass() {
+    if (!this.activeDay) return;
+    if (!this.sc.periodNo || this.sc.periodNo < 1) {
+      this.alert.error('Period No is required');
+      return;
+    }
+    if (!this.sc.startTime || !this.sc.endTime) {
+      this.alert.error('Start and end time are required');
+      return;
+    }
+    if (this.sc.__timeError) {
+      this.alert.error(this.sc.__timeError);
+      return;
+    }
+    if (this.specialClassConflict) {
+      this.alert.error(this.specialClassConflict);
+      return;
+    }
+    if (!safeTrim(this.sc.facultyId)) {
+      this.alert.error('Faculty is required');
+      return;
+    }
+    const startMin = timeStrToMin(this.sc.startTime);
+    const endMin = timeStrToMin(this.sc.endTime);
+    const dateMs = toInt(this.activeDay.dateMs);
+    const period: any = {
+      periodNo: toInt(this.sc.periodNo),
+      periodType: safeTrim(this.sc.periodType) || 'LECTURE',
+      mode: safeTrim(this.sc.mode) || 'OFFLINE',
+      facultyId: safeTrim(this.sc.facultyId),
+      facultyName: safeTrim(this.sc.facultyName) || null,
+      subjectCode: safeTrim(this.sc.subjectCode) || null,
+      subjectName: safeTrim(this.sc.subjectName) || null,
+      subjectId: safeTrim(this.sc.subjectId) || null,
+      phaseId: safeTrim(this.sc.phaseId) || null,
+      phaseName: safeTrim(this.sc.phaseName) || null,
+      topic: safeTrim(this.sc.topic) || null,
+      venue: safeTrim(this.sc.venue) || null,
+      zoomUrl:
+        this.sc.mode === 'ONLINE' ? safeTrim(this.sc.zoomUrl) || null : null,
+      time: {
+        startMin,
+        endMin,
+        startLabel: minToLabel(startMin),
+        endLabel: minToLabel(endMin),
+      },
+    };
+    const payload: any = {
+      tenantId: this.tenantId,
+      timetableId: this.timetableId,
+      batchCode: safeTrim(this.timetable?.batchCode || this.batchCode),
+      date: dateMs,
+      day: String(this.activeDay.day || '').toUpperCase(),
+      period,
+      userId: localStorage.getItem('userId'),
+    };
+    this.loading = true;
+    this.commonApi
+      .fetchData(payload, this.moduleName, 'period/add')
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      )
+      .subscribe({
+        next: () => {
+          this.alert.success('Special class added');
+          this.closeSpecialClass();
+          this.loadTimetable();
+        },
+        error: (err: any) => {
+          this.alert.error(
+            err?.error?.message || 'Failed to add special class',
+          );
         },
       });
   }

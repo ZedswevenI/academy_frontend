@@ -142,6 +142,11 @@ const routes: Routes = [
     loadChildren: () => import('../pages/attendance/attendance.module').then(m => m.AttendanceModule)
   },
   {
+    path: 'school-attendance',
+    canActivate: [RoleGuard],
+    loadChildren: () => import('../pages/schoolattendance/schoolattendance.module').then(m => m.SchoolattendanceModule)
+  },
+  {
     path: 'assignment',
     canActivate: [RoleGuard],
     loadChildren: () => import('../pages/test/test.module').then(m => m.TestModule)

@@ -245,6 +245,12 @@ export const MENU_ITEMS: MenuItem[] = [
     roles: ['L1', 'L3', 'L4']
   },
   {
+    label: 'School Attendance',
+    icon: 'fa-solid fa-clipboard-check',
+    route: '/app/school-attendance',
+    roles: ['L1', 'L3', 'L4']
+  },
+  {
     label: 'Students',
     icon: 'fa-solid fa-user-graduate',
     route: '/app/student',
