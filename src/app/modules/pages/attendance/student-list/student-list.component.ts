@@ -36,6 +36,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
   feedback = '';
   showSummary = false;
   presentCount = 0;
+  notMarkedCount = 0;
   absentCount = 0;
   lateCount = 0;
 
@@ -85,6 +86,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
       (s) => s.status === 'ABSENT',
     ).length;
     this.lateCount = this.students.filter((s) => s.status === 'LATE').length;
+    this.notMarkedCount = this.students.length - (this.presentCount + this.absentCount + this.lateCount);
   }
 
   toggleAttendance(student: any): void {
@@ -203,7 +205,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
           this.submitting = false;
           this.alert.error(
             err?.error?.message ||
-              'Failed to submit attendance. Please try again.',
+            'Failed to submit attendance. Please try again.',
           );
         },
       });

@@ -59,14 +59,14 @@ export class TableListComponent {
       hoverColor: '#0066FF',
       callback: (row: any) => this.viewStudent(row),
     },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-comments',
-      tooltip: 'Chat',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      callback: (row: any) => this.chatStudent(row),
-    },
+    // {
+    //   type: 'icon',
+    //   icon: 'fa-solid fa-comments',
+    //   tooltip: 'Chat',
+    //   color: '#6B7280',
+    //   hoverColor: '#0066FF',
+    //   callback: (row: any) => this.chatStudent(row),
+    // },
   ];
 
   constructor(
@@ -78,7 +78,7 @@ export class TableListComponent {
     this.breadcrump.set([{ label: 'Student' }]);
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   fetchTableData(params: {
     page: number;

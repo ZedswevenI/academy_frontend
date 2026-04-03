@@ -24,7 +24,7 @@
                     <i class="fa-solid fa-circle-xmark me-1"></i>{{ absentCount }} Absent
                 </span>
                 <span class="text-secondary fw-semibold" *ngIf="(students | notMarkedCount) > 0">
-                    <i class="fa-solid fa-circle-question me-1"></i>{{ students | notMarkedCount }} Not Marked
+                    <i class="fa-solid fa-circle-question me-1"></i>{{ notMarkedCount }} Not Marked
                 </span>
             </div>
             <div class="form-check d-flex align-items-center gap-2 mb-0">

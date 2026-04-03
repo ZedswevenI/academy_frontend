@@ -1,6 +1,8 @@
 <!-- Top Bar: Search + Rows + Filters (optional) -->
-<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-  <!-- Search -->
+<div class="d-flex align-items-center mb-3 flex-wrap gap-2" [ngClass]="{
+    'justify-content-between': showsearch,
+    'justify-content-end': !showsearch
+  }"> <!-- Search -->
   <div class="position-relative" style="width: 368px; max-width: 100%;" *ngIf="showsearch">
     <img src="assets/icons/searchicon.svg" alt="search" width="24" height="24" class="position-absolute"
       style="left: 16px; top: 50%; transform: translateY(-50%)" />
@@ -120,8 +122,8 @@
                   </button>
 
                   <!-- SIMPLE BUTTON -->
-                  <button *ngIf="action.type === 'simple' && (!action.hidden || !action.hidden(row))" type="button" class="btn btn-sm me-2"
-                    style="border-radius: 25px; font-weight: bold;"
+                  <button *ngIf="action.type === 'simple' && (!action.hidden || !action.hidden(row))" type="button"
+                    class="btn btn-sm me-2" style="border-radius: 25px; font-weight: bold;"
                     [ngClass]="action.color ? 'btn-' + action.color : 'btn-secondary'" (click)="action.callback(row)">
                     <i *ngIf="action.icon" [class]="action.icon" class="me-1 icon-14"></i>
                     {{ action.text }}
@@ -133,7 +135,8 @@
                           (row.status === 'assigned' && action.value === 'assign') ||
                           (row.status === 'unassigned' && action.value === 'unassign') 
                         )
-                      && (!action.hidden || !action.hidden(row))" type="button" class="btn btn-sm me-2" style="border-radius: 25px; font-weight: bold;"
+                      && (!action.hidden || !action.hidden(row))" type="button" class="btn btn-sm me-2"
+                    style="border-radius: 25px; font-weight: bold;"
                     [ngClass]="action.value === 'assign' ? 'btn-success' : 'btn-danger'" (click)="action.callback(row)">
                     {{ action.text }}
                   </button>
@@ -142,15 +145,14 @@
 
                   <!-- TOGGLE SWITCH -->
                   <div *ngIf="action.type === 'toggle' && (!action.hidden || !action.hidden(row))"
-                    class="form-check form-switch mb-0 d-flex align-items-center"
-                    [title]="action.tooltip || ''">
+                    class="form-check form-switch mb-0 d-flex align-items-center" [title]="action.tooltip || ''">
                     <input class="form-check-input" type="checkbox" role="switch"
-                      [checked]="action.isActive ? action.isActive(row) : false"
-                      (change)="action.callback(row)">
+                      [checked]="action.isActive ? action.isActive(row) : false" (change)="action.callback(row)">
                   </div>
 
                   <!-- DROPDOWN BUTTON -->
-                  <div *ngIf="action.type === 'dropdown' && (!action.hidden || !action.hidden(row))" class="btn-group action-btn-group">
+                  <div *ngIf="action.type === 'dropdown' && (!action.hidden || !action.hidden(row))"
+                    class="btn-group action-btn-group">
 
                     <button type="button" class="btn btn-sm action-icon-btn" data-bs-toggle="dropdown"
                       aria-expanded="false" #dropdownBtn>

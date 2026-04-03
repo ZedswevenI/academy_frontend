@@ -73,11 +73,11 @@ export class StudentComponent {
       .subscribe({
         next: (r: any) => {
           this.programOptions = (r?.data || []).map((p: any) => ({
-            label: `${p.programCode || p.code} - ${p.programName || p.name}`,
+            label: `${p.programCodes || p.programCodes} - ${p.programName || p.name}`,
             value: p.programId || p._id,
           }));
         },
-        error: () => {},
+        error: () => { },
       });
 
     this.commonApi
@@ -89,13 +89,14 @@ export class StudentComponent {
             value: c.centerId || c._id,
           }));
         },
-        error: () => {},
+        error: () => { },
       });
   }
 
   triggerSearch() {
     this.hasSearched = true;
-    // filters object is passed by reference so child picks up changes via ngOnChanges
+    // Create a new object reference so Angular's ngOnChanges detects the change in child components
+    this.filters = { ...this.filters };
   }
 
   clearFilters() {

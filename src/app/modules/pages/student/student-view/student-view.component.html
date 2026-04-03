@@ -47,6 +47,9 @@
                     <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
                         <i class="fa-solid fa-arrow-left"></i> Back to Students
                     </button>
+                    <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
+                        <i class="fa-solid fa-file-excel"></i> Export Excel
+                    </button>
                     <button class="btn btn-outline-primary btn-sm" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen"></i> Edit Profile
                     </button>
