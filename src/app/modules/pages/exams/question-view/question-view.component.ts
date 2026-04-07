@@ -395,7 +395,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     switch (type) {
       case 'mcq_single':
         return 'MCQ (Single)';
-      case 'mcq_multiple':
+      case 'mcq_multi':
         return 'MCQ (Multiple)';
       case 'true_false':
         return 'True / False';

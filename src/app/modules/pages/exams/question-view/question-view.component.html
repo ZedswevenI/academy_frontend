@@ -33,7 +33,7 @@
         <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-outline-success btn-sm me-2" (click)="openBankModal()">
           <i class="fas fa-database me-1"></i> Map from Bank
         </button>
-        <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-primary btn-sm" (click)="addNewQuestion()">
+        <button *ngIf="!authService.assignmentRole()" class="btn btn-primary btn-sm" (click)="addNewQuestion()">
           + Add Question
         </button>
       </div>
@@ -75,7 +75,7 @@
       </div>
 
       <div>
-        <button *ngIf="isDraft" class="btn btn-sm btn-outline-primary me-2" (click)="editQuestion(q)">
+        <button class="btn btn-sm btn-outline-primary me-2" (click)="editQuestion(q)">
           Edit
         </button>
 

@@ -343,7 +343,7 @@ export class TestCreateComponent implements OnInit {
       totalQuestions: f.totalQuestions,
       startTime: this.toTimestamp(f.startTime),
       endTime: this.toTimestamp(f.endTime),
-      autoPublishAt: this.toTimestamp(f.autoPublishAt) || undefined,
+      autoPublishAt: this.toTimestamp(f.autoPublishAt) || null,
       instructionId: f.instructionId || undefined,
       calculatorType: f.calculatorType,
       sections: f.sections

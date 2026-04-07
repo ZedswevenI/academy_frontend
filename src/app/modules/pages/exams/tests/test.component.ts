@@ -118,15 +118,15 @@ export class TestComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       dropdown: [
-        { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.editExam(row) },
+        { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.editExam(row) },
         { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.publishExam(row) },
-        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.rearrange(row) },
-        { text: 'Add Question', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.addQuestions(row) },
-        { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importQuestions(row) },
+        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.rearrange(row) },
+        { text: 'Add Question', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.addQuestions(row) },
+        { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.importQuestions(row) },
         { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
         { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published', callback: (row: any) => this.publishResult(row) },
         { text: 'Result', icon: 'fa-solid fa-chart-bar', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.viewResult(row) },
-        { text: 'Delete', icon: 'fa-regular fa-trash-can', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.deleteExam(row) }
+        { text: 'Delete', icon: 'fa-regular fa-trash-can', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.deleteExam(row) }
       ]
     }
   ];

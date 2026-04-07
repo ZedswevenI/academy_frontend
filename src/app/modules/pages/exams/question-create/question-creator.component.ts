@@ -58,7 +58,7 @@ export class QuestionCreatorComponent implements OnInit {
 
   questionTypes = [
     { value: 'mcq_single', label: 'MCQ (Single Answer)' },
-    { value: 'mcq_multiple', label: 'MCQ (Multiple Answers)' },
+    { value: 'mcq_multi', label: 'MCQ (Multiple Answers)' },
     { value: 'integer', label: 'Integer' },
     { value: 'numeric', label: 'Numerical' },
     { value: 'subjective', label: 'Subjective Type' },
@@ -481,7 +481,7 @@ export class QuestionCreatorComponent implements OnInit {
         this.addMatrixPair();
         this.addMatrixPair();
       }
-    } else if (type === 'mcq_single' || type === 'mcq_multiple') {
+    } else if (type === 'mcq_single' || type === 'mcq_multi') {
       this.matrixLeft.clear();
       this.matrixRight.clear();
       if (this.options.length === 0) {
@@ -934,7 +934,7 @@ export class QuestionCreatorComponent implements OnInit {
 
       /* ================= MCQ ================= */
       case 'mcq_single':
-      case 'mcq_multiple': {
+      case 'mcq_multi': {
         const processedOptions = await Promise.all(
           formValue.questionOptions.map(async (opt: any, idx: number) => {
             const replaced = await this.replaceImagesWithUrls(opt.text);
