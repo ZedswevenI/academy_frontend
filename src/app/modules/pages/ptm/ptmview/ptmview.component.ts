@@ -37,19 +37,40 @@ export class PtmviewComponent implements OnInit {
   parsedRows: any[] = [];
   errorRows: any[] = [];
   fileName = '';
+  // feedbackColumnMap: { [key: string]: string } = {
+  //   'Admission No': 'admissionNo',
+  //   'Student Name': 'studentName',
+  //   'Staff Remarks': 'staffRemarks',
+  //   Status: 'status',
+  // };
   feedbackColumnMap: { [key: string]: string } = {
     'Admission No': 'admissionNo',
     'Student Name': 'studentName',
-    'Staff Remarks': 'staffRemarks',
+    'Staff ID': 'staffId',
+    'Staff Name': 'staffName',
+    'Subject ID': 'subjectId',
+    'Subject Name': 'subjectName',
+    'Subject Code': 'subjectCode',
+    'Staff Remarks': 'remarks',
     Status: 'status',
   };
-  feedbackRequiredColumns = Object.keys(this.feedbackColumnMap);
+  // feedbackRequiredColumns = Object.keys(this.feedbackColumnMap);
+  // feedbackPreviewColumns = [
+  //   { field: 'admissionNo', header: 'Admission No' },
+  //   { field: 'studentName', header: 'Student Name' },
+  //   { field: 'staffRemarks', header: 'Staff Remarks' },
+  //   { field: 'status', header: 'Status' },
+  // ];
   feedbackPreviewColumns = [
     { field: 'admissionNo', header: 'Admission No' },
     { field: 'studentName', header: 'Student Name' },
-    { field: 'staffRemarks', header: 'Staff Remarks' },
+    { field: 'staffId', header: 'Staff ID' },
+    { field: 'staffName', header: 'Staff Name' },
+    { field: 'subjectName', header: 'Subject Name' },
+    { field: 'remarks', header: 'Staff Remarks' },
     { field: 'status', header: 'Status' },
   ];
+  feedbackRequiredColumns = ['Admission No', 'Staff ID', 'Status'];
   columnsArray = [
     { key: 'studentName', label: 'Student Name', sortable: false },
     { key: 'admissionNo', label: 'Admission No', sortable: false },
@@ -77,6 +98,21 @@ export class PtmviewComponent implements OnInit {
       callback: (row: any) => this.openQuestionsModal(row),
     },
   ];
+  staffRemarksArray: {
+    staffId: string;
+    staffName: string;
+    subjectId: string;
+    subjectName: string;
+    subjectCode: string;
+    remarks: string;
+  }[] = [];
+  batchStaffMap: {
+    subjectId: string;
+    subjectName: string;
+    staffId: string;
+    staffName: string;
+  }[] = [];
+  batchStaffMapLoading = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -108,6 +144,27 @@ export class PtmviewComponent implements OnInit {
     ]);
 
     this.fetchStudents(1, 10);
+  }
+
+  loadBatchStaffMap(): void {
+    if (!this.session?.batchCode) return;
+    this.batchStaffMapLoading = true;
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId, batchCode: this.session.batchCode },
+        'batch',
+        'view',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.batchStaffMap = res?.data?.staffMap || [];
+          this.batchStaffMapLoading = false;
+        },
+        error: () => {
+          this.batchStaffMap = [];
+          this.batchStaffMapLoading = false;
+        },
+      });
   }
 
   // ====================================================
@@ -187,12 +244,20 @@ export class PtmviewComponent implements OnInit {
     const formatDate = (ts: number | null) => {
       if (!ts) return '';
       const d = new Date(ts);
-      return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
     };
     const formatTime = (ts: number | null) => {
       if (!ts) return '';
       const d = new Date(ts);
-      return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      return d.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
     };
     const formatFieldValue = (val: any) => {
       if (val === null || val === undefined) return '';
@@ -222,9 +287,9 @@ export class PtmviewComponent implements OnInit {
       const row: any = {
         'Admission No': s.admissionNo || '',
         'Student Name': s.studentName || '',
-        'Status': s.status || '',
+        Status: s.status || '',
         'Meeting Mode': s.meetingMode || '',
-        'Venue': s.venue || '',
+        Venue: s.venue || '',
         'PTM Date': formatDate(s.ptmDate),
         'Start Time': formatTime(s.startTime),
         'End Time': formatTime(s.endTime),
@@ -237,7 +302,9 @@ export class PtmviewComponent implements OnInit {
         row['Pre-PTM Submitted'] = s.prePtmSubmittedAt ? 'Yes' : 'No';
         for (let i = 0; i < preQuestions.length; i++) {
           const q = s.prePtmQuestions?.[i];
-          row[`Pre: ${preQuestions[i]}`] = q ? formatFieldValue(q.fieldValue) : '';
+          row[`Pre: ${preQuestions[i]}`] = q
+            ? formatFieldValue(q.fieldValue)
+            : '';
         }
       }
 
@@ -247,7 +314,9 @@ export class PtmviewComponent implements OnInit {
         row['Post-PTM Submitted'] = s.postPtmSubmittedAt ? 'Yes' : 'No';
         for (let i = 0; i < postQuestions.length; i++) {
           const q = s.postPtmQuestions?.[i];
-          row[`Post: ${postQuestions[i]}`] = q ? formatFieldValue(q.fieldValue) : '';
+          row[`Post: ${postQuestions[i]}`] = q
+            ? formatFieldValue(q.fieldValue)
+            : '';
         }
       }
 
@@ -288,7 +357,9 @@ export class PtmviewComponent implements OnInit {
           this.masterToggling = false;
         },
         error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Error updating post-PTM feedback');
+          this.alert.error(
+            err?.error?.message || 'Error updating post-PTM feedback',
+          );
           this.masterToggling = false;
           this.masterPostFeedback = !enabled;
         },
@@ -331,13 +402,111 @@ export class PtmviewComponent implements OnInit {
       });
   }
 
+  // openStaffFeedbackModal(row: any): void {
+  //   this.selectedStudent = row;
+  //   this.staffRemarks = row.staffRemarks || '';
+  //   this.staffStatus = row.status || '';
+  //   this.staffSaving = false;
+  //   this.openModal('staffFeedbackModal');
+  // }
+
   openStaffFeedbackModal(row: any): void {
     this.selectedStudent = row;
-    this.staffRemarks = row.staffRemarks || '';
     this.staffStatus = row.status || '';
     this.staffSaving = false;
+    const existing = Array.isArray(row.staffRemarks) ? row.staffRemarks : [];
+    this.staffRemarksArray = existing.length
+      ? existing.map((r: any) => ({
+          staffId: r.staffId || '',
+          staffName: r.staffName || '',
+          subjectId: r.subjectId || '',
+          subjectName: r.subjectName || '',
+          subjectCode: r.subjectCode || '',
+          remarks: r.remarks || '',
+        }))
+      : [this.emptyRemarkRow()];
+    if (!this.batchStaffMap.length) {
+      this.loadBatchStaffMap();
+    }
     this.openModal('staffFeedbackModal');
   }
+
+  onSubjectSelect(idx: number, subjectId: string): void {
+    const found = this.batchStaffMap.find((s) => s.subjectId === subjectId);
+    if (!found) return;
+    this.staffRemarksArray[idx] = {
+      ...this.staffRemarksArray[idx],
+      subjectId: found.subjectId || '',
+      subjectName: found.subjectName || '',
+      subjectCode: '',
+      staffId: found.staffId || '',
+      staffName: found.staffName || '',
+    };
+  }
+
+  emptyRemarkRow() {
+    return {
+      staffId: '',
+      staffName: '',
+      subjectId: '',
+      subjectName: '',
+      subjectCode: '',
+      remarks: '',
+    };
+  }
+
+  addRemarkRow(): void {
+    this.staffRemarksArray.push(this.emptyRemarkRow());
+  }
+
+  removeRemarkRow(idx: number): void {
+    if (this.staffRemarksArray.length > 1) {
+      this.staffRemarksArray.splice(idx, 1);
+    }
+  }
+
+  // saveStaffFeedback(): void {
+  //   if (!this.selectedStudent) return;
+  //   if (!this.staffStatus) {
+  //     this.alert.error('Please select a status');
+  //     return;
+  //   }
+  //   this.staffSaving = true;
+  //   this.commonApi
+  //     .fetchData(
+  //       {
+  //         tenantId: this.tenantId,
+  //         ptmId: this.selectedStudent.ptmId,
+  //         staffRemarks: this.staffRemarks,
+  //         status: this.staffStatus,
+  //         userId: localStorage.getItem('userId'),
+  //       },
+  //       'ims/ptm',
+  //       'staff/feedback',
+  //     )
+  //     .subscribe({
+  //       next: (res: any) => {
+  //         if (res?.status) {
+  //           this.alert.success('Staff feedback saved');
+  //           const idx = this.dataArray.findIndex(
+  //             (s) => s.ptmId === this.selectedStudent.ptmId,
+  //           );
+  //           if (idx > -1) {
+  //             this.dataArray[idx].staffRemarks = this.staffRemarks;
+  //             this.dataArray[idx].status = this.staffStatus;
+  //           }
+  //           this.closeModal('staffFeedbackModal');
+  //         }
+  //         this.staffSaving = false;
+  //       },
+  //       error: (err: any) => {
+  //         this.alert.error(
+  //           err?.error?.message || 'Error saving staff feedback',
+  //         );
+  //         this.staffSaving = false;
+  //       },
+  //     });
+  // }
 
   saveStaffFeedback(): void {
     if (!this.selectedStudent) return;
@@ -345,13 +514,19 @@ export class PtmviewComponent implements OnInit {
       this.alert.error('Please select a status');
       return;
     }
+
+    // Filter out rows with no staffId
+    const validRemarks = this.staffRemarksArray.filter(
+      (r) => !!r.staffId.trim(),
+    );
+
     this.staffSaving = true;
     this.commonApi
       .fetchData(
         {
           tenantId: this.tenantId,
           ptmId: this.selectedStudent.ptmId,
-          staffRemarks: this.staffRemarks,
+          remarks: validRemarks, // ← array
           status: this.staffStatus,
           userId: localStorage.getItem('userId'),
         },
@@ -366,7 +541,7 @@ export class PtmviewComponent implements OnInit {
               (s) => s.ptmId === this.selectedStudent.ptmId,
             );
             if (idx > -1) {
-              this.dataArray[idx].staffRemarks = this.staffRemarks;
+              this.dataArray[idx].staffRemarks = validRemarks;
               this.dataArray[idx].status = this.staffStatus;
             }
             this.closeModal('staffFeedbackModal');
@@ -374,7 +549,9 @@ export class PtmviewComponent implements OnInit {
           this.staffSaving = false;
         },
         error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Error saving staff feedback');
+          this.alert.error(
+            err?.error?.message || 'Error saving staff feedback',
+          );
           this.staffSaving = false;
         },
       });
@@ -477,11 +654,23 @@ export class PtmviewComponent implements OnInit {
     reader.readAsArrayBuffer(file);
   }
 
+  // private validateFeedbackRows(): void {
+  //   this.errorRows = [];
+  //   this.parsedRows.forEach((row, i) => {
+  //     const missing: string[] = [];
+  //     if (!row.admissionNo) missing.push('Admission No');
+  //     if (!row.status) missing.push('Status');
+  //     if (missing.length)
+  //       this.errorRows.push({ rowNo: i + 2, missing: missing.join(', ') });
+  //   });
+  // }
+
   private validateFeedbackRows(): void {
     this.errorRows = [];
     this.parsedRows.forEach((row, i) => {
       const missing: string[] = [];
       if (!row.admissionNo) missing.push('Admission No');
+      if (!row.staffId) missing.push('Staff ID');
       if (!row.status) missing.push('Status');
       if (missing.length)
         this.errorRows.push({ rowNo: i + 2, missing: missing.join(', ') });
@@ -538,10 +727,21 @@ export class PtmviewComponent implements OnInit {
       if (!ptmId) {
         unmapped.push({ rowNo: i + 2, admissionNo: row.admissionNo });
       } else {
+        // mappedRows.push({
+        //   ptmId,
+        //   admissionNo: row.admissionNo,
+        //   staffRemarks: row.staffRemarks,
+        //   status: row.status?.toUpperCase(),
+        // });
         mappedRows.push({
-          ptmId,
+          ptmId: ptmId,
           admissionNo: row.admissionNo,
-          staffRemarks: row.staffRemarks,
+          staffId: row.staffId || '',
+          staffName: row.staffName || '',
+          subjectId: row.subjectId || '',
+          subjectName: row.subjectName || '',
+          subjectCode: row.subjectCode || '',
+          remarks: row.remarks || '',
           status: row.status?.toUpperCase(),
         });
       }
@@ -584,42 +784,61 @@ export class PtmviewComponent implements OnInit {
       });
   }
 
+  // downloadFeedbackTemplate(): void {
+  //   const sample = this.dataArray.length
+  //     ? this.dataArray.map((s) => ({
+  //         'Admission No': s.admissionNo,
+  //         'Student Name': s.studentName || '',
+  //         'Staff Remarks': '',
+  //         Status: '',
+  //       }))
+  //     : [
+  //         {
+  //           'Admission No': '902164259005',
+  //           'Student Name': 'John Doe',
+  //           'Staff Remarks': 'Student needs improvement in maths',
+  //           Status: 'COMPLETED',
+  //         },
+  //       ];
+
+  //   const ws = XLSX.utils.json_to_sheet(sample);
+  //   const wb = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(wb, ws, 'Feedback Import');
+  //   XLSX.writeFile(wb, 'ptm_feedback_import_template.xlsx');
+  // }
+
   downloadFeedbackTemplate(): void {
     const sample = this.dataArray.length
       ? this.dataArray.map((s) => ({
-        'Admission No': s.admissionNo,
-        'Student Name': s.studentName || '',
-        'Staff Remarks': '',
-        Status: '',
-      }))
+          'Admission No': s.admissionNo || '',
+          'Student Name': s.studentName || '',
+          'Staff ID': '',
+          'Staff Name': '',
+          'Subject ID': '',
+          'Subject Name': '',
+          'Subject Code': '',
+          'Staff Remarks': '',
+          Status: '',
+        }))
       : [
-        {
-          'Admission No': '902164259005',
-          'Student Name': 'John Doe',
-          'Staff Remarks': 'Student needs improvement in maths',
-          Status: 'COMPLETED',
-        },
-      ];
+          {
+            'Admission No': '902164259005',
+            'Student Name': 'John Doe',
+            'Staff ID': 'STAFF001',
+            'Staff Name': 'Mr. Kumar',
+            'Subject ID': '',
+            'Subject Name': 'Mathematics',
+            'Subject Code': 'MATH',
+            'Staff Remarks': 'Student needs improvement',
+            Status: 'COMPLETED',
+          },
+        ];
 
     const ws = XLSX.utils.json_to_sheet(sample);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Feedback Import');
     XLSX.writeFile(wb, 'ptm_feedback_import_template.xlsx');
   }
-
-  // downloadFeedbackTemplate(): void {
-  //   const sample = [
-  //     {
-  //       'Admission No': '902164259005',
-  //       'Staff Remarks': 'Student needs improvement in maths',
-  //       Status: 'COMPLETED',
-  //     },
-  //   ];
-  //   const ws = XLSX.utils.json_to_sheet(sample);
-  //   const wb = XLSX.utils.book_new();
-  //   XLSX.utils.book_append_sheet(wb, ws, 'Feedback Import');
-  //   XLSX.writeFile(wb, 'ptm_feedback_import_template.xlsx');
-  // }
 
   goBack(): void {
     this.router.navigate(['/app/ptm']);
