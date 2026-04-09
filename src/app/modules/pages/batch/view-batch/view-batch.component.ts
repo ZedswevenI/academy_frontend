@@ -105,6 +105,10 @@ export class ViewBatchComponent implements OnInit {
   specialClassExistingPeriods: number[] = [];
   specialClassPeriodConflict = false;
   specialClassPhaseOptions: any[] = [];
+  promoteNewProgramId = '';
+  promoteProgramOptions: any[] = [];
+  promoteLoading = false;
+  promoteResult: any = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -713,40 +717,59 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
+  // openPromoteModal() {
+  //   if (safeTrim(this.batch?.status) !== 'ACTIVE') {
+  //     this.alert.error('Only ACTIVE batches can be promoted');
+  //     return;
+  //   }
+  //   this.showPromoteModal = true;
+  // }
+
   openPromoteModal() {
     if (safeTrim(this.batch?.status) !== 'ACTIVE') {
       this.alert.error('Only ACTIVE batches can be promoted');
       return;
     }
+    this.promoteNewProgramId = '';
+    this.promoteResult = null;
+    this.promoteProgramOptions = [
+      { label: '— Keep current program —', value: '' },
+      ...this.programsFull
+        .filter(
+          (p: any) =>
+            safeTrim(p?.programId) !== safeTrim(this.batch?.programId),
+        )
+        .map((p: any) => ({
+          label: `${safeTrim(p?.programCodes || p?.programCode || '')} - ${safeTrim(p?.programName || '')}`,
+          value: safeTrim(p?.programId),
+        })),
+    ];
+
     this.showPromoteModal = true;
   }
 
-  closePromoteModal() {
-    this.showPromoteModal = false;
-  }
-
-  confirmPromote() {
-    if (this.loading) return;
-    this.loading = true;
-    this.commonApi
-      .fetchData(
-        { entiId: this.entiId, batchId: this.batchId },
-        'batch',
-        'promote',
-      )
-      .subscribe({
-        next: (res: any) => {
-          this.loading = false;
-          this.alert.success(res?.message || 'Batch promoted');
-          this.closePromoteModal();
-          this.loadBatch();
-        },
-        error: (err: any) => {
-          this.loading = false;
-          this.alert.error(err?.error?.message || 'Promote failed');
-        },
-      });
-  }
+  // confirmPromote() {
+  //   if (this.loading) return;
+  //   this.loading = true;
+  //   this.commonApi
+  //     .fetchData(
+  //       { entiId: this.entiId, batchId: this.batchId },
+  //       'batch',
+  //       'promote',
+  //     )
+  //     .subscribe({
+  //       next: (res: any) => {
+  //         this.loading = false;
+  //         this.alert.success(res?.message || 'Batch promoted');
+  //         this.closePromoteModal();
+  //         this.loadBatch();
+  //       },
+  //       error: (err: any) => {
+  //         this.loading = false;
+  //         this.alert.error(err?.error?.message || 'Promote failed');
+  //       },
+  //     });
+  // }
 
   // openLateEntry() {
   //   this.lateForm.reset({
@@ -765,6 +788,38 @@ export class ViewBatchComponent implements OnInit {
   //     .get('type')
   //     ?.valueChanges.subscribe(() => this.onLateTypeChanged());
   // }
+
+  confirmPromote() {
+    if (this.loading) return;
+    this.loading = true;
+
+    const payload: any = {
+      entiId: this.entiId,
+      batchId: this.batchId,
+    };
+    if (this.promoteNewProgramId) {
+      payload.newProgramId = this.promoteNewProgramId;
+    }
+
+    this.commonApi.fetchData(payload, 'batch', 'promote').subscribe({
+      next: (res: any) => {
+        this.loading = false;
+        this.promoteResult = res?.data || null;
+        this.alert.success(res?.message || 'Batch promoted');
+        this.loadBatch();
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(err?.error?.message || 'Promote failed');
+      },
+    });
+  }
+
+  closePromoteModal() {
+    this.showPromoteModal = false;
+    this.promoteResult = null;
+    this.promoteNewProgramId = '';
+  }
 
   openLateEntry() {
     this.lateForm.reset({

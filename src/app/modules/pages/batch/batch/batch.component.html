@@ -269,7 +269,7 @@
 <!-- ═══════════════════════════════════════════════════════════════
      PROMOTE BATCH MODAL
      ════════════════════════════════════════════════════════════ -->
-<div class="modal-backdrop fade show" *ngIf="showPromoteModal"></div>
+<!-- <div class="modal-backdrop fade show" *ngIf="showPromoteModal"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showPromoteModal">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -314,6 +314,131 @@
                     <i class="fa-solid fa-arrow-up-right-dots"></i> Confirm Promote
                 </button>
             </div>
+        </div>
+    </div>
+</div> -->
+
+<div class="modal-backdrop fade show" *ngIf="showPromoteModal"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showPromoteModal">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+        <div class="modal-content border-0 shadow">
+
+            <div class="modal-header border-0">
+                <h6 class="modal-title fw-semibold">
+                    <i class="fa-solid fa-arrow-up-right-dots me-1 text-primary"></i>
+                    Promote Batch
+                </h6>
+                <button type="button" class="btn-close" (click)="closePromoteModal()"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Success result after promote -->
+                <div *ngIf="promoteResult" class="alert alert-success border-0 rounded-3 mb-3">
+                    <div class="fw-semibold mb-1">
+                        <i class="fa-solid fa-circle-check me-1"></i>
+                        Promoted successfully
+                    </div>
+                    <div class="small">
+                        Now in <strong>{{ promoteResult.academicYear }}</strong>
+                        &nbsp;·&nbsp; Year {{ promoteResult.yearNo }}
+                        &nbsp;·&nbsp; Class {{ promoteResult.classNo }}
+                    </div>
+                    <div *ngIf="promoteResult.programSwitched" class="small mt-1 text-success">
+                        <i class="fa-solid fa-shuffle me-1"></i>
+                        Program switched to
+                        <strong>{{ promoteResult.newProgram?.programName }}</strong>
+                    </div>
+                    <div class="small mt-1 text-warning">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        Staff map has been cleared — please assign teachers for the new year
+                    </div>
+                </div>
+
+                <!-- Pre-promote form -->
+                <ng-container *ngIf="!promoteResult">
+
+                    <div class="alert alert-warning border-0 small mb-3">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        This advances the batch to the <b>next Academic Year</b>.
+                        Current staff mapping will be <strong>archived</strong> and
+                        cleared — you'll need to reassign teachers after promotion.
+                    </div>
+
+                    <!-- Current state -->
+                    <div class="border rounded-3 p-3 bg-light mb-3">
+                        <div class="row g-2 small">
+                            <div class="col-6">
+                                <div class="text-muted">Batch</div>
+                                <div class="fw-semibold">{{ promoteBatch?.batchName }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted">Current AY</div>
+                                <div class="fw-semibold">{{ promoteBatch?.academicYear }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted">Year No</div>
+                                <div class="fw-semibold">
+                                    Yr {{ promoteBatch?.yearNo }}
+                                    <i class="fa-solid fa-arrow-right mx-1 text-muted" style="font-size:0.65rem"></i>
+                                    Yr {{ (promoteBatch?.yearNo || 0) + 1 }}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted">Class No</div>
+                                <div class="fw-semibold">
+                                    Cls {{ promoteBatch?.classNo }}
+                                    <i class="fa-solid fa-arrow-right mx-1 text-muted" style="font-size:0.65rem"></i>
+                                    Cls {{ (promoteBatch?.classNo || 0) + 1 }}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="text-muted">Current Program</div>
+                                <div class="fw-semibold">{{ promoteBatch?.programName || '-' }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Optional program switch -->
+                    <div class="mb-1">
+                        <label class="form-label small fw-medium mb-1">
+                            Switch Program
+                            <span class="text-muted fw-normal">
+                                (optional — for stream change e.g. to NEET / JEE)
+                            </span>
+                        </label>
+                        <select class="form-select form-select-sm" [(ngModel)]="promoteNewProgramId">
+                            <option *ngFor="let p of promoteProgramOptions" [value]="p.value">
+                                {{ p.label }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Stream switch info -->
+                    <div *ngIf="promoteNewProgramId" class="alert alert-info border-0 small mt-2 mb-0 py-2">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Program will be switched for this batch.
+                        Student profiles retain their original enrollment program —
+                        only the batch and their <strong>AY history</strong> will
+                        reflect the new program.
+                    </div>
+
+                </ng-container>
+
+            </div>
+
+            <div class="modal-footer border-0">
+                <button class="btn btn-sm btn-outline-secondary" (click)="closePromoteModal()">
+                    {{ promoteResult ? 'Close' : 'Cancel' }}
+                </button>
+                <button *ngIf="!promoteResult" class="btn btn-sm btn-primary" (click)="confirmPromote()"
+                    [disabled]="loading">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-arrow-up-right-dots me-1" *ngIf="!loading"></i>
+                    Confirm Promote
+                </button>
+            </div>
+
         </div>
     </div>
 </div>
