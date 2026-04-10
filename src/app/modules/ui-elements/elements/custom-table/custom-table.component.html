@@ -45,9 +45,8 @@
     <div class="spinner-border text-primary"></div>
   </div>
 
-  <div class="table-responsive">
-    <!-- <table class="table table-hover mb-0 align-middle"> -->
-    <table class="table mb-0 align-middle" #tableWrap>
+  <div class="table-responsive" [class.no-scroll]="wrapCells">
+    <table class="table mb-0 align-middle" #tableWrap [class.table-wrap]="wrapCells">
       <thead>
         <tr class="table-header">
           <th class="px-4 py-3 fw-bold" style="width: 78px;">
@@ -79,30 +78,46 @@
               {{ (currentPage - 1) * pageSize + i + 1 }}
             </td>
 
-            <td class="px-4 py-3 fw-normal" *ngFor="let col of columns">
-              <!-- {{ getCellValue(row, col.key) }} -->
-              <!-- <ng-container *ngIf="col.date; else normal">
-              {{ (getCellValue(row, col.key) | date:'dd/MM/yyyy') || '--'}}
-            </ng-container>
-            <ng-template #normal>
-              {{ getCellValue(row, col.key) }}
-            </ng-template> -->
-              <ng-container *ngIf="col.date; else normal">
-                <span class="truncate-cell" [style.maxWidth.px]="col.maxWidthPx || 240"
-                  [attr.title]="needsTooltip(getCellValue(row, col.key), col) ? getCellValue(row, col.key) : null">
-                  {{ (getCellValue(row, col.key) | date : 'dd/MM/yyyy') || '--' }}
-                </span>
+            <td class="px-4 py-3 fw-normal" *ngFor="let col of columns" [class.wrap-cell]="wrapCells">
+              <!-- Wrap mode: 2-line clamp, expand on hover -->
+              <ng-container *ngIf="wrapCells; else truncateMode">
+                <ng-container *ngIf="col.date; else wrapNormal">
+                  <span class="clamp-cell" [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)"
+                    (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
+                    (mouseleave)="scheduleCollapse()"
+                    (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)">
+                    {{ (getCellValue(row, col.key) | date : 'dd/MM/yyyy') || '--' }}
+                  </span>
+                </ng-container>
+                <ng-template #wrapNormal>
+                  <span class="clamp-cell"
+                    [class.badge-cell]="hasBadgeStyle(getCellValue(row, col.key), col.key)"
+                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)"
+                    (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
+                    (mouseleave)="scheduleCollapse()"
+                    (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)">
+                    {{ getCellValue(row, col.key) }}
+                  </span>
+                </ng-template>
               </ng-container>
 
-              <!-- Non-date cells: truncate + tooltip -->
-              <ng-template #normal>
-                <span class="truncate-cell" [style.maxWidth.px]="col.maxWidthPx || 240"
-                  [attr.title]="needsTooltip(getCellValue(row, col.key), col) ? getCellValue(row, col.key) : null"
-                  (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                  (mouseleave)="scheduleCollapse()" (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                  [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
-                  {{ truncate(getCellValue(row, col.key), col) }}
-                </span>
+              <!-- Truncate mode (default) -->
+              <ng-template #truncateMode>
+                <ng-container *ngIf="col.date; else normal">
+                  <span class="truncate-cell" [style.maxWidth.px]="col.maxWidthPx || 240"
+                    [attr.title]="needsTooltip(getCellValue(row, col.key), col) ? getCellValue(row, col.key) : null">
+                    {{ (getCellValue(row, col.key) | date : 'dd/MM/yyyy') || '--' }}
+                  </span>
+                </ng-container>
+                <ng-template #normal>
+                  <span class="truncate-cell" [style.maxWidth.px]="col.maxWidthPx || 240"
+                    [attr.title]="needsTooltip(getCellValue(row, col.key), col) ? getCellValue(row, col.key) : null"
+                    (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
+                    (mouseleave)="scheduleCollapse()" (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
+                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
+                    {{ truncate(getCellValue(row, col.key), col) }}
+                  </span>
+                </ng-template>
               </ng-template>
             </td>
 
@@ -176,7 +191,8 @@
             </td>
           </tr>
 
-          <tr *ngIf="expanded && expanded.rowIndex === i" class="row-expander">
+          <tr *ngIf="expanded && expanded.rowIndex === i" class="row-expander"
+            (mouseenter)="onExpanderEnter()" (mouseleave)="onExpanderLeave()">
             <td [attr.colspan]="fullColSpan" class="bg-light p-3">
               <div class="d-flex align-items-start gap-2">
                 <!-- <i class="fa-regular fa-file-lines mt-1"></i> -->

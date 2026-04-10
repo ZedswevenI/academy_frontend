@@ -21,6 +21,7 @@ export class CustomTableComponent {
   @Input() searchPlaceholder: string = '';
 
   @Input() autoFitChars = false;
+  @Input() wrapCells = true;
   @Input() baseCharWidth = 8;
   @Input() minChars = 12;
   @Input() hardMaxChars = 30;
@@ -252,10 +253,12 @@ export class CustomTableComponent {
     return c?.label || key;
   }
 
-  // Only expand when we would show a tooltip (i.e., content is long)
+  // Only expand when content is long enough to be clipped
   maybeExpand(rowIndex: number, colKey: string, value: any, col?: any) {
     const text = this.stringify(value);
-    if (!this.needsTooltip(text, col)) return; // short text → no expander
+    // In wrap/clamp mode, expand if text is long enough to potentially exceed 2 lines
+    const shouldExpand = this.wrapCells ? text.length > 20 : this.needsTooltip(text, col);
+    if (!shouldExpand) return;
     // Cancel any pending collapse so we don't flicker
     if (this.collapseTimer) {
       clearTimeout(this.collapseTimer);
@@ -292,6 +295,11 @@ export class CustomTableComponent {
   @Input() warn1!: string;
   @Input() danger!: string;
   @Input() primary!: string;
+
+  hasBadgeStyle(value: any, colKey?: string): boolean {
+    const style = this.getNetStyle(value, colKey);
+    return style && Object.keys(style).length > 0;
+  }
 
   getNetStyle(value: number | string | null, colKey?: string) {
     if (typeof value === 'string') {
