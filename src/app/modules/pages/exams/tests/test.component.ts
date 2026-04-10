@@ -89,7 +89,15 @@ export class TestComponent implements OnInit, OnDestroy {
     {
       type: 'icon',
       icon: 'fa-regular fa-eye',
-      tooltip: 'View',
+      tooltip: 'View Exam',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.viewExam(row)
+    },
+    {
+      type: 'icon',
+      icon: 'fa-solid fa-list-ol',
+      tooltip: 'View Questions',
       color: '#6B7280',
       hoverColor: '#0066FF',
       callback: (row: any) => this.viewQuestions(row)
@@ -117,12 +125,13 @@ export class TestComponent implements OnInit, OnDestroy {
       text: 'Actions',
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
+      hidden: (row: any) => row.status === 'result_published' || row.status === 'completed',
       dropdown: [
-        { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.editExam(row) },
+        { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.editExam(row) },
         { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.publishExam(row) },
-        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.rearrange(row) },
-        { text: 'Add Question', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.addQuestions(row) },
-        { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.importQuestions(row) },
+        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.rearrange(row) },
+        { text: 'Add Question', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.addQuestions(row) },
+        { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.importQuestions(row) },
         { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
         { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published', callback: (row: any) => this.publishResult(row) },
         { text: 'Result', icon: 'fa-solid fa-chart-bar', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.viewResult(row) },
@@ -313,6 +322,7 @@ export class TestComponent implements OnInit, OnDestroy {
     }
   }
 
+  viewExam(row: any) { this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } }); }
   viewQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: row } }); }
   rearrange(row: any) { this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: row } }); }
   editExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row } }); }

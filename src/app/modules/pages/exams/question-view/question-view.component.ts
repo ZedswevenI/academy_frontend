@@ -84,7 +84,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.entiId = ent || '';
     this.testId = state.questions.examId;
     this.questionData = state.questions;
-    this.isDraft = (state.questions?.status || '').toUpperCase() === 'DRAFT';
+    this.isDraft = (state.questions?.status || '').toLowerCase() === 'draft';
     if (this.testId) {
       this.loadQuestions();
     }
