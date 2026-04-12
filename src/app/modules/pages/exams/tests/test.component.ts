@@ -4,7 +4,7 @@ import { NavigationStart, Router } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
 
 @Component({
@@ -84,6 +84,25 @@ export class TestComponent implements OnInit, OnDestroy {
   publishResultRow: any = null;
   publishingResult = false;
 
+  /* ================= GRACE MARKS STATE ================= */
+  showGraceModal = false;
+  graceRow: any = null;
+  graceLoading = false;
+  graceApplying = false;
+  graceRemovingGraceId: string | null = null;
+  graceForm!: FormGroup;
+  graceQuestions: any[] = [];
+  graceQuestionsLoading = false;
+
+  graceTypeOptions = [
+    { label: 'Exam', value: 'exam' },
+    { label: 'Question', value: 'question' }
+  ];
+  graceActionOptions = [
+    { label: 'Flat Add', value: 'flat_add' },
+    { label: 'Remove Negative', value: 'remove_negative' }
+  ];
+
   /* ================= ACTIONS ================= */
   actions = [
     {
@@ -95,46 +114,21 @@ export class TestComponent implements OnInit, OnDestroy {
       callback: (row: any) => this.viewExam(row)
     },
     {
-      type: 'icon',
-      icon: 'fa-solid fa-list-ol',
-      tooltip: 'View Questions',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      callback: (row: any) => this.viewQuestions(row)
-    },
-    {
-      type: 'icon',
-      icon: 'fa fa-file-import',
-      tooltip: 'Import Questions',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      hidden: (row: any) => row.status !== 'draft',
-      callback: (row: any) => this.importQuestions(row)
-    },
-    {
-      type: 'icon',
-      icon: 'fa fa-plus',
-      tooltip: 'Add Question',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      hidden: (row: any) => row.status !== 'draft',
-      callback: (row: any) => this.addQuestions(row)
-    },
-    {
       type: 'dropdown',
       text: 'Actions',
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
-      hidden: (row: any) => row.status === 'result_published' || row.status === 'completed',
       dropdown: [
+        { text: 'View Questions', icon: 'fa-solid fa-list-ol', callback: (row: any) => this.viewQuestions(row) },
         { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.editExam(row) },
-        { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.publishExam(row) },
+        { text: 'Add Question', icon: 'fa-solid fa-plus', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.addQuestions(row) },
+        { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importQuestions(row) },
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.rearrange(row) },
-        { text: 'Add Question', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.addQuestions(row) },
-        { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.importQuestions(row) },
+        { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.publishExam(row) },
         { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
-        { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published', callback: (row: any) => this.publishResult(row) },
+        { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published' && !(row.graces && row.graces.length > 0), callback: (row: any) => this.publishResult(row) },
         { text: 'Result', icon: 'fa-solid fa-chart-bar', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.viewResult(row) },
+        { text: 'Grace Marks', icon: 'fa-solid fa-gift', hidden: (row: any) => row.status === 'draft', callback: (row: any) => this.openGraceModal(row) },
         { text: 'Delete', icon: 'fa-regular fa-trash-can', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.deleteExam(row) }
       ]
     }
@@ -157,6 +151,7 @@ export class TestComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Exams' }]);
     this.initFilterForm();
+    this.initGraceForm();
 
     this.routerSub = this.router.events.subscribe(event => {
       if (event instanceof NavigationStart) {
@@ -175,6 +170,54 @@ export class TestComponent implements OnInit, OnDestroy {
       testType: [''],
       status: [''],
       medium: ['']
+    });
+  }
+
+  initGraceForm() {
+    this.graceForm = this.fb.group({
+      graceType: ['exam', Validators.required],
+      actionType: ['flat_add', Validators.required],
+      questionId: [''],
+      subjectId: [''],
+      flatMarks: [0],
+      note: ['', Validators.required]
+    });
+
+    // Handle conditional validation
+    this.graceForm.get('graceType')?.valueChanges.subscribe(val => {
+      const qCtrl = this.graceForm.get('questionId');
+      const sCtrl = this.graceForm.get('subjectId');
+      if (val === 'question') {
+        qCtrl?.setValidators(Validators.required);
+        sCtrl?.setValidators(Validators.required);
+      } else {
+        qCtrl?.clearValidators();
+        sCtrl?.clearValidators();
+      }
+      qCtrl?.updateValueAndValidity();
+      sCtrl?.updateValueAndValidity();
+
+      if (val === 'question' && this.graceRow && !this.graceQuestions.length) {
+        this.loadGraceQuestions();
+      }
+    });
+
+    this.graceForm.get('subjectId')?.valueChanges.subscribe(val => {
+      this.graceForm.patchValue({ questionId: '' });
+    });
+
+    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
+      this.graceForm.patchValue({ questionId: '', subjectId: '' });
+    });
+
+    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
+      const fCtrl = this.graceForm.get('flatMarks');
+      if (val === 'flat_add') {
+        fCtrl?.setValidators([Validators.required, Validators.min(0)]);
+      } else {
+        fCtrl?.clearValidators();
+      }
+      fCtrl?.updateValueAndValidity();
     });
   }
 
@@ -764,6 +807,143 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   /* ================= MISC ================= */
+
+  /* ================= GRACE MARKS ================= */
+
+  openGraceModal(row: any) {
+    this.graceRow = { ...row };
+    // Only keep active graces for the modal list
+    if (this.graceRow.graces) {
+      this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
+    }
+    this.showGraceModal = true;
+    this.graceQuestions = [];
+    this.graceForm.reset({
+      graceType: 'exam',
+      actionType: 'flat_add',
+      flatMarks: 0,
+      note: ''
+    });
+  }
+
+  loadGraceQuestions() {
+    this.graceQuestionsLoading = true;
+    this.commonApi.fetchData({ entiId: localStorage.getItem('tenantId'), examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.graceQuestions = res.data?.questions || [];
+        }
+        this.graceQuestionsLoading = false;
+      },
+      error: () => {
+        this.graceQuestionsLoading = false;
+        this.alert.error('Error loading questions for selection');
+      }
+    });
+  }
+
+  getFilteredGraceQuestions() {
+    const selected = this.graceForm.get('subjectId')?.value;
+    if (!selected || selected === '' || selected === 'null' || selected === 'undefined') {
+      return this.graceQuestions;
+    }
+
+    const targetId = String(selected).trim();
+
+    return this.graceQuestions.filter(q => {
+      const qSubId = q.subjectId?._id || q.subjectId;
+      if (!qSubId) return false;
+      return String(qSubId).trim() === targetId;
+    });
+  }
+
+  closeGraceModal() {
+    this.showGraceModal = false;
+    this.graceRow = null;
+  }
+
+  applyGrace() {
+    if (this.graceForm.invalid) {
+      this.graceForm.markAllAsTouched();
+      return;
+    }
+
+    const formValue = this.graceForm.value;
+    let sectionId = undefined;
+
+    if (formValue.graceType === 'question' && formValue.questionId) {
+      const selectedQ = this.graceQuestions.find(q => q.questionId === formValue.questionId);
+      sectionId = selectedQ?.sectionId;
+    } else if (formValue.subjectId) {
+      // If exam level but with a subject/section filter?
+      const selectedS = this.graceRow.sections.find((s: any) => s.subjectId === formValue.subjectId);
+      sectionId = selectedS?.sectionId;
+    }
+
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      examId: this.graceRow.examId,
+      graceType: formValue.graceType,
+      actionType: formValue.actionType,
+      sectionId: sectionId,
+      questionId: formValue.questionId || undefined,
+      flatMarks: formValue.actionType === 'flat_add' ? formValue.flatMarks : 0,
+      note: formValue.note,
+      userId: localStorage.getItem('userId')
+    };
+
+    this.graceApplying = true;
+    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+      next: (res: any) => {
+        this.graceApplying = false;
+        if (res?.status) {
+          this.alert.success('Grace marks applied successfully');
+          this.closeGraceModal();
+          if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+        } else {
+          this.alert.error(res?.message || 'Failed to apply grace marks');
+        }
+      },
+      error: (err) => {
+        this.graceApplying = false;
+        this.alert.error(err?.error?.message || 'Error applying grace marks');
+      }
+    });
+  }
+
+  removeGrace(graceId: string) {
+    if (!confirm('Are you sure you want to remove this grace mark?')) return;
+
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      examId: this.graceRow.examId,
+      graceId: graceId,
+      userId: localStorage.getItem('userId')
+    };
+
+    this.graceRemovingGraceId = graceId;
+    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+      next: (res: any) => {
+        this.graceRemovingGraceId = null;
+        if (res?.status) {
+          this.alert.success('Grace mark removed successfully');
+          // Update local data to reflect removal immediately
+          this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.graceId !== graceId);
+          if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+        } else {
+          this.alert.error(res?.message || 'Failed to remove grace mark');
+        }
+      },
+      error: (err) => {
+        this.graceRemovingGraceId = null;
+        this.alert.error(err?.error?.message || 'Error removing grace mark');
+      }
+    });
+  }
+
+  getAvailableSections() {
+    return this.graceRow?.sections || [];
+  }
 
   refresh() {
     if (this.lastTableParams) {

@@ -45,6 +45,28 @@
     <div class="spinner-border text-primary"></div>
   </div>
 
+  <!-- Exam Level Grace Marks -->
+  <div *ngIf="!loading && questionData?.graces?.length" class="mb-4">
+    <div *ngFor="let g of questionData.graces">
+      <div *ngIf="g.graceType === 'exam' && g.isActive" class="alert alert-warning border-warning shadow-sm d-flex justify-content-between align-items-center py-2 px-3">
+        <div>
+          <i class="fa-solid fa-gift me-2 text-warning"></i>
+          <strong class="text-dark">Exam-wide Grace Applied:</strong> 
+          <span class="badge bg-warning text-dark ms-2 fw-bold">
+            {{ g.actionType === 'flat_add' ? '+' + g.flatMarks + ' Marks' : 'No Negative Marking' }}
+          </span>
+          <span class="ms-3 text-muted italic fs-13" *ngIf="g.note">"{{ g.note }}"</span>
+        </div>
+        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" (click)="removeGraceFromQuestion(g.graceId)" 
+                [disabled]="graceRemovingGraceId === g.graceId"
+                title="Remove Exam Grace">
+           <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== g.graceId"></i>
+           <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === g.graceId"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Question Cards -->
   <div *ngFor="let q of questions; let i = index" class="card mb-4 shadow-sm">
 
@@ -82,6 +104,43 @@
         <button class="btn btn-sm btn-outline-danger" (click)="deleteQuestion(q)">
           Delete
         </button>
+      </div>
+
+      <!-- Grace Marks UI for Published/Completed Exams -->
+      <div *ngIf="!isDraft" class="d-flex align-items-center gap-2">
+        <div *ngFor="let grace of [getGraceForQuestion(q.questionId)]">
+          <div *ngIf="grace" class="d-flex align-items-center gap-2">
+            <span class="badge bg-warning text-dark py-2 px-3 border border-dark rounded-pill">
+              <i class="fa-solid fa-gift me-1"></i>
+              Grace Applied: {{ grace.actionType === 'flat_add' ? '+' + grace.flatMarks + ' Marks' : 'No Negative' }}
+            </span>
+            <button class="btn btn-sm btn-outline-danger rounded-circle p-1" style="width:24px; height:24px; line-height: 1;"
+                    (click)="removeGraceFromQuestion(grace.graceId)" 
+                    [disabled]="graceRemovingGraceId === grace.graceId"
+                    title="Remove Grace">
+              <i class="fa-solid fa-times" *ngIf="graceRemovingGraceId !== grace.graceId"></i>
+              <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === grace.graceId"></span>
+            </button>
+          </div>
+          
+          <div *ngIf="!grace" class="btn-group">
+            <button class="btn btn-sm btn-outline-warning dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" [disabled]="graceApplying">
+              <i class="fa-solid fa-gift me-1"></i> Apply Grace
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+              <li>
+                <a class="dropdown-item fs-13" (click)="applyGraceToQuestion(q, 'remove_negative')">
+                  <i class="fa-solid fa-minus-circle me-1"></i> Remove Negative
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item fs-13" (click)="applyGraceToQuestion(q, 'flat_add', q.positiveMarks)">
+                  <i class="fa-solid fa-plus-circle me-1"></i> Add Full Marks (+{{q.positiveMarks}})
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
     </div>
