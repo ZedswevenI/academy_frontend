@@ -253,12 +253,20 @@ export class CustomTableComponent {
     return c?.label || key;
   }
 
-  // Only expand when content is long enough to be clipped
-  maybeExpand(rowIndex: number, colKey: string, value: any, col?: any) {
+  // Only expand when content is actually clipped
+  maybeExpand(rowIndex: number, colKey: string, value: any, col?: any, event?: any) {
     const text = this.stringify(value);
-    // In wrap/clamp mode, expand if text is long enough to potentially exceed 2 lines
-    const shouldExpand = this.wrapCells ? text.length > 20 : this.needsTooltip(text, col);
-    if (!shouldExpand) return;
+
+    if (this.wrapCells) {
+      // Check if the clamp-cell span inside the td is actually overflowing
+      const td = event?.target?.closest?.('td') || event?.target;
+      if (td) {
+        const clampEl = td.querySelector('.clamp-cell');
+        if (clampEl && clampEl.scrollHeight <= clampEl.clientHeight + 2) return; // not clipped
+      }
+    } else {
+      if (!this.needsTooltip(text, col)) return;
+    }
     // Cancel any pending collapse so we don't flicker
     if (this.collapseTimer) {
       clearTimeout(this.collapseTimer);

@@ -78,24 +78,21 @@
               {{ (currentPage - 1) * pageSize + i + 1 }}
             </td>
 
-            <td class="px-4 py-3 fw-normal" *ngFor="let col of columns" [class.wrap-cell]="wrapCells">
+            <td class="px-4 py-3 fw-normal" *ngFor="let col of columns" [class.wrap-cell]="wrapCells"
+              (mouseenter)="wrapCells ? maybeExpand(i, col.key, getCellValue(row, col.key), col, $event) : null"
+              (mouseleave)="wrapCells ? scheduleCollapse() : null"
+              (click)="wrapCells ? maybeExpand(i, col.key, getCellValue(row, col.key), col, $event) : null">
               <!-- Wrap mode: 2-line clamp, expand on hover -->
               <ng-container *ngIf="wrapCells; else truncateMode">
                 <ng-container *ngIf="col.date; else wrapNormal">
-                  <span class="clamp-cell" [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)"
-                    (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                    (mouseleave)="scheduleCollapse()"
-                    (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)">
+                  <span class="clamp-cell" [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
                     {{ (getCellValue(row, col.key) | date : 'dd/MM/yyyy') || '--' }}
                   </span>
                 </ng-container>
                 <ng-template #wrapNormal>
                   <span class="clamp-cell"
                     [class.badge-cell]="hasBadgeStyle(getCellValue(row, col.key), col.key)"
-                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)"
-                    (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                    (mouseleave)="scheduleCollapse()"
-                    (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)">
+                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
                     {{ getCellValue(row, col.key) }}
                   </span>
                 </ng-template>

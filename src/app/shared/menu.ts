@@ -341,12 +341,12 @@ export const MENU_ITEMS: MenuItem[] = [
       }
     ]
   },
-  // {
-  //   label: 'Report',
-  //   icon: 'fa-solid fa-chart-line',
-  //   route: '/app/report',
-  //   roles: ['L1', 'L5']
-  // },
+  {
+    label: 'Reports',
+    icon: 'fa-solid fa-chart-line',
+    route: '/app/report',
+    roles: ['L1', 'L5']
+  },
   // {
   //   label: 'Chat',
   //   icon: 'fa-solid fa-comments',

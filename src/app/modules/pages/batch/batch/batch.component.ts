@@ -79,43 +79,23 @@ export class BatchComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-eye',
       tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.openView(row),
     },
     {
-      type: 'icon',
-      icon: 'fa-regular fa-pen-to-square',
-      tooltip: 'Edit Batch',
-      callback: (row: any) => this.openEdit(row),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-user-plus',
-      tooltip: 'Assign Students',
-      callback: (row: any) => this.openAssignStudents(row),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-users-gear',
-      tooltip: 'Assign Staff',
-      callback: (row: any) => this.openStaffMap(row),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-arrow-up-right-dots',
-      tooltip: 'Promote Batch',
-      callback: (row: any) => this.openPromote(row),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-clock-rotate-left',
-      tooltip: 'Log Late Entry',
-      callback: (row: any) => this.openLateEntry(row),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-calendar-plus',
-      tooltip: 'Add Special Class',
-      callback: (row: any) => this.openSpecialClass(row),
+      type: 'dropdown',
+      text: 'Actions',
+      icon: 'fa-solid fa-ellipsis-vertical',
+      color: 'secondary',
+      dropdown: [
+        { text: 'Edit Batch', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.openEdit(row) },
+        { text: 'Assign Students', icon: 'fa-solid fa-user-plus', callback: (row: any) => this.openAssignStudents(row) },
+        { text: 'Assign Staff', icon: 'fa-solid fa-users-gear', callback: (row: any) => this.openStaffMap(row) },
+        { text: 'Promote Batch', icon: 'fa-solid fa-arrow-up-right-dots', callback: (row: any) => this.openPromote(row) },
+        { text: 'Log Late Entry', icon: 'fa-solid fa-clock-rotate-left', callback: (row: any) => this.openLateEntry(row) },
+        { text: 'Add Special Class', icon: 'fa-solid fa-calendar-plus', callback: (row: any) => this.openSpecialClass(row) },
+      ]
     },
   ];
 

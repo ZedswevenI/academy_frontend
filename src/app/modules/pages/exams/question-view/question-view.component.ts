@@ -23,6 +23,10 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   testId!: string;
   questionData!: any;
   isDraft = false;
+
+  /* Grace State */
+  graceApplying = false;
+  graceRemovingGraceId: string | null = null;
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
@@ -82,12 +86,38 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
     this.entiId = ent || '';
-    this.testId = state.questions.examId;
-    this.questionData = state.questions;
+    this.testId = state.questions?.examId || state.questions?.testId;
+    this.questionData = state.questions || {};
     this.isDraft = (state.questions?.status || '').toLowerCase() === 'draft';
+    
     if (this.testId) {
+      this.loadExamDetails();
       this.loadQuestions();
     }
+  }
+
+  loadExamDetails() {
+    const body = {
+      entiId: this.entiId,
+      examId: this.testId
+    };
+    this.commonApi.fetchData(body, 'exam', 'get').subscribe({
+      next: (res: any) => {
+        if (res?.status && res?.data) {
+          const data = res.data;
+          // Only keep active graces in the UI logic
+          if (data.graces) {
+            data.graces = data.graces.filter((g: any) => g.isActive);
+          }
+          this.questionData = data;
+          this.isDraft = (data.status || '').toLowerCase() === 'draft';
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => {
+        console.error('Error loading exam details:', err);
+      }
+    });
   }
 
   addNewQuestion() {
@@ -408,6 +438,74 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       default:
         return type;
     }
+  }
+
+  /* ================= GRACE MARKS ================= */
+
+  getGraceForQuestion(questionId: string) {
+    return (this.questionData?.graces || []).find((g: any) => g.questionId === questionId && g.isActive);
+  }
+
+  applyGraceToQuestion(question: any, actionType: string, flatMarks: number = 0) {
+    const note = prompt('Enter a reason/note for this grace mark:');
+    if (note === null) return; // Cancelled
+
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      examId: this.testId,
+      graceType: 'question',
+      actionType: actionType,
+      sectionId: question.sectionId,
+      questionId: question.questionId,
+      flatMarks: flatMarks,
+      note: note || 'Grace marks applied',
+      userId: localStorage.getItem('userId')
+    };
+
+    this.graceApplying = true;
+    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+      next: (res: any) => {
+        this.graceApplying = false;
+        if (res?.status) {
+          this.alert.success('Grace marks applied successfully');
+          this.loadExamDetails();
+        } else {
+          this.alert.error(res?.message || 'Failed to apply grace marks');
+        }
+      },
+      error: (err) => {
+        this.graceApplying = false;
+        this.alert.error(err?.error?.message || 'Error applying grace marks');
+      }
+    });
+  }
+
+  removeGraceFromQuestion(graceId: string) {
+    if (!confirm('Are you sure you want to remove this grace mark?')) return;
+
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      examId: this.testId,
+      graceId: graceId,
+      userId: localStorage.getItem('userId')
+    };
+
+    this.graceRemovingGraceId = graceId;
+    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+      next: (res: any) => {
+        this.graceRemovingGraceId = null;
+        if (res?.status) {
+          this.alert.success('Grace mark removed successfully');
+          this.loadExamDetails();
+        } else {
+          this.alert.error(res?.message || 'Failed to remove grace mark');
+        }
+      },
+      error: (err) => {
+        this.graceRemovingGraceId = null;
+        this.alert.error(err?.error?.message || 'Error removing grace mark');
+      }
+    });
   }
 
   editQuestion(question: any) {
