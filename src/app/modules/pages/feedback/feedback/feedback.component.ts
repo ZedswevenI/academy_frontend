@@ -42,7 +42,7 @@ export class FeedbackComponent implements OnInit {
   actions = [
     {
       type: 'icon',
-      icon: 'fa-regular fa-chart-bar',
+      icon: 'fa-regular fa-eye',
       tooltip: 'View Results',
       color: '#6B7280',
       hoverColor: '#0066FF',
@@ -50,29 +50,15 @@ export class FeedbackComponent implements OnInit {
         this.router.navigate(['/app/feedback/results', row._id]),
     },
     {
-      type: 'icon',
-      icon: 'fa-regular fa-pen-to-square',
-      tooltip: 'Edit',
-      color: '#6B7280',
-      hoverColor: '#16A34A',
-      callback: (row: any) =>
-        this.router.navigate(['/app/feedback/edit', row._id]),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-solid fa-arrows-rotate',
-      tooltip: 'Change Status',
-      color: '#6B7280',
-      hoverColor: '#854F0B',
-      callback: (row: any) => this.openStatusModal(row),
-    },
-    {
-      type: 'icon',
-      icon: 'fa-regular fa-trash-can',
-      tooltip: 'Delete',
-      color: '#6B7280',
-      hoverColor: '#DC2626',
-      callback: (row: any) => this.openDeleteModal(row),
+      type: 'dropdown',
+      text: 'Actions',
+      icon: 'fa-solid fa-ellipsis-vertical',
+      color: 'secondary',
+      dropdown: [
+        { text: 'Edit', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.router.navigate(['/app/feedback/edit', row._id]) },
+        { text: 'Change Status', icon: 'fa-solid fa-arrows-rotate', callback: (row: any) => this.openStatusModal(row) },
+        { text: 'Delete', icon: 'fa-regular fa-trash-can', callback: (row: any) => this.openDeleteModal(row) },
+      ]
     },
   ];
   selectedForm: any = null;

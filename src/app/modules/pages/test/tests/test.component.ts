@@ -80,34 +80,17 @@ export class TestComponent implements OnInit, OnDestroy {
       callback: (row: any) => this.viewQuestions(row)
     },
     {
-      type: 'icon',
-      icon: 'fa fa-file-import',
-      tooltip: 'Import Questions',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      callback: (row: any) => this.importQuestions(row)
-    },
-    {
-      type: 'icon',
-      icon: 'fa fa-plus',
-      tooltip: 'Add Question',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      callback: (row: any) => this.addQuestions(row)
-    },
-    {
       type: 'dropdown',
       text: 'Actions',
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       dropdown: [
         { text: 'Edit Assignment', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.editTest(row) },
-        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
-        { text: 'Add Question', icon: 'fa-solid fa-file-import', callback: (row: any) => this.addQuestions(row) },
+        { text: 'Add Question', icon: 'fa-solid fa-plus', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', callback: (row: any) => this.importQuestions(row) },
-        // { text: 'Print Test', icon: 'fa-solid fa-print', callback: (row: any) => this.printTest(row) },
+        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
         { text: 'Report', icon: 'fa-solid fa-chart-line', callback: (row: any) => this.report(row) },
-        { text: 'Update Ans/Solutions', icon: 'fa-solid fa-pen', callback: (row: any) => this.updateAnswers(row) },
+        // { text: 'Update Ans/Solutions', icon: 'fa-solid fa-pen', callback: (row: any) => this.updateAnswers(row) },
         { text: 'Delete', icon: 'fa-regular fa-trash-can', callback: (row: any) => this.deleteTest(row) }
       ]
     }

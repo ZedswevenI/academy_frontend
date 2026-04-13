@@ -1,138 +1,261 @@
-<div class="ms-3 me-3 pt-1 pb-1">
-  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-    <div class="d-flex flex-column gap-4">
-      <!-- Header Section -->
-      <div class="d-flex flex-column gap-4">
-        <div class="d-flex align-items-center justify-content-between">
-          <h1 class="fw-bold mb-0" style="font-size: 30px;">
-            <i class="fa-solid fa-chart-line me-2"></i>Report
-          </h1>
-          <!-- <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button">
-            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
-            Add</button> -->
+<div class="report-container">
+
+  <!-- ===== HEADER ===== -->
+  <div class="report-header">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="fa-solid fa-chart-line me-2"></i>Reports</h4>
+      <small class="text-muted">22 reports across Batch, Student & Teacher</small>
+    </div>
+  </div>
+
+  <!-- ===== MAIN TABS ===== -->
+  <div class="tab-bar">
+    <button class="tab-btn" [class.active]="activeTab === 'batch'" (click)="switchTab('batch')">
+      <i class="fa-solid fa-building me-1"></i> Batch
+      <span class="badge bg-light text-dark ms-1">{{ batchReports.length }}</span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'student'" (click)="switchTab('student')">
+      <i class="fa-solid fa-user-graduate me-1"></i> Student
+      <span class="badge bg-light text-dark ms-1">{{ studentReports.length }}</span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'teacher'" (click)="switchTab('teacher')">
+      <i class="fa-solid fa-chalkboard-teacher me-1"></i> Teacher
+      <span class="badge bg-light text-dark ms-1">{{ teacherReports.length }}</span>
+    </button>
+  </div>
+
+  <!-- ===== REPORT LIST (when no report selected) ===== -->
+  <div *ngIf="!selectedReport" class="report-grid">
+    <ng-container *ngIf="activeTab === 'batch'">
+      <div *ngFor="let r of batchReports" class="report-card" (click)="selectReport(r)">
+        <div class="report-card-icon"><i [class]="r.icon"></i></div>
+        <div class="report-card-body">
+          <div class="report-card-title">{{ r.label }}</div>
+          <div class="report-card-desc">{{ r.description }}</div>
+        </div>
+        <i class="fa-solid fa-chevron-right report-card-arrow"></i>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="activeTab === 'student'">
+      <div *ngFor="let r of studentReports" class="report-card" (click)="selectReport(r)">
+        <div class="report-card-icon"><i [class]="r.icon"></i></div>
+        <div class="report-card-body">
+          <div class="report-card-title">{{ r.label }}</div>
+          <div class="report-card-desc">{{ r.description }}</div>
+        </div>
+        <i class="fa-solid fa-chevron-right report-card-arrow"></i>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="activeTab === 'teacher'">
+      <div *ngFor="let r of teacherReports" class="report-card" (click)="selectReport(r)">
+        <div class="report-card-icon"><i [class]="r.icon"></i></div>
+        <div class="report-card-body">
+          <div class="report-card-title">{{ r.label }}</div>
+          <div class="report-card-desc">{{ r.description }}</div>
+        </div>
+        <i class="fa-solid fa-chevron-right report-card-arrow"></i>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ===== SELECTED REPORT VIEW ===== -->
+  <div *ngIf="selectedReport" class="report-view">
+
+    <!-- Back + Title -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-secondary btn-sm rounded-circle" style="width:36px;height:36px;padding:0;"
+          (click)="clearReport()">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div>
+          <h5 class="fw-bold mb-0">
+            <i [class]="selectedReport.icon + ' me-2'"></i>{{ selectedReport.label }}
+          </h5>
+          <small class="text-muted">{{ selectedReport.description }}</small>
         </div>
       </div>
+      <button *ngIf="reportTableData.length > 0" class="btn btn-success btn-sm rounded-pill px-3"
+        (click)="exportToExcel()">
+        <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+      </button>
     </div>
 
-    <div class="mt-3">
-      <form [formGroup]="reportForm">
-        <filter label1="Class" label2="Batch" label3="Student" [required]="true" [options1]="class_options"
-          [options2]="batch_options" [options3]="student_options" [placeholder]="'Select'" formControlName="filter"
-          [control]="reportForm.get('filter')"></filter>
-        <!-- <div class="row g-3">
-          <div class="col-md-4">
-            <selectbox label="Class" [options]="class_options" formControlName="class" [control]="reportForm.get('class')"
-              [required]="true">
-            </selectbox>
-          </div>
-          <div class="col-md-4">
-            <selectbox label="Batch" [options]="batch_options" formControlName="batch" [control]="reportForm.get('batch')"
-              [required]="true">
-            </selectbox>
-          </div>
-          <div class="col-md-4">
-            <selectbox label="Student" [options]="student_options" formControlName="student"
-              [control]="reportForm.get('student')" [required]="true">
-            </selectbox>
-          </div>
-        </div> -->
+    <!-- ===== FILTERS ===== -->
+    <div class="filter-panel">
+      <div class="row g-3 align-items-end">
 
-        <div class="col-12 text-end mt-3">
-          <button class="btn submitbutton px-4" [disabled]="reportForm.invalid" (click)="onProceed()"
-            style="border-radius: 30px;">
-            Proceed
+        <!-- Batch selector -->
+        <div class="col-md-3" *ngIf="needsBatchFilter()">
+          <label class="form-label fw-medium">Batch <span class="text-danger">*</span></label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedBatchId"
+            (ngModelChange)="onBatchChange($event)">
+            <option value="">Select Batch</option>
+            <option *ngFor="let b of batchOptions" [value]="b.value">{{ b.label }}</option>
+          </select>
+        </div>
+
+        <!-- Batch Info filters -->
+        <ng-container *ngIf="selectedReport.key === 'batch-info'">
+          <div class="col-md-3">
+            <label class="form-label fw-medium">Program</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filterSubjectId">
+              <option value="">All</option>
+              <option *ngFor="let p of programOptions" [value]="p.value">{{ p.label }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-medium">Status</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filterStatus">
+              <option value="">All</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+        </ng-container>
+
+        <!-- Student selector -->
+        <div class="col-md-3" *ngIf="needsStudentFilter()">
+          <label class="form-label fw-medium">Admission No <span class="text-danger">*</span></label>
+          <input class="form-control form-control-sm" placeholder="Enter admission no..."
+            [(ngModel)]="selectedAdmissionNo" />
+        </div>
+
+        <!-- Staff selector with search -->
+        <div class="col-md-3" *ngIf="needsStaffFilter()">
+          <label class="form-label fw-medium">Staff <span class="text-danger">*</span></label>
+          <input class="form-control form-control-sm mb-1" placeholder="Search staff..."
+            [(ngModel)]="staffSearch" (input)="filterStaffOptions()" />
+          <select class="form-select form-select-sm" [(ngModel)]="selectedStaffId">
+            <option value="">Select Staff</option>
+            <option *ngFor="let s of filteredStaffOptions" [value]="s.value">{{ s.label }}</option>
+          </select>
+        </div>
+
+        <!-- Date filters -->
+        <ng-container *ngIf="needsDateFilter()">
+          <div class="col-md-2">
+            <label class="form-label fw-medium">From Date</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-medium">To Date</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate" />
+          </div>
+        </ng-container>
+
+        <!-- Subject filter -->
+        <div class="col-md-2"
+          *ngIf="selectedReport.key === 'batch-phase-allotment' || selectedReport.key === 'batch-assignments'">
+          <label class="form-label fw-medium">Subject</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterSubjectId">
+            <option value="">All</option>
+            <option *ngFor="let s of subjectOptions" [value]="s.value">{{ s.label }}</option>
+          </select>
+        </div>
+
+        <!-- Late entry type filter -->
+        <div class="col-md-2"
+          *ngIf="selectedReport.key === 'batch-late-entries' || selectedReport.key === 'student-late-entries'">
+          <label class="form-label fw-medium">Entry Type</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterEntryType">
+            <option value="">All</option>
+            <option value="LATE">Late</option>
+            <option value="EARLY_LEAVE">Early Leave</option>
+          </select>
+        </div>
+
+        <!-- Person type filter (batch late entries) -->
+        <div class="col-md-2" *ngIf="selectedReport.key === 'batch-late-entries'">
+          <label class="form-label fw-medium">Person Type</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterType">
+            <option value="">All</option>
+            <option value="STAFF">Staff</option>
+            <option value="STUDENT">Student</option>
+          </select>
+        </div>
+
+        <!-- Status filter for tasks -->
+        <div class="col-md-2" *ngIf="selectedReport.key === 'teacher-tasks'">
+          <label class="form-label fw-medium">Status</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterStatus">
+            <option value="">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="NOT_COMPLETED">Not Completed</option>
+            <option value="NEED_MORE_TIME">Need More Time</option>
+          </select>
+        </div>
+
+        <!-- Remark type filter -->
+        <div class="col-md-2" *ngIf="selectedReport.key === 'student-remarks'">
+          <label class="form-label fw-medium">Type</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterType">
+            <option value="">All</option>
+            <option value="ACADEMIC">Academic</option>
+            <option value="BEHAVIOUR">Behaviour</option>
+            <option value="ATTENDANCE">Attendance</option>
+            <option value="HEALTH">Health</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <!-- Generate button -->
+        <div class="col-md-2">
+          <button class="btn btn-primary btn-sm rounded-pill px-4 w-100" [disabled]="!canGenerate() || reportLoading"
+            (click)="generateReport()">
+            <span *ngIf="!reportLoading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+            <span *ngIf="reportLoading">
+              <span class="spinner-border spinner-border-sm me-1"></span> Loading...
+            </span>
           </button>
         </div>
-      </form>
+      </div>
     </div>
 
-    <div class="row g-3 mb-3 mt-3" *ngIf="isProceed">
-      <div class="col d-flex" *ngFor="let sub of subjects">
-        <div class="card text-center flex-fill d-flex align-items-center justify-content-center"
-          [ngClass]="selctedReport === sub.value ? 'selected-date' : 'border-primary bg-light'"
-          (click)="selectSubject(sub)"
-          style="cursor:pointer; min-height: 60px;background-color: #fff; border: primary;">
-          <strong>{{ sub.label }}</strong>
+    <!-- ===== SUMMARY CARDS ===== -->
+    <div *ngIf="summaryItems.length > 0" class="row g-3 mb-4">
+      <div class="col-sm-6 col-md-3" *ngFor="let item of summaryItems">
+        <div class="summary-card">
+          <div class="summary-value">{{ item.value }}</div>
+          <div class="summary-label">{{ item.label }}</div>
         </div>
       </div>
     </div>
 
-    <div class="ms-3 me-3 pt-1 pb-1 attendance-card-wrapper" *ngIf="selectedSubject">
-      <div class="card p-4">
-        <div class="row g-3">
+    <!-- ===== LOADING ===== -->
+    <div *ngIf="reportLoading" class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+    </div>
 
-          <div class="col-lg-6 col-md-12 mb-3">
-            <div class="row">
-              <label class="col-sm-4 col-form-label">
-                Test Date
-              </label>
-              <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-              <div class="col-sm-7 pt-2"><strong>{{ selectedSubject.report.testDate }}</strong></div>
-            </div>
-          </div>
-          <div class="col-lg-6 col-md-12 mb-3">
-            <div class="row">
-              <label class="col-sm-4 col-form-label">
-                Test Title
-              </label>
-              <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-              <div class="col-sm-7 pt-2"><strong>{{ selectedSubject.report.testTitle }}</strong></div>
-            </div>
-          </div>
-
-          <div class="col-lg-6 col-md-12 mb-3">
-            <div class="row">
-              <label class="col-sm-4 col-form-label">
-                Description
-              </label>
-              <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-              <div class="col-sm-7 pt-2"><strong>{{ selectedSubject.report.description }}</strong></div>
-            </div>
-          </div>
-
-          <div class="col-lg-6 col-md-12 mb-3">
-            <div class="row">
-              <label class="col-sm-4 col-form-label">
-                Subject
-              </label>
-              <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-              <div class="col-sm-7 pt-2"><strong>{{ selectedSubject.label }}</strong></div>
-            </div>
-          </div>
-
-          <div class="col-lg-6 col-md-12 mb-3">
-            <div class="row">
-              <label class="col-sm-4 col-form-label">
-                My Score / Max
-              </label>
-              <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-              <div class="col-sm-7 pt-2"><strong>{{ selectedSubject.report.myScore }}</strong></div>
-            </div>
-          </div>
-
-          <div class="col-lg-6 col-md-12 mb-3">
-            <div class="row">
-              <label class="col-sm-4 col-form-label">
-                Higest score
-              </label>
-              <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-              <div class="col-sm-7 pt-2"><strong>{{ selectedSubject.report.highestScore }}</strong></div>
-            </div>
-          </div>
-
-          <div class="col-lg-6 col-md-12 mb-3">
-            <div class="row">
-              <label class="col-sm-4 col-form-label">
-                Avg Score
-              </label>
-              <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
-              <div class="col-sm-7 pt-2"><strong>{{ selectedSubject.report.avgScore }}</strong></div>
-            </div>
-          </div>
-
-        </div>
+    <!-- ===== DATA TABLE ===== -->
+    <div *ngIf="!reportLoading && reportTableData.length > 0" class="report-table-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <small class="text-muted">{{ reportTableData.length }} records</small>
       </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th *ngFor="let col of reportColumns">{{ col.label }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of reportTableData">
+              <td *ngFor="let col of reportColumns">{{ formatCellValue(row[col.key]) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== EMPTY STATE ===== -->
+    <div *ngIf="!reportLoading && reportData && reportTableData.length === 0" class="text-center text-muted py-5">
+      <i class="fa-solid fa-inbox fs-1 d-block mb-3 opacity-50"></i>
+      <p>No data found for this report</p>
     </div>
 
   </div>
+
 </div>
