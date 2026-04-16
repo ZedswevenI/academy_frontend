@@ -2,92 +2,169 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  color: #fff;
+  color: #E5E7EB;
+  padding: 0.75rem 0.5rem 0;
+}
+
+.sidebar-header {
+  padding: 0.25rem 0.5rem 0.5rem;
+}
+
+.close-btn {
+  font-size: 1.1rem;
+  opacity: 0.85;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 /* scroll area */
 .nav-wrap {
   flex: 1;
   overflow-y: auto;
-  // scrollbar-width: none;        
-  // -ms-overflow-style: none;
+  padding: 0.25rem 0.25rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-// .nav-wrap::-webkit-scrollbar {
-//   width: 0;
-//   height: 0;
-// }
+
 .nav-wrap::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .nav-wrap::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 8px;
 }
 
 .nav-wrap::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* links */
 .sidebar-link {
+  position: relative;
   display: flex;
   align-items: center;
-  // padding: 0.75rem 1rem;
-  // color: #cfd8ff;
-  padding: 0.625rem 0.75rem;
-  border-radius: 0.75rem;
-  color: #E5E7EB;
+  gap: 0.65rem;
+  padding: 0.625rem 0.85rem;
+  margin: 1px 0;
+  border-radius: 10px;
+  color: #9CA3AF;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.1px;
   text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+
+  i {
+    font-size: 0.95rem;
+    width: 18px;
+    text-align: center;
+    color: #9CA3AF;
+    transition: color 0.18s ease;
+  }
 
   &:hover {
-    // background-color: #f3f4f6;
-    // color: #111827;
-    background-color: #1F2937;
+    background-color: rgba(255, 255, 255, 0.05);
     color: #FFFFFF;
-    font-weight: bold;
+
+    i {
+      color: #FFFFFF;
+    }
   }
 
   &.active {
-    background-color: #2563EB;
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.22), rgba(37, 99, 235, 0.05));
     color: #FFFFFF;
-    font-weight: bold;
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
+
+    i {
+      color: #60A5FA;
+    }
+
+    &::before {
+      content: "";
+      position: absolute;
+      left: -2px;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      border-radius: 3px;
+      background: linear-gradient(180deg, #60A5FA, #2563EB);
+      box-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+    }
   }
+
+  &.parent .fa-chevron-down {
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+    opacity: 0.7;
+  }
+
+  &.parent .fa-chevron-down.rotate {
+    transform: rotate(180deg);
+  }
+}
+
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Submenu */
 .submenu {
-  margin-left: 1.25rem;
+  margin: 2px 0 4px 0.85rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .sidebar-link.child {
-  font-size: 0.9rem;
-  padding-left: 1.75rem;
-  color: #E5E7EB;
-}
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  color: #9CA3AF;
 
-.sidebar-link.child:hover {
-  background-color: #1F2937;
-  color: #FFFFFF;
-  font-weight: bold;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #FFFFFF;
+  }
+
+  &.active::before {
+    display: none;
+  }
 }
 
 /* logout fixed */
 .logout-wrap {
-  padding: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.85rem 0.75rem 1rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .logout-btn {
   width: 100%;
-  border: 3px solid rgba(248, 113, 113, 0.4);
-  background: transparent;
-  color: #f87171;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.06);
+  color: #F87171;
+  font-weight: 600;
+  font-size: 0.88rem;
   padding: 0.6rem;
+  border-radius: 10px;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 
   &:hover {
-    background: rgba(248, 113, 113, 0.15);
-    color: #ffffff;
+    background: rgba(248, 113, 113, 0.18);
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #FFFFFF;
   }
 }
