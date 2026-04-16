@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, input, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, input, ViewChild, ElementRef, HostListener, OnDestroy } from '@angular/core';
 
 @Component({
   selector: 'custom-table',
@@ -6,7 +6,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChange
   templateUrl: './custom-table.component.html',
   styleUrl: './custom-table.component.scss'
 })
-export class CustomTableComponent {
+export class CustomTableComponent implements OnDestroy {
   // Table details
   @Input() columns: { key: string; label: string; sortable: boolean; date?: boolean; maxWidthPx?: number }[] = [];
   @Input() data: any[] = [];
@@ -52,13 +52,100 @@ export class CustomTableComponent {
     return Math.ceil(this.totalRecords / this.pageSize) || 1;
   }
 
-  constructor() { }
+  private activeDropdownMenu: HTMLElement | null = null;
+  private activeDropdownBtn: HTMLElement | null = null;
+  private activeDropdownParent: HTMLElement | null = null;
+  private scrollUnlisten: (() => void) | null = null;
+  private showListener = (e: Event) => this.onDropdownShow(e);
+  private hideListener = (e: Event) => this.onDropdownHide();
+
+  constructor(private elRef: ElementRef) { }
 
   ngAfterViewInit() {
-    document.addEventListener('shown.bs.dropdown', (event: any) => {
-      const btn = event.target as HTMLElement;
-      this.moveDropdownToBody(btn);
-    });
+    const host = this.elRef.nativeElement as HTMLElement;
+    host.addEventListener('shown.bs.dropdown', this.showListener);
+    host.addEventListener('hidden.bs.dropdown', this.hideListener);
+  }
+
+  ngOnDestroy() {
+    const host = this.elRef.nativeElement as HTMLElement;
+    host.removeEventListener('shown.bs.dropdown', this.showListener);
+    host.removeEventListener('hidden.bs.dropdown', this.hideListener);
+    this.cleanupDropdown();
+  }
+
+  private onDropdownShow(event: Event) {
+    const btn = event.target as HTMLElement;
+    const menu = btn.querySelector('.dropdown-menu') || btn.parentElement?.querySelector('.dropdown-menu');
+    if (!menu) return;
+
+    const parent = menu.parentElement;
+    this.activeDropdownBtn = btn;
+    this.activeDropdownMenu = menu as HTMLElement;
+    this.activeDropdownParent = parent as HTMLElement;
+
+    // Move to body and position
+    document.body.appendChild(menu);
+    this.positionDropdown();
+
+    // Close on scroll of any scrollable ancestor
+    const scrollable = this.elRef.nativeElement.querySelector('.table-responsive') || this.elRef.nativeElement;
+    const scrollHandler = () => this.closeActiveDropdown();
+    scrollable.addEventListener('scroll', scrollHandler, { passive: true });
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+
+    this.scrollUnlisten = () => {
+      scrollable.removeEventListener('scroll', scrollHandler);
+      window.removeEventListener('scroll', scrollHandler);
+    };
+  }
+
+  private onDropdownHide() {
+    this.cleanupDropdown();
+  }
+
+  private positionDropdown() {
+    if (!this.activeDropdownMenu || !this.activeDropdownBtn) return;
+    const btn = this.activeDropdownBtn;
+    const menu = this.activeDropdownMenu;
+    const rect = btn.getBoundingClientRect();
+
+    menu.style.position = 'fixed';
+    menu.style.zIndex = '1080';
+    menu.style.top = `${rect.bottom + 4}px`;
+    menu.style.left = `${rect.right - menu.offsetWidth}px`;
+    menu.classList.add('show');
+  }
+
+  private closeActiveDropdown() {
+    if (!this.activeDropdownBtn) return;
+    // Programmatically hide via Bootstrap
+    const Dropdown = (window as any).bootstrap?.Dropdown;
+    if (Dropdown) {
+      const instance = Dropdown.getOrCreateInstance(this.activeDropdownBtn.querySelector('[data-bs-toggle="dropdown"]') || this.activeDropdownBtn);
+      instance?.hide();
+    }
+    this.cleanupDropdown();
+  }
+
+  private cleanupDropdown() {
+    if (this.scrollUnlisten) {
+      this.scrollUnlisten();
+      this.scrollUnlisten = null;
+    }
+    // Move menu back to original parent
+    if (this.activeDropdownMenu && this.activeDropdownParent) {
+      try {
+        this.activeDropdownParent.appendChild(this.activeDropdownMenu);
+      } catch (e) { /* already moved back */ }
+      this.activeDropdownMenu.style.position = '';
+      this.activeDropdownMenu.style.top = '';
+      this.activeDropdownMenu.style.left = '';
+      this.activeDropdownMenu.style.zIndex = '';
+    }
+    this.activeDropdownMenu = null;
+    this.activeDropdownBtn = null;
+    this.activeDropdownParent = null;
   }
 
   ngOnInit(): void {
@@ -377,21 +464,6 @@ export class CustomTableComponent {
     return {};
   }
 
-  moveDropdownToBody(button: HTMLElement) {
-    const menu = button.parentElement?.querySelector('.dropdown-menu') as HTMLElement;
-    if (!menu) return;
-
-    const rect = button.getBoundingClientRect();
-
-    // Move to body
-    document.body.appendChild(menu);
-
-    // Position near button
-    menu.style.position = 'fixed';
-    menu.style.top = `${rect.bottom}px`;
-    menu.style.left = `${rect.right - menu.offsetWidth}px`;
-    menu.style.zIndex = '1080';
-  }
   
 }
 
