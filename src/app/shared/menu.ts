@@ -353,12 +353,31 @@ export const MENU_ITEMS: MenuItem[] = [
   //   route: '/app/chat',
   //   roles: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7']
   // },
-  // {
-  //   label: 'Communication',
-  //   icon: 'fa-solid fa-envelope-open-text',
-  //   route: '/app/communication',
-  //   roles: ['L1', 'L2', 'L3']
-  // },
+  {
+    label: 'Communication',
+    icon: 'fa-solid fa-envelope-open-text',
+    roles: ['L1', 'L2', 'L3'],
+    children: [
+      {
+        label: 'Send',
+        icon: 'fa-solid fa-paper-plane',
+        route: '/app/communication/send',
+        roles: ['L1', 'L2', 'L3']
+      },
+      {
+        label: 'Templates',
+        icon: 'fa-solid fa-file-lines',
+        route: '/app/communication/templates',
+        roles: ['L1', 'L2', 'L3']
+      },
+      {
+        label: 'Sent Logs',
+        icon: 'fa-solid fa-clock-rotate-left',
+        route: '/app/communication/sent-logs',
+        roles: ['L1', 'L2', 'L3']
+      }
+    ]
+  },
   {
     label: 'Support',
     icon: 'fa-solid fa-headset',
