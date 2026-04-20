@@ -8,14 +8,18 @@ import { WhatsappComponent } from './whatsapp/whatsapp.component';
 import { MsgComponent } from './msg/msg.component';
 import { MailComponent } from './mail/mail.component';
 import { ComListComponent } from './com-list/com-list.component';
+import { TemplatesComponent } from './templates/templates.component';
+import { SentLogsComponent } from './sent-logs/sent-logs.component';
 
 @NgModule({
     declarations: [
         CommunicationComponent,
         WhatsappComponent,
-        MsgComponent, 
+        MsgComponent,
         MailComponent,
-        ComListComponent
+        ComListComponent,
+        TemplatesComponent,
+        SentLogsComponent
     ],
     imports: [
         CommonModule,

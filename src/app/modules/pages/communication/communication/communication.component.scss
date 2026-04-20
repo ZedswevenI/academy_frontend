@@ -1,0 +1,29 @@
+.send-preview {
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fafafa;
+}
+
+.preview-subject {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.preview-body {
+  font-size: 14px;
+  color: #1f2937;
+  line-height: 1.6;
+  min-height: 60px;
+  white-space: normal;
+
+  mark {
+    background: #fde68a;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #78350f;
+    font-weight: 500;
+  }
+
+  p { margin: 0 0 8px 0; }
+}

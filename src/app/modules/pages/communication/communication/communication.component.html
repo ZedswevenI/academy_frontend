@@ -17,8 +17,39 @@
                     [options2]="batch_options" [options3]="student_options" [placeholder]="'Select'"
                     formControlName="filter" [control]="communicationForm.get('filter')"></filter>
 
-                <div class="row mt-5 ms-3">
-                    <label class="form-label fw-black fs-9 ms-n3">Select Message Template<span class="requierdstar"
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <selectbox label="Select Template" placeholder="Choose a template"
+                            formControlName="templateId" [options]="templateOptions"
+                            optionLabel="label" optionValue="value"
+                            [control]="communicationForm.get('templateId')" [required]="true">
+                        </selectbox>
+                    </div>
+                </div>
+
+                <!-- Template preview -->
+                <div *ngIf="selectedTemplate" class="send-preview mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="fw-semibold fs-14">
+                                <i class="fa-regular fa-eye me-1 text-primary"></i> Template Preview
+                            </span>
+                            <span class="badge rounded-pill ms-2" [ngClass]="channelBadgeClass(selectedTemplate.channel)">
+                                {{ selectedTemplate.channel | titlecase }}
+                            </span>
+                        </div>
+                        <small class="text-muted">Keys shown with example values</small>
+                    </div>
+
+                    <div *ngIf="selectedTemplate.channel === 'email' && previewSubject" class="preview-subject mb-2">
+                        <small class="text-muted d-block">Subject</small>
+                        <div class="fw-medium" [innerHTML]="previewSubject"></div>
+                    </div>
+                    <div class="preview-body" [innerHTML]="previewBody"></div>
+                </div>
+
+                <div class="row mt-4 ms-3">
+                    <label class="form-label fw-black fs-9 ms-n3">Delivery Channel<span class="requierdstar"
                             style="color: red">*</span></label>
                 </div>
                 <div class="col-md-12 ms-5">
