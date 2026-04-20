@@ -6,6 +6,7 @@ import { SampleComponent } from './sample/sample.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { BaseChartDirective } from 'ng2-charts';
 
 @NgModule({
   declarations: [
@@ -13,11 +14,12 @@ import { DashboardComponent } from './dashboard/dashboard.component';
     DashboardComponent
   ],
   imports: [
-    CommonModule, 
-    DashboardRoutingModule, 
+    CommonModule,
+    DashboardRoutingModule,
     UiElementsModule,
     ReactiveFormsModule,
-    FormsModule
+    FormsModule,
+    BaseChartDirective
   ],
   exports: []
 })

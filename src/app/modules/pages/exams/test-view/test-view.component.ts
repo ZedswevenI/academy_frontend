@@ -6,6 +6,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-ass-view',
@@ -131,11 +132,44 @@ export class TestViewComponent implements OnInit {
   selectedBatchId = '';
   allBatches: any[] = [];
 
+  /* ================= BATCH ASSIGN MODAL ================= */
+  showBatchModal = false;
+  batchAssignRow: any = null;
+  allAssignableBatches: any[] = [];
+  enabledBatchIds: Set<string> = new Set();
+  selectedBatchIds: Set<string> = new Set();
+  batchModalLoading = false;
+  batchAssigning = false;
+
+  /* ================= PUBLISH RESULT MODAL ================= */
+  showPublishResultModal = false;
+  publishResultNote = '';
+  publishingResult = false;
+
+  /* ================= GRACE MARKS MODAL ================= */
+  showGraceModal = false;
+  graceRow: any = null;
+  graceApplying = false;
+  graceRemovingGraceId: string | null = null;
+  graceForm!: FormGroup;
+  graceQuestions: any[] = [];
+  graceQuestionsLoading = false;
+
+  graceTypeOptions = [
+    { label: 'Exam', value: 'exam' },
+    { label: 'Question', value: 'question' }
+  ];
+  graceActionOptions = [
+    { label: 'Flat Add', value: 'flat_add' },
+    { label: 'Remove Negative', value: 'remove_negative' }
+  ];
+
   constructor(
     private breadcrumb: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private fb: FormBuilder,
     public authService: AuthService
   ) {
     const state: any = history.state;
@@ -160,11 +194,350 @@ export class TestViewComponent implements OnInit {
     this.isDraft = this.examData.status === 'draft';
     this.hasResults = this.examData.status === 'result_published';
 
+    this.initGraceForm();
+
     if (this.hasResults) {
       this.fetchBatches();
       this.fetchAnalytics();
       this.fetchTimingAnalytics();
     }
+  }
+
+  /* ================= ACTION VISIBILITY ================= */
+  get canPublishResult(): boolean {
+    const status = this.examData?.status;
+    const hasGraces = this.examData?.graces && this.examData.graces.length > 0;
+    return status === 'published' || hasGraces;
+  }
+  get canAssignBatch(): boolean {
+    const status = this.examData?.status;
+    return status !== 'draft' && status !== 'result_published';
+  }
+  get canRearrange(): boolean {
+    const status = this.examData?.status;
+    return status !== 'result_published' && status !== 'completed';
+  }
+  get canShowGrace(): boolean {
+    return this.examData?.status !== 'draft';
+  }
+
+  /* ================= NAV ACTIONS ================= */
+  duplicateExam() {
+    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData, duplicate: true } });
+  }
+  rearrangeQuestions() {
+    this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: this.examData } });
+  }
+
+  /* ================= PUBLISH RESULT ================= */
+  openPublishResultModal() {
+    this.publishResultNote = '';
+    this.showPublishResultModal = true;
+  }
+  cancelPublishResult() {
+    this.showPublishResultModal = false;
+    this.publishResultNote = '';
+  }
+  confirmPublishResult() {
+    if (this.publishingResult) return;
+
+    const payload = {
+      entiId: this.tenantId,
+      examId: this.examData.examId,
+      publishedAt: Date.now(),
+      note: this.publishResultNote.trim() || 'Result published'
+    };
+
+    this.publishingResult = true;
+    this.commonApi.fetchData(payload, 'exam', 'publish-result').subscribe({
+      next: (res: any) => {
+        this.publishingResult = false;
+        if (res?.status) {
+          this.alert.success('Result published successfully');
+          this.showPublishResultModal = false;
+          this.publishResultNote = '';
+          this.examData.status = 'result_published';
+          this.hasResults = true;
+        } else {
+          this.alert.error(res?.message || 'Failed to publish result');
+        }
+      },
+      error: (err: any) => {
+        this.publishingResult = false;
+        this.alert.error(err?.error?.message || 'Error publishing result');
+      }
+    });
+  }
+
+  /* ================= BATCH ASSIGN ================= */
+  openBatchModal() {
+    this.batchAssignRow = this.examData;
+    this.enabledBatchIds = new Set();
+    this.selectedBatchIds = new Set();
+    this.showBatchModal = true;
+    this.loadAssignableBatches();
+  }
+  closeBatchModal() {
+    this.showBatchModal = false;
+    this.batchAssignRow = null;
+    this.allAssignableBatches = [];
+    this.enabledBatchIds = new Set();
+    this.selectedBatchIds = new Set();
+  }
+  private loadAssignableBatches() {
+    this.batchModalLoading = true;
+    const entiId = this.tenantId;
+
+    this.commonApi.fetchData({ entiId }, 'batch', 'list?list=full').subscribe({
+      next: (allRes: any) => {
+        this.allAssignableBatches = allRes?.data || [];
+
+        this.commonApi.fetchData({ entiId, examId: this.examData.examId }, 'exam/batch', 'list-by-exam').subscribe({
+          next: (assignedRes: any) => {
+            const assignedBatches = assignedRes?.data || [];
+            assignedBatches.forEach((b: any) => {
+              if (b.status === 'enabled') {
+                this.enabledBatchIds.add(b.batchId);
+                this.selectedBatchIds.add(b.batchId);
+              }
+            });
+            this.batchModalLoading = false;
+          },
+          error: () => { this.batchModalLoading = false; }
+        });
+      },
+      error: () => {
+        this.batchModalLoading = false;
+        this.alert.error('Error loading batches');
+      }
+    });
+  }
+  toggleBatchSelect(batchId: string) {
+    if (this.selectedBatchIds.has(batchId)) {
+      this.selectedBatchIds.delete(batchId);
+    } else {
+      this.selectedBatchIds.add(batchId);
+    }
+  }
+  saveBatchChanges() {
+    const entiId = this.tenantId;
+    const examId = this.examData.examId;
+
+    const toAssign = Array.from(this.selectedBatchIds).filter(id => !this.enabledBatchIds.has(id));
+    const toDisable = Array.from(this.enabledBatchIds).filter(id => !this.selectedBatchIds.has(id));
+
+    if (!toAssign.length && !toDisable.length) {
+      this.alert.error('No changes to save');
+      return;
+    }
+
+    this.batchAssigning = true;
+    let pending = 0;
+    let hasError = false;
+
+    const checkDone = () => {
+      pending--;
+      if (pending <= 0) {
+        this.batchAssigning = false;
+        if (!hasError) {
+          this.alert.success('Batch changes saved successfully');
+          this.closeBatchModal();
+          if (this.hasResults) this.fetchBatches();
+        }
+      }
+    };
+
+    if (toAssign.length) {
+      pending++;
+      this.commonApi.fetchData({ entiId, examId, batchIds: toAssign }, 'exam/batch', 'assign').subscribe({
+        next: (res: any) => {
+          if (!res?.status) { hasError = true; this.alert.error('Error assigning batches'); }
+          checkDone();
+        },
+        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error assigning batches'); checkDone(); }
+      });
+    }
+    if (toDisable.length) {
+      pending++;
+      this.commonApi.fetchData({ entiId, examId, batchIds: toDisable }, 'exam/batch', 'disable').subscribe({
+        next: (res: any) => {
+          if (!res?.status) { hasError = true; this.alert.error('Error disabling batches'); }
+          checkDone();
+        },
+        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error disabling batches'); checkDone(); }
+      });
+    }
+  }
+
+  /* ================= GRACE MARKS ================= */
+  private initGraceForm() {
+    this.graceForm = this.fb.group({
+      graceType: ['exam', Validators.required],
+      actionType: ['flat_add', Validators.required],
+      questionId: [''],
+      subjectId: [''],
+      flatMarks: [0],
+      note: ['', Validators.required]
+    });
+
+    this.graceForm.get('graceType')?.valueChanges.subscribe(val => {
+      const qCtrl = this.graceForm.get('questionId');
+      const sCtrl = this.graceForm.get('subjectId');
+      if (val === 'question') {
+        qCtrl?.setValidators(Validators.required);
+        sCtrl?.setValidators(Validators.required);
+      } else {
+        qCtrl?.clearValidators();
+        sCtrl?.clearValidators();
+      }
+      qCtrl?.updateValueAndValidity();
+      sCtrl?.updateValueAndValidity();
+
+      if (val === 'exam' && this.graceForm.get('actionType')?.value !== 'flat_add') {
+        this.graceForm.patchValue({ actionType: 'flat_add' });
+      }
+
+      if (val === 'question' && this.graceRow && !this.graceQuestions.length) {
+        this.loadGraceQuestions();
+      }
+    });
+
+    this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
+      this.graceForm.patchValue({ questionId: '' });
+    });
+
+    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
+      this.graceForm.patchValue({ questionId: '', subjectId: '' });
+      const fCtrl = this.graceForm.get('flatMarks');
+      if (val === 'flat_add') {
+        fCtrl?.setValidators([Validators.required, Validators.min(0)]);
+      } else {
+        fCtrl?.clearValidators();
+      }
+      fCtrl?.updateValueAndValidity();
+    });
+  }
+
+  openGraceModal() {
+    this.graceRow = { ...this.examData };
+    if (this.graceRow.graces) {
+      this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
+    }
+    this.showGraceModal = true;
+    this.graceQuestions = [];
+    this.graceForm.reset({
+      graceType: 'exam',
+      actionType: 'flat_add',
+      flatMarks: 0,
+      note: ''
+    });
+  }
+  closeGraceModal() {
+    this.showGraceModal = false;
+    this.graceRow = null;
+  }
+  loadGraceQuestions() {
+    this.graceQuestionsLoading = true;
+    this.commonApi.fetchData({ entiId: this.tenantId, examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.graceQuestions = res.data?.questions || [];
+        }
+        this.graceQuestionsLoading = false;
+      },
+      error: () => {
+        this.graceQuestionsLoading = false;
+        this.alert.error('Error loading questions for selection');
+      }
+    });
+  }
+  getFilteredGraceQuestions() {
+    const selected = this.graceForm.get('subjectId')?.value;
+    if (!selected || selected === '' || selected === 'null' || selected === 'undefined') {
+      return this.graceQuestions;
+    }
+    const targetId = String(selected).trim();
+    return this.graceQuestions.filter(q => {
+      const qSubId = q.subjectId?._id || q.subjectId;
+      if (!qSubId) return false;
+      return String(qSubId).trim() === targetId;
+    });
+  }
+  getAvailableSections() {
+    return this.graceRow?.sections || [];
+  }
+  applyGrace() {
+    if (this.graceForm.invalid) {
+      this.graceForm.markAllAsTouched();
+      return;
+    }
+
+    const formValue = this.graceForm.value;
+    let sectionId: string | undefined = undefined;
+
+    if (formValue.graceType === 'question' && formValue.questionId) {
+      const selectedQ = this.graceQuestions.find(q => q.questionId === formValue.questionId);
+      sectionId = selectedQ?.sectionId;
+    } else if (formValue.subjectId) {
+      const selectedS = this.graceRow.sections.find((s: any) => s.subjectId === formValue.subjectId);
+      sectionId = selectedS?.sectionId;
+    }
+
+    const payload = {
+      entiId: this.tenantId,
+      examId: this.graceRow.examId,
+      graceType: formValue.graceType,
+      actionType: formValue.actionType,
+      sectionId: sectionId,
+      questionId: formValue.questionId || undefined,
+      flatMarks: formValue.actionType === 'flat_add' ? formValue.flatMarks : 0,
+      note: formValue.note,
+      userId: localStorage.getItem('userId')
+    };
+
+    this.graceApplying = true;
+    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+      next: (res: any) => {
+        this.graceApplying = false;
+        if (res?.status) {
+          this.alert.success('Grace marks applied successfully');
+          this.closeGraceModal();
+        } else {
+          this.alert.error(res?.message || 'Failed to apply grace marks');
+        }
+      },
+      error: (err) => {
+        this.graceApplying = false;
+        this.alert.error(err?.error?.message || 'Error applying grace marks');
+      }
+    });
+  }
+  removeGrace(graceId: string) {
+    if (!confirm('Are you sure you want to remove this grace mark?')) return;
+
+    const payload = {
+      entiId: this.tenantId,
+      examId: this.graceRow.examId,
+      graceId: graceId,
+      userId: localStorage.getItem('userId')
+    };
+
+    this.graceRemovingGraceId = graceId;
+    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+      next: (res: any) => {
+        this.graceRemovingGraceId = null;
+        if (res?.status) {
+          this.alert.success('Grace mark removed successfully');
+          this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.graceId !== graceId);
+        } else {
+          this.alert.error(res?.message || 'Failed to remove grace mark');
+        }
+      },
+      error: (err) => {
+        this.graceRemovingGraceId = null;
+        this.alert.error(err?.error?.message || 'Error removing grace mark');
+      }
+    });
   }
 
   /* ================= TAB ================= */

@@ -1,11 +1,215 @@
-<div class="coming-wrap">
-  <div class="coming-card">
-    <div class="coming-icon">
-      <i class="fa-solid fa-gauge"></i>
+<div class="dashboard">
+
+  <!-- Header -->
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-title">Welcome back, Admin 👋</h1>
+      <p class="dash-sub">Here's what's happening across your academy — {{ today | date:'EEEE, MMM d, y' }}</p>
     </div>
-    <h2 class="coming-title">Dashboard</h2>
-    <p class="coming-sub">
-      We're working on this. Your analytics and reports will be ready soon.
-    </p>
+    <div class="dash-actions">
+      <button class="btn-ghost"><i class="fa-solid fa-download me-2"></i>Export</button>
+      <!-- <button class="btn-primary"><i class="fa-solid fa-plus me-2"></i>Quick Add</button> -->
+    </div>
   </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card" *ngFor="let k of kpis" [class]="'tone-' + k.tone">
+      <div class="kpi-top">
+        <div class="kpi-icon"><i [class]="k.icon"></i></div>
+        <span class="kpi-delta" [class.up]="k.delta >= 0" [class.down]="k.delta < 0">
+          <i class="fa-solid" [class.fa-arrow-up]="k.delta >= 0" [class.fa-arrow-down]="k.delta < 0"></i>
+          {{ k.delta > 0 ? '+' : '' }}{{ k.delta }}%
+        </span>
+      </div>
+      <div class="kpi-label">{{ k.label }}</div>
+      <div class="kpi-value-row">
+        <div class="kpi-value">{{ k.value }}</div>
+        <svg class="kpi-spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+          <path [attr.d]="sparklineArea(k.trend)" class="spark-area"></path>
+          <path [attr.d]="sparklinePath(k.trend)" class="spark-line"></path>
+        </svg>
+      </div>
+      <div class="kpi-sub">
+        <i class="fa-solid fa-circle-info"></i>
+        {{ k.sub }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row 1 -->
+  <div class="charts-row">
+    <div class="card chart-card wide">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Attendance Overview</h3>
+          <p class="card-sub">Daily attendance across all batches</p>
+        </div>
+        <select class="card-select">
+          <option>This Week</option>
+          <option>This Month</option>
+          <option>This Quarter</option>
+        </select>
+      </div>
+      <div class="chart-wrap">
+        <canvas baseChart [type]="'line'" [data]="attendanceLineData" [options]="attendanceLineOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Students by Program</h3>
+          <p class="card-sub">Active enrollment split</p>
+        </div>
+      </div>
+      <div class="chart-wrap doughnut">
+        <canvas baseChart [type]="'doughnut'" [data]="programDoughnutData" [options]="programDoughnutOptions">
+        </canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row 2 -->
+  <div class="charts-row">
+    <div class="card chart-card wide">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Batch Performance</h3>
+          <p class="card-sub">Average test scores per batch</p>
+        </div>
+        <span class="badge-soft"><i class="fa-solid fa-chart-column me-1"></i>Last Test</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas baseChart [type]="'bar'" [data]="batchBarData" [options]="batchBarOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <div class="card list-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Top Performers</h3>
+          <p class="card-sub">This month</p>
+        </div>
+      </div>
+      <ul class="performer-list">
+        <li *ngFor="let p of performers; let i = index">
+          <span class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">{{ i + 1 }}</span>
+          <div class="avatar">{{ p.avatar }}</div>
+          <div class="perf-info">
+            <div class="perf-name">{{ p.name }}</div>
+            <div class="perf-meta">{{ p.batch }}</div>
+          </div>
+          <div class="perf-score">{{ p.score }}%</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Staff + Users row -->
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Staff by Department</h3>
+          <p class="card-sub">Teaching & non-teaching distribution</p>
+        </div>
+        <span class="badge-soft"><i class="fa-solid fa-chalkboard-user me-1"></i>86 Staff</span>
+      </div>
+      <ul class="dept-list">
+        <li *ngFor="let d of staffDepts">
+          <div class="dept-top">
+            <span class="dept-name">{{ d.name }}</span>
+            <span class="dept-count">{{ d.count }} members</span>
+          </div>
+          <div class="dept-bar">
+            <div class="dept-bar-fill" [style.width.%]="(d.count / 20) * 100" [style.background]="d.color"></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card list-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Recent Users</h3>
+          <p class="card-sub">Latest system access</p>
+        </div>
+        <a class="link">Manage</a>
+      </div>
+      <ul class="user-list">
+        <li *ngFor="let u of recentUsers">
+          <div class="avatar" [class]="'tone-' + u.tone">{{ u.avatar }}</div>
+          <div class="user-info">
+            <div class="user-name">{{ u.name }}</div>
+            <div class="user-email">{{ u.email }}</div>
+          </div>
+          <div class="user-meta">
+            <span class="role-tag">{{ u.role }}</span>
+            <span class="status-dot" [class.green]="u.status === 'Active'" [class.amber]="u.status === 'Invited'"
+              [class.gray]="u.status === 'Inactive'">{{ u.status }}</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="bottom-row">
+    <div class="card list-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Recent Activity</h3>
+          <p class="card-sub">Latest updates from your academy</p>
+        </div>
+        <a class="link">View all</a>
+      </div>
+      <ul class="activity-list">
+        <li *ngFor="let a of activities">
+          <div class="act-icon" [class]="'tone-' + a.tone"><i [class]="a.icon"></i></div>
+          <div class="act-body">
+            <div class="act-title">{{ a.title }}</div>
+            <div class="act-meta">{{ a.meta }}</div>
+          </div>
+          <div class="act-time">{{ a.time }}</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card list-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Upcoming PTMs</h3>
+          <p class="card-sub">Parent-teacher meetings this week</p>
+        </div>
+        <a class="link">View all</a>
+      </div>
+      <div class="ptm-table">
+        <div class="ptm-row head">
+          <span>Student</span>
+          <span>Batch</span>
+          <span>When</span>
+          <span>Status</span>
+        </div>
+        <div class="ptm-row" *ngFor="let p of ptms">
+          <span>
+            <div class="ptm-name">{{ p.student }}</div>
+            <div class="ptm-sub">{{ p.parent }}</div>
+          </span>
+          <span class="ptm-batch">{{ p.batch }}</span>
+          <span>
+            <div class="ptm-name">{{ p.date }}</div>
+            <div class="ptm-sub">{{ p.time }}</div>
+          </span>
+          <span>
+            <span class="chip" [class.green]="p.status === 'Confirmed'" [class.blue]="p.status === 'Scheduled'"
+              [class.amber]="p.status === 'Pending'">{{ p.status }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

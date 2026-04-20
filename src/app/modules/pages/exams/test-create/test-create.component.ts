@@ -14,6 +14,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 export class TestCreateComponent implements OnInit {
 
   isEditMode = false;
+  isDuplicateMode = false;
   examId = '';
   editData: any = null;
   tenantId = '';
@@ -52,7 +53,11 @@ export class TestCreateComponent implements OnInit {
     const state: any = history.state;
     this.tenantId = localStorage.getItem('tenantId') || '';
 
-    if (state?.test) {
+    if (state?.test && state?.duplicate) {
+      this.isDuplicateMode = true;
+      this.editData = state.test;
+      this.breadcrumb.set([{ label: 'Exams', link: '/app/exams/exams' }, { label: 'Duplicate' }]);
+    } else if (state?.test) {
       this.isEditMode = true;
       this.examId = state.test.examId || '';
       this.editData = state.test;
@@ -212,7 +217,7 @@ export class TestCreateComponent implements OnInit {
         this.loadInstructions()
       ]);
 
-      if (this.isEditMode && this.editData) {
+      if ((this.isEditMode || this.isDuplicateMode) && this.editData) {
         this.populateFormForEdit();
       } else {
         this.addSection();
@@ -250,9 +255,9 @@ export class TestCreateComponent implements OnInit {
     const d = this.editData;
 
     this.examForm.patchValue({
-      examCode: d.examCode,
+      examCode: this.isDuplicateMode ? '' : d.examCode,
       examName: d.examName,
-      password: d.password || '',
+      password: this.isDuplicateMode ? '' : (d.password || ''),
       description: d.description || '',
       testType: d.testType,
       medium: d.medium,
@@ -359,6 +364,17 @@ export class TestCreateComponent implements OnInit {
           }
         },
         error: (err: any) => this.alert.error(err?.error?.message || 'Error updating exam')
+      });
+    } else if (this.isDuplicateMode) {
+      payload.refExamId = this.editData?.examId;
+      this.commonApi.fetchData(payload, 'exam', 'duplicate').subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success('Exam duplicated successfully');
+            this.router.navigate(['/app/exams/exams']);
+          }
+        },
+        error: (err: any) => this.alert.error(err?.error?.message || 'Error duplicating exam')
       });
     } else {
       this.commonApi.fetchData(payload, 'exam', 'create').subscribe({

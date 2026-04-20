@@ -1,62 +1,73 @@
-<nav class="navbar navbar-light bg-white shadow-sm px-4 py-2 d-flex justify-content-between align-items-center">
+<nav class="topbar">
 
-  <!-- Left: Logo -->
-  <div class="d-flex align-items-center">
-    <img src="assets/z7i_logo.png" alt="Logo" style="height: 40px;">
-    <!-- <span class="ms-2 h5 mb-0 fw-semibold">Warehouse System</span> -->
-  </div>
-
-  <!-- Right: Notifications + Sign Out -->
-  <div class="d-flex align-items-center">
-    <!-- Mobile menu -->
-    <button class="btn d-lg-none" (click)="toggle()">
+  <!-- Left: mobile toggle + logo -->
+  <div class="topbar-left">
+    <button class="icon-btn mobile-toggle d-lg-none" (click)="toggle()" aria-label="Menu">
       <i class="fa-solid fa-bars"></i>
     </button>
+    <div class="brand">
+      <img src="assets/z7i_logo.png" alt="Logo" class="brand-logo">
+    </div>
+  </div>
 
-    <!-- Notification icon -->
-    <button class="btn position-relative me-3">
-      <i class="fa-regular fa-bell fs-5"></i>
-      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger p-1">
-        0
-      </span>
+  <!-- Middle: search -->
+  <!-- <div class="topbar-search">
+    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+    <input type="text" placeholder="Search students, batches, staff…">
+    <span class="search-kbd">⌘K</span>
+  </div> -->
+
+  <!-- Right: actions + user -->
+  <div class="topbar-right">
+    <!-- <button class="icon-btn d-none d-md-inline-flex" title="Help">
+      <i class="fa-regular fa-circle-question"></i>
     </button>
-    <!-- User Menu Button -->
-    <div class="dropdown">
-      <button type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false"
-        class="btn btn-link d-flex align-items-center gap-2 text-decoration-none text-dark"
-        style="border-radius: 24px; background-color: #f2f3f5; border: 2px solid #cdcdcd;">
-        <i class="fa-regular fa-circle-user fs-4 text-primary"></i>
-        <span class="fw-medium d-none d-sm-inline">{{username}}</span>
-        <i class="fa-solid fa-chevron-down small d-none d-sm-inline text-muted"></i>
+    <button class="icon-btn d-none d-md-inline-flex" title="Quick add">
+      <i class="fa-solid fa-plus"></i>
+    </button> -->
+    <button class="icon-btn has-dot" title="Notifications">
+      <i class="fa-regular fa-bell"></i>
+      <span class="dot"></span>
+    </button>
+
+    <div class="divider d-none d-md-block"></div>
+
+    <!-- User pill -->
+    <div class="dropdown user-dropdown">
+      <button type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false" class="user-pill">
+        <div class="user-avatar">{{ (username || 'U') | slice:0:1 }}</div>
+        <div class="user-text d-none d-sm-flex">
+          <span class="user-name">{{ username }}</span>
+          <span class="user-role">{{ userole }}</span>
+        </div>
+        <i class="fa-solid fa-chevron-down chev d-none d-sm-inline"></i>
       </button>
 
-
-      <!-- Dropdown Menu -->
-      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuButton">
-        <li><a class="dropdown-item" href="#">
-            <div>
-              <i class="fa-solid fa-user me-1"></i>
-              <strong>{{username}}</strong><br>
-              <small class="text-muted ms-4">({{useremail}} - {{userole}})</small>
-            </div>
-          </a></li>
-        <li><a class="dropdown-item" href="#"> <i class="fa-solid fa-gear me-1"></i>Settings</a></li>
-        <li><a class="dropdown-item" href="#"> <i class="fa-solid fa-key me-1"></i>Change Password</a></li>
+      <ul class="dropdown-menu dropdown-menu-end user-menu" aria-labelledby="userMenuButton">
+        <li class="user-menu-header">
+          <div class="user-avatar big">{{ (username || 'U') | slice:0:1 }}</div>
+          <div>
+            <div class="user-menu-name">{{ username }}</div>
+            <div class="user-menu-meta">{{ useremail }}</div>
+            <span class="user-menu-role">{{ userole }}</span>
+          </div>
+        </li>
         <li>
           <hr class="dropdown-divider">
         </li>
-        <div class="d-flex align-items-center justify-content-center">
-          <button class="btn btn-outline-danger d-flex align-items-center gap-1" (click)="logout()">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Log Out</span>
+        <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user me-2"></i>My Profile</a></li>
+        <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear me-2"></i>Settings</a></li>
+        <li><a class="dropdown-item" href="#"><i class="fa-solid fa-key me-2"></i>Change Password</a></li>
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+        <li>
+          <button class="logout-item" (click)="logout()">
+            <i class="fa-solid fa-right-from-bracket me-2"></i>Log Out
           </button>
-        </div>
-
+        </li>
       </ul>
     </div>
-
-
-
   </div>
 
 </nav>

@@ -121,6 +121,7 @@ export class TestComponent implements OnInit, OnDestroy {
       dropdown: [
         { text: 'View Questions', icon: 'fa-solid fa-list-ol', callback: (row: any) => this.viewQuestions(row) },
         { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.editExam(row) },
+        { text: 'Duplicate Exam', icon: 'fa-regular fa-copy', callback: (row: any) => this.duplicateExam(row) },
         { text: 'Add Question', icon: 'fa-solid fa-plus', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importQuestions(row) },
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.rearrange(row) },
@@ -196,6 +197,11 @@ export class TestComponent implements OnInit, OnDestroy {
       }
       qCtrl?.updateValueAndValidity();
       sCtrl?.updateValueAndValidity();
+
+      // Exam-level grace only supports flat_add
+      if (val === 'exam' && this.graceForm.get('actionType')?.value !== 'flat_add') {
+        this.graceForm.patchValue({ actionType: 'flat_add' });
+      }
 
       if (val === 'question' && this.graceRow && !this.graceQuestions.length) {
         this.loadGraceQuestions();
@@ -369,6 +375,7 @@ export class TestComponent implements OnInit, OnDestroy {
   viewQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: row } }); }
   rearrange(row: any) { this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: row } }); }
   editExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row } }); }
+  duplicateExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row, duplicate: true } }); }
   importQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-import'], { state: { questions: row } }); }
   addQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-create'], { state: { question: row } }); }
   viewResult(row: any) { this.router.navigate(['/app/exams/exams/result-batch'], { state: { exam: row } }); }

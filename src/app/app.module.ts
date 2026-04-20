@@ -8,6 +8,7 @@ import { HttpClientModule, HttpClient, HTTP_INTERCEPTORS } from '@angular/common
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AuthinterceptorService } from './service/interceptor/authinterceptor.service';
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 @NgModule({
   declarations: [
@@ -26,7 +27,8 @@ import { AuthinterceptorService } from './service/interceptor/authinterceptor.se
       provide: HTTP_INTERCEPTORS,
       useClass: AuthinterceptorService,
       multi: true
-    }
+    },
+    provideCharts(withDefaultRegisterables())
   ],
   bootstrap: [AppComponent]
 })
