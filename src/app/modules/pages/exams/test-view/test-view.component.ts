@@ -20,17 +20,12 @@ export class TestViewComponent implements OnInit {
   loading = false;
   isDraft = false;
   tenantId = '';
-
-  /* ================= TABS ================= */
   activeTab: 'details' | 'results' = 'details';
   resultSubTab: 'batches' | 'leaderboard' | 'attempts' | 'timing' = 'batches';
   hasResults = false;
-
-  /* ================= BATCH RESULTS ================= */
   batchLoading = false;
   batchData: any[] = [];
   totalBatchRecords = 0;
-
   batchColumns = [
     { key: 'batchId', label: 'Batch Code', sortable: false },
     { key: 'statusDisplay', label: 'Status', sortable: false },
@@ -50,13 +45,9 @@ export class TestViewComponent implements OnInit {
       callback: (row: any) => this.viewBatchResult(row)
     }
   ];
-
-  /* ================= ANALYTICS ================= */
   analyticsLoading = false;
   analyticsData: any[] = [];
   sectionAnalyticsMap: Record<string, any[]> = {};
-
-  // Attempts chart
   attemptsChartData: ChartData<'bar'> = { labels: [], datasets: [] };
   attemptsChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
@@ -70,13 +61,9 @@ export class TestViewComponent implements OnInit {
       y: { stacked: true, title: { display: true, text: 'Count' }, beginAtZero: true, ticks: { stepSize: 1 } }
     }
   };
-
-  /* ================= TIMING ANALYTICS ================= */
   timingLoading = false;
   timingData: any[] = [];
   sectionTimingMap: Record<string, any[]> = {};
-
-  // Timing chart
   timingChartData: ChartData<'bar'> = { labels: [], datasets: [] };
   timingChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
@@ -113,26 +100,18 @@ export class TestViewComponent implements OnInit {
       }
     }
   };
-
-  /* ================= LEADERBOARD ================= */
   leaderboardLoading = false;
   leaderboardData: any[] = [];
   totalLeaderboardRecords = 0;
   leaderboardPage = 1;
   leaderboardLimit = 20;
   leaderboardBatchId = '';
-
-  /* ================= STUDENT RESULT MODAL ================= */
   showStudentModal = false;
   studentResultLoading = false;
   studentResult: any = null;
   studentAnswersBySection: Record<string, any[]> = {};
-
-  // Batch filter for analytics
   selectedBatchId = '';
   allBatches: any[] = [];
-
-  /* ================= BATCH ASSIGN MODAL ================= */
   showBatchModal = false;
   batchAssignRow: any = null;
   allAssignableBatches: any[] = [];
@@ -140,13 +119,9 @@ export class TestViewComponent implements OnInit {
   selectedBatchIds: Set<string> = new Set();
   batchModalLoading = false;
   batchAssigning = false;
-
-  /* ================= PUBLISH RESULT MODAL ================= */
   showPublishResultModal = false;
   publishResultNote = '';
   publishingResult = false;
-
-  /* ================= GRACE MARKS MODAL ================= */
   showGraceModal = false;
   graceRow: any = null;
   graceApplying = false;
@@ -154,7 +129,6 @@ export class TestViewComponent implements OnInit {
   graceForm!: FormGroup;
   graceQuestions: any[] = [];
   graceQuestionsLoading = false;
-
   graceTypeOptions = [
     { label: 'Exam', value: 'exam' },
     { label: 'Question', value: 'question' }
@@ -176,6 +150,7 @@ export class TestViewComponent implements OnInit {
     if (state?.exam) {
       this.examData = state.exam;
     }
+    console.log("this.examData ",this.examData)
     this.tenantId = localStorage.getItem('tenantId') || '';
   }
 
