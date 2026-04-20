@@ -19,8 +19,8 @@
 
       <!-- More Actions Dropdown -->
       <div class="dropdown" *ngIf="!authService.assignmentRole()">
-        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 dropdown-toggle"
-          type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 dropdown-toggle" type="button"
+          data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fa-solid fa-ellipsis-vertical me-1"></i> More
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -63,8 +63,7 @@
     <button class="tab-btn" [class.active]="activeTab === 'details'" (click)="switchTab('details')">
       <i class="fa-solid fa-info-circle me-1"></i> Details
     </button>
-    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'"
-      (click)="switchTab('results')">
+    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'" (click)="switchTab('results')">
       <i class="fa-solid fa-chart-bar me-1"></i> Results
     </button>
   </div>
@@ -115,7 +114,8 @@
           <h6 class="info-card-title"><i class="fa-solid fa-circle-info me-2"></i>General Information</h6>
           <div class="info-row">
             <span class="info-label">Test Type</span>
-            <span class="info-value"><span class="badge bg-primary">{{ formatTestType(examData.testType) }}</span></span>
+            <span class="info-value"><span class="badge bg-primary">{{ formatTestType(examData.testType)
+                }}</span></span>
           </div>
           <div class="info-row">
             <span class="info-label">Medium</span>
@@ -168,19 +168,15 @@
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Section Name</th>
                   <th>Subject</th>
                   <th>Questions</th>
-                  <th>Marks</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let s of examData.sections; let i = index">
                   <td class="text-muted">{{ i + 1 }}</td>
                   <td class="fw-medium">{{ s.sectionName }}</td>
-                  <td>{{ s.subjectName || '-' }}</td>
-                  <td>{{ s.totalQuestions || 0 }}</td>
-                  <td>{{ s.totalMarks || 0 }}</td>
+                  <td>{{ s?.numberOfQuestions }}</td>
                 </tr>
               </tbody>
             </table>
@@ -199,8 +195,7 @@
     <!-- Batch filter (shared across sub-tabs) -->
     <div class="d-flex align-items-center justify-content-between mb-4">
       <div class="sub-tab-bar">
-        <button class="sub-tab-btn" [class.active]="resultSubTab === 'batches'"
-          (click)="switchResultSubTab('batches')">
+        <button class="sub-tab-btn" [class.active]="resultSubTab === 'batches'" (click)="switchResultSubTab('batches')">
           <i class="fa-solid fa-users me-1"></i> Batches
         </button>
         <button class="sub-tab-btn" [class.active]="resultSubTab === 'leaderboard'"
@@ -211,8 +206,7 @@
           (click)="switchResultSubTab('attempts')">
           <i class="fa-solid fa-bullseye me-1"></i> Attempts
         </button>
-        <button class="sub-tab-btn" [class.active]="resultSubTab === 'timing'"
-          (click)="switchResultSubTab('timing')">
+        <button class="sub-tab-btn" [class.active]="resultSubTab === 'timing'" (click)="switchResultSubTab('timing')">
           <i class="fa-regular fa-clock me-1"></i> Timing
         </button>
       </div>
@@ -220,8 +214,8 @@
       <!-- Batch filter for analytics tabs -->
       <div *ngIf="resultSubTab === 'attempts' || resultSubTab === 'timing'" class="d-flex align-items-center gap-2">
         <label class="text-muted small mb-0">Filter by batch:</label>
-        <select class="form-select form-select-sm" style="width: 180px;"
-          [(ngModel)]="selectedBatchId" (ngModelChange)="onBatchFilterChange()">
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="selectedBatchId"
+          (ngModelChange)="onBatchFilterChange()">
           <option value="">All Batches</option>
           <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
         </select>
@@ -230,8 +224,8 @@
       <!-- Batch filter for leaderboard -->
       <div *ngIf="resultSubTab === 'leaderboard'" class="d-flex align-items-center gap-2">
         <label class="text-muted small mb-0">Filter by batch:</label>
-        <select class="form-select form-select-sm" style="width: 180px;"
-          [(ngModel)]="leaderboardBatchId" (ngModelChange)="onLeaderboardBatchChange()">
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="leaderboardBatchId"
+          (ngModelChange)="onLeaderboardBatchChange()">
           <option value="">All Batches</option>
           <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
         </select>
@@ -240,9 +234,8 @@
 
     <!-- ────────── BATCHES SUB-TAB ────────── -->
     <div *ngIf="resultSubTab === 'batches'">
-      <custom-table [autoFitChars]="true" [columns]="batchColumns" [data]="batchTableData"
-        [actions]="batchActions" [success]="'Enabled'" [warn]="'Disabled'"
-        [totalRecords]="totalBatchRecords" [loading]="batchLoading"
+      <custom-table [autoFitChars]="true" [columns]="batchColumns" [data]="batchTableData" [actions]="batchActions"
+        [success]="'Enabled'" [warn]="'Disabled'" [totalRecords]="totalBatchRecords" [loading]="batchLoading"
         [searchPlaceholder]="'Search Batch ID...'">
       </custom-table>
     </div>
@@ -305,8 +298,8 @@
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
-                    (click)="viewStudentResult(r)" title="View Result">
+                  <button class="btn btn-sm btn-outline-primary rounded-circle"
+                    style="width:32px;height:32px;padding:0;" (click)="viewStudentResult(r)" title="View Result">
                     <i class="fa-regular fa-eye"></i>
                   </button>
                 </td>
@@ -316,10 +309,12 @@
         </div>
 
         <!-- Pagination -->
-        <div *ngIf="leaderboardTotalPages > 1" class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
+        <div *ngIf="leaderboardTotalPages > 1"
+          class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
           <small class="text-muted">
             Showing {{ (leaderboardPage - 1) * leaderboardLimit + 1 }}
-            - {{ leaderboardPage * leaderboardLimit > totalLeaderboardRecords ? totalLeaderboardRecords : leaderboardPage * leaderboardLimit }}
+            - {{ leaderboardPage * leaderboardLimit > totalLeaderboardRecords ? totalLeaderboardRecords :
+            leaderboardPage * leaderboardLimit }}
             of {{ totalLeaderboardRecords }}
           </small>
           <nav>
@@ -339,7 +334,8 @@
       </div>
 
       <!-- Section-wise breakdown for top student -->
-      <div *ngIf="!leaderboardLoading && leaderboardData.length > 0 && examData.sections?.length > 1" class="section-card mt-4">
+      <div *ngIf="!leaderboardLoading && leaderboardData.length > 0 && examData.sections?.length > 1"
+        class="section-card mt-4">
         <div class="section-card-header">
           <span class="fw-bold">Section-wise Scores</span>
         </div>
@@ -412,8 +408,7 @@
           <div class="section-card-header">
             <span class="fw-bold">{{ getSectionName(sectionId) }}</span>
             <div class="d-flex gap-2">
-              <span class="badge rounded-pill"
-                [ngClass]="getSectionSummary(sectionId).avgAccuracy >= 70 ? 'bg-success' :
+              <span class="badge rounded-pill" [ngClass]="getSectionSummary(sectionId).avgAccuracy >= 70 ? 'bg-success' :
                            getSectionSummary(sectionId).avgAccuracy >= 40 ? 'bg-warning' : 'bg-danger'">
                 {{ getSectionSummary(sectionId).avgAccuracy }}% Accuracy
               </span>
@@ -615,7 +610,8 @@
             </div>
             <div class="col-md-2 col-sm-4">
               <div class="student-stat-card">
-                <div class="student-stat-value text-muted" style="font-size:16px">{{ formatTime(studentResult.timeTaken) }}</div>
+                <div class="student-stat-value text-muted" style="font-size:16px">{{ formatTime(studentResult.timeTaken)
+                  }}</div>
                 <div class="student-stat-label">Time Taken</div>
               </div>
             </div>
@@ -776,15 +772,13 @@
             <tbody>
               <tr *ngFor="let b of allAssignableBatches">
                 <td>
-                  <input type="checkbox" class="form-check-input"
-                    [checked]="selectedBatchIds.has(b.batchCode)"
+                  <input type="checkbox" class="form-check-input" [checked]="selectedBatchIds.has(b.batchCode)"
                     (change)="toggleBatchSelect(b.batchCode)" />
                 </td>
                 <td>{{ b.batchCode }}</td>
                 <td>{{ b.batchName }}</td>
                 <td>
-                  <span class="badge"
-                    [ngClass]="enabledBatchIds.has(b.batchCode) ? 'bg-success' : 'bg-secondary'">
+                  <span class="badge" [ngClass]="enabledBatchIds.has(b.batchCode) ? 'bg-success' : 'bg-secondary'">
                     {{ enabledBatchIds.has(b.batchCode) ? 'Enabled' : 'Not Assigned' }}
                   </span>
                 </td>
@@ -829,8 +823,7 @@
           </h5>
           <small class="text-muted">{{ examData?.examName }}</small>
         </div>
-        <button type="button" class="btn-close" (click)="cancelPublishResult()"
-          [disabled]="publishingResult"></button>
+        <button type="button" class="btn-close" (click)="cancelPublishResult()" [disabled]="publishingResult"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3">
@@ -843,8 +836,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="cancelPublishResult()"
           [disabled]="publishingResult">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="confirmPublishResult()"
-          [disabled]="publishingResult">
+        <button type="button" class="btn btn-primary" (click)="confirmPublishResult()" [disabled]="publishingResult">
           <span *ngIf="publishingResult" class="spinner-border spinner-border-sm me-2"></span>
           <i class="fa-solid fa-bullhorn me-1" *ngIf="!publishingResult"></i>
           Publish Result
@@ -943,8 +935,7 @@
                     class="text-danger fs-11 py-3 text-center">
                     No questions found for this exam.
                   </div>
-                  <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
-                    class="grace-q-card"
+                  <div *ngFor="let q of getFilteredGraceQuestions(); let i = index" class="grace-q-card"
                     [class.selected]="graceForm.get('questionId')?.value === q.questionId"
                     (click)="graceForm.patchValue({ questionId: q.questionId })">
                     <span class="grace-q-badge">Q{{ i + 1 }}</span>
