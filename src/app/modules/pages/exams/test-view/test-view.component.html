@@ -16,6 +16,42 @@
         class="btn btn-outline-success btn-sm rounded-pill px-3" (click)="editExam()">
         <i class="fa-regular fa-pen-to-square me-1"></i> Edit
       </button>
+
+      <!-- More Actions Dropdown -->
+      <div class="dropdown" *ngIf="!authService.assignmentRole()">
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 dropdown-toggle"
+          type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-ellipsis-vertical me-1"></i> More
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+          <li>
+            <a class="dropdown-item" (click)="duplicateExam()">
+              <i class="fa-regular fa-copy me-2 text-primary"></i>Duplicate Exam
+            </a>
+          </li>
+          <li *ngIf="canRearrange">
+            <a class="dropdown-item" (click)="rearrangeQuestions()">
+              <i class="fa-solid fa-reorder me-2 text-secondary"></i>Rearrange Questions
+            </a>
+          </li>
+          <li *ngIf="canAssignBatch">
+            <a class="dropdown-item" (click)="openBatchModal()">
+              <i class="fa-solid fa-users me-2 text-info"></i>Assign Batch
+            </a>
+          </li>
+          <li *ngIf="canPublishResult">
+            <a class="dropdown-item" (click)="openPublishResultModal()">
+              <i class="fa-solid fa-bullhorn me-2 text-success"></i>Publish Result
+            </a>
+          </li>
+          <li *ngIf="canShowGrace">
+            <a class="dropdown-item" (click)="openGraceModal()">
+              <i class="fa-solid fa-gift me-2 text-warning"></i>Grace Marks
+            </a>
+          </li>
+        </ul>
+      </div>
+
       <button class="btn closebutton btn-sm rounded-pill px-3" routerLink="/app/exams/exams">
         <i class="fa-solid fa-arrow-left me-1"></i> Back
       </button>
@@ -701,6 +737,255 @@
         <button type="button" class="btn closebutton rounded-pill px-4" (click)="closeStudentModal()">Close</button>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!--                   ASSIGN BATCH MODAL                             -->
+<!-- ================================================================ -->
+<div class="modal-backdrop fade show" *ngIf="showBatchModal" (click)="closeBatchModal()"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showBatchModal" (click)="$event.stopPropagation()">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="fa-solid fa-users me-2"></i>Enable / Disable Batches
+        </h5>
+        <button type="button" class="btn-close" (click)="closeBatchModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">
+          Exam: <strong>{{ examData?.examName }}</strong> ({{ examData?.examCode }})
+        </p>
+
+        <div *ngIf="batchModalLoading" class="text-center py-4">
+          <div class="spinner-border text-primary"></div>
+        </div>
+
+        <div *ngIf="!batchModalLoading" class="table-responsive">
+          <table class="table table-hover table-sm align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px;">Enable</th>
+                <th>Batch Code</th>
+                <th>Batch Name</th>
+                <th style="width:90px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let b of allAssignableBatches">
+                <td>
+                  <input type="checkbox" class="form-check-input"
+                    [checked]="selectedBatchIds.has(b.batchCode)"
+                    (change)="toggleBatchSelect(b.batchCode)" />
+                </td>
+                <td>{{ b.batchCode }}</td>
+                <td>{{ b.batchName }}</td>
+                <td>
+                  <span class="badge"
+                    [ngClass]="enabledBatchIds.has(b.batchCode) ? 'bg-success' : 'bg-secondary'">
+                    {{ enabledBatchIds.has(b.batchCode) ? 'Enabled' : 'Not Assigned' }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="!allAssignableBatches.length">
+                <td colspan="4" class="text-center text-muted py-4">No batches found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-end mt-2">
+          <span class="badge bg-primary fs-6">{{ selectedBatchIds.size }} enabled</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeBatchModal()">Cancel</button>
+        <button type="button" class="btn btn-success" [disabled]="batchAssigning" (click)="saveBatchChanges()">
+          <span *ngIf="batchAssigning">
+            <span class="spinner-border spinner-border-sm me-1"></span> Saving...
+          </span>
+          <span *ngIf="!batchAssigning">
+            <i class="fa-solid fa-check me-1"></i> Save Changes
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!--                  PUBLISH RESULT MODAL                            -->
+<!-- ================================================================ -->
+<div class="modal-backdrop fade show" *ngIf="showPublishResultModal"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showPublishResultModal">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Publish Result
+          </h5>
+          <small class="text-muted">{{ examData?.examName }}</small>
+        </div>
+        <button type="button" class="btn-close" (click)="cancelPublishResult()"
+          [disabled]="publishingResult"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Note</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="publishResultNote"
+            placeholder="Enter a note (e.g. First publish, Re-publish after correction...)"
+            [disabled]="publishingResult"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cancelPublishResult()"
+          [disabled]="publishingResult">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="confirmPublishResult()"
+          [disabled]="publishingResult">
+          <span *ngIf="publishingResult" class="spinner-border spinner-border-sm me-2"></span>
+          <i class="fa-solid fa-bullhorn me-1" *ngIf="!publishingResult"></i>
+          Publish Result
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!--                    GRACE MARKS MODAL                             -->
+<!-- ================================================================ -->
+<div class="modal-backdrop fade show" *ngIf="showGraceModal" (click)="closeGraceModal()"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showGraceModal">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-width: 900px;">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="fa-solid fa-gift me-2 text-primary"></i>Manage Grace Marks
+        </h5>
+        <button type="button" class="btn-close" (click)="closeGraceModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-4">
+          Exam: <strong>{{ graceRow?.examName }}</strong> ({{ graceRow?.examCode }})
+        </p>
+
+        <div class="row">
+          <!-- Existing grace marks -->
+          <div class="col-md-7 border-end">
+            <h6 class="fs-14 fw-semibold mb-3">Active Grace Marks</h6>
+            <div class="grace-list-container" style="max-height: 400px; overflow-y: auto;">
+              <div *ngFor="let g of graceRow?.graces" class="card mb-2 border-0 bg-light shadow-none">
+                <div class="card-body p-3">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <span class="badge" [ngClass]="g.graceType === 'exam' ? 'bg-primary' : 'bg-info'">
+                        {{ g.graceType | titlecase }}
+                      </span>
+                      <span class="badge bg-warning text-dark ms-1">
+                        {{ g.actionType === 'flat_add' ? '+' + g.flatMarks + ' Marks' : 'No Negative' }}
+                      </span>
+                      <p class="mb-1 mt-2 fs-13 fw-medium" *ngIf="g.graceType === 'question'">
+                        Question ID: <span class="text-muted">{{ g.questionId }}</span><br>
+                        Section ID: <span class="text-muted">{{ g.sectionId }}</span>
+                      </p>
+                      <p class="mb-0 text-muted fs-12 fst-italic" *ngIf="g.note">"{{ g.note }}"</p>
+                      <small class="text-muted fs-11 mt-1 d-block">Applied on: {{ g.appliedAt | date:'short' }}</small>
+                    </div>
+                    <button class="btn btn-sm btn-link text-danger p-0" (click)="removeGrace(g.graceId)"
+                      [disabled]="graceRemovingGraceId === g.graceId">
+                      <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== g.graceId"></i>
+                      <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === g.graceId"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="!graceRow?.graces?.length" class="text-center py-4 text-muted">
+                No active grace marks for this exam.
+              </div>
+            </div>
+          </div>
+
+          <!-- Apply new grace -->
+          <div class="col-md-5">
+            <h6 class="fs-14 fw-semibold mb-3">Apply New Grace</h6>
+            <form [formGroup]="graceForm" (ngSubmit)="applyGrace()" class="row g-3">
+              <div class="col-12">
+                <label class="form-label fs-13 fw-medium">Grace Type</label>
+                <select class="form-select form-select-sm" formControlName="graceType">
+                  <option *ngFor="let t of graceTypeOptions" [value]="t.value">{{ t.label }}</option>
+                </select>
+              </div>
+
+              <div class="col-12" *ngIf="graceForm.get('graceType')?.value === 'question'">
+                <label class="form-label fs-13 fw-medium">Section / Subject</label>
+                <select class="form-select form-select-sm" formControlName="subjectId"
+                  [class.is-invalid]="graceForm.get('subjectId')?.touched && graceForm.get('subjectId')?.invalid">
+                  <option value="">Select Section</option>
+                  <option *ngFor="let s of getAvailableSections()" [value]="s.subjectId">
+                    {{ s.sectionName }} ({{ s.sectionCode }})
+                  </option>
+                </select>
+              </div>
+
+              <div class="col-12" *ngIf="graceForm.get('graceType')?.value === 'question'">
+                <label class="form-label fs-13 fw-medium">
+                  Select Question
+                  <span *ngIf="graceQuestionsLoading" class="spinner-border spinner-border-sm ms-1 text-primary"></span>
+                </label>
+                <div class="grace-question-list">
+                  <div *ngIf="graceQuestionsLoading" class="text-muted fs-12 py-3 text-center">
+                    Loading questions...
+                  </div>
+                  <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length"
+                    class="text-danger fs-11 py-3 text-center">
+                    No questions found for this exam.
+                  </div>
+                  <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
+                    class="grace-q-card"
+                    [class.selected]="graceForm.get('questionId')?.value === q.questionId"
+                    (click)="graceForm.patchValue({ questionId: q.questionId })">
+                    <span class="grace-q-badge">Q{{ i + 1 }}</span>
+                    <div class="grace-q-body" [innerHTML]="q.questionHtml || q.question || ''"></div>
+                  </div>
+                </div>
+                <div class="text-danger fs-11 mt-1"
+                  *ngIf="graceForm.get('questionId')?.touched && graceForm.get('questionId')?.invalid">
+                  Please select a question
+                </div>
+              </div>
+
+              <div class="col-12" *ngIf="graceForm.get('actionType')?.value === 'flat_add'">
+                <label class="form-label fs-13 fw-medium">Flat Marks to Add</label>
+                <input type="number" class="form-control form-control-sm" formControlName="flatMarks">
+              </div>
+
+              <div class="col-12" *ngIf="graceForm.get('graceType')?.value !== 'exam'">
+                <label class="form-label fs-13 fw-medium">Action</label>
+                <select class="form-select form-select-sm" formControlName="actionType">
+                  <option *ngFor="let a of graceActionOptions" [value]="a.value">{{ a.label }}</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fs-13 fw-medium">Note / Reason <span class="text-danger">*</span></label>
+                <textarea class="form-control form-control-sm" rows="3" formControlName="note"
+                  placeholder="Reason for grace marks..."
+                  [class.is-invalid]="graceForm.get('note')?.touched && graceForm.get('note')?.invalid"></textarea>
+              </div>
+
+              <div class="col-12 mt-3 text-end">
+                <button type="submit" class="btn btn-primary btn-sm w-100" [disabled]="graceApplying">
+                  <span class="spinner-border spinner-border-sm me-1" *ngIf="graceApplying"></span>
+                  {{ graceApplying ? 'Applying...' : 'Apply Grace' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

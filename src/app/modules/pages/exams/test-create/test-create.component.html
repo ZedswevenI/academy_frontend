@@ -5,7 +5,7 @@
 
 <form *ngIf="!loading" [formGroup]="examForm" class="card shadow-sm p-4">
 
-  <h5 class="mb-3">{{ isEditMode ? 'Edit Exam' : 'Create Exam' }}</h5>
+  <h5 class="mb-3">{{ isEditMode ? 'Edit Exam' : (isDuplicateMode ? 'Duplicate Exam' : 'Create Exam') }}</h5>
 
   <div class="row g-3">
 

@@ -74,6 +74,12 @@
     </div>
     <!-- Table -->
     <div class="mt-3" *ngIf="isProceed">
+      <div class="d-flex justify-content-end mb-2">
+        <button class="btn btn-outline-success rounded-pill fs-14 fw-medium"
+          type="button" [disabled]="!dataArray.length" (click)="exportAllPhases()">
+          <i class="fa-solid fa-file-export me-2"></i>Export All
+        </button>
+      </div>
       <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
         [success]="'Active'" [danger]="'Inactive'" [totalRecords]="totalRecords"
         [searchPlaceholder]="'Search Phase Name...'">

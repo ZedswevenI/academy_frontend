@@ -947,6 +947,82 @@ export class PhaseListComponent implements OnInit {
     return (this.getTotalHours() / topics.length).toFixed(1);
   }
 
+  exportAllPhases(): void {
+    if (!this.dataArray?.length) {
+      this.alert.error('No phases to export');
+      return;
+    }
+
+    const f = this.phaseForm.value;
+    const programName = this.programs.find((p: any) => p.programId === f.programId)?.proname || '';
+    const classLabel = this.allClasses.find(c => c.value === f.class)?.label || f.class || '';
+    const subjectLabel = f.subject && f.subject !== 'ALL'
+      ? (this.allSubjects.find((s: any) => s._id === f.subject)?.subjectName || '')
+      : 'All';
+
+    const rows: any[] = [];
+
+    this.dataArray.forEach((phase: any) => {
+      const subjectName = phase.subjectId?.subjectName || phase.subjectName || '';
+      const topics = (phase.topics || []).slice().sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      const phaseTotalHours = topics.reduce((sum: number, t: any) => sum + (t.estHours || 0), 0);
+
+      if (!topics.length) {
+        rows.push({
+          'Phase Name': phase.phaseName,
+          'Class': phase.classNo,
+          'Subject': subjectName,
+          'Status': phase.status,
+          'Sort Order (Phase)': phase.sortOrder,
+          'Topic Name': '',
+          'Est. Hours': 0,
+          'Sort Order (Topic)': '',
+          'Phase Total Hours': phaseTotalHours,
+        });
+      } else {
+        topics.forEach((t: any, i: number) => {
+          rows.push({
+            'Phase Name': i === 0 ? phase.phaseName : '',
+            'Class': i === 0 ? phase.classNo : '',
+            'Subject': i === 0 ? subjectName : '',
+            'Status': i === 0 ? phase.status : '',
+            'Sort Order (Phase)': i === 0 ? phase.sortOrder : '',
+            'Topic Name': t.topicName || '',
+            'Est. Hours': t.estHours || 0,
+            'Sort Order (Topic)': t.sortOrder || 0,
+            'Phase Total Hours': i === 0 ? phaseTotalHours : '',
+          });
+        });
+      }
+
+      rows.push({});
+    });
+
+    const grandTotalTopics = this.dataArray.reduce((s: number, p: any) => s + (p.topics?.length || 0), 0);
+    const grandTotalHours = this.dataArray.reduce(
+      (s: number, p: any) => s + (p.topics?.reduce((a: number, t: any) => a + (t.estHours || 0), 0) || 0),
+      0,
+    );
+    rows.push({
+      'Phase Name': 'Summary',
+      'Class': '',
+      'Subject': '',
+      'Status': '',
+      'Sort Order (Phase)': '',
+      'Topic Name': `Total Phases: ${this.dataArray.length}, Total Topics: ${grandTotalTopics}`,
+      'Est. Hours': grandTotalHours,
+      'Sort Order (Topic)': '',
+      'Phase Total Hours': '',
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Phase Plans');
+
+    const safe = (v: string) => (v || '').toString().replace(/[^A-Za-z0-9_-]/g, '_');
+    XLSX.writeFile(wb, `PhasePlans_${safe(programName)}_${safe(classLabel)}_${safe(subjectLabel)}.xlsx`);
+  }
+
   exportPhase(): void {
     if (!this.selectedPhase) return;
     const phase = this.selectedPhase;

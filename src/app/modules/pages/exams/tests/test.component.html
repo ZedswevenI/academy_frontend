@@ -250,23 +250,25 @@
                                 <span *ngIf="graceQuestionsLoading"
                                     class="spinner-border spinner-border-sm ms-1 text-primary"></span>
                             </label>
-                            <select class="form-select form-select-sm" formControlName="questionId"
-                                [disabled]="graceQuestionsLoading"
-                                [class.is-invalid]="graceForm.get('questionId')?.touched && graceForm.get('questionId')?.invalid">
-                                <option value="">{{ graceQuestionsLoading ? 'Loading questions...' : 'Select Question'
-                                    }}</option>
-                                <option *ngFor="let q of getFilteredGraceQuestions(); let i = index"
-                                    [value]="q.questionId">
-                                    Q{{ i + 1 }} : {{ q.questionId }}
-                                </option>
-                            </select>
-                            <div class="invalid-feedback fs-11"
+                            <div class="grace-question-list">
+                                <div *ngIf="graceQuestionsLoading" class="text-muted fs-12 py-3 text-center">
+                                    Loading questions...
+                                </div>
+                                <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length"
+                                    class="text-danger fs-11 py-3 text-center">
+                                    No questions found for this exam.
+                                </div>
+                                <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
+                                    class="grace-q-card"
+                                    [class.selected]="graceForm.get('questionId')?.value === q.questionId"
+                                    (click)="graceForm.patchValue({ questionId: q.questionId })">
+                                    <span class="grace-q-badge">Q{{ i + 1 }}</span>
+                                    <div class="grace-q-body" [innerHTML]="q.questionHtml || q.question || ''"></div>
+                                </div>
+                            </div>
+                            <div class="text-danger fs-11 mt-1"
                                 *ngIf="graceForm.get('questionId')?.touched && graceForm.get('questionId')?.invalid">
                                 Please select a question
-                            </div>
-                            <div *ngIf="!graceQuestionsLoading && !graceQuestions.length"
-                                class="text-danger fs-11 mt-1">
-                                No questions found for this exam.
                             </div>
                         </div>
 
@@ -275,7 +277,7 @@
                             <input type="number" class="form-control form-control-sm" formControlName="flatMarks">
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12" *ngIf="graceForm.get('graceType')?.value !== 'exam'">
                             <selectbox label="Action" formControlName="actionType"
                                 [control]="graceForm.get('actionType')" [options]="graceActionOptions"
                                 optionLabel="label" optionValue="value">
