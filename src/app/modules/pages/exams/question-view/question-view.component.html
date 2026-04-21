@@ -30,11 +30,17 @@
             </li>
           </ul>
         </div>
-        <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-outline-success btn-sm me-2" (click)="openBankModal()">
+        <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-outline-success btn-sm me-2"
+          (click)="openBankModal()">
           <i class="fas fa-database me-1"></i> Map from Bank
         </button>
-        <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-primary btn-sm" (click)="addNewQuestion()">
+        <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-primary btn-sm me-2"
+          (click)="addNewQuestion()">
           + Add Question
+        </button>
+        <button *ngIf="!authService.assignmentRole()" class="btn btn-outline-primary btn-sm me-2"
+          (click)="importAnswers()">
+          <i class="fa-solid fa-cloud-arrow-up me-1"></i> Import Answers
         </button>
       </div>
     </div>
@@ -48,7 +54,8 @@
   <!-- Active Grace Marks Banner -->
   <div *ngIf="!loading && questionData?.graces?.length" class="mb-4">
     <div *ngFor="let g of questionData.graces">
-      <div *ngIf="g.isActive" class="alert alert-warning border-warning shadow-sm d-flex justify-content-between align-items-center py-2 px-3">
+      <div *ngIf="g.isActive"
+        class="alert alert-warning border-warning shadow-sm d-flex justify-content-between align-items-center py-2 px-3">
         <div>
           <i class="fa-solid fa-gift me-2 text-warning"></i>
           <strong class="text-dark">Grace Applied:</strong>
@@ -58,10 +65,11 @@
           <span class="text-muted fs-13 ms-2" *ngIf="g.questionId">Q: {{ g.questionId }}</span>
           <span class="ms-3 text-muted italic fs-13" *ngIf="g.note">"{{ g.note }}"</span>
         </div>
-        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" (click)="removeGraceFromQuestion(g.graceId)"
-                [disabled]="graceRemovingGraceId === g.graceId" title="Remove Grace">
-           <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== g.graceId"></i>
-           <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === g.graceId"></span>
+        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle"
+          (click)="removeGraceFromQuestion(g.graceId)" [disabled]="graceRemovingGraceId === g.graceId"
+          title="Remove Grace">
+          <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== g.graceId"></i>
+          <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === g.graceId"></span>
         </button>
       </div>
     </div>
@@ -113,13 +121,14 @@
             <i class="fa-solid fa-gift me-1"></i>
             +{{ grace.graceMarks }} Grace
           </span>
-          <button *ngIf="grace" class="btn btn-sm btn-outline-danger rounded-circle p-1" style="width:24px; height:24px; line-height: 1;"
-                  (click)="removeGraceFromQuestion(grace.graceId)"
-                  [disabled]="graceRemovingGraceId === grace.graceId" title="Remove Grace">
+          <button *ngIf="grace" class="btn btn-sm btn-outline-danger rounded-circle p-1"
+            style="width:24px; height:24px; line-height: 1;" (click)="removeGraceFromQuestion(grace.graceId)"
+            [disabled]="graceRemovingGraceId === grace.graceId" title="Remove Grace">
             <i class="fa-solid fa-times" *ngIf="graceRemovingGraceId !== grace.graceId"></i>
             <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === grace.graceId"></span>
           </button>
-          <button *ngIf="!grace" class="btn btn-sm btn-outline-warning" (click)="openGraceModal(q)" [disabled]="graceApplying">
+          <button *ngIf="!grace" class="btn btn-sm btn-outline-warning" (click)="openGraceModal(q)"
+            [disabled]="graceApplying">
             <i class="fa-solid fa-gift me-1"></i> Apply Grace
           </button>
         </ng-container>
@@ -195,7 +204,8 @@
       </div>
       <div class="mb-3">
         <label class="form-label fw-medium fs-13">Note / Reason <span class="text-danger">*</span></label>
-        <textarea class="form-control" rows="3" [(ngModel)]="graceNoteInput" placeholder="e.g. Wrong answer key"></textarea>
+        <textarea class="form-control" rows="3" [(ngModel)]="graceNoteInput"
+          placeholder="e.g. Wrong answer key"></textarea>
       </div>
       <div class="d-flex gap-2 justify-content-end">
         <button class="btn btn-outline-secondary btn-sm" (click)="closeGraceModal()">Cancel</button>
@@ -282,8 +292,8 @@
         <!-- Search -->
         <div class="row mb-3">
           <div class="col-md-6">
-            <input class="form-control form-control-sm" placeholder="Search questions..."
-              [(ngModel)]="bankSearch" (keydown.enter)="searchBank()" />
+            <input class="form-control form-control-sm" placeholder="Search questions..." [(ngModel)]="bankSearch"
+              (keydown.enter)="searchBank()" />
           </div>
         </div>
 
@@ -298,8 +308,7 @@
             <thead class="table-light">
               <tr>
                 <th style="width:40px;">
-                  <input type="checkbox" class="form-check-input"
-                    [checked]="allCurrentPageSelected"
+                  <input type="checkbox" class="form-check-input" [checked]="allCurrentPageSelected"
                     (change)="toggleSelectAll($event)" />
                 </th>
                 <th>Question</th>
@@ -312,8 +321,7 @@
             <tbody>
               <tr *ngFor="let q of bankQuestions">
                 <td>
-                  <input type="checkbox" class="form-check-input"
-                    [checked]="bankSelectedIds.has(q._id)"
+                  <input type="checkbox" class="form-check-input" [checked]="bankSelectedIds.has(q._id)"
                     (change)="toggleBankSelect(q._id)" />
                 </td>
                 <td>
@@ -359,8 +367,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="closeBankModal()">Cancel</button>
         <button type="button" class="btn btn-success"
-          [disabled]="bankMapping || bankSelectedIds.size === 0 || !bankSectionId"
-          (click)="mapSelectedQuestions()">
+          [disabled]="bankMapping || bankSelectedIds.size === 0 || !bankSectionId" (click)="mapSelectedQuestions()">
           <span *ngIf="bankMapping">
             <span class="spinner-border spinner-border-sm me-1"></span> Mapping...
           </span>

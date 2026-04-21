@@ -124,7 +124,7 @@ export class TestComponent implements OnInit, OnDestroy {
         { text: 'Duplicate Exam', icon: 'fa-regular fa-copy', callback: (row: any) => this.promptDuplicateExam(row) },
         { text: 'Add Question', icon: 'fa-solid fa-plus', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importQuestions(row) },
-        { text: 'Import Answers', icon: 'fa-solid fa-clipboard-check', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importAnswers(row) },
+        { text: 'Import Answers', icon: 'fa-solid fa-clipboard-check', callback: (row: any) => this.importAnswers(row) },
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.rearrange(row) },
         { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.publishExam(row) },
         { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },

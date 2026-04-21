@@ -320,7 +320,7 @@ export class AnswerImportComponent implements OnInit {
         this.submitting = false;
         if (res?.status) {
           const dt = res.data || {};
-          
+
           if (dt.errors && dt.errors.length > 0) {
             // Attach specific backend errors back to the respective rows in the UI
             dt.errors.forEach((e: any) => {
@@ -329,7 +329,7 @@ export class AnswerImportComponent implements OnInit {
                 matchedA.error = e.message; // Binds natively to the HTML error display badge
               }
             });
-            
+
             this.alert.error(`Partial Success: ${dt.updatedCount} saved, ${dt.skippedCount} skipped. Please check the highlighted rows below.`);
           } else {
             // Full success

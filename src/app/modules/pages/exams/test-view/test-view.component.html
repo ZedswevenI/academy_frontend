@@ -19,8 +19,8 @@
 
       <!-- More Actions Dropdown -->
       <div class="dropdown" *ngIf="!authService.assignmentRole()">
-        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 dropdown-toggle"
-          type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 dropdown-toggle" type="button"
+          data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fa-solid fa-ellipsis-vertical me-1"></i> More
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -32,6 +32,11 @@
           <li *ngIf="canRearrange">
             <a class="dropdown-item" (click)="rearrangeQuestions()">
               <i class="fa-solid fa-reorder me-2 text-secondary"></i>Rearrange Questions
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" (click)="importAnswers()">
+              <i class="fa-solid fa-cloud-arrow-up me-2 text-success"></i>Import Answers
             </a>
           </li>
           <li *ngIf="canAssignBatch">
@@ -68,8 +73,7 @@
     <button class="tab-btn" [class.active]="activeTab === 'details'" (click)="switchTab('details')">
       <i class="fa-solid fa-info-circle me-1"></i> Details
     </button>
-    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'"
-      (click)="switchTab('results')">
+    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'" (click)="switchTab('results')">
       <i class="fa-solid fa-chart-bar me-1"></i> Results
     </button>
   </div>
@@ -120,7 +124,8 @@
           <h6 class="info-card-title"><i class="fa-solid fa-circle-info me-2"></i>General Information</h6>
           <div class="info-row">
             <span class="info-label">Test Type</span>
-            <span class="info-value"><span class="badge bg-primary">{{ formatTestType(examData.testType) }}</span></span>
+            <span class="info-value"><span class="badge bg-primary">{{ formatTestType(examData.testType)
+                }}</span></span>
           </div>
           <div class="info-row">
             <span class="info-label">Medium</span>
@@ -204,8 +209,7 @@
     <!-- Batch filter (shared across sub-tabs) -->
     <div class="d-flex align-items-center justify-content-between mb-4">
       <div class="sub-tab-bar">
-        <button class="sub-tab-btn" [class.active]="resultSubTab === 'batches'"
-          (click)="switchResultSubTab('batches')">
+        <button class="sub-tab-btn" [class.active]="resultSubTab === 'batches'" (click)="switchResultSubTab('batches')">
           <i class="fa-solid fa-users me-1"></i> Batches
         </button>
         <button class="sub-tab-btn" [class.active]="resultSubTab === 'leaderboard'"
@@ -216,8 +220,7 @@
           (click)="switchResultSubTab('attempts')">
           <i class="fa-solid fa-bullseye me-1"></i> Attempts
         </button>
-        <button class="sub-tab-btn" [class.active]="resultSubTab === 'timing'"
-          (click)="switchResultSubTab('timing')">
+        <button class="sub-tab-btn" [class.active]="resultSubTab === 'timing'" (click)="switchResultSubTab('timing')">
           <i class="fa-regular fa-clock me-1"></i> Timing
         </button>
       </div>
@@ -225,8 +228,8 @@
       <!-- Batch filter for analytics tabs -->
       <div *ngIf="resultSubTab === 'attempts' || resultSubTab === 'timing'" class="d-flex align-items-center gap-2">
         <label class="text-muted small mb-0">Filter by batch:</label>
-        <select class="form-select form-select-sm" style="width: 180px;"
-          [(ngModel)]="selectedBatchId" (ngModelChange)="onBatchFilterChange()">
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="selectedBatchId"
+          (ngModelChange)="onBatchFilterChange()">
           <option value="">All Batches</option>
           <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
         </select>
@@ -235,8 +238,8 @@
       <!-- Batch filter for leaderboard -->
       <div *ngIf="resultSubTab === 'leaderboard'" class="d-flex align-items-center gap-2">
         <label class="text-muted small mb-0">Filter by batch:</label>
-        <select class="form-select form-select-sm" style="width: 180px;"
-          [(ngModel)]="leaderboardBatchId" (ngModelChange)="onLeaderboardBatchChange()">
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="leaderboardBatchId"
+          (ngModelChange)="onLeaderboardBatchChange()">
           <option value="">All Batches</option>
           <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
         </select>
@@ -245,9 +248,8 @@
 
     <!-- ────────── BATCHES SUB-TAB ────────── -->
     <div *ngIf="resultSubTab === 'batches'">
-      <custom-table [autoFitChars]="true" [columns]="batchColumns" [data]="batchTableData"
-        [actions]="batchActions" [success]="'Enabled'" [warn]="'Disabled'"
-        [totalRecords]="totalBatchRecords" [loading]="batchLoading"
+      <custom-table [autoFitChars]="true" [columns]="batchColumns" [data]="batchTableData" [actions]="batchActions"
+        [success]="'Enabled'" [warn]="'Disabled'" [totalRecords]="totalBatchRecords" [loading]="batchLoading"
         [searchPlaceholder]="'Search Batch ID...'">
       </custom-table>
     </div>
@@ -310,8 +312,8 @@
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
-                    (click)="viewStudentResult(r)" title="View Result">
+                  <button class="btn btn-sm btn-outline-primary rounded-circle"
+                    style="width:32px;height:32px;padding:0;" (click)="viewStudentResult(r)" title="View Result">
                     <i class="fa-regular fa-eye"></i>
                   </button>
                 </td>
@@ -321,10 +323,12 @@
         </div>
 
         <!-- Pagination -->
-        <div *ngIf="leaderboardTotalPages > 1" class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
+        <div *ngIf="leaderboardTotalPages > 1"
+          class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
           <small class="text-muted">
             Showing {{ (leaderboardPage - 1) * leaderboardLimit + 1 }}
-            - {{ leaderboardPage * leaderboardLimit > totalLeaderboardRecords ? totalLeaderboardRecords : leaderboardPage * leaderboardLimit }}
+            - {{ leaderboardPage * leaderboardLimit > totalLeaderboardRecords ? totalLeaderboardRecords :
+            leaderboardPage * leaderboardLimit }}
             of {{ totalLeaderboardRecords }}
           </small>
           <nav>
@@ -344,7 +348,8 @@
       </div>
 
       <!-- Section-wise breakdown for top student -->
-      <div *ngIf="!leaderboardLoading && leaderboardData.length > 0 && examData.sections?.length > 1" class="section-card mt-4">
+      <div *ngIf="!leaderboardLoading && leaderboardData.length > 0 && examData.sections?.length > 1"
+        class="section-card mt-4">
         <div class="section-card-header">
           <span class="fw-bold">Section-wise Scores</span>
         </div>
@@ -417,8 +422,7 @@
           <div class="section-card-header">
             <span class="fw-bold">{{ getSectionName(sectionId) }}</span>
             <div class="d-flex gap-2">
-              <span class="badge rounded-pill"
-                [ngClass]="getSectionSummary(sectionId).avgAccuracy >= 70 ? 'bg-success' :
+              <span class="badge rounded-pill" [ngClass]="getSectionSummary(sectionId).avgAccuracy >= 70 ? 'bg-success' :
                            getSectionSummary(sectionId).avgAccuracy >= 40 ? 'bg-warning' : 'bg-danger'">
                 {{ getSectionSummary(sectionId).avgAccuracy }}% Accuracy
               </span>
@@ -620,7 +624,8 @@
             </div>
             <div class="col-md-2 col-sm-4">
               <div class="student-stat-card">
-                <div class="student-stat-value text-muted" style="font-size:16px">{{ formatTime(studentResult.timeTaken) }}</div>
+                <div class="student-stat-value text-muted" style="font-size:16px">{{ formatTime(studentResult.timeTaken)
+                  }}</div>
                 <div class="student-stat-label">Time Taken</div>
               </div>
             </div>
@@ -781,15 +786,13 @@
             <tbody>
               <tr *ngFor="let b of allAssignableBatches">
                 <td>
-                  <input type="checkbox" class="form-check-input"
-                    [checked]="selectedBatchIds.has(b.batchCode)"
+                  <input type="checkbox" class="form-check-input" [checked]="selectedBatchIds.has(b.batchCode)"
                     (change)="toggleBatchSelect(b.batchCode)" />
                 </td>
                 <td>{{ b.batchCode }}</td>
                 <td>{{ b.batchName }}</td>
                 <td>
-                  <span class="badge"
-                    [ngClass]="enabledBatchIds.has(b.batchCode) ? 'bg-success' : 'bg-secondary'">
+                  <span class="badge" [ngClass]="enabledBatchIds.has(b.batchCode) ? 'bg-success' : 'bg-secondary'">
                     {{ enabledBatchIds.has(b.batchCode) ? 'Enabled' : 'Not Assigned' }}
                   </span>
                 </td>
@@ -834,8 +837,7 @@
           </h5>
           <small class="text-muted">{{ examData?.examName }}</small>
         </div>
-        <button type="button" class="btn-close" (click)="cancelPublishResult()"
-          [disabled]="publishingResult"></button>
+        <button type="button" class="btn-close" (click)="cancelPublishResult()" [disabled]="publishingResult"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3">
@@ -848,8 +850,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="cancelPublishResult()"
           [disabled]="publishingResult">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="confirmPublishResult()"
-          [disabled]="publishingResult">
+        <button type="button" class="btn btn-primary" (click)="confirmPublishResult()" [disabled]="publishingResult">
           <span *ngIf="publishingResult" class="spinner-border spinner-border-sm me-2"></span>
           <i class="fa-solid fa-bullhorn me-1" *ngIf="!publishingResult"></i>
           Publish Result
@@ -873,15 +874,13 @@
           </h5>
           <small class="text-muted">{{ examData?.examName }}</small>
         </div>
-        <button type="button" class="btn-close" (click)="cancelReevaluate()"
-          [disabled]="reevaluating"></button>
+        <button type="button" class="btn-close" (click)="cancelReevaluate()" [disabled]="reevaluating"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3">
           <label class="form-label fw-semibold">Note <span class="text-danger">*</span></label>
           <textarea class="form-control" rows="3" [(ngModel)]="reevaluateNote"
-            placeholder="Enter a reason for reevaluation"
-            [disabled]="reevaluating"></textarea>
+            placeholder="Enter a reason for reevaluation" [disabled]="reevaluating"></textarea>
         </div>
       </div>
       <div class="modal-footer">
@@ -926,7 +925,7 @@
                   <div class="d-flex justify-content-between align-items-start">
                     <div>
                       <span class="badge bg-info text-dark">
-                         Question Grace
+                        Question Grace
                       </span>
                       <span class="badge bg-warning text-dark ms-1">
                         +{{ g.graceMarks }} Marks
@@ -974,10 +973,11 @@
                   <span *ngIf="graceQuestionsLoading" class="spinner-border spinner-border-sm ms-1 text-primary"></span>
                 </label>
                 <div class="input-group input-group-sm">
-                    <input type="text" class="form-control" readonly [value]="getSelectedQuestionText()" placeholder="No question selected">
-                    <button type="button" class="btn btn-outline-primary" (click)="openGraceQuestionSelector()">
-                        <i class="fa-solid fa-list-check me-1"></i> Select
-                    </button>
+                  <input type="text" class="form-control" readonly [value]="getSelectedQuestionText()"
+                    placeholder="No question selected">
+                  <button type="button" class="btn btn-outline-primary" (click)="openGraceQuestionSelector()">
+                    <i class="fa-solid fa-list-check me-1"></i> Select
+                  </button>
                 </div>
                 <div class="text-danger fs-11 mt-1"
                   *ngIf="graceForm.get('questionId')?.touched && graceForm.get('questionId')?.invalid">
@@ -988,8 +988,8 @@
               <!-- Grace Marks -->
               <div class="col-12">
                 <label class="form-label fs-13 fw-medium">Grace Marks <span class="text-danger">*</span></label>
-                <input type="number" class="form-control form-control-sm" formControlName="graceMarks"
-                  min="0" placeholder="e.g. 2"
+                <input type="number" class="form-control form-control-sm" formControlName="graceMarks" min="0"
+                  placeholder="e.g. 2"
                   [class.is-invalid]="graceForm.get('graceMarks')?.touched && graceForm.get('graceMarks')?.invalid">
                 <div class="invalid-feedback fs-11"
                   *ngIf="graceForm.get('graceMarks')?.touched && graceForm.get('graceMarks')?.invalid">
@@ -1035,20 +1035,19 @@
         <button type="button" class="btn-close" (click)="closeGraceQuestionSelector()"></button>
       </div>
       <div class="modal-body pb-0 bg-light">
-         <div *ngIf="graceQuestionsLoading" class="text-muted fs-14 py-3 text-center">
-            Loading questions...
-         </div>
-         <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length" class="text-danger fs-14 py-3 text-center">
-            No questions found.
-         </div>
-         <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
-            class="card mb-3 border-0 shadow-sm"
-            style="cursor: pointer; transition: 0.2s;"
-            (click)="selectGraceQuestion(q)">
-            <div class="card-body p-4">
-               <span class="badge bg-secondary mb-3">Q{{ i + 1 }}</span>
-               <div class="grace-q-body-latex" [innerHTML]="q.questionHtml || q.question || ''"></div>
-            </div>
+        <div *ngIf="graceQuestionsLoading" class="text-muted fs-14 py-3 text-center">
+          Loading questions...
+        </div>
+        <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length"
+          class="text-danger fs-14 py-3 text-center">
+          No questions found.
+        </div>
+        <div *ngFor="let q of getFilteredGraceQuestions(); let i = index" class="card mb-3 border-0 shadow-sm"
+          style="cursor: pointer; transition: 0.2s;" (click)="selectGraceQuestion(q)">
+          <div class="card-body p-4">
+            <span class="badge bg-secondary mb-3">Q{{ i + 1 }}</span>
+            <div class="grace-q-body-latex" [innerHTML]="q.questionHtml || q.question || ''"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1067,11 +1066,12 @@
         <button type="button" class="btn-close" (click)="closeDuplicateModal()"></button>
       </div>
       <div class="modal-body text-center py-4">
-         <p class="mb-4">Do you want to duplicate this exam <strong>with questions</strong> or <strong>without questions</strong>?</p>
-         <div class="d-flex justify-content-center gap-3">
-            <button class="btn btn-outline-secondary px-4" (click)="duplicateExam(false)">Without Questions</button>
-            <button class="btn btn-primary px-4" (click)="duplicateExam(true)">With Questions</button>
-         </div>
+        <p class="mb-4">Do you want to duplicate this exam <strong>with questions</strong> or <strong>without
+            questions</strong>?</p>
+        <div class="d-flex justify-content-center gap-3">
+          <button class="btn btn-outline-secondary px-4" (click)="duplicateExam(false)">Without Questions</button>
+          <button class="btn btn-primary px-4" (click)="duplicateExam(true)">With Questions</button>
+        </div>
       </div>
     </div>
   </div>
