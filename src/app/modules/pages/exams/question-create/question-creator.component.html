@@ -658,7 +658,7 @@
           <button type="button" class="btn-close" (click)="closePreview()"></button>
         </div>
         <div class="modal-body p-4">
-          <div id="previewBody" class="preview-content"
+          <div class="preview-content" [innerHTML]="previewHtml"
             style="min-height: 100px; font-size: 16px; line-height: 1.6;">
           </div>
         </div>

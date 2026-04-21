@@ -84,6 +84,12 @@ export class TestComponent implements OnInit, OnDestroy {
   publishResultRow: any = null;
   publishingResult = false;
 
+  /* ================= REEVALUATE RESULT MODAL ================= */
+  showReevaluateModal = false;
+  reevaluateNote = '';
+  reevaluateRow: any = null;
+  reevaluating = false;
+
   /* ================= GRACE MARKS STATE ================= */
   showGraceModal = false;
   graceRow: any = null;
@@ -94,14 +100,7 @@ export class TestComponent implements OnInit, OnDestroy {
   graceQuestions: any[] = [];
   graceQuestionsLoading = false;
 
-  graceTypeOptions = [
-    { label: 'Exam', value: 'exam' },
-    { label: 'Question', value: 'question' }
-  ];
-  graceActionOptions = [
-    { label: 'Flat Add', value: 'flat_add' },
-    { label: 'Remove Negative', value: 'remove_negative' }
-  ];
+
 
   /* ================= ACTIONS ================= */
   actions = [
@@ -129,6 +128,7 @@ export class TestComponent implements OnInit, OnDestroy {
         { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
         { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published' && !(row.graces && row.graces.length > 0), callback: (row: any) => this.publishResult(row) },
         { text: 'Result', icon: 'fa-solid fa-chart-bar', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.viewResult(row) },
+        { text: 'Reevaluate', icon: 'fa-solid fa-arrows-rotate', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.reevaluateResults(row) },
         { text: 'Grace Marks', icon: 'fa-solid fa-gift', hidden: (row: any) => row.status === 'draft', callback: (row: any) => this.openGraceModal(row) },
         { text: 'Delete', icon: 'fa-regular fa-trash-can', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.deleteExam(row) }
       ]
@@ -176,54 +176,15 @@ export class TestComponent implements OnInit, OnDestroy {
 
   initGraceForm() {
     this.graceForm = this.fb.group({
-      graceType: ['exam', Validators.required],
-      actionType: ['flat_add', Validators.required],
-      questionId: [''],
       subjectId: [''],
-      flatMarks: [0],
+      questionId: ['', Validators.required],
+      graceMarks: [1, [Validators.required, Validators.min(0)]],
       note: ['', Validators.required]
     });
 
-    // Handle conditional validation
-    this.graceForm.get('graceType')?.valueChanges.subscribe(val => {
-      const qCtrl = this.graceForm.get('questionId');
-      const sCtrl = this.graceForm.get('subjectId');
-      if (val === 'question') {
-        qCtrl?.setValidators(Validators.required);
-        sCtrl?.setValidators(Validators.required);
-      } else {
-        qCtrl?.clearValidators();
-        sCtrl?.clearValidators();
-      }
-      qCtrl?.updateValueAndValidity();
-      sCtrl?.updateValueAndValidity();
-
-      // Exam-level grace only supports flat_add
-      if (val === 'exam' && this.graceForm.get('actionType')?.value !== 'flat_add') {
-        this.graceForm.patchValue({ actionType: 'flat_add' });
-      }
-
-      if (val === 'question' && this.graceRow && !this.graceQuestions.length) {
-        this.loadGraceQuestions();
-      }
-    });
-
-    this.graceForm.get('subjectId')?.valueChanges.subscribe(val => {
+    // Clear question selection when section changes
+    this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
       this.graceForm.patchValue({ questionId: '' });
-    });
-
-    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
-      this.graceForm.patchValue({ questionId: '', subjectId: '' });
-    });
-
-    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
-      const fCtrl = this.graceForm.get('flatMarks');
-      if (val === 'flat_add') {
-        fCtrl?.setValidators([Validators.required, Validators.min(0)]);
-      } else {
-        fCtrl?.clearValidators();
-      }
-      fCtrl?.updateValueAndValidity();
     });
   }
 
@@ -357,6 +318,49 @@ export class TestComponent implements OnInit, OnDestroy {
       error: (err: any) => {
         this.publishingResult = false;
         this.alert.error(err?.error?.message || 'Error publishing result');
+      }
+    });
+  }
+
+  reevaluateResults(row: any) {
+    this.reevaluateRow = row;
+    this.reevaluateNote = '';
+    this.showReevaluateModal = true;
+  }
+
+  cancelReevaluate() {
+    this.showReevaluateModal = false;
+    this.reevaluateRow = null;
+    this.reevaluateNote = '';
+  }
+
+  confirmReevaluate() {
+    if (this.reevaluating || !this.reevaluateRow) return;
+
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      userId: localStorage.getItem('userId'),
+      examId: this.reevaluateRow.examId,
+      note: this.reevaluateNote.trim() || 'Reevaluated result'
+    };
+
+    this.reevaluating = true;
+    this.commonApi.fetchData(payload, 'exam/grace', 'reevaluate').subscribe({
+      next: (res: any) => {
+        this.reevaluating = false;
+        if (res?.status) {
+          this.alert.success('Result reevaluated successfully');
+          this.showReevaluateModal = false;
+          this.reevaluateRow = null;
+          this.reevaluateNote = '';
+          if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+        } else {
+          this.alert.error(res?.message || 'Failed to reevaluate result');
+        }
+      },
+      error: (err: any) => {
+        this.reevaluating = false;
+        this.alert.error(err?.error?.message || 'Error reevaluating result');
       }
     });
   }
@@ -819,18 +823,13 @@ export class TestComponent implements OnInit, OnDestroy {
 
   openGraceModal(row: any) {
     this.graceRow = { ...row };
-    // Only keep active graces for the modal list
     if (this.graceRow.graces) {
       this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
     }
-    this.showGraceModal = true;
     this.graceQuestions = [];
-    this.graceForm.reset({
-      graceType: 'exam',
-      actionType: 'flat_add',
-      flatMarks: 0,
-      note: ''
-    });
+    this.graceForm.reset({ subjectId: '', questionId: '', graceMarks: 1, note: '' });
+    this.showGraceModal = true;
+    this.loadGraceQuestions();
   }
 
   loadGraceQuestions() {
@@ -876,31 +875,21 @@ export class TestComponent implements OnInit, OnDestroy {
     }
 
     const formValue = this.graceForm.value;
-    let sectionId = undefined;
-
-    if (formValue.graceType === 'question' && formValue.questionId) {
-      const selectedQ = this.graceQuestions.find(q => q.questionId === formValue.questionId);
-      sectionId = selectedQ?.sectionId;
-    } else if (formValue.subjectId) {
-      // If exam level but with a subject/section filter?
-      const selectedS = this.graceRow.sections.find((s: any) => s.subjectId === formValue.subjectId);
-      sectionId = selectedS?.sectionId;
-    }
+    const selectedQ = this.graceQuestions.find((q: any) => (q.questionId || q._id) === formValue.questionId);
+    const sectionId = selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
 
     const payload = {
       entiId: localStorage.getItem('tenantId'),
+      userId: localStorage.getItem('userId'),
       examId: this.graceRow.examId,
-      graceType: formValue.graceType,
-      actionType: formValue.actionType,
+      questionId: formValue.questionId,
       sectionId: sectionId,
-      questionId: formValue.questionId || undefined,
-      flatMarks: formValue.actionType === 'flat_add' ? formValue.flatMarks : 0,
-      note: formValue.note,
-      userId: localStorage.getItem('userId')
+      graceMarks: formValue.graceMarks,
+      note: formValue.note
     };
 
     this.graceApplying = true;
-    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
       next: (res: any) => {
         this.graceApplying = false;
         if (res?.status) {
@@ -929,7 +918,7 @@ export class TestComponent implements OnInit, OnDestroy {
     };
 
     this.graceRemovingGraceId = graceId;
-    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
       next: (res: any) => {
         this.graceRemovingGraceId = null;
         if (res?.status) {

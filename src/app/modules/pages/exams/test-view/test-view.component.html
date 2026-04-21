@@ -44,6 +44,11 @@
               <i class="fa-solid fa-bullhorn me-2 text-success"></i>Publish Result
             </a>
           </li>
+          <li *ngIf="examData?.status === 'result_published'">
+            <a class="dropdown-item" (click)="reevaluateResults()">
+              <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Reevaluate Result
+            </a>
+          </li>
           <li *ngIf="canShowGrace">
             <a class="dropdown-item" (click)="openGraceModal()">
               <i class="fa-solid fa-gift me-2 text-warning"></i>Grace Marks
@@ -855,6 +860,45 @@
 </div>
 
 <!-- ================================================================ -->
+<!--                  REEVALUATE RESULT MODAL                         -->
+<!-- ================================================================ -->
+<div class="modal-backdrop fade show" *ngIf="showReevaluateModal"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showReevaluateModal">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Reevaluate Result
+          </h5>
+          <small class="text-muted">{{ examData?.examName }}</small>
+        </div>
+        <button type="button" class="btn-close" (click)="cancelReevaluate()"
+          [disabled]="reevaluating"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Note <span class="text-danger">*</span></label>
+          <textarea class="form-control" rows="3" [(ngModel)]="reevaluateNote"
+            placeholder="Enter a reason for reevaluation"
+            [disabled]="reevaluating"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cancelReevaluate()"
+          [disabled]="reevaluating">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="confirmReevaluate()"
+          [disabled]="reevaluating || !reevaluateNote.trim()">
+          <span *ngIf="reevaluating" class="spinner-border spinner-border-sm me-2"></span>
+          <i class="fa-solid fa-arrows-rotate me-1" *ngIf="!reevaluating"></i>
+          Reevaluate
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
 <!--                    GRACE MARKS MODAL                             -->
 <!-- ================================================================ -->
 <div class="modal-backdrop fade show" *ngIf="showGraceModal" (click)="closeGraceModal()"></div>
@@ -881,13 +925,13 @@
                 <div class="card-body p-3">
                   <div class="d-flex justify-content-between align-items-start">
                     <div>
-                      <span class="badge" [ngClass]="g.graceType === 'exam' ? 'bg-primary' : 'bg-info'">
-                        {{ g.graceType | titlecase }}
+                      <span class="badge bg-info text-dark">
+                         Question Grace
                       </span>
                       <span class="badge bg-warning text-dark ms-1">
-                        {{ g.actionType === 'flat_add' ? '+' + g.flatMarks + ' Marks' : 'No Negative' }}
+                        +{{ g.graceMarks }} Marks
                       </span>
-                      <p class="mb-1 mt-2 fs-13 fw-medium" *ngIf="g.graceType === 'question'">
+                      <p class="mb-1 mt-2 fs-13 fw-medium">
                         Question ID: <span class="text-muted">{{ g.questionId }}</span><br>
                         Section ID: <span class="text-muted">{{ g.sectionId }}</span>
                       </p>
@@ -912,27 +956,21 @@
           <div class="col-md-5">
             <h6 class="fs-14 fw-semibold mb-3">Apply New Grace</h6>
             <form [formGroup]="graceForm" (ngSubmit)="applyGrace()" class="row g-3">
+              <!-- Section filter -->
               <div class="col-12">
-                <label class="form-label fs-13 fw-medium">Grace Type</label>
-                <select class="form-select form-select-sm" formControlName="graceType">
-                  <option *ngFor="let t of graceTypeOptions" [value]="t.value">{{ t.label }}</option>
-                </select>
-              </div>
-
-              <div class="col-12" *ngIf="graceForm.get('graceType')?.value === 'question'">
                 <label class="form-label fs-13 fw-medium">Section / Subject</label>
-                <select class="form-select form-select-sm" formControlName="subjectId"
-                  [class.is-invalid]="graceForm.get('subjectId')?.touched && graceForm.get('subjectId')?.invalid">
-                  <option value="">Select Section</option>
+                <select class="form-select form-select-sm" formControlName="subjectId">
+                  <option value="">All Sections</option>
                   <option *ngFor="let s of getAvailableSections()" [value]="s.subjectId">
                     {{ s.sectionName }} ({{ s.sectionCode }})
                   </option>
                 </select>
               </div>
 
-              <div class="col-12" *ngIf="graceForm.get('graceType')?.value === 'question'">
+              <!-- Question selection -->
+              <div class="col-12">
                 <label class="form-label fs-13 fw-medium">
-                  Select Question
+                  Select Question <span class="text-danger">*</span>
                   <span *ngIf="graceQuestionsLoading" class="spinner-border spinner-border-sm ms-1 text-primary"></span>
                 </label>
                 <div class="grace-question-list">
@@ -945,8 +983,8 @@
                   </div>
                   <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
                     class="grace-q-card"
-                    [class.selected]="graceForm.get('questionId')?.value === q.questionId"
-                    (click)="graceForm.patchValue({ questionId: q.questionId })">
+                    [class.selected]="graceForm.get('questionId')?.value === (q.questionId || q._id)"
+                    (click)="graceForm.patchValue({ questionId: q.questionId || q._id })">
                     <span class="grace-q-badge">Q{{ i + 1 }}</span>
                     <div class="grace-q-body" [innerHTML]="q.questionHtml || q.question || ''"></div>
                   </div>
@@ -957,23 +995,28 @@
                 </div>
               </div>
 
-              <div class="col-12" *ngIf="graceForm.get('actionType')?.value === 'flat_add'">
-                <label class="form-label fs-13 fw-medium">Flat Marks to Add</label>
-                <input type="number" class="form-control form-control-sm" formControlName="flatMarks">
+              <!-- Grace Marks -->
+              <div class="col-12">
+                <label class="form-label fs-13 fw-medium">Grace Marks <span class="text-danger">*</span></label>
+                <input type="number" class="form-control form-control-sm" formControlName="graceMarks"
+                  min="0" placeholder="e.g. 2"
+                  [class.is-invalid]="graceForm.get('graceMarks')?.touched && graceForm.get('graceMarks')?.invalid">
+                <div class="invalid-feedback fs-11"
+                  *ngIf="graceForm.get('graceMarks')?.touched && graceForm.get('graceMarks')?.invalid">
+                  Please enter a valid grace marks value
+                </div>
               </div>
 
-              <div class="col-12" *ngIf="graceForm.get('graceType')?.value !== 'exam'">
-                <label class="form-label fs-13 fw-medium">Action</label>
-                <select class="form-select form-select-sm" formControlName="actionType">
-                  <option *ngFor="let a of graceActionOptions" [value]="a.value">{{ a.label }}</option>
-                </select>
-              </div>
-
+              <!-- Note -->
               <div class="col-12">
                 <label class="form-label fs-13 fw-medium">Note / Reason <span class="text-danger">*</span></label>
                 <textarea class="form-control form-control-sm" rows="3" formControlName="note"
                   placeholder="Reason for grace marks..."
                   [class.is-invalid]="graceForm.get('note')?.touched && graceForm.get('note')?.invalid"></textarea>
+                <div class="invalid-feedback fs-11"
+                  *ngIf="graceForm.get('note')?.touched && graceForm.get('note')?.invalid">
+                  Please provide a reason for applying grace marks
+                </div>
               </div>
 
               <div class="col-12 mt-3 text-end">

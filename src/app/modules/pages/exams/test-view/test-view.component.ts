@@ -146,6 +146,11 @@ export class TestViewComponent implements OnInit {
   publishResultNote = '';
   publishingResult = false;
 
+  /* ================= REEVALUATE RESULT MODAL ================= */
+  showReevaluateModal = false;
+  reevaluateNote = '';
+  reevaluating = false;
+
   /* ================= GRACE MARKS MODAL ================= */
   showGraceModal = false;
   graceRow: any = null;
@@ -155,14 +160,6 @@ export class TestViewComponent implements OnInit {
   graceQuestions: any[] = [];
   graceQuestionsLoading = false;
 
-  graceTypeOptions = [
-    { label: 'Exam', value: 'exam' },
-    { label: 'Question', value: 'question' }
-  ];
-  graceActionOptions = [
-    { label: 'Flat Add', value: 'flat_add' },
-    { label: 'Remove Negative', value: 'remove_negative' }
-  ];
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -265,6 +262,55 @@ export class TestViewComponent implements OnInit {
       error: (err: any) => {
         this.publishingResult = false;
         this.alert.error(err?.error?.message || 'Error publishing result');
+      }
+    });
+  }
+
+  /* ================= REEVALUATE RESULT ================= */
+  reevaluateResults() {
+    this.reevaluateNote = '';
+    this.showReevaluateModal = true;
+  }
+
+  cancelReevaluate() {
+    this.showReevaluateModal = false;
+    this.reevaluateNote = '';
+  }
+
+  confirmReevaluate() {
+    if (this.reevaluating) return;
+
+    const payload = {
+      entiId: this.tenantId,
+      userId: localStorage.getItem('userId'),
+      examId: this.examData.examId,
+      note: this.reevaluateNote.trim() || 'Reevaluated result'
+    };
+
+    this.reevaluating = true;
+    this.commonApi.fetchData(payload, 'exam/grace', 'reevaluate').subscribe({
+      next: (res: any) => {
+        this.reevaluating = false;
+        if (res?.status) {
+          this.alert.success('Result reevaluated successfully');
+          this.showReevaluateModal = false;
+          this.reevaluateNote = '';
+          
+          if (this.hasResults) {
+            this.fetchBatches();
+            this.fetchAnalytics();
+            this.fetchTimingAnalytics();
+            if (this.resultSubTab === 'leaderboard') {
+              this.fetchLeaderboard();
+            }
+          }
+        } else {
+          this.alert.error(res?.message || 'Failed to reevaluate result');
+        }
+      },
+      error: (err: any) => {
+        this.reevaluating = false;
+        this.alert.error(err?.error?.message || 'Error reevaluating result');
       }
     });
   }
@@ -372,49 +418,13 @@ export class TestViewComponent implements OnInit {
   /* ================= GRACE MARKS ================= */
   private initGraceForm() {
     this.graceForm = this.fb.group({
-      graceType: ['exam', Validators.required],
-      actionType: ['flat_add', Validators.required],
-      questionId: [''],
       subjectId: [''],
-      flatMarks: [0],
+      questionId: ['', Validators.required],
+      graceMarks: [1, [Validators.required, Validators.min(0)]],
       note: ['', Validators.required]
     });
-
-    this.graceForm.get('graceType')?.valueChanges.subscribe(val => {
-      const qCtrl = this.graceForm.get('questionId');
-      const sCtrl = this.graceForm.get('subjectId');
-      if (val === 'question') {
-        qCtrl?.setValidators(Validators.required);
-        sCtrl?.setValidators(Validators.required);
-      } else {
-        qCtrl?.clearValidators();
-        sCtrl?.clearValidators();
-      }
-      qCtrl?.updateValueAndValidity();
-      sCtrl?.updateValueAndValidity();
-
-      if (val === 'exam' && this.graceForm.get('actionType')?.value !== 'flat_add') {
-        this.graceForm.patchValue({ actionType: 'flat_add' });
-      }
-
-      if (val === 'question' && this.graceRow && !this.graceQuestions.length) {
-        this.loadGraceQuestions();
-      }
-    });
-
     this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
       this.graceForm.patchValue({ questionId: '' });
-    });
-
-    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
-      this.graceForm.patchValue({ questionId: '', subjectId: '' });
-      const fCtrl = this.graceForm.get('flatMarks');
-      if (val === 'flat_add') {
-        fCtrl?.setValidators([Validators.required, Validators.min(0)]);
-      } else {
-        fCtrl?.clearValidators();
-      }
-      fCtrl?.updateValueAndValidity();
     });
   }
 
@@ -423,14 +433,10 @@ export class TestViewComponent implements OnInit {
     if (this.graceRow.graces) {
       this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
     }
-    this.showGraceModal = true;
     this.graceQuestions = [];
-    this.graceForm.reset({
-      graceType: 'exam',
-      actionType: 'flat_add',
-      flatMarks: 0,
-      note: ''
-    });
+    this.graceForm.reset({ subjectId: '', questionId: '', graceMarks: 1, note: '' });
+    this.showGraceModal = true;
+    this.loadGraceQuestions();
   }
   closeGraceModal() {
     this.showGraceModal = false;
@@ -471,32 +477,22 @@ export class TestViewComponent implements OnInit {
       this.graceForm.markAllAsTouched();
       return;
     }
-
     const formValue = this.graceForm.value;
-    let sectionId: string | undefined = undefined;
-
-    if (formValue.graceType === 'question' && formValue.questionId) {
-      const selectedQ = this.graceQuestions.find(q => q.questionId === formValue.questionId);
-      sectionId = selectedQ?.sectionId;
-    } else if (formValue.subjectId) {
-      const selectedS = this.graceRow.sections.find((s: any) => s.subjectId === formValue.subjectId);
-      sectionId = selectedS?.sectionId;
-    }
+    const selectedQ = this.graceQuestions.find((q: any) => (q.questionId || q._id) === formValue.questionId);
+    const sectionId = selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
 
     const payload = {
       entiId: this.tenantId,
+      userId: localStorage.getItem('userId'),
       examId: this.graceRow.examId,
-      graceType: formValue.graceType,
-      actionType: formValue.actionType,
+      questionId: formValue.questionId,
       sectionId: sectionId,
-      questionId: formValue.questionId || undefined,
-      flatMarks: formValue.actionType === 'flat_add' ? formValue.flatMarks : 0,
-      note: formValue.note,
-      userId: localStorage.getItem('userId')
+      graceMarks: formValue.graceMarks,
+      note: formValue.note
     };
 
     this.graceApplying = true;
-    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
       next: (res: any) => {
         this.graceApplying = false;
         if (res?.status) {
@@ -523,7 +519,7 @@ export class TestViewComponent implements OnInit {
     };
 
     this.graceRemovingGraceId = graceId;
-    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
       next: (res: any) => {
         this.graceRemovingGraceId = null;
         if (res?.status) {

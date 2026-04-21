@@ -24,9 +24,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   questionData!: any;
   isDraft = false;
 
-  /* Grace State */
+  /* Grace Modal State */
   graceApplying = false;
   graceRemovingGraceId: string | null = null;
+  showGraceModal = false;
+  selectedGraceQuestion: any = null;
+  graceMarksInput = 1;
+  graceNoteInput = '';
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
@@ -89,7 +93,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.testId = state.questions?.examId || state.questions?.testId;
     this.questionData = state.questions || {};
     this.isDraft = (state.questions?.status || '').toLowerCase() === 'draft';
-    
+
     if (this.testId) {
       this.loadExamDetails();
       this.loadQuestions();
@@ -440,34 +444,45 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     }
   }
 
-  /* ================= GRACE MARKS ================= */
-
   getGraceForQuestion(questionId: string) {
     return (this.questionData?.graces || []).find((g: any) => g.questionId === questionId && g.isActive);
   }
 
-  applyGraceToQuestion(question: any, actionType: string, flatMarks: number = 0) {
-    const note = prompt('Enter a reason/note for this grace mark:');
-    if (note === null) return; // Cancelled
+  openGraceModal(question: any) {
+    this.selectedGraceQuestion = question;
+    this.graceMarksInput = 1;
+    this.graceNoteInput = '';
+    this.showGraceModal = true;
+  }
 
+  closeGraceModal() {
+    this.showGraceModal = false;
+    this.selectedGraceQuestion = null;
+  }
+
+  applyGrace() {
+    if (!this.graceNoteInput.trim()) {
+      this.alert.error('Please provide a reason for this grace mark');
+      return;
+    }
+    const q = this.selectedGraceQuestion;
     const payload = {
       entiId: localStorage.getItem('tenantId'),
+      userId: localStorage.getItem('userId'),
       examId: this.testId,
-      graceType: 'question',
-      actionType: actionType,
-      sectionId: question.sectionId,
-      questionId: question.questionId,
-      flatMarks: flatMarks,
-      note: note || 'Grace marks applied',
-      userId: localStorage.getItem('userId')
+      questionId: q.questionId,
+      sectionId: q.sectionId,
+      graceMarks: this.graceMarksInput,
+      note: this.graceNoteInput
     };
 
     this.graceApplying = true;
-    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
       next: (res: any) => {
         this.graceApplying = false;
         if (res?.status) {
           this.alert.success('Grace marks applied successfully');
+          this.closeGraceModal();
           this.loadExamDetails();
         } else {
           this.alert.error(res?.message || 'Failed to apply grace marks');
@@ -491,7 +506,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     };
 
     this.graceRemovingGraceId = graceId;
-    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
       next: (res: any) => {
         this.graceRemovingGraceId = null;
         if (res?.status) {
