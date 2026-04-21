@@ -54,10 +54,10 @@
                             <!-- Buttons -->
                             <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
                                 <div class="btn-group me-2">
-                                    <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
+                                    <!-- <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
                                         data-bs-toggle="dropdown" aria-expanded="false">
                                         🖨️ Print
-                                    </button>
+                                    </button> -->
                                     <ul class="dropdown-menu">
                                         <li>
                                             <a class="dropdown-item" (click)="printAllFilteredTests(false)">
@@ -240,8 +240,10 @@
                                     class="spinner-border spinner-border-sm ms-1 text-primary"></span>
                             </label>
                             <div class="input-group input-group-sm">
-                                <input type="text" class="form-control" readonly [value]="getSelectedQuestionText()" placeholder="No question selected">
-                                <button type="button" class="btn btn-outline-primary" (click)="openGraceQuestionSelector()">
+                                <input type="text" class="form-control" readonly [value]="getSelectedQuestionText()"
+                                    placeholder="No question selected">
+                                <button type="button" class="btn btn-outline-primary"
+                                    (click)="openGraceQuestionSelector()">
                                     <i class="fa-solid fa-list-check me-1"></i> Select
                                 </button>
                             </div>
@@ -253,7 +255,8 @@
 
                         <!-- Grace Marks -->
                         <div class="col-12">
-                            <label class="form-label fs-13 fw-medium">Grace Marks <span class="text-danger">*</span></label>
+                            <label class="form-label fs-13 fw-medium">Grace Marks <span
+                                    class="text-danger">*</span></label>
                             <input type="number" class="form-control form-control-sm" formControlName="graceMarks"
                                 min="0" placeholder="e.g. 2"
                                 [class.is-invalid]="graceForm.get('graceMarks')?.touched && graceForm.get('graceMarks')?.invalid">
@@ -294,51 +297,52 @@
 <!-- ================================================================ -->
 <div class="modal-backdrop fade show" *ngIf="showGraceQuestionSelector" style="z-index: 1060;"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showGraceQuestionSelector" style="z-index: 1061;">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h5 class="modal-title fw-bold">Select Question</h5>
-        <button type="button" class="btn-close" (click)="closeGraceQuestionSelector()"></button>
-      </div>
-      <div class="modal-body pb-0 bg-light">
-         <div *ngIf="graceQuestionsLoading" class="text-muted fs-14 py-3 text-center">
-            Loading questions...
-         </div>
-         <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length" class="text-danger fs-14 py-3 text-center">
-            No questions found.
-         </div>
-         <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
-            class="card mb-3 border-0 shadow-sm"
-            style="cursor: pointer; transition: 0.2s;"
-            (click)="selectGraceQuestion(q)">
-            <div class="card-body p-4">
-               <span class="badge bg-secondary mb-3">Q{{ i + 1 }}</span>
-               <div class="grace-q-body-latex" [innerHTML]="q.questionHtml || q.question || ''"></div>
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Select Question</h5>
+                <button type="button" class="btn-close" (click)="closeGraceQuestionSelector()"></button>
+            </div>
+            <div class="modal-body pb-0 bg-light">
+                <div *ngIf="graceQuestionsLoading" class="text-muted fs-14 py-3 text-center">
+                    Loading questions...
+                </div>
+                <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length"
+                    class="text-danger fs-14 py-3 text-center">
+                    No questions found.
+                </div>
+                <div *ngFor="let q of getFilteredGraceQuestions(); let i = index" class="card mb-3 border-0 shadow-sm"
+                    style="cursor: pointer; transition: 0.2s;" (click)="selectGraceQuestion(q)">
+                    <div class="card-body p-4">
+                        <span class="badge bg-secondary mb-3">Q{{ i + 1 }}</span>
+                        <div class="grace-q-body-latex" [innerHTML]="q.questionHtml || q.question || ''"></div>
+                    </div>
+                </div>
             </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
 <!-- Duplicate Exam Modal -->
 <div class="modal-backdrop fade show" *ngIf="showDuplicateModal" style="z-index: 1060;"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showDuplicateModal" style="z-index: 1061;">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title fw-bold">Duplicate Exam</h5>
-        <button type="button" class="btn-close" (click)="closeDuplicateModal()"></button>
-      </div>
-      <div class="modal-body text-center py-4">
-         <p class="mb-4">Do you want to duplicate this exam <strong>with questions</strong> or <strong>without questions</strong>?</p>
-         <div class="d-flex justify-content-center gap-3">
-            <button class="btn btn-outline-secondary px-4" (click)="duplicateExam(false)">Without Questions</button>
-            <button class="btn btn-primary px-4" (click)="duplicateExam(true)">With Questions</button>
-         </div>
-      </div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Duplicate Exam</h5>
+                <button type="button" class="btn-close" (click)="closeDuplicateModal()"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p class="mb-4">Do you want to duplicate this exam <strong>with questions</strong> or <strong>without
+                        questions</strong>?</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button class="btn btn-outline-secondary px-4" (click)="duplicateExam(false)">Without
+                        Questions</button>
+                    <button class="btn btn-primary px-4" (click)="duplicateExam(true)">With Questions</button>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Print Modal -->
@@ -413,15 +417,13 @@
                     {{ reevaluateRow.examName }}
                 </span>
             </div>
-            <button type="button" class="btn-close" (click)="cancelReevaluate()"
-                [disabled]="reevaluating"></button>
+            <button type="button" class="btn-close" (click)="cancelReevaluate()" [disabled]="reevaluating"></button>
         </div>
         <div class="app-modal-body">
             <div class="mb-3">
                 <label class="form-label fw-semibold">Note <span class="text-danger">*</span></label>
                 <textarea class="form-control" rows="3" [(ngModel)]="reevaluateNote"
-                    placeholder="Enter a reason for reevaluation"
-                    [disabled]="reevaluating"></textarea>
+                    placeholder="Enter a reason for reevaluation" [disabled]="reevaluating"></textarea>
             </div>
             <div class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-outline-secondary" (click)="cancelReevaluate()"

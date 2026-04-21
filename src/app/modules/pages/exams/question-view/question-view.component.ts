@@ -562,6 +562,10 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         error: () => alert('Error deleting question')
       });
   }
+  
+  importAnswers() {
+    this.router.navigate(['/app/exams/exams/answer-import'], { state: { exam: this.questionData } });
+  }
 
   printQuestions(withAnswer: boolean): void {
     setTimeout(() => {

@@ -211,6 +211,9 @@ export class TestViewComponent implements OnInit {
   rearrangeQuestions() {
     this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: this.examData } });
   }
+  importAnswers() {
+    this.router.navigate(['/app/exams/exams/answer-import'], { state: { exam: this.examData } });
+  }
 
   /* ================= PUBLISH RESULT ================= */
   openPublishResultModal() {
