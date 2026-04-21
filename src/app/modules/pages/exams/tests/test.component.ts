@@ -6,6 +6,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
+import katex from 'katex';
 
 @Component({
   selector: 'app-exam-list',
@@ -120,7 +121,7 @@ export class TestComponent implements OnInit, OnDestroy {
       dropdown: [
         { text: 'View Questions', icon: 'fa-solid fa-list-ol', callback: (row: any) => this.viewQuestions(row) },
         { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.editExam(row) },
-        { text: 'Duplicate Exam', icon: 'fa-regular fa-copy', callback: (row: any) => this.duplicateExam(row) },
+        { text: 'Duplicate Exam', icon: 'fa-regular fa-copy', callback: (row: any) => this.promptDuplicateExam(row) },
         { text: 'Add Question', icon: 'fa-solid fa-plus', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importQuestions(row) },
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.rearrange(row) },
@@ -379,7 +380,21 @@ export class TestComponent implements OnInit, OnDestroy {
   viewQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: row } }); }
   rearrange(row: any) { this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: row } }); }
   editExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row } }); }
-  duplicateExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row, duplicate: true } }); }
+  showDuplicateModal = false;
+  examToDuplicate: any = null;
+  promptDuplicateExam(row: any) {
+    this.examToDuplicate = row;
+    this.showDuplicateModal = true;
+  }
+  duplicateExam(withQuestions: boolean) {
+    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examToDuplicate, duplicate: true, withQuestions } });
+    this.showDuplicateModal = false;
+    this.examToDuplicate = null;
+  }
+  closeDuplicateModal() {
+    this.showDuplicateModal = false;
+    this.examToDuplicate = null;
+  }
   importQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-import'], { state: { questions: row } }); }
   addQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-create'], { state: { question: row } }); }
   viewResult(row: any) { this.router.navigate(['/app/exams/exams/result-batch'], { state: { exam: row } }); }
@@ -837,13 +852,17 @@ export class TestComponent implements OnInit, OnDestroy {
     this.commonApi.fetchData({ entiId: localStorage.getItem('tenantId'), examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
       next: (res: any) => {
         if (res?.status) {
-          this.graceQuestions = res.data?.questions || [];
+          const loadedQuestions = res.data?.questions || [];
+          this.graceQuestions = loadedQuestions.map((q: any) => ({
+            ...q,
+            questionHtml: this.renderLatexInHtml(q.questionHtml || q.question || '')
+          }));
         }
         this.graceQuestionsLoading = false;
       },
-      error: () => {
+      error: (err) => {
         this.graceQuestionsLoading = false;
-        this.alert.error('Error loading questions for selection');
+        console.error('Error loading questions:', err);
       }
     });
   }
@@ -939,6 +958,53 @@ export class TestComponent implements OnInit, OnDestroy {
 
   getAvailableSections() {
     return this.graceRow?.sections || [];
+  }
+
+  /* ================= GRACE QUESTION SELECTOR ================= */
+  showGraceQuestionSelector = false;
+
+  openGraceQuestionSelector() {
+    this.showGraceQuestionSelector = true;
+  }
+
+  closeGraceQuestionSelector() {
+    this.showGraceQuestionSelector = false;
+  }
+
+  selectGraceQuestion(q: any) {
+    this.graceForm.patchValue({ questionId: q.questionId || q._id });
+    this.showGraceQuestionSelector = false;
+  }
+
+  private decodeHtmlEntities(text: string): string {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = text;
+    return txt.value;
+  }
+
+  private renderLatexInHtml(html: string): string {
+    if (!html) return html;
+    let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    return result;
+  }
+
+  getSelectedQuestionText(): string {
+    const qId = this.graceForm.get('questionId')?.value;
+    if (!qId) return '';
+    const idx = this.graceQuestions.findIndex((q: any) => (q.questionId || q._id) === qId);
+    if (idx !== -1) return `Question ${idx + 1}`;
+    return qId;
   }
 
   refresh() {

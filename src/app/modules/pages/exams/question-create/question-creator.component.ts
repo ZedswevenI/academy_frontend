@@ -1362,7 +1362,7 @@ export class QuestionCreatorComponent implements OnInit {
       } catch (e) { return match; }
     });
     // Replace $...$ (inline math)
-    result = result.replace(/\$([^$\n<>]+?)\$/g, (match, tex) => {
+    result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
       try {
         return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false });
       } catch (e) { return match; }

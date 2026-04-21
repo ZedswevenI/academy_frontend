@@ -19,6 +19,7 @@ export class TestCreateComponent implements OnInit {
   editData: any = null;
   tenantId = '';
   loading = false;
+  withQuestions = true;
 
   examForm!: FormGroup;
 
@@ -56,6 +57,7 @@ export class TestCreateComponent implements OnInit {
     if (state?.test && state?.duplicate) {
       this.isDuplicateMode = true;
       this.editData = state.test;
+      this.withQuestions = state.withQuestions !== false;
       this.breadcrumb.set([{ label: 'Exams', link: '/app/exams/exams' }, { label: 'Duplicate' }]);
     } else if (state?.test) {
       this.isEditMode = true;
@@ -365,7 +367,7 @@ export class TestCreateComponent implements OnInit {
         },
         error: (err: any) => this.alert.error(err?.error?.message || 'Error updating exam')
       });
-    } else if (this.isDuplicateMode) {
+    } else if (this.isDuplicateMode && this.withQuestions) {
       payload.refExamId = this.editData?.examId;
       this.commonApi.fetchData(payload, 'exam', 'duplicate').subscribe({
         next: (res: any) => {

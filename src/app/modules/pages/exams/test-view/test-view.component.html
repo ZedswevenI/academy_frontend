@@ -25,7 +25,7 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
           <li>
-            <a class="dropdown-item" (click)="duplicateExam()">
+            <a class="dropdown-item" (click)="promptDuplicateExam()">
               <i class="fa-regular fa-copy me-2 text-primary"></i>Duplicate Exam
             </a>
           </li>
@@ -973,21 +973,11 @@
                   Select Question <span class="text-danger">*</span>
                   <span *ngIf="graceQuestionsLoading" class="spinner-border spinner-border-sm ms-1 text-primary"></span>
                 </label>
-                <div class="grace-question-list">
-                  <div *ngIf="graceQuestionsLoading" class="text-muted fs-12 py-3 text-center">
-                    Loading questions...
-                  </div>
-                  <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length"
-                    class="text-danger fs-11 py-3 text-center">
-                    No questions found for this exam.
-                  </div>
-                  <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
-                    class="grace-q-card"
-                    [class.selected]="graceForm.get('questionId')?.value === (q.questionId || q._id)"
-                    (click)="graceForm.patchValue({ questionId: q.questionId || q._id })">
-                    <span class="grace-q-badge">Q{{ i + 1 }}</span>
-                    <div class="grace-q-body" [innerHTML]="q.questionHtml || q.question || ''"></div>
-                  </div>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" readonly [value]="getSelectedQuestionText()" placeholder="No question selected">
+                    <button type="button" class="btn btn-outline-primary" (click)="openGraceQuestionSelector()">
+                        <i class="fa-solid fa-list-check me-1"></i> Select
+                    </button>
                 </div>
                 <div class="text-danger fs-11 mt-1"
                   *ngIf="graceForm.get('questionId')?.touched && graceForm.get('questionId')?.invalid">
@@ -1028,6 +1018,60 @@
             </form>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!--              GRACE QUESTION SELECTOR MODAL                       -->
+<!-- ================================================================ -->
+<div class="modal-backdrop fade show" *ngIf="showGraceQuestionSelector" style="z-index: 1060;"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showGraceQuestionSelector" style="z-index: 1061;">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Select Question</h5>
+        <button type="button" class="btn-close" (click)="closeGraceQuestionSelector()"></button>
+      </div>
+      <div class="modal-body pb-0 bg-light">
+         <div *ngIf="graceQuestionsLoading" class="text-muted fs-14 py-3 text-center">
+            Loading questions...
+         </div>
+         <div *ngIf="!graceQuestionsLoading && !getFilteredGraceQuestions().length" class="text-danger fs-14 py-3 text-center">
+            No questions found.
+         </div>
+         <div *ngFor="let q of getFilteredGraceQuestions(); let i = index"
+            class="card mb-3 border-0 shadow-sm"
+            style="cursor: pointer; transition: 0.2s;"
+            (click)="selectGraceQuestion(q)">
+            <div class="card-body p-4">
+               <span class="badge bg-secondary mb-3">Q{{ i + 1 }}</span>
+               <div class="grace-q-body-latex" [innerHTML]="q.questionHtml || q.question || ''"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!--              DUPLICATE EXAM MODAL                                -->
+<!-- ================================================================ -->
+<div class="modal-backdrop fade show" *ngIf="showDuplicateModal" style="z-index: 1060;"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showDuplicateModal" style="z-index: 1061;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Duplicate Exam</h5>
+        <button type="button" class="btn-close" (click)="closeDuplicateModal()"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+         <p class="mb-4">Do you want to duplicate this exam <strong>with questions</strong> or <strong>without questions</strong>?</p>
+         <div class="d-flex justify-content-center gap-3">
+            <button class="btn btn-outline-secondary px-4" (click)="duplicateExam(false)">Without Questions</button>
+            <button class="btn btn-primary px-4" (click)="duplicateExam(true)">With Questions</button>
+         </div>
       </div>
     </div>
   </div>

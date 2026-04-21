@@ -7,6 +7,7 @@ import { AuthService } from '../../../../service/auth/auth.service';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import katex from 'katex';
 
 @Component({
   selector: 'app-ass-view',
@@ -219,758 +220,817 @@ export class TestViewComponent implements OnInit {
   }
 
   /* ================= NAV ACTIONS ================= */
-  duplicateExam() {
-    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData, duplicate: true } });
+  showDuplicateModal = false;
+  promptDuplicateExam() {
+    this.showDuplicateModal = true;
+  }
+  duplicateExam(withQuestions: boolean) {
+    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData, duplicate: true, withQuestions } });
+    this.showDuplicateModal = false;
+  }
+  closeDuplicateModal() {
+    this.showDuplicateModal = false;
   }
   rearrangeQuestions() {
     this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: this.examData } });
   }
 
-  /* ================= PUBLISH RESULT ================= */
-  openPublishResultModal() {
-    this.publishResultNote = '';
-    this.showPublishResultModal = true;
-  }
-  cancelPublishResult() {
-    this.showPublishResultModal = false;
-    this.publishResultNote = '';
-  }
-  confirmPublishResult() {
-    if (this.publishingResult) return;
+/* ================= PUBLISH RESULT ================= */
+openPublishResultModal() {
+  this.publishResultNote = '';
+  this.showPublishResultModal = true;
+}
+cancelPublishResult() {
+  this.showPublishResultModal = false;
+  this.publishResultNote = '';
+}
+confirmPublishResult() {
+  if (this.publishingResult) return;
 
-    const payload = {
-      entiId: this.tenantId,
-      examId: this.examData.examId,
-      publishedAt: Date.now(),
-      note: this.publishResultNote.trim() || 'Result published'
-    };
+  const payload = {
+    entiId: this.tenantId,
+    examId: this.examData.examId,
+    publishedAt: Date.now(),
+    note: this.publishResultNote.trim() || 'Result published'
+  };
 
-    this.publishingResult = true;
-    this.commonApi.fetchData(payload, 'exam', 'publish-result').subscribe({
-      next: (res: any) => {
-        this.publishingResult = false;
-        if (res?.status) {
-          this.alert.success('Result published successfully');
-          this.showPublishResultModal = false;
-          this.publishResultNote = '';
-          this.examData.status = 'result_published';
-          this.hasResults = true;
-        } else {
-          this.alert.error(res?.message || 'Failed to publish result');
-        }
-      },
-      error: (err: any) => {
-        this.publishingResult = false;
-        this.alert.error(err?.error?.message || 'Error publishing result');
+  this.publishingResult = true;
+  this.commonApi.fetchData(payload, 'exam', 'publish-result').subscribe({
+    next: (res: any) => {
+      this.publishingResult = false;
+      if (res?.status) {
+        this.alert.success('Result published successfully');
+        this.showPublishResultModal = false;
+        this.publishResultNote = '';
+        this.examData.status = 'result_published';
+        this.hasResults = true;
+      } else {
+        this.alert.error(res?.message || 'Failed to publish result');
       }
-    });
-  }
+    },
+    error: (err: any) => {
+      this.publishingResult = false;
+      this.alert.error(err?.error?.message || 'Error publishing result');
+    }
+  });
+}
 
-  /* ================= REEVALUATE RESULT ================= */
-  reevaluateResults() {
-    this.reevaluateNote = '';
-    this.showReevaluateModal = true;
-  }
+/* ================= REEVALUATE RESULT ================= */
+reevaluateResults() {
+  this.reevaluateNote = '';
+  this.showReevaluateModal = true;
+}
 
-  cancelReevaluate() {
-    this.showReevaluateModal = false;
-    this.reevaluateNote = '';
-  }
+cancelReevaluate() {
+  this.showReevaluateModal = false;
+  this.reevaluateNote = '';
+}
 
-  confirmReevaluate() {
-    if (this.reevaluating) return;
+confirmReevaluate() {
+  if (this.reevaluating) return;
 
-    const payload = {
-      entiId: this.tenantId,
-      userId: localStorage.getItem('userId'),
-      examId: this.examData.examId,
-      note: this.reevaluateNote.trim() || 'Reevaluated result'
-    };
+  const payload = {
+    entiId: this.tenantId,
+    userId: localStorage.getItem('userId'),
+    examId: this.examData.examId,
+    note: this.reevaluateNote.trim() || 'Reevaluated result'
+  };
 
-    this.reevaluating = true;
-    this.commonApi.fetchData(payload, 'exam/grace', 'reevaluate').subscribe({
-      next: (res: any) => {
-        this.reevaluating = false;
-        if (res?.status) {
-          this.alert.success('Result reevaluated successfully');
-          this.showReevaluateModal = false;
-          this.reevaluateNote = '';
-          
-          if (this.hasResults) {
-            this.fetchBatches();
-            this.fetchAnalytics();
-            this.fetchTimingAnalytics();
-            if (this.resultSubTab === 'leaderboard') {
-              this.fetchLeaderboard();
-            }
+  this.reevaluating = true;
+  this.commonApi.fetchData(payload, 'exam/grace', 'reevaluate').subscribe({
+    next: (res: any) => {
+      this.reevaluating = false;
+      if (res?.status) {
+        this.alert.success('Result reevaluated successfully');
+        this.showReevaluateModal = false;
+        this.reevaluateNote = '';
+
+        if (this.hasResults) {
+          this.fetchBatches();
+          this.fetchAnalytics();
+          this.fetchTimingAnalytics();
+          if (this.resultSubTab === 'leaderboard') {
+            this.fetchLeaderboard();
           }
-        } else {
-          this.alert.error(res?.message || 'Failed to reevaluate result');
         }
-      },
-      error: (err: any) => {
-        this.reevaluating = false;
-        this.alert.error(err?.error?.message || 'Error reevaluating result');
+      } else {
+        this.alert.error(res?.message || 'Failed to reevaluate result');
       }
-    });
-  }
+    },
+    error: (err: any) => {
+      this.reevaluating = false;
+      this.alert.error(err?.error?.message || 'Error reevaluating result');
+    }
+  });
+}
 
-  /* ================= BATCH ASSIGN ================= */
-  openBatchModal() {
-    this.batchAssignRow = this.examData;
-    this.enabledBatchIds = new Set();
-    this.selectedBatchIds = new Set();
-    this.showBatchModal = true;
-    this.loadAssignableBatches();
-  }
-  closeBatchModal() {
-    this.showBatchModal = false;
-    this.batchAssignRow = null;
-    this.allAssignableBatches = [];
-    this.enabledBatchIds = new Set();
-    this.selectedBatchIds = new Set();
-  }
+/* ================= BATCH ASSIGN ================= */
+openBatchModal() {
+  this.batchAssignRow = this.examData;
+  this.enabledBatchIds = new Set();
+  this.selectedBatchIds = new Set();
+  this.showBatchModal = true;
+  this.loadAssignableBatches();
+}
+closeBatchModal() {
+  this.showBatchModal = false;
+  this.batchAssignRow = null;
+  this.allAssignableBatches = [];
+  this.enabledBatchIds = new Set();
+  this.selectedBatchIds = new Set();
+}
   private loadAssignableBatches() {
-    this.batchModalLoading = true;
-    const entiId = this.tenantId;
+  this.batchModalLoading = true;
+  const entiId = this.tenantId;
 
-    this.commonApi.fetchData({ entiId }, 'batch', 'list?list=full').subscribe({
-      next: (allRes: any) => {
-        this.allAssignableBatches = allRes?.data || [];
+  this.commonApi.fetchData({ entiId }, 'batch', 'list?list=full').subscribe({
+    next: (allRes: any) => {
+      this.allAssignableBatches = allRes?.data || [];
 
-        this.commonApi.fetchData({ entiId, examId: this.examData.examId }, 'exam/batch', 'list-by-exam').subscribe({
-          next: (assignedRes: any) => {
-            const assignedBatches = assignedRes?.data || [];
-            assignedBatches.forEach((b: any) => {
-              if (b.status === 'enabled') {
-                this.enabledBatchIds.add(b.batchId);
-                this.selectedBatchIds.add(b.batchId);
-              }
-            });
-            this.batchModalLoading = false;
-          },
-          error: () => { this.batchModalLoading = false; }
-        });
-      },
-      error: () => {
-        this.batchModalLoading = false;
-        this.alert.error('Error loading batches');
+      this.commonApi.fetchData({ entiId, examId: this.examData.examId }, 'exam/batch', 'list-by-exam').subscribe({
+        next: (assignedRes: any) => {
+          const assignedBatches = assignedRes?.data || [];
+          assignedBatches.forEach((b: any) => {
+            if (b.status === 'enabled') {
+              this.enabledBatchIds.add(b.batchId);
+              this.selectedBatchIds.add(b.batchId);
+            }
+          });
+          this.batchModalLoading = false;
+        },
+        error: () => { this.batchModalLoading = false; }
+      });
+    },
+    error: () => {
+      this.batchModalLoading = false;
+      this.alert.error('Error loading batches');
+    }
+  });
+}
+toggleBatchSelect(batchId: string) {
+  if (this.selectedBatchIds.has(batchId)) {
+    this.selectedBatchIds.delete(batchId);
+  } else {
+    this.selectedBatchIds.add(batchId);
+  }
+}
+saveBatchChanges() {
+  const entiId = this.tenantId;
+  const examId = this.examData.examId;
+
+  const toAssign = Array.from(this.selectedBatchIds).filter(id => !this.enabledBatchIds.has(id));
+  const toDisable = Array.from(this.enabledBatchIds).filter(id => !this.selectedBatchIds.has(id));
+
+  if (!toAssign.length && !toDisable.length) {
+    this.alert.error('No changes to save');
+    return;
+  }
+
+  this.batchAssigning = true;
+  let pending = 0;
+  let hasError = false;
+
+  const checkDone = () => {
+    pending--;
+    if (pending <= 0) {
+      this.batchAssigning = false;
+      if (!hasError) {
+        this.alert.success('Batch changes saved successfully');
+        this.closeBatchModal();
+        if (this.hasResults) this.fetchBatches();
       }
+    }
+  };
+
+  if (toAssign.length) {
+    pending++;
+    this.commonApi.fetchData({ entiId, examId, batchIds: toAssign }, 'exam/batch', 'assign').subscribe({
+      next: (res: any) => {
+        if (!res?.status) { hasError = true; this.alert.error('Error assigning batches'); }
+        checkDone();
+      },
+      error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error assigning batches'); checkDone(); }
     });
   }
-  toggleBatchSelect(batchId: string) {
-    if (this.selectedBatchIds.has(batchId)) {
-      this.selectedBatchIds.delete(batchId);
-    } else {
-      this.selectedBatchIds.add(batchId);
-    }
+  if (toDisable.length) {
+    pending++;
+    this.commonApi.fetchData({ entiId, examId, batchIds: toDisable }, 'exam/batch', 'disable').subscribe({
+      next: (res: any) => {
+        if (!res?.status) { hasError = true; this.alert.error('Error disabling batches'); }
+        checkDone();
+      },
+      error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error disabling batches'); checkDone(); }
+    });
   }
-  saveBatchChanges() {
-    const entiId = this.tenantId;
-    const examId = this.examData.examId;
-
-    const toAssign = Array.from(this.selectedBatchIds).filter(id => !this.enabledBatchIds.has(id));
-    const toDisable = Array.from(this.enabledBatchIds).filter(id => !this.selectedBatchIds.has(id));
-
-    if (!toAssign.length && !toDisable.length) {
-      this.alert.error('No changes to save');
-      return;
-    }
-
-    this.batchAssigning = true;
-    let pending = 0;
-    let hasError = false;
-
-    const checkDone = () => {
-      pending--;
-      if (pending <= 0) {
-        this.batchAssigning = false;
-        if (!hasError) {
-          this.alert.success('Batch changes saved successfully');
-          this.closeBatchModal();
-          if (this.hasResults) this.fetchBatches();
-        }
-      }
-    };
-
-    if (toAssign.length) {
-      pending++;
-      this.commonApi.fetchData({ entiId, examId, batchIds: toAssign }, 'exam/batch', 'assign').subscribe({
-        next: (res: any) => {
-          if (!res?.status) { hasError = true; this.alert.error('Error assigning batches'); }
-          checkDone();
-        },
-        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error assigning batches'); checkDone(); }
-      });
-    }
-    if (toDisable.length) {
-      pending++;
-      this.commonApi.fetchData({ entiId, examId, batchIds: toDisable }, 'exam/batch', 'disable').subscribe({
-        next: (res: any) => {
-          if (!res?.status) { hasError = true; this.alert.error('Error disabling batches'); }
-          checkDone();
-        },
-        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error disabling batches'); checkDone(); }
-      });
-    }
-  }
+}
 
   /* ================= GRACE MARKS ================= */
   private initGraceForm() {
-    this.graceForm = this.fb.group({
-      subjectId: [''],
-      questionId: ['', Validators.required],
-      graceMarks: [1, [Validators.required, Validators.min(0)]],
-      note: ['', Validators.required]
-    });
-    this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
-      this.graceForm.patchValue({ questionId: '' });
-    });
-  }
+  this.graceForm = this.fb.group({
+    subjectId: [''],
+    questionId: ['', Validators.required],
+    graceMarks: [1, [Validators.required, Validators.min(0)]],
+    note: ['', Validators.required]
+  });
+  this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
+    this.graceForm.patchValue({ questionId: '' });
+  });
+}
 
-  openGraceModal() {
-    this.graceRow = { ...this.examData };
-    if (this.graceRow.graces) {
-      this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
-    }
-    this.graceQuestions = [];
-    this.graceForm.reset({ subjectId: '', questionId: '', graceMarks: 1, note: '' });
-    this.showGraceModal = true;
-    this.loadGraceQuestions();
+openGraceModal() {
+  this.graceRow = { ...this.examData };
+  if (this.graceRow.graces) {
+    this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
   }
-  closeGraceModal() {
-    this.showGraceModal = false;
-    this.graceRow = null;
-  }
-  loadGraceQuestions() {
-    this.graceQuestionsLoading = true;
-    this.commonApi.fetchData({ entiId: this.tenantId, examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.graceQuestions = res.data?.questions || [];
-        }
-        this.graceQuestionsLoading = false;
-      },
-      error: () => {
-        this.graceQuestionsLoading = false;
-        this.alert.error('Error loading questions for selection');
+  this.graceQuestions = [];
+  this.graceForm.reset({ subjectId: '', questionId: '', graceMarks: 1, note: '' });
+  this.showGraceModal = true;
+  this.loadGraceQuestions();
+}
+closeGraceModal() {
+  this.showGraceModal = false;
+  this.graceRow = null;
+}
+loadGraceQuestions() {
+  this.graceQuestionsLoading = true;
+  this.commonApi.fetchData({ entiId: this.tenantId, examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
+    next: (res: any) => {
+      if (res?.status) {
+        const loadedQuestions = res.data?.questions || [];
+        this.graceQuestions = loadedQuestions.map((q: any) => ({
+          ...q,
+          questionHtml: this.renderLatexInHtml(q.questionHtml || q.question || '')
+        }));
       }
-    });
-  }
-  getFilteredGraceQuestions() {
-    const selected = this.graceForm.get('subjectId')?.value;
-    if (!selected || selected === '' || selected === 'null' || selected === 'undefined') {
-      return this.graceQuestions;
+      this.graceQuestionsLoading = false;
+    },
+    error: (err) => {
+      this.graceQuestionsLoading = false;
+      console.error('Error loading questions:', err);
     }
-    const targetId = String(selected).trim();
-    return this.graceQuestions.filter(q => {
-      const qSubId = q.subjectId?._id || q.subjectId;
-      if (!qSubId) return false;
-      return String(qSubId).trim() === targetId;
-    });
+  });
+}
+getFilteredGraceQuestions() {
+  const selected = this.graceForm.get('subjectId')?.value;
+  if (!selected || selected === '' || selected === 'null' || selected === 'undefined') {
+    return this.graceQuestions;
   }
-  getAvailableSections() {
-    return this.graceRow?.sections || [];
+  const targetId = String(selected).trim();
+  return this.graceQuestions.filter(q => {
+    const qSubId = q.subjectId?._id || q.subjectId;
+    if (!qSubId) return false;
+    return String(qSubId).trim() === targetId;
+  });
+}
+getAvailableSections() {
+  return this.graceRow?.sections || [];
+}
+applyGrace() {
+  if (this.graceForm.invalid) {
+    this.graceForm.markAllAsTouched();
+    return;
   }
-  applyGrace() {
-    if (this.graceForm.invalid) {
-      this.graceForm.markAllAsTouched();
-      return;
-    }
-    const formValue = this.graceForm.value;
-    const selectedQ = this.graceQuestions.find((q: any) => (q.questionId || q._id) === formValue.questionId);
-    const sectionId = selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
+  const formValue = this.graceForm.value;
+  const selectedQ = this.graceQuestions.find((q: any) => (q.questionId || q._id) === formValue.questionId);
+  const sectionId = selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
 
-    const payload = {
-      entiId: this.tenantId,
-      userId: localStorage.getItem('userId'),
-      examId: this.graceRow.examId,
-      questionId: formValue.questionId,
-      sectionId: sectionId,
-      graceMarks: formValue.graceMarks,
-      note: formValue.note
-    };
+  const payload = {
+    entiId: this.tenantId,
+    userId: localStorage.getItem('userId'),
+    examId: this.graceRow.examId,
+    questionId: formValue.questionId,
+    sectionId: sectionId,
+    graceMarks: formValue.graceMarks,
+    note: formValue.note
+  };
 
-    this.graceApplying = true;
-    this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
-      next: (res: any) => {
-        this.graceApplying = false;
-        if (res?.status) {
-          this.alert.success('Grace marks applied successfully');
-          this.closeGraceModal();
-        } else {
-          this.alert.error(res?.message || 'Failed to apply grace marks');
-        }
-      },
-      error: (err) => {
-        this.graceApplying = false;
-        this.alert.error(err?.error?.message || 'Error applying grace marks');
+  this.graceApplying = true;
+  this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
+    next: (res: any) => {
+      this.graceApplying = false;
+      if (res?.status) {
+        this.alert.success('Grace marks applied successfully');
+        this.closeGraceModal();
+      } else {
+        this.alert.error(res?.message || 'Failed to apply grace marks');
       }
-    });
-  }
-  removeGrace(graceId: string) {
-    if (!confirm('Are you sure you want to remove this grace mark?')) return;
-
-    const payload = {
-      entiId: this.tenantId,
-      examId: this.graceRow.examId,
-      graceId: graceId,
-      userId: localStorage.getItem('userId')
-    };
-
-    this.graceRemovingGraceId = graceId;
-    this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
-      next: (res: any) => {
-        this.graceRemovingGraceId = null;
-        if (res?.status) {
-          this.alert.success('Grace mark removed successfully');
-          this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.graceId !== graceId);
-        } else {
-          this.alert.error(res?.message || 'Failed to remove grace mark');
-        }
-      },
-      error: (err) => {
-        this.graceRemovingGraceId = null;
-        this.alert.error(err?.error?.message || 'Error removing grace mark');
-      }
-    });
-  }
-
-  /* ================= TAB ================= */
-
-  switchTab(tab: 'details' | 'results') {
-    this.activeTab = tab;
-  }
-
-  switchResultSubTab(tab: 'batches' | 'leaderboard' | 'attempts' | 'timing') {
-    this.resultSubTab = tab;
-    if (tab === 'leaderboard' && this.leaderboardData.length === 0) {
-      this.fetchLeaderboard();
+    },
+    error: (err) => {
+      this.graceApplying = false;
+      this.alert.error(err?.error?.message || 'Error applying grace marks');
     }
+  });
+}
+removeGrace(graceId: string) {
+  if (!confirm('Are you sure you want to remove this grace mark?')) return;
+
+  const payload = {
+    entiId: this.tenantId,
+    examId: this.graceRow.examId,
+    graceId: graceId,
+    userId: localStorage.getItem('userId')
+  };
+
+  this.graceRemovingGraceId = graceId;
+  this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
+    next: (res: any) => {
+      this.graceRemovingGraceId = null;
+      if (res?.status) {
+        this.alert.success('Grace mark removed successfully');
+        this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.graceId !== graceId);
+      } else {
+        this.alert.error(res?.message || 'Failed to remove grace mark');
+      }
+    },
+    error: (err) => {
+      this.graceRemovingGraceId = null;
+      this.alert.error(err?.error?.message || 'Error removing grace mark');
+    }
+  });
+}
+
+/* ================= GRACE QUESTION SELECTOR ================= */
+showGraceQuestionSelector = false;
+
+openGraceQuestionSelector() {
+  this.showGraceQuestionSelector = true;
+}
+
+closeGraceQuestionSelector() {
+  this.showGraceQuestionSelector = false;
+}
+
+selectGraceQuestion(q: any) {
+  this.graceForm.patchValue({ questionId: q.questionId || q._id });
+  this.showGraceQuestionSelector = false;
+}
+
+  private decodeHtmlEntities(text: string): string {
+  const txt = document.createElement('textarea');
+  txt.innerHTML = text;
+  return txt.value;
+}
+
+  private renderLatexInHtml(html: string): string {
+  if (!html) return html;
+  let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
+    try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+  });
+  result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
+    try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+  });
+  result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
+    try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+  });
+  result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
+    try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+  });
+  return result;
+}
+
+getSelectedQuestionText(): string {
+  const qId = this.graceForm.get('questionId')?.value;
+  if (!qId) return '';
+  const idx = this.graceQuestions.findIndex((q: any) => (q.questionId || q._id) === qId);
+  if (idx !== -1) return `Question ${idx + 1}`;
+  return qId;
+}
+
+/* ================= TAB ================= */
+
+switchTab(tab: 'details' | 'results') {
+  this.activeTab = tab;
+}
+
+switchResultSubTab(tab: 'batches' | 'leaderboard' | 'attempts' | 'timing') {
+  this.resultSubTab = tab;
+  if (tab === 'leaderboard' && this.leaderboardData.length === 0) {
+    this.fetchLeaderboard();
   }
+}
 
   /* ================= BATCH LIST ================= */
 
   private fetchBatches() {
-    this.batchLoading = true;
-    const payload = {
-      entiId: this.tenantId,
-      examId: this.examData.examId
-    };
+  this.batchLoading = true;
+  const payload = {
+    entiId: this.tenantId,
+    examId: this.examData.examId
+  };
 
-    this.commonApi.fetchData(payload, 'exam/batch', 'list-by-exam').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.batchData = res.data || [];
-          this.totalBatchRecords = res.count || 0;
-          this.batchTableData = this.batchData.map((item: any) => ({
-            ...item,
-            statusDisplay: item.status === 'enabled' ? 'Enabled' : 'Disabled'
-          }));
-          this.allBatches = this.batchData.map((b: any) => ({
-            batchId: b.batchId,
-            label: b.batchId
-          }));
-        }
-        this.batchLoading = false;
-      },
-      error: () => {
-        this.batchLoading = false;
-        this.alert.error('Error loading batches');
+  this.commonApi.fetchData(payload, 'exam/batch', 'list-by-exam').subscribe({
+    next: (res: any) => {
+      if (res?.status) {
+        this.batchData = res.data || [];
+        this.totalBatchRecords = res.count || 0;
+        this.batchTableData = this.batchData.map((item: any) => ({
+          ...item,
+          statusDisplay: item.status === 'enabled' ? 'Enabled' : 'Disabled'
+        }));
+        this.allBatches = this.batchData.map((b: any) => ({
+          batchId: b.batchId,
+          label: b.batchId
+        }));
       }
-    });
-  }
-
-  viewBatchResult(row: any) {
-    this.router.navigate(['/app/exams/exams/result-view'], {
-      state: { batch: row, exam: this.examData }
-    });
-  }
-
-  /* ================= ANALYTICS ================= */
-
-  fetchAnalytics() {
-    this.analyticsLoading = true;
-    const payload: any = {
-      entiId: this.tenantId,
-      examId: this.examData.examId
-    };
-    if (this.selectedBatchId) {
-      payload.batchId = this.selectedBatchId;
+      this.batchLoading = false;
+    },
+    error: () => {
+      this.batchLoading = false;
+      this.alert.error('Error loading batches');
     }
+  });
+}
 
-    this.commonApi.fetchData(payload, 'exam/result/analytics', 'attempts').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.analyticsData = res.data || [];
-          this.buildSectionAnalytics();
-        }
-        this.analyticsLoading = false;
-      },
-      error: () => {
-        this.analyticsLoading = false;
-        this.alert.error('Error loading analytics');
-      }
-    });
+viewBatchResult(row: any) {
+  this.router.navigate(['/app/exams/exams/result-view'], {
+    state: { batch: row, exam: this.examData }
+  });
+}
+
+/* ================= ANALYTICS ================= */
+
+fetchAnalytics() {
+  this.analyticsLoading = true;
+  const payload: any = {
+    entiId: this.tenantId,
+    examId: this.examData.examId
+  };
+  if (this.selectedBatchId) {
+    payload.batchId = this.selectedBatchId;
   }
 
-  fetchTimingAnalytics() {
-    this.timingLoading = true;
-    const payload: any = {
-      entiId: this.tenantId,
-      examId: this.examData.examId
-    };
-    if (this.selectedBatchId) {
-      payload.batchId = this.selectedBatchId;
+  this.commonApi.fetchData(payload, 'exam/result/analytics', 'attempts').subscribe({
+    next: (res: any) => {
+      if (res?.status) {
+        this.analyticsData = res.data || [];
+        this.buildSectionAnalytics();
+      }
+      this.analyticsLoading = false;
+    },
+    error: () => {
+      this.analyticsLoading = false;
+      this.alert.error('Error loading analytics');
     }
+  });
+}
 
-    this.commonApi.fetchData(payload, 'exam/result/analytics', 'timing').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.timingData = res.data || [];
-          this.buildSectionTiming();
-        }
-        this.timingLoading = false;
-      },
-      error: () => {
-        this.timingLoading = false;
-        this.alert.error('Error loading timing analytics');
-      }
-    });
+fetchTimingAnalytics() {
+  this.timingLoading = true;
+  const payload: any = {
+    entiId: this.tenantId,
+    examId: this.examData.examId
+  };
+  if (this.selectedBatchId) {
+    payload.batchId = this.selectedBatchId;
   }
 
-  /* ================= LEADERBOARD ================= */
-
-  fetchLeaderboard() {
-    this.leaderboardLoading = true;
-    const payload: any = {
-      entiId: this.tenantId,
-      examId: this.examData.examId
-    };
-    if (this.leaderboardBatchId) {
-      payload.batchId = this.leaderboardBatchId;
+  this.commonApi.fetchData(payload, 'exam/result/analytics', 'timing').subscribe({
+    next: (res: any) => {
+      if (res?.status) {
+        this.timingData = res.data || [];
+        this.buildSectionTiming();
+      }
+      this.timingLoading = false;
+    },
+    error: () => {
+      this.timingLoading = false;
+      this.alert.error('Error loading timing analytics');
     }
+  });
+}
 
-    const query = `page=${this.leaderboardPage}&limit=${this.leaderboardLimit}`;
+/* ================= LEADERBOARD ================= */
 
-    this.commonApi.fetchData(payload, 'exam/result', `leaderboard?${query}`).subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.leaderboardData = res.data || [];
-          this.totalLeaderboardRecords = res.count || 0;
-        }
-        this.leaderboardLoading = false;
-      },
-      error: () => {
-        this.leaderboardLoading = false;
-        this.alert.error('Error loading leaderboard');
+fetchLeaderboard() {
+  this.leaderboardLoading = true;
+  const payload: any = {
+    entiId: this.tenantId,
+    examId: this.examData.examId
+  };
+  if (this.leaderboardBatchId) {
+    payload.batchId = this.leaderboardBatchId;
+  }
+
+  const query = `page=${this.leaderboardPage}&limit=${this.leaderboardLimit}`;
+
+  this.commonApi.fetchData(payload, 'exam/result', `leaderboard?${query}`).subscribe({
+    next: (res: any) => {
+      if (res?.status) {
+        this.leaderboardData = res.data || [];
+        this.totalLeaderboardRecords = res.count || 0;
       }
-    });
-  }
+      this.leaderboardLoading = false;
+    },
+    error: () => {
+      this.leaderboardLoading = false;
+      this.alert.error('Error loading leaderboard');
+    }
+  });
+}
 
-  onLeaderboardBatchChange() {
-    this.leaderboardPage = 1;
-    this.fetchLeaderboard();
-  }
+onLeaderboardBatchChange() {
+  this.leaderboardPage = 1;
+  this.fetchLeaderboard();
+}
 
-  onLeaderboardPageChange(page: number) {
-    if (page < 1 || page > this.leaderboardTotalPages) return;
-    this.leaderboardPage = page;
-    this.fetchLeaderboard();
-  }
+onLeaderboardPageChange(page: number) {
+  if (page < 1 || page > this.leaderboardTotalPages) return;
+  this.leaderboardPage = page;
+  this.fetchLeaderboard();
+}
 
   get leaderboardTotalPages(): number {
-    return Math.ceil(this.totalLeaderboardRecords / this.leaderboardLimit) || 1;
-  }
+  return Math.ceil(this.totalLeaderboardRecords / this.leaderboardLimit) || 1;
+}
 
   get leaderboardPageNumbers(): number[] {
-    const total = this.leaderboardTotalPages;
-    const current = this.leaderboardPage;
-    const pages: number[] = [];
-    const start = Math.max(1, current - 2);
-    const end = Math.min(total, current + 2);
-    for (let i = start; i <= end; i++) pages.push(i);
-    return pages;
-  }
+  const total = this.leaderboardTotalPages;
+  const current = this.leaderboardPage;
+  const pages: number[] = [];
+  const start = Math.max(1, current - 2);
+  const end = Math.min(total, current + 2);
+  for (let i = start; i <= end; i++) pages.push(i);
+  return pages;
+}
 
-  getPercentage(obtained: number, total: number): string {
-    if (!total) return '0%';
-    return ((obtained / total) * 100).toFixed(1) + '%';
-  }
+getPercentage(obtained: number, total: number): string {
+  if (!total) return '0%';
+  return ((obtained / total) * 100).toFixed(1) + '%';
+}
 
-  getSectionResultFromLeaderboard(result: any, sectionId: string): any {
-    return (result.sectionResults || []).find((sr: any) => sr.sectionId === sectionId) || null;
-  }
+getSectionResultFromLeaderboard(result: any, sectionId: string): any {
+  return (result.sectionResults || []).find((sr: any) => sr.sectionId === sectionId) || null;
+}
 
-  onBatchFilterChange() {
-    this.fetchAnalytics();
-    this.fetchTimingAnalytics();
-  }
+onBatchFilterChange() {
+  this.fetchAnalytics();
+  this.fetchTimingAnalytics();
+}
 
   private buildSectionAnalytics() {
-    this.sectionAnalyticsMap = {};
-    this.analyticsData.forEach((a: any) => {
-      if (!this.sectionAnalyticsMap[a.sectionId]) {
-        this.sectionAnalyticsMap[a.sectionId] = [];
-      }
-      this.sectionAnalyticsMap[a.sectionId].push(a);
-    });
-    this.buildAttemptsChart();
-  }
+  this.sectionAnalyticsMap = {};
+  this.analyticsData.forEach((a: any) => {
+    if (!this.sectionAnalyticsMap[a.sectionId]) {
+      this.sectionAnalyticsMap[a.sectionId] = [];
+    }
+    this.sectionAnalyticsMap[a.sectionId].push(a);
+  });
+  this.buildAttemptsChart();
+}
 
   private buildAttemptsChart() {
-    const sectionIds = this.getSectionKeys();
-    const labels = sectionIds.map(id => this.getSectionName(id));
-    const correctData = sectionIds.map(id => {
-      const items = this.sectionAnalyticsMap[id] || [];
-      return items.reduce((s: number, i: any) => s + (i.correctCount || 0), 0);
-    });
-    const wrongData = sectionIds.map(id => {
-      const items = this.sectionAnalyticsMap[id] || [];
-      return items.reduce((s: number, i: any) => s + (i.wrongCount || 0), 0);
-    });
-    const skippedData = sectionIds.map(id => {
-      const items = this.sectionAnalyticsMap[id] || [];
-      return items.reduce((s: number, i: any) => s + (i.skippedCount || 0), 0);
-    });
+  const sectionIds = this.getSectionKeys();
+  const labels = sectionIds.map(id => this.getSectionName(id));
+  const correctData = sectionIds.map(id => {
+    const items = this.sectionAnalyticsMap[id] || [];
+    return items.reduce((s: number, i: any) => s + (i.correctCount || 0), 0);
+  });
+  const wrongData = sectionIds.map(id => {
+    const items = this.sectionAnalyticsMap[id] || [];
+    return items.reduce((s: number, i: any) => s + (i.wrongCount || 0), 0);
+  });
+  const skippedData = sectionIds.map(id => {
+    const items = this.sectionAnalyticsMap[id] || [];
+    return items.reduce((s: number, i: any) => s + (i.skippedCount || 0), 0);
+  });
 
-    this.attemptsChartData = {
-      labels,
-      datasets: [
-        { label: 'Correct', data: correctData, backgroundColor: '#22c55e', borderRadius: 4 },
-        { label: 'Wrong', data: wrongData, backgroundColor: '#ef4444', borderRadius: 4 },
-        { label: 'Skipped', data: skippedData, backgroundColor: '#f59e0b', borderRadius: 4 }
-      ]
-    };
-  }
+  this.attemptsChartData = {
+    labels,
+    datasets: [
+      { label: 'Correct', data: correctData, backgroundColor: '#22c55e', borderRadius: 4 },
+      { label: 'Wrong', data: wrongData, backgroundColor: '#ef4444', borderRadius: 4 },
+      { label: 'Skipped', data: skippedData, backgroundColor: '#f59e0b', borderRadius: 4 }
+    ]
+  };
+}
 
   private buildSectionTiming() {
-    this.sectionTimingMap = {};
-    this.timingData.forEach((t: any) => {
-      if (!this.sectionTimingMap[t.sectionId]) {
-        this.sectionTimingMap[t.sectionId] = [];
-      }
-      this.sectionTimingMap[t.sectionId].push(t);
-    });
-    this.buildTimingChart();
-  }
+  this.sectionTimingMap = {};
+  this.timingData.forEach((t: any) => {
+    if (!this.sectionTimingMap[t.sectionId]) {
+      this.sectionTimingMap[t.sectionId] = [];
+    }
+    this.sectionTimingMap[t.sectionId].push(t);
+  });
+  this.buildTimingChart();
+}
 
   private buildTimingChart() {
-    const sectionIds = this.getTimingSectionKeys();
-    const labels = sectionIds.map(id => this.getSectionName(id));
-    const avgData = sectionIds.map(id => {
-      const items = this.sectionTimingMap[id] || [];
-      if (!items.length) return 0;
-      const total = items.reduce((s: number, i: any) => s + (i.avgTimeTaken || 0), 0);
-      return Math.round(total / items.length);
-    });
-    const minData = sectionIds.map(id => {
-      const items = this.sectionTimingMap[id] || [];
-      if (!items.length) return 0;
-      return Math.round(Math.min(...items.map((i: any) => i.minTimeTaken || 0)));
-    });
-    const maxData = sectionIds.map(id => {
-      const items = this.sectionTimingMap[id] || [];
-      if (!items.length) return 0;
-      return Math.round(Math.max(...items.map((i: any) => i.maxTimeTaken || 0)));
-    });
+  const sectionIds = this.getTimingSectionKeys();
+  const labels = sectionIds.map(id => this.getSectionName(id));
+  const avgData = sectionIds.map(id => {
+    const items = this.sectionTimingMap[id] || [];
+    if (!items.length) return 0;
+    const total = items.reduce((s: number, i: any) => s + (i.avgTimeTaken || 0), 0);
+    return Math.round(total / items.length);
+  });
+  const minData = sectionIds.map(id => {
+    const items = this.sectionTimingMap[id] || [];
+    if (!items.length) return 0;
+    return Math.round(Math.min(...items.map((i: any) => i.minTimeTaken || 0)));
+  });
+  const maxData = sectionIds.map(id => {
+    const items = this.sectionTimingMap[id] || [];
+    if (!items.length) return 0;
+    return Math.round(Math.max(...items.map((i: any) => i.maxTimeTaken || 0)));
+  });
 
-    this.timingChartData = {
-      labels,
-      datasets: [
-        { label: 'Avg Time', data: avgData, backgroundColor: '#3b82f6', borderRadius: 4 },
-        { label: 'Min Time', data: minData, backgroundColor: '#22c55e', borderRadius: 4 },
-        { label: 'Max Time', data: maxData, backgroundColor: '#ef4444', borderRadius: 4 }
-      ]
-    };
+  this.timingChartData = {
+    labels,
+    datasets: [
+      { label: 'Avg Time', data: avgData, backgroundColor: '#3b82f6', borderRadius: 4 },
+      { label: 'Min Time', data: minData, backgroundColor: '#22c55e', borderRadius: 4 },
+      { label: 'Max Time', data: maxData, backgroundColor: '#ef4444', borderRadius: 4 }
+    ]
+  };
+}
+
+getTimingSectionKeys(): string[] {
+  return Object.keys(this.sectionTimingMap);
+}
+
+formatTime(ms: number): string {
+  if (!ms) return '-';
+  const totalSec = Math.floor(ms / 1000);
+  const hrs = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
+}
+
+formatSeconds(sec: number): string {
+  if (!sec) return '-';
+  sec = Math.round(sec);
+  if (sec >= 3600) {
+    const hrs = Math.floor(sec / 3600);
+    const mins = Math.floor((sec % 3600) / 60);
+    return `${hrs}h ${mins}m`;
   }
-
-  getTimingSectionKeys(): string[] {
-    return Object.keys(this.sectionTimingMap);
+  if (sec >= 60) {
+    const mins = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${mins}m ${s}s`;
   }
+  return `${sec}s`;
+}
 
-  formatTime(ms: number): string {
-    if (!ms) return '-';
-    const totalSec = Math.floor(ms / 1000);
-    const hrs = Math.floor(totalSec / 3600);
-    const mins = Math.floor((totalSec % 3600) / 60);
-    const secs = totalSec % 60;
-    if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
-    if (mins > 0) return `${mins}m ${secs}s`;
-    return `${secs}s`;
-  }
+getSectionKeys(): string[] {
+  return Object.keys(this.sectionAnalyticsMap);
+}
 
-  formatSeconds(sec: number): string {
-    if (!sec) return '-';
-    sec = Math.round(sec);
-    if (sec >= 3600) {
-      const hrs = Math.floor(sec / 3600);
-      const mins = Math.floor((sec % 3600) / 60);
-      return `${hrs}h ${mins}m`;
-    }
-    if (sec >= 60) {
-      const mins = Math.floor(sec / 60);
-      const s = sec % 60;
-      return `${mins}m ${s}s`;
-    }
-    return `${sec}s`;
-  }
+getSectionName(sectionId: string): string {
+  const section = (this.examData.sections || []).find((s: any) => s.sectionId === sectionId);
+  return section?.sectionName || sectionId;
+}
 
-  getSectionKeys(): string[] {
-    return Object.keys(this.sectionAnalyticsMap);
-  }
+getSectionSummary(sectionId: string): { totalStudents: number; avgAccuracy: number; totalCorrect: number; totalWrong: number; totalSkipped: number } {
+  const items = this.sectionAnalyticsMap[sectionId] || [];
+  if (!items.length) return { totalStudents: 0, avgAccuracy: 0, totalCorrect: 0, totalWrong: 0, totalSkipped: 0 };
 
-  getSectionName(sectionId: string): string {
-    const section = (this.examData.sections || []).find((s: any) => s.sectionId === sectionId);
-    return section?.sectionName || sectionId;
-  }
+  const totalCorrect = items.reduce((s: number, i: any) => s + (i.correctCount || 0), 0);
+  const totalWrong = items.reduce((s: number, i: any) => s + (i.wrongCount || 0), 0);
+  const totalSkipped = items.reduce((s: number, i: any) => s + (i.skippedCount || 0), 0);
+  const avgAccuracy = items.reduce((s: number, i: any) => s + (i.accuracyPct || 0), 0) / items.length;
+  const totalStudents = items.length > 0 ? items[0].totalStudents : 0;
 
-  getSectionSummary(sectionId: string): { totalStudents: number; avgAccuracy: number; totalCorrect: number; totalWrong: number; totalSkipped: number } {
-    const items = this.sectionAnalyticsMap[sectionId] || [];
-    if (!items.length) return { totalStudents: 0, avgAccuracy: 0, totalCorrect: 0, totalWrong: 0, totalSkipped: 0 };
+  return { totalStudents, avgAccuracy: Math.round(avgAccuracy), totalCorrect, totalWrong, totalSkipped };
+}
 
-    const totalCorrect = items.reduce((s: number, i: any) => s + (i.correctCount || 0), 0);
-    const totalWrong = items.reduce((s: number, i: any) => s + (i.wrongCount || 0), 0);
-    const totalSkipped = items.reduce((s: number, i: any) => s + (i.skippedCount || 0), 0);
-    const avgAccuracy = items.reduce((s: number, i: any) => s + (i.accuracyPct || 0), 0) / items.length;
-    const totalStudents = items.length > 0 ? items[0].totalStudents : 0;
+/* ================= STUDENT RESULT ================= */
 
-    return { totalStudents, avgAccuracy: Math.round(avgAccuracy), totalCorrect, totalWrong, totalSkipped };
-  }
+viewStudentResult(row: any) {
+  this.showStudentModal = true;
+  this.studentResult = null;
+  this.studentAnswersBySection = {};
+  this.studentResultLoading = true;
 
-  /* ================= STUDENT RESULT ================= */
+  const payload = {
+    entiId: this.tenantId,
+    examId: this.examData.examId,
+    admissionNo: row.admissionNo
+  };
 
-  viewStudentResult(row: any) {
-    this.showStudentModal = true;
-    this.studentResult = null;
-    this.studentAnswersBySection = {};
-    this.studentResultLoading = true;
-
-    const payload = {
-      entiId: this.tenantId,
-      examId: this.examData.examId,
-      admissionNo: row.admissionNo
-    };
-
-    this.commonApi.fetchData(payload, 'exam/result', 'my-result').subscribe({
-      next: (res: any) => {
-        if (res?.status && res.data) {
-          this.studentResult = res.data;
-          this.buildStudentAnswersBySection();
-        } else {
-          this.alert.error(res?.message || 'Result not found');
-          this.showStudentModal = false;
-        }
-        this.studentResultLoading = false;
-      },
-      error: () => {
-        this.studentResultLoading = false;
-        this.alert.error('Error loading student result');
+  this.commonApi.fetchData(payload, 'exam/result', 'my-result').subscribe({
+    next: (res: any) => {
+      if (res?.status && res.data) {
+        this.studentResult = res.data;
+        this.buildStudentAnswersBySection();
+      } else {
+        this.alert.error(res?.message || 'Result not found');
         this.showStudentModal = false;
       }
-    });
-  }
+      this.studentResultLoading = false;
+    },
+    error: () => {
+      this.studentResultLoading = false;
+      this.alert.error('Error loading student result');
+      this.showStudentModal = false;
+    }
+  });
+}
 
-  closeStudentModal() {
-    this.showStudentModal = false;
-    this.studentResult = null;
-    this.studentAnswersBySection = {};
-  }
+closeStudentModal() {
+  this.showStudentModal = false;
+  this.studentResult = null;
+  this.studentAnswersBySection = {};
+}
 
   private buildStudentAnswersBySection() {
-    this.studentAnswersBySection = {};
-    if (!this.studentResult?.answers) return;
-    this.studentResult.answers.forEach((a: any) => {
-      const sid = a.sectionId || 'unknown';
-      if (!this.studentAnswersBySection[sid]) {
-        this.studentAnswersBySection[sid] = [];
-      }
-      this.studentAnswersBySection[sid].push(a);
-    });
-  }
-
-  getStudentAnswerSectionKeys(): string[] {
-    return Object.keys(this.studentAnswersBySection);
-  }
-
-  getStudentSectionResult(sectionId: string): any {
-    return (this.studentResult?.sectionResults || []).find((sr: any) => sr.sectionId === sectionId) || null;
-  }
-
-  formatDateFromTimestamp(ts: number): string {
-    if (!ts) return '-';
-    const d = new Date(ts);
-    return d.toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
-  }
-
-  /* ================= HELPERS ================= */
-
-  formatStatus(status: string): string {
-    switch (status) {
-      case 'draft': return 'Draft';
-      case 'published': return 'Published';
-      case 'result_published': return 'Result Published';
-      case 'completed': return 'Completed';
-      default: return status || '-';
+  this.studentAnswersBySection = {};
+  if (!this.studentResult?.answers) return;
+  this.studentResult.answers.forEach((a: any) => {
+    const sid = a.sectionId || 'unknown';
+    if (!this.studentAnswersBySection[sid]) {
+      this.studentAnswersBySection[sid] = [];
     }
-  }
+    this.studentAnswersBySection[sid].push(a);
+  });
+}
 
-  getStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'draft': return 'bg-secondary';
-      case 'published': return 'bg-success';
-      case 'result_published': return 'bg-info';
-      case 'completed': return 'bg-primary';
-      default: return 'bg-secondary';
-    }
-  }
+getStudentAnswerSectionKeys(): string[] {
+  return Object.keys(this.studentAnswersBySection);
+}
 
-  formatTestType(type: string): string {
-    switch (type) {
-      case 'practice': return 'Practice';
-      case 'live': return 'Live';
-      case 'mock': return 'Mock';
-      default: return type || '-';
-    }
-  }
+getStudentSectionResult(sectionId: string): any {
+  return (this.studentResult?.sectionResults || []).find((sr: any) => sr.sectionId === sectionId) || null;
+}
 
-  formatMedium(medium: string): string {
-    switch (medium) {
-      case 'en': return 'English';
-      case 'hi': return 'Hindi';
-      case 'ta': return 'Tamil';
-      default: return medium || '-';
-    }
-  }
+formatDateFromTimestamp(ts: number): string {
+  if (!ts) return '-';
+  const d = new Date(ts);
+  return d.toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true
+  });
+}
 
-  formatCalculator(type: string): string {
-    switch (type) {
-      case 'none': return 'None';
-      case 'normal': return 'Normal';
-      case 'scientific': return 'Scientific';
-      default: return type || 'None';
-    }
-  }
+/* ================= HELPERS ================= */
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    return d.toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
+formatStatus(status: string): string {
+  switch (status) {
+    case 'draft': return 'Draft';
+    case 'published': return 'Published';
+    case 'result_published': return 'Result Published';
+    case 'completed': return 'Completed';
+    default: return status || '-';
   }
+}
 
-  /* ================= NAVIGATION ================= */
-
-  viewQuestions() {
-    this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: this.examData } });
+getStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'draft': return 'bg-secondary';
+    case 'published': return 'bg-success';
+    case 'result_published': return 'bg-info';
+    case 'completed': return 'bg-primary';
+    default: return 'bg-secondary';
   }
+}
 
-  editExam() {
-    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData } });
+formatTestType(type: string): string {
+  switch (type) {
+    case 'practice': return 'Practice';
+    case 'live': return 'Live';
+    case 'mock': return 'Mock';
+    default: return type || '-';
   }
+}
+
+formatMedium(medium: string): string {
+  switch (medium) {
+    case 'en': return 'English';
+    case 'hi': return 'Hindi';
+    case 'ta': return 'Tamil';
+    default: return medium || '-';
+  }
+}
+
+formatCalculator(type: string): string {
+  switch (type) {
+    case 'none': return 'None';
+    case 'normal': return 'Normal';
+    case 'scientific': return 'Scientific';
+    default: return type || 'None';
+  }
+}
+
+formatDate(dateStr: string): string {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  return d.toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true
+  });
+}
+
+/* ================= NAVIGATION ================= */
+
+viewQuestions() {
+  this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: this.examData } });
+}
+
+editExam() {
+  this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData } });
+}
 }
