@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import katex from 'katex';
 import { FormArray, FormBuilder, FormGroup, Validators, ValueChangeEvent } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -1315,15 +1316,10 @@ export class QuestionCreatorComponent implements OnInit {
     const editor = document.getElementById(editorId);
     if (!editor) return;
     this.previewTitle = title;
+    this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(
+      this.renderLatexInHtml(editor.innerHTML)
+    );
     this.showPreviewModal = true;
-    this.previewHtml = '';
-    setTimeout(() => {
-      const previewBody = document.getElementById('previewBody');
-      if (previewBody) {
-        previewBody.innerHTML = editor.innerHTML;
-        this.renderPreviewMath(previewBody);
-      }
-    }, 50);
   }
 
   openPreviewFromValue(title: string, formControlName: string): void {
@@ -1333,63 +1329,45 @@ export class QuestionCreatorComponent implements OnInit {
       return;
     }
     this.previewTitle = title;
+    this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(
+      this.renderLatexInHtml(value)
+    );
     this.showPreviewModal = true;
-    this.previewHtml = '';
-    setTimeout(() => {
-      const previewBody = document.getElementById('previewBody');
-      if (previewBody) {
-        previewBody.innerHTML = value;
-        this.renderPreviewMath(previewBody);
-      }
-    }, 50);
   }
 
-  private renderPreviewMath(container: HTMLElement): void {
-    const latexSpans = container.querySelectorAll('.latex, .latex-formula');
-    if (latexSpans.length === 0) return;
-
-    this.loadKatex().then(() => {
-      const katex = (window as any).katex;
-      if (!katex) return;
-      latexSpans.forEach((span: any) => {
-        let tex = span.textContent || '';
-        const isDisplay = tex.startsWith('$$') && tex.endsWith('$$');
-        tex = tex.replace(/^\$\$?([\s\S]*?)\$?\$$/s, '$1').trim();
-        if (!tex) return;
-        try {
-          span.innerHTML = katex.renderToString(tex, { throwOnError: false, displayMode: isDisplay });
-        } catch (e) {
-          console.error('KaTeX render error:', e);
-        }
-      });
-    });
+  private decodeHtmlEntities(text: string): string {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = text;
+    return txt.value;
   }
 
-  private katexLoaded = false;
-  private loadKatex(): Promise<void> {
-    if (this.katexLoaded && (window as any).katex) return Promise.resolve();
-    return new Promise((resolve) => {
-      if (!document.getElementById('katex-css')) {
-        const link = document.createElement('link');
-        link.id = 'katex-css';
-        link.rel = 'stylesheet';
-        link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
-        document.head.appendChild(link);
-      }
-      if ((window as any).katex) {
-        this.katexLoaded = true;
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
-      script.onload = () => {
-        this.katexLoaded = true;
-        resolve();
-      };
-      script.onerror = () => resolve();
-      document.head.appendChild(script);
+  private renderLatexInHtml(html: string): string {
+    if (!html) return html;
+    // Replace \[...\] (display math)
+    let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true });
+      } catch (e) { return match; }
     });
+    // Replace $$...$$ (display math)
+    result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true });
+      } catch (e) { return match; }
+    });
+    // Replace \(...\) (inline math)
+    result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false });
+      } catch (e) { return match; }
+    });
+    // Replace $...$ (inline math)
+    result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false });
+      } catch (e) { return match; }
+    });
+    return result;
   }
 
   closePreview(): void {

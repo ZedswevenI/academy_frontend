@@ -6,6 +6,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
+import katex from 'katex';
 
 @Component({
   selector: 'app-exam-list',
@@ -84,6 +85,12 @@ export class TestComponent implements OnInit, OnDestroy {
   publishResultRow: any = null;
   publishingResult = false;
 
+  /* ================= REEVALUATE RESULT MODAL ================= */
+  showReevaluateModal = false;
+  reevaluateNote = '';
+  reevaluateRow: any = null;
+  reevaluating = false;
+
   /* ================= GRACE MARKS STATE ================= */
   showGraceModal = false;
   graceRow: any = null;
@@ -94,14 +101,7 @@ export class TestComponent implements OnInit, OnDestroy {
   graceQuestions: any[] = [];
   graceQuestionsLoading = false;
 
-  graceTypeOptions = [
-    { label: 'Exam', value: 'exam' },
-    { label: 'Question', value: 'question' }
-  ];
-  graceActionOptions = [
-    { label: 'Flat Add', value: 'flat_add' },
-    { label: 'Remove Negative', value: 'remove_negative' }
-  ];
+
 
   /* ================= ACTIONS ================= */
   actions = [
@@ -121,7 +121,7 @@ export class TestComponent implements OnInit, OnDestroy {
       dropdown: [
         { text: 'View Questions', icon: 'fa-solid fa-list-ol', callback: (row: any) => this.viewQuestions(row) },
         { text: 'Edit Exam', icon: 'fa-regular fa-pen-to-square', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.editExam(row) },
-        { text: 'Duplicate Exam', icon: 'fa-regular fa-copy', callback: (row: any) => this.duplicateExam(row) },
+        { text: 'Duplicate Exam', icon: 'fa-regular fa-copy', callback: (row: any) => this.promptDuplicateExam(row) },
         { text: 'Add Question', icon: 'fa-solid fa-plus', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.addQuestions(row) },
         { text: 'Import Questions', icon: 'fa-solid fa-file-import', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.importQuestions(row) },
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.rearrange(row) },
@@ -129,6 +129,7 @@ export class TestComponent implements OnInit, OnDestroy {
         { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
         { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published' && !(row.graces && row.graces.length > 0), callback: (row: any) => this.publishResult(row) },
         { text: 'Result', icon: 'fa-solid fa-chart-bar', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.viewResult(row) },
+        { text: 'Reevaluate', icon: 'fa-solid fa-arrows-rotate', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.reevaluateResults(row) },
         { text: 'Grace Marks', icon: 'fa-solid fa-gift', hidden: (row: any) => row.status === 'draft', callback: (row: any) => this.openGraceModal(row) },
         { text: 'Delete', icon: 'fa-regular fa-trash-can', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.deleteExam(row) }
       ]
@@ -176,54 +177,15 @@ export class TestComponent implements OnInit, OnDestroy {
 
   initGraceForm() {
     this.graceForm = this.fb.group({
-      graceType: ['exam', Validators.required],
-      actionType: ['flat_add', Validators.required],
-      questionId: [''],
       subjectId: [''],
-      flatMarks: [0],
+      questionId: ['', Validators.required],
+      graceMarks: [1, [Validators.required, Validators.min(0)]],
       note: ['', Validators.required]
     });
 
-    // Handle conditional validation
-    this.graceForm.get('graceType')?.valueChanges.subscribe(val => {
-      const qCtrl = this.graceForm.get('questionId');
-      const sCtrl = this.graceForm.get('subjectId');
-      if (val === 'question') {
-        qCtrl?.setValidators(Validators.required);
-        sCtrl?.setValidators(Validators.required);
-      } else {
-        qCtrl?.clearValidators();
-        sCtrl?.clearValidators();
-      }
-      qCtrl?.updateValueAndValidity();
-      sCtrl?.updateValueAndValidity();
-
-      // Exam-level grace only supports flat_add
-      if (val === 'exam' && this.graceForm.get('actionType')?.value !== 'flat_add') {
-        this.graceForm.patchValue({ actionType: 'flat_add' });
-      }
-
-      if (val === 'question' && this.graceRow && !this.graceQuestions.length) {
-        this.loadGraceQuestions();
-      }
-    });
-
-    this.graceForm.get('subjectId')?.valueChanges.subscribe(val => {
+    // Clear question selection when section changes
+    this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
       this.graceForm.patchValue({ questionId: '' });
-    });
-
-    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
-      this.graceForm.patchValue({ questionId: '', subjectId: '' });
-    });
-
-    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
-      const fCtrl = this.graceForm.get('flatMarks');
-      if (val === 'flat_add') {
-        fCtrl?.setValidators([Validators.required, Validators.min(0)]);
-      } else {
-        fCtrl?.clearValidators();
-      }
-      fCtrl?.updateValueAndValidity();
     });
   }
 
@@ -361,6 +323,49 @@ export class TestComponent implements OnInit, OnDestroy {
     });
   }
 
+  reevaluateResults(row: any) {
+    this.reevaluateRow = row;
+    this.reevaluateNote = '';
+    this.showReevaluateModal = true;
+  }
+
+  cancelReevaluate() {
+    this.showReevaluateModal = false;
+    this.reevaluateRow = null;
+    this.reevaluateNote = '';
+  }
+
+  confirmReevaluate() {
+    if (this.reevaluating || !this.reevaluateRow) return;
+
+    const payload = {
+      entiId: localStorage.getItem('tenantId'),
+      userId: localStorage.getItem('userId'),
+      examId: this.reevaluateRow.examId,
+      note: this.reevaluateNote.trim() || 'Reevaluated result'
+    };
+
+    this.reevaluating = true;
+    this.commonApi.fetchData(payload, 'exam/grace', 'reevaluate').subscribe({
+      next: (res: any) => {
+        this.reevaluating = false;
+        if (res?.status) {
+          this.alert.success('Result reevaluated successfully');
+          this.showReevaluateModal = false;
+          this.reevaluateRow = null;
+          this.reevaluateNote = '';
+          if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+        } else {
+          this.alert.error(res?.message || 'Failed to reevaluate result');
+        }
+      },
+      error: (err: any) => {
+        this.reevaluating = false;
+        this.alert.error(err?.error?.message || 'Error reevaluating result');
+      }
+    });
+  }
+
   formatStatus(status: string): string {
     switch (status) {
       case 'draft': return 'Draft';
@@ -375,7 +380,21 @@ export class TestComponent implements OnInit, OnDestroy {
   viewQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: row } }); }
   rearrange(row: any) { this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: row } }); }
   editExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row } }); }
-  duplicateExam(row: any) { this.router.navigate(['/app/exams/exams/create'], { state: { test: row, duplicate: true } }); }
+  showDuplicateModal = false;
+  examToDuplicate: any = null;
+  promptDuplicateExam(row: any) {
+    this.examToDuplicate = row;
+    this.showDuplicateModal = true;
+  }
+  duplicateExam(withQuestions: boolean) {
+    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examToDuplicate, duplicate: true, withQuestions } });
+    this.showDuplicateModal = false;
+    this.examToDuplicate = null;
+  }
+  closeDuplicateModal() {
+    this.showDuplicateModal = false;
+    this.examToDuplicate = null;
+  }
   importQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-import'], { state: { questions: row } }); }
   addQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-create'], { state: { question: row } }); }
   viewResult(row: any) { this.router.navigate(['/app/exams/exams/result-batch'], { state: { exam: row } }); }
@@ -819,18 +838,13 @@ export class TestComponent implements OnInit, OnDestroy {
 
   openGraceModal(row: any) {
     this.graceRow = { ...row };
-    // Only keep active graces for the modal list
     if (this.graceRow.graces) {
       this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
     }
-    this.showGraceModal = true;
     this.graceQuestions = [];
-    this.graceForm.reset({
-      graceType: 'exam',
-      actionType: 'flat_add',
-      flatMarks: 0,
-      note: ''
-    });
+    this.graceForm.reset({ subjectId: '', questionId: '', graceMarks: 1, note: '' });
+    this.showGraceModal = true;
+    this.loadGraceQuestions();
   }
 
   loadGraceQuestions() {
@@ -838,13 +852,17 @@ export class TestComponent implements OnInit, OnDestroy {
     this.commonApi.fetchData({ entiId: localStorage.getItem('tenantId'), examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
       next: (res: any) => {
         if (res?.status) {
-          this.graceQuestions = res.data?.questions || [];
+          const loadedQuestions = res.data?.questions || [];
+          this.graceQuestions = loadedQuestions.map((q: any) => ({
+            ...q,
+            questionHtml: this.renderLatexInHtml(q.questionHtml || q.question || '')
+          }));
         }
         this.graceQuestionsLoading = false;
       },
-      error: () => {
+      error: (err) => {
         this.graceQuestionsLoading = false;
-        this.alert.error('Error loading questions for selection');
+        console.error('Error loading questions:', err);
       }
     });
   }
@@ -876,31 +894,21 @@ export class TestComponent implements OnInit, OnDestroy {
     }
 
     const formValue = this.graceForm.value;
-    let sectionId = undefined;
-
-    if (formValue.graceType === 'question' && formValue.questionId) {
-      const selectedQ = this.graceQuestions.find(q => q.questionId === formValue.questionId);
-      sectionId = selectedQ?.sectionId;
-    } else if (formValue.subjectId) {
-      // If exam level but with a subject/section filter?
-      const selectedS = this.graceRow.sections.find((s: any) => s.subjectId === formValue.subjectId);
-      sectionId = selectedS?.sectionId;
-    }
+    const selectedQ = this.graceQuestions.find((q: any) => (q.questionId || q._id) === formValue.questionId);
+    const sectionId = selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
 
     const payload = {
       entiId: localStorage.getItem('tenantId'),
+      userId: localStorage.getItem('userId'),
       examId: this.graceRow.examId,
-      graceType: formValue.graceType,
-      actionType: formValue.actionType,
+      questionId: formValue.questionId,
       sectionId: sectionId,
-      questionId: formValue.questionId || undefined,
-      flatMarks: formValue.actionType === 'flat_add' ? formValue.flatMarks : 0,
-      note: formValue.note,
-      userId: localStorage.getItem('userId')
+      graceMarks: formValue.graceMarks,
+      note: formValue.note
     };
 
     this.graceApplying = true;
-    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
       next: (res: any) => {
         this.graceApplying = false;
         if (res?.status) {
@@ -929,7 +937,7 @@ export class TestComponent implements OnInit, OnDestroy {
     };
 
     this.graceRemovingGraceId = graceId;
-    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
       next: (res: any) => {
         this.graceRemovingGraceId = null;
         if (res?.status) {
@@ -950,6 +958,53 @@ export class TestComponent implements OnInit, OnDestroy {
 
   getAvailableSections() {
     return this.graceRow?.sections || [];
+  }
+
+  /* ================= GRACE QUESTION SELECTOR ================= */
+  showGraceQuestionSelector = false;
+
+  openGraceQuestionSelector() {
+    this.showGraceQuestionSelector = true;
+  }
+
+  closeGraceQuestionSelector() {
+    this.showGraceQuestionSelector = false;
+  }
+
+  selectGraceQuestion(q: any) {
+    this.graceForm.patchValue({ questionId: q.questionId || q._id });
+    this.showGraceQuestionSelector = false;
+  }
+
+  private decodeHtmlEntities(text: string): string {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = text;
+    return txt.value;
+  }
+
+  private renderLatexInHtml(html: string): string {
+    if (!html) return html;
+    let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    return result;
+  }
+
+  getSelectedQuestionText(): string {
+    const qId = this.graceForm.get('questionId')?.value;
+    if (!qId) return '';
+    const idx = this.graceQuestions.findIndex((q: any) => (q.questionId || q._id) === qId);
+    if (idx !== -1) return `Question ${idx + 1}`;
+    return qId;
   }
 
   refresh() {

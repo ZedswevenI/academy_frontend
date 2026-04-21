@@ -7,6 +7,7 @@ import { AuthService } from '../../../../service/auth/auth.service';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import katex from 'katex';
 
 @Component({
   selector: 'app-ass-view',
@@ -122,6 +123,13 @@ export class TestViewComponent implements OnInit {
   showPublishResultModal = false;
   publishResultNote = '';
   publishingResult = false;
+
+  /* ================= REEVALUATE RESULT MODAL ================= */
+  showReevaluateModal = false;
+  reevaluateNote = '';
+  reevaluating = false;
+
+  /* ================= GRACE MARKS MODAL ================= */
   showGraceModal = false;
   graceRow: any = null;
   graceApplying = false;
@@ -129,14 +137,6 @@ export class TestViewComponent implements OnInit {
   graceForm!: FormGroup;
   graceQuestions: any[] = [];
   graceQuestionsLoading = false;
-  graceTypeOptions = [
-    { label: 'Exam', value: 'exam' },
-    { label: 'Question', value: 'question' }
-  ];
-  graceActionOptions = [
-    { label: 'Flat Add', value: 'flat_add' },
-    { label: 'Remove Negative', value: 'remove_negative' }
-  ];
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -150,7 +150,7 @@ export class TestViewComponent implements OnInit {
     if (state?.exam) {
       this.examData = state.exam;
     }
-    console.log("this.examData ",this.examData)
+    console.log("this.examData ", this.examData)
     this.tenantId = localStorage.getItem('tenantId') || '';
   }
 
@@ -197,8 +197,16 @@ export class TestViewComponent implements OnInit {
   }
 
   /* ================= NAV ACTIONS ================= */
-  duplicateExam() {
-    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData, duplicate: true } });
+  showDuplicateModal = false;
+  promptDuplicateExam() {
+    this.showDuplicateModal = true;
+  }
+  duplicateExam(withQuestions: boolean) {
+    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData, duplicate: true, withQuestions } });
+    this.showDuplicateModal = false;
+  }
+  closeDuplicateModal() {
+    this.showDuplicateModal = false;
   }
   rearrangeQuestions() {
     this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: this.examData } });
@@ -240,6 +248,55 @@ export class TestViewComponent implements OnInit {
       error: (err: any) => {
         this.publishingResult = false;
         this.alert.error(err?.error?.message || 'Error publishing result');
+      }
+    });
+  }
+
+  /* ================= REEVALUATE RESULT ================= */
+  reevaluateResults() {
+    this.reevaluateNote = '';
+    this.showReevaluateModal = true;
+  }
+
+  cancelReevaluate() {
+    this.showReevaluateModal = false;
+    this.reevaluateNote = '';
+  }
+
+  confirmReevaluate() {
+    if (this.reevaluating) return;
+
+    const payload = {
+      entiId: this.tenantId,
+      userId: localStorage.getItem('userId'),
+      examId: this.examData.examId,
+      note: this.reevaluateNote.trim() || 'Reevaluated result'
+    };
+
+    this.reevaluating = true;
+    this.commonApi.fetchData(payload, 'exam/grace', 'reevaluate').subscribe({
+      next: (res: any) => {
+        this.reevaluating = false;
+        if (res?.status) {
+          this.alert.success('Result reevaluated successfully');
+          this.showReevaluateModal = false;
+          this.reevaluateNote = '';
+
+          if (this.hasResults) {
+            this.fetchBatches();
+            this.fetchAnalytics();
+            this.fetchTimingAnalytics();
+            if (this.resultSubTab === 'leaderboard') {
+              this.fetchLeaderboard();
+            }
+          }
+        } else {
+          this.alert.error(res?.message || 'Failed to reevaluate result');
+        }
+      },
+      error: (err: any) => {
+        this.reevaluating = false;
+        this.alert.error(err?.error?.message || 'Error reevaluating result');
       }
     });
   }
@@ -347,49 +404,13 @@ export class TestViewComponent implements OnInit {
   /* ================= GRACE MARKS ================= */
   private initGraceForm() {
     this.graceForm = this.fb.group({
-      graceType: ['exam', Validators.required],
-      actionType: ['flat_add', Validators.required],
-      questionId: [''],
       subjectId: [''],
-      flatMarks: [0],
+      questionId: ['', Validators.required],
+      graceMarks: [1, [Validators.required, Validators.min(0)]],
       note: ['', Validators.required]
     });
-
-    this.graceForm.get('graceType')?.valueChanges.subscribe(val => {
-      const qCtrl = this.graceForm.get('questionId');
-      const sCtrl = this.graceForm.get('subjectId');
-      if (val === 'question') {
-        qCtrl?.setValidators(Validators.required);
-        sCtrl?.setValidators(Validators.required);
-      } else {
-        qCtrl?.clearValidators();
-        sCtrl?.clearValidators();
-      }
-      qCtrl?.updateValueAndValidity();
-      sCtrl?.updateValueAndValidity();
-
-      if (val === 'exam' && this.graceForm.get('actionType')?.value !== 'flat_add') {
-        this.graceForm.patchValue({ actionType: 'flat_add' });
-      }
-
-      if (val === 'question' && this.graceRow && !this.graceQuestions.length) {
-        this.loadGraceQuestions();
-      }
-    });
-
     this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
       this.graceForm.patchValue({ questionId: '' });
-    });
-
-    this.graceForm.get('actionType')?.valueChanges.subscribe(val => {
-      this.graceForm.patchValue({ questionId: '', subjectId: '' });
-      const fCtrl = this.graceForm.get('flatMarks');
-      if (val === 'flat_add') {
-        fCtrl?.setValidators([Validators.required, Validators.min(0)]);
-      } else {
-        fCtrl?.clearValidators();
-      }
-      fCtrl?.updateValueAndValidity();
     });
   }
 
@@ -398,14 +419,10 @@ export class TestViewComponent implements OnInit {
     if (this.graceRow.graces) {
       this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
     }
-    this.showGraceModal = true;
     this.graceQuestions = [];
-    this.graceForm.reset({
-      graceType: 'exam',
-      actionType: 'flat_add',
-      flatMarks: 0,
-      note: ''
-    });
+    this.graceForm.reset({ subjectId: '', questionId: '', graceMarks: 1, note: '' });
+    this.showGraceModal = true;
+    this.loadGraceQuestions();
   }
   closeGraceModal() {
     this.showGraceModal = false;
@@ -416,13 +433,17 @@ export class TestViewComponent implements OnInit {
     this.commonApi.fetchData({ entiId: this.tenantId, examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
       next: (res: any) => {
         if (res?.status) {
-          this.graceQuestions = res.data?.questions || [];
+          const loadedQuestions = res.data?.questions || [];
+          this.graceQuestions = loadedQuestions.map((q: any) => ({
+            ...q,
+            questionHtml: this.renderLatexInHtml(q.questionHtml || q.question || '')
+          }));
         }
         this.graceQuestionsLoading = false;
       },
-      error: () => {
+      error: (err) => {
         this.graceQuestionsLoading = false;
-        this.alert.error('Error loading questions for selection');
+        console.error('Error loading questions:', err);
       }
     });
   }
@@ -446,32 +467,22 @@ export class TestViewComponent implements OnInit {
       this.graceForm.markAllAsTouched();
       return;
     }
-
     const formValue = this.graceForm.value;
-    let sectionId: string | undefined = undefined;
-
-    if (formValue.graceType === 'question' && formValue.questionId) {
-      const selectedQ = this.graceQuestions.find(q => q.questionId === formValue.questionId);
-      sectionId = selectedQ?.sectionId;
-    } else if (formValue.subjectId) {
-      const selectedS = this.graceRow.sections.find((s: any) => s.subjectId === formValue.subjectId);
-      sectionId = selectedS?.sectionId;
-    }
+    const selectedQ = this.graceQuestions.find((q: any) => (q.questionId || q._id) === formValue.questionId);
+    const sectionId = selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
 
     const payload = {
       entiId: this.tenantId,
+      userId: localStorage.getItem('userId'),
       examId: this.graceRow.examId,
-      graceType: formValue.graceType,
-      actionType: formValue.actionType,
+      questionId: formValue.questionId,
       sectionId: sectionId,
-      questionId: formValue.questionId || undefined,
-      flatMarks: formValue.actionType === 'flat_add' ? formValue.flatMarks : 0,
-      note: formValue.note,
-      userId: localStorage.getItem('userId')
+      graceMarks: formValue.graceMarks,
+      note: formValue.note
     };
 
     this.graceApplying = true;
-    this.commonApi.fetchData(payload, 'exam', 'apply-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
       next: (res: any) => {
         this.graceApplying = false;
         if (res?.status) {
@@ -498,7 +509,7 @@ export class TestViewComponent implements OnInit {
     };
 
     this.graceRemovingGraceId = graceId;
-    this.commonApi.fetchData(payload, 'exam', 'remove-grace').subscribe({
+    this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
       next: (res: any) => {
         this.graceRemovingGraceId = null;
         if (res?.status) {
@@ -513,6 +524,53 @@ export class TestViewComponent implements OnInit {
         this.alert.error(err?.error?.message || 'Error removing grace mark');
       }
     });
+  }
+
+  /* ================= GRACE QUESTION SELECTOR ================= */
+  showGraceQuestionSelector = false;
+
+  openGraceQuestionSelector() {
+    this.showGraceQuestionSelector = true;
+  }
+
+  closeGraceQuestionSelector() {
+    this.showGraceQuestionSelector = false;
+  }
+
+  selectGraceQuestion(q: any) {
+    this.graceForm.patchValue({ questionId: q.questionId || q._id });
+    this.showGraceQuestionSelector = false;
+  }
+
+  private decodeHtmlEntities(text: string): string {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = text;
+    return txt.value;
+  }
+
+  private renderLatexInHtml(html: string): string {
+    if (!html) return html;
+    let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    return result;
+  }
+
+  getSelectedQuestionText(): string {
+    const qId = this.graceForm.get('questionId')?.value;
+    if (!qId) return '';
+    const idx = this.graceQuestions.findIndex((q: any) => (q.questionId || q._id) === qId);
+    if (idx !== -1) return `Question ${idx + 1}`;
+    return qId;
   }
 
   /* ================= TAB ================= */
