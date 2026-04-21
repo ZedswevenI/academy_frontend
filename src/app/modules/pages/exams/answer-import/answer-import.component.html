@@ -1,0 +1,87 @@
+<div class="row layout-container">
+  <div class="col-8 m-auto mt-4 pb-4">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+        <h4 class="mb-1 fw-bold"><i class="fas fa-file-import me-2"></i>Import Answers from DOCX</h4>
+        <small class="text-muted d-block mt-2">Exam: <span class="fw-bold text-dark">{{ examData?.examName }}</span></small>
+      </div>
+
+      <div class="card-body p-4">
+        <!-- Step 1: File Selection -->
+        <div *ngIf="parsedAnswers.length === 0" class="mb-4">
+          <div class="upload-area p-5 border rounded-3 text-center position-relative" [class.bg-light]="!selectedFile">
+            <input type="file" accept=".docx" class="position-absolute w-100 h-100 top-0 start-0 opacity-0 bg-danger" style="cursor: pointer;" (change)="onFileSelected($event)">
+            
+            <div *ngIf="!selectedFile">
+              <i class="fa-solid fa-cloud-arrow-up text-primary mb-3" style="font-size: 3rem;"></i>
+              <h5 class="fw-bold">Click or drag DOCX file here</h5>
+              <p class="text-muted small mb-3">Format required: [NUMBER] 1, [ANS] A, [SOL]...</p>
+              <button class="btn btn-sm btn-outline-primary z-3 position-relative" (click)="downloadSample(); $event.stopPropagation()">
+                <i class="fas fa-download me-1"></i> Download Sample DOCX
+              </button>
+            </div>
+
+            <div *ngIf="selectedFile">
+              <i class="fas fa-file-word text-primary mb-3" style="font-size: 3rem;"></i>
+              <h5 class="fw-bold text-success">{{ selectedFile.name }}</h5>
+              <p class="text-muted small mb-3">{{ (selectedFile.size / 1024).toFixed(2) }} KB</p>
+              <button class="btn btn-sm btn-outline-danger z-3 position-relative" (click)="removeFile(); $event.stopPropagation()">Remove File</button>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end mt-4">
+            <button class="btn btn-outline-secondary px-4 me-2" (click)="goBack()">Cancel</button>
+            <button class="btn btn-primary px-4" [disabled]="!selectedFile || parsing || fetchingQuestions" (click)="parseDocx()">
+               <span *ngIf="parsing || fetchingQuestions" class="spinner-border spinner-border-sm me-2"></span>
+               {{ fetchingQuestions ? 'Loading Exam Data...' : (parsing ? 'Parsing...' : 'Parse File') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Verification Table -->
+        <div *ngIf="parsedAnswers.length > 0">
+           <div class="alert alert-info border-0 rounded-3">
+              <i class="fas fa-info-circle me-2"></i>
+              Parsed <strong>{{ parsedAnswers.length }}</strong> answers. Please review them before submitting.
+           </div>
+
+           <div class="table-responsive border rounded-3 mb-4" style="max-height: 500px; overflow-y: auto;">
+              <table class="table table-hover align-middle mb-0">
+                  <thead class="bg-light sticky-top">
+                      <tr>
+                          <th>Question #</th>
+                          <th>Status</th>
+                          <th>Parsed Answer</th>
+                          <th>Solution Preview</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <tr *ngFor="let item of parsedAnswers" [class.table-danger]="!!item.error">
+                          <td class="fw-bold">{{ item.questionId }}</td>
+                          <td>
+                             <span class="badge" [class.bg-success]="!item.error" [class.bg-danger]="item.error">
+                                {{ item.error ? 'Error' : 'Mapped' }}
+                             </span>
+                             <div class="text-danger fs-12 mt-1" *ngIf="item.error">{{ item.error }}</div>
+                          </td>
+                          <td class="fw-bold text-primary">{{ item.ansStr || '-' }}</td>
+                          <td>
+                              <div style="max-height: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [innerHTML]="item.solutionHtml || '-'"></div>
+                          </td>
+                      </tr>
+                  </tbody>
+              </table>
+           </div>
+
+           <div class="d-flex justify-content-end mt-4">
+              <button class="btn btn-outline-secondary px-4 me-2" (click)="removeFile()">Back</button>
+              <button class="btn btn-success px-4" (click)="submitAnswers()" [disabled]="submitting">
+                  <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                  <i *ngIf="!submitting" class="fa-solid fa-cloud-arrow-up me-2"></i> Submit Answers
+              </button>
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
