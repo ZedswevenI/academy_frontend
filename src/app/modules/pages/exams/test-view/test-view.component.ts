@@ -227,8 +227,57 @@ export class TestViewComponent implements OnInit {
     this.showDuplicateModal = true;
   }
   duplicateExam(withQuestions: boolean) {
-    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData, duplicate: true, withQuestions } });
-    this.showDuplicateModal = false;
+    if (!this.examData) return;
+
+    this.loading = true;
+    const d = this.examData;
+    const suffix = ' - Copy';
+
+    const payload: any = {
+      entiId: this.tenantId,
+      examCode: `${d.examCode}${suffix}`,
+      examName: `${d.examName}${suffix}`,
+      password: d.password || '123456',
+      description: d.description,
+      testType: d.testType,
+      medium: d.medium,
+      duration: d.duration,
+      totalMarks: d.totalMarks,
+      totalQuestions: d.totalQuestions,
+      startTime: Date.now() + 86400000,
+      endTime: Date.now() + 86400000 + (d.duration * 60000),
+      autoPublishAt: null,
+      instructionId: d.instructionId,
+      calculatorType: d.calculatorType,
+      sections: (d.sections || []).map((s: any) => ({
+        sectionCode: s.sectionCode,
+        sectionName: s.sectionName,
+        subjectId: s.subjectId?._id || s.subjectId,
+        numberOfQuestions: s.numberOfQuestions,
+        sortOrder: s.sortOrder
+      }))
+    };
+
+    const endpoint = withQuestions ? 'duplicate' : 'create';
+    if (withQuestions) {
+      payload.refExamId = d.examId;
+    }
+
+    this.commonApi.fetchData(payload, 'exam', endpoint).subscribe({
+      next: (res: any) => {
+        this.loading = false;
+        if (res?.status) {
+          this.alert.success(`Exam duplicated successfully ${withQuestions ? 'with' : 'without'} questions`);
+          this.showDuplicateModal = false;
+        } else {
+          this.alert.error(res?.message || 'Error duplicating exam');
+        }
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(err?.error?.message || 'Error duplicating exam');
+      }
+    });
   }
   closeDuplicateModal() {
     this.showDuplicateModal = false;
