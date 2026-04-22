@@ -1,4 +1,12 @@
-import { Component, OnInit, ViewChildren, QueryList, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChildren,
+  QueryList,
+  ElementRef,
+  AfterViewInit,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
@@ -14,7 +22,7 @@ declare var renderMathInElement: any;
   selector: 'app-question-creator',
   standalone: false,
   templateUrl: './question-view.component.html',
-  styleUrls: ['./question-view.component.scss']
+  styleUrls: ['./question-view.component.scss'],
 })
 export class QuestionViewComponent implements OnInit, AfterViewInit {
   questions: any[] = [];
@@ -23,8 +31,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   testId!: string;
   questionData!: any;
   isDraft = false;
-
-  /* Grace Modal State */
   graceApplying = false;
   graceRemovingGraceId: string | null = null;
   showGraceModal = false;
@@ -34,8 +40,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
-
-  /* ================= MAP FROM BANK ================= */
   showBankModal = false;
   bankQuestions: any[] = [];
   bankLoading = false;
@@ -43,8 +47,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   bankSelectedIds = new Set<string>();
   bankSectionId = '';
   bankMapping = false;
-
-  /* Bank filters */
   bankSubjectOptions: any[] = [];
   bankTopicOptions: any[] = [];
   bankSubTopicOptions: any[] = [];
@@ -58,7 +60,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   bankSearch = '';
   bankPage = 1;
   bankPageSize = 10;
-
   questionTypeOptions = [
     { label: 'MCQ (Single)', value: 'mcq_single' },
     { label: 'MCQ (Multiple)', value: 'mcq_multiple' },
@@ -67,13 +68,12 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     { label: 'Subjective', value: 'subjective' },
     { label: 'True/False', value: 'true_false' },
     { label: 'Text Based', value: 'passage_qns' },
-    { label: 'Matrix', value: 'matrix' }
+    { label: 'Matrix', value: 'matrix' },
   ];
-
   difficultyOptions = [
     { label: 'Easy', value: 'easy' },
     { label: 'Medium', value: 'medium' },
-    { label: 'Hard', value: 'hard' }
+    { label: 'Hard', value: 'hard' },
   ];
 
   constructor(
@@ -83,8 +83,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     private cdr: ChangeDetectorRef,
     private breadcrump: BredcrumpService,
     private alert: AlertService,
-    public authService: AuthService
-  ) { this.breadcrump.set([{ label: 'Exams', link: '/app/exams/exams' }, { label: 'View' }]); }
+    public authService: AuthService,
+  ) {
+    this.breadcrump.set([
+      { label: 'Exams', link: '/app/exams/exams' },
+      { label: 'View' },
+    ]);
+  }
 
   ngOnInit(): void {
     const state: any = history.state;
@@ -103,13 +108,12 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   loadExamDetails() {
     const body = {
       entiId: this.entiId,
-      examId: this.testId
+      examId: this.testId,
     };
     this.commonApi.fetchData(body, 'exam', 'get').subscribe({
       next: (res: any) => {
         if (res?.status && res?.data) {
           const data = res.data;
-          // Only keep active graces in the UI logic
           if (data.graces) {
             data.graces = data.graces.filter((g: any) => g.isActive);
           }
@@ -120,7 +124,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         console.error('Error loading exam details:', err);
-      }
+      },
     });
   }
 
@@ -130,9 +134,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         question: {
           testId: this.testId,
           examId: this.testId,
-          sections: this.questionData.sections || []
-        }
-      }
+          sections: this.questionData.sections || [],
+        },
+      },
     });
   }
 
@@ -144,25 +148,21 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.loading = true;
     const body = {
       tenantId: this.entiId,
-      examId: this.testId
+      examId: this.testId,
     };
     try {
       const res: any = await firstValueFrom(
-        this.commonApi.fetchData(body, 'exam/questions', 'getallquestions')
+        this.commonApi.fetchData(body, 'exam/questions', 'getallquestions'),
       );
-
       if (res?.status && res?.data) {
         const rawQuestions = res.data.questions;
         this.questions = await this.processQuestions(rawQuestions);
-
         this.cdr.detectChanges();
         setTimeout(() => this.renderMathContent(), 300);
       }
-
     } catch (err) {
       console.error('Error loading questions:', err);
     }
-
     this.loading = false;
   }
 
@@ -173,89 +173,71 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         let solutionHtml = q.solutionHtml
           ? await this.replaceDownloadUrls(q.solutionHtml)
           : '';
-
-        // Convert \( \) delimiters to $ $ for consistent rendering
         questionHtml = this.normalizeDelimiters(questionHtml);
         solutionHtml = this.normalizeDelimiters(solutionHtml);
-
         const options = q.questionOptions?.length
           ? await Promise.all(
-            q.questionOptions.map(async (opt: any) => {
-              let textHtml = await this.replaceDownloadUrls(opt.textHtml);
-              textHtml = this.normalizeDelimiters(textHtml);
-              return {
-                ...opt,
-                textHtml: textHtml
-              };
-            })
-          )
+              q.questionOptions.map(async (opt: any) => {
+                let textHtml = await this.replaceDownloadUrls(opt.textHtml);
+                textHtml = this.normalizeDelimiters(textHtml);
+                return {
+                  ...opt,
+                  textHtml: textHtml,
+                };
+              }),
+            )
           : [];
-
         return {
           ...q,
           questionNumber: index + 1,
           questionHtml: this.sanitizeHtml(questionHtml),
           solutionHtml: this.sanitizeHtml(solutionHtml),
-          questionOptions: options.map(o => ({
+          questionOptions: options.map((o) => ({
             ...o,
-            textHtml: this.sanitizeHtml(o.textHtml)
-          }))
+            textHtml: this.sanitizeHtml(o.textHtml),
+          })),
         };
-      })
+      }),
     );
   }
 
   private normalizeDelimiters(html: string): string {
     if (!html) return html;
-
-    // First, fix escaped backslashes: \\( becomes \(
     let normalized = html.replace(/\\\(/g, '\\(');
     normalized = normalized.replace(/\\\)/g, '\\)');
     normalized = normalized.replace(/\\\[/g, '\\[');
     normalized = normalized.replace(/\\\]/g, '\\]');
-
-    // Convert \(...\) to $...$  (inline math)
     normalized = normalized.replace(/\\\((.*?)\\\)/gs, (match, content) => {
       return `$${content}$`;
     });
-
-    // Convert \[...\] to $$...$$ (display math)
     normalized = normalized.replace(/\\\[(.*?)\\\]/gs, (match, content) => {
       return `$$${content}$$`;
     });
-
     return normalized;
   }
 
   async replaceDownloadUrls(html: string): Promise<string> {
     if (!html || !html.includes('<img')) return html;
-
     const imgRegex = /<img[^>]+src="([^"]+)"/g;
     const matches = [...html.matchAll(imgRegex)];
-
     let updatedHtml = html;
-
     for (const match of matches) {
       const originalUrl = match[1];
-
       try {
         const downloadRes: any = await firstValueFrom(
           this.commonApi.fetchData(
             { url: originalUrl },
             'exam/questions/image',
-            'download'
-          )
+            'download',
+          ),
         );
-
         if (downloadRes?.status) {
           updatedHtml = updatedHtml.replace(originalUrl, downloadRes.url);
         }
-
       } catch (err) {
         console.error('Image download error:', err);
       }
     }
-
     return updatedHtml;
   }
 
@@ -270,8 +252,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         this.renderMathFallback();
         return;
       }
-
-      // Render question elements
       this.questionElements.forEach((element, idx) => {
         try {
           this.renderMathInElement(element.nativeElement);
@@ -279,8 +259,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           console.error(`Error rendering question ${idx}:`, err);
         }
       });
-
-      // Render option elements
       this.optionElements.forEach((element, idx) => {
         try {
           this.renderMathInElement(element.nativeElement);
@@ -288,8 +266,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           console.error(`Error rendering option ${idx}:`, err);
         }
       });
-
-      // Render solution elements
       this.solutionElements.forEach((element, idx) => {
         try {
           this.renderMathInElement(element.nativeElement);
@@ -297,7 +273,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           console.error(`Error rendering solution ${idx}:`, err);
         }
       });
-
     } catch (err) {
       console.error('Error in renderMathContent:', err);
     }
@@ -305,43 +280,37 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
 
   private renderMathInElement(element: HTMLElement): void {
     if (!element) return;
-
     try {
       renderMathInElement(element, {
         delimiters: [
           { left: '$$', right: '$$', display: true },
           { left: '$', right: '$', display: false },
           { left: '\\(', right: '\\)', display: false },
-          { left: '\\[', right: '\\]', display: true }
+          { left: '\\[', right: '\\]', display: true },
         ],
         throwOnError: false,
         strict: false,
         trust: true,
         macros: {
-          "\\f": "#1f(#2)",
-        }
+          '\\f': '#1f(#2)',
+        },
       });
     } catch (err) {
       console.error('renderMathInElement error:', err);
     }
   }
 
-  /**
-   * Fallback rendering method
-   */
   private renderMathFallback(): void {
     if (!katex) {
       console.warn('KaTeX library not loaded');
       return;
     }
-
     const allElements = [
       ...Array.from(this.questionElements),
       ...Array.from(this.optionElements),
-      ...Array.from(this.solutionElements)
+      ...Array.from(this.solutionElements),
     ];
-
-    allElements.forEach(refElement => {
+    allElements.forEach((refElement) => {
       try {
         const element = refElement.nativeElement;
         this.processElementForMath(element);
@@ -353,75 +322,67 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
 
   private processElementForMath(element: HTMLElement): void {
     if (!katex) return;
-
     const walk = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
-
         if (!text.includes('$')) {
           return;
         }
-
         const fragment = document.createDocumentFragment();
         let lastIndex = 0;
-
-        // Match $ delimiters
         const mathRegex = /\$\$([^\$][\s\S]*?)\$\$|\$([^\$][\s\S]*?)\$/g;
         let match;
-
         while ((match = mathRegex.exec(text)) !== null) {
           if (match.index > lastIndex) {
             fragment.appendChild(
-              document.createTextNode(text.substring(lastIndex, match.index))
+              document.createTextNode(text.substring(lastIndex, match.index)),
             );
           }
-
           const mathText = match[1] || match[2];
           const isDisplay = !!match[1];
-
           try {
             let processedMath = mathText.trim();
             processedMath = processedMath.replace(/\\\\/g, '\\');
-
             const mathHtml = katex.renderToString(processedMath, {
               throwOnError: false,
               displayMode: isDisplay,
-              strict: 'ignore'
+              strict: 'ignore',
             });
-
-            const mathContainer = document.createElement(isDisplay ? 'div' : 'span');
+            const mathContainer = document.createElement(
+              isDisplay ? 'div' : 'span',
+            );
             mathContainer.innerHTML = mathHtml;
-            mathContainer.className = isDisplay ? 'katex-display-custom' : 'katex-inline-custom';
+            mathContainer.className = isDisplay
+              ? 'katex-display-custom'
+              : 'katex-inline-custom';
             fragment.appendChild(mathContainer);
           } catch (err) {
             console.error('KaTeX rendering error:', err);
             fragment.appendChild(document.createTextNode(match[0]));
           }
-
           lastIndex = match.index + match[0].length;
         }
-
         if (lastIndex < text.length) {
           fragment.appendChild(
-            document.createTextNode(text.substring(lastIndex))
+            document.createTextNode(text.substring(lastIndex)),
           );
         }
-
         if (lastIndex > 0) {
           node.parentNode?.replaceChild(fragment, node);
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as HTMLElement;
-
-        if (['SCRIPT', 'STYLE', 'IMG', 'IFRAME', 'CODE', 'PRE'].includes(element.tagName)) {
+        if (
+          ['SCRIPT', 'STYLE', 'IMG', 'IFRAME', 'CODE', 'PRE'].includes(
+            element.tagName,
+          )
+        ) {
           return;
         }
-
         const children = Array.from(node.childNodes);
-        children.forEach(child => walk(child));
+        children.forEach((child) => walk(child));
       }
     };
-
     walk(element);
   }
 
@@ -445,7 +406,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   getGraceForQuestion(questionId: string) {
-    return (this.questionData?.graces || []).find((g: any) => g.questionId === questionId && g.isActive);
+    return (this.questionData?.graces || []).find(
+      (g: any) => g.questionId === questionId && g.isActive,
+    );
   }
 
   openGraceModal(question: any) {
@@ -473,9 +436,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       questionId: q.questionId,
       sectionId: q.sectionId,
       graceMarks: this.graceMarksInput,
-      note: this.graceNoteInput
+      note: this.graceNoteInput,
     };
-
     this.graceApplying = true;
     this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
       next: (res: any) => {
@@ -491,20 +453,18 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       error: (err) => {
         this.graceApplying = false;
         this.alert.error(err?.error?.message || 'Error applying grace marks');
-      }
+      },
     });
   }
 
   removeGraceFromQuestion(graceId: string) {
     if (!confirm('Are you sure you want to remove this grace mark?')) return;
-
     const payload = {
       entiId: localStorage.getItem('tenantId'),
       examId: this.testId,
       graceId: graceId,
-      userId: localStorage.getItem('userId')
+      userId: localStorage.getItem('userId'),
     };
-
     this.graceRemovingGraceId = graceId;
     this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
       next: (res: any) => {
@@ -519,109 +479,101 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       error: (err) => {
         this.graceRemovingGraceId = null;
         this.alert.error(err?.error?.message || 'Error removing grace mark');
-      }
+      },
     });
   }
 
   editQuestion(question: any) {
-    this.router.navigate(
-      ['/app/exams/exams/question-create'],
-      {
-        state: {
-          question: {
-            testId: this.testId,
-            examId: this.testId,
-            recId: question._id,
-            sections: this.questionData.sections || []
-          }
-        }
-      }
-    );
+    this.router.navigate(['/app/exams/exams/question-create'], {
+      state: {
+        question: {
+          testId: this.testId,
+          examId: this.testId,
+          recId: question._id,
+          sections: this.questionData.sections || [],
+        },
+      },
+    });
   }
 
   deleteQuestion(question: any) {
     if (!confirm('Are you sure you want to delete this question?')) {
       return;
     }
-
     const body = {
       tenantId: this.entiId,
       recId: question._id,
     };
-
-    this.commonApi
-      .fetchData(body, 'exam/questions', 'delete')
-      .subscribe({
-        next: (res: any) => {
-          if (res?.status) {
-            this.questions = this.questions.filter(
-              q => q.questionId !== question.questionId
-            );
-          }
-        },
-        error: () => alert('Error deleting question')
-      });
+    this.commonApi.fetchData(body, 'exam/questions', 'delete').subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.questions = this.questions.filter(
+            (q) => q.questionId !== question.questionId,
+          );
+        }
+      },
+      error: () => alert('Error deleting question'),
+    });
   }
-  
+
   importAnswers() {
-    this.router.navigate(['/app/exams/exams/answer-import'], { state: { exam: this.questionData } });
+    this.router.navigate(['/app/exams/exams/answer-import'], {
+      state: { exam: this.questionData },
+    });
   }
 
   printQuestions(withAnswer: boolean): void {
     setTimeout(() => {
       const printWindow = window.open('', '_blank', 'width=900,height=700');
       if (!printWindow) return;
-
-      const questionsHtml = this.questions.map((q, i) => {
-        const qEl = this.questionElements.toArray()[i]?.nativeElement;
-        const questionHtml = qEl ? qEl.innerHTML : '';
-
-        // Build options — 2 per row (A,B on row1 | C,D on row2)
-        const opts = q.questionOptions || [];
-        let optionsHtml = '';
-
-        if (opts.length) {
-          const rows: string[] = [];
-
-          for (let j = 0; j < opts.length; j += 2) {
-            const cells = [j, j + 1]
-              .filter(k => k < opts.length)
-              .map(k => {
-                const label = String.fromCharCode(65 + k);
-                const flatIndex = this.questions
-                  .slice(0, i)
-                  .reduce((acc: number, pq: any) => acc + (pq.questionOptions?.length || 0), 0) + k;
-                const optEl = this.optionElements.toArray()[flatIndex];
-                const optHtml = optEl
-                  ? optEl.nativeElement.innerHTML
-                  : (typeof opts[k].textHtml === 'string' ? opts[k].textHtml : '');
-
-                const isCorrect = withAnswer && opts[k].isCorrect;
-
-                return `<td class="opt-cell ${isCorrect ? 'correct-opt' : ''}">
+      const questionsHtml = this.questions
+        .map((q, i) => {
+          const qEl = this.questionElements.toArray()[i]?.nativeElement;
+          const questionHtml = qEl ? qEl.innerHTML : '';
+          const opts = q.questionOptions || [];
+          let optionsHtml = '';
+          if (opts.length) {
+            const rows: string[] = [];
+            for (let j = 0; j < opts.length; j += 2) {
+              const cells = [j, j + 1]
+                .filter((k) => k < opts.length)
+                .map((k) => {
+                  const label = String.fromCharCode(65 + k);
+                  const flatIndex =
+                    this.questions
+                      .slice(0, i)
+                      .reduce(
+                        (acc: number, pq: any) =>
+                          acc + (pq.questionOptions?.length || 0),
+                        0,
+                      ) + k;
+                  const optEl = this.optionElements.toArray()[flatIndex];
+                  const optHtml = optEl
+                    ? optEl.nativeElement.innerHTML
+                    : typeof opts[k].textHtml === 'string'
+                      ? opts[k].textHtml
+                      : '';
+                  const isCorrect = withAnswer && opts[k].isCorrect;
+                  return `<td class="opt-cell ${isCorrect ? 'correct-opt' : ''}">
                         <span class="opt-label">(${label})</span>
                         <span class="opt-text">${optHtml}</span>
                       </td>`;
-              }).join('<td class="opt-divider"></td>');
-
-            rows.push(`<tr>${cells}</tr>`);
-          }
-
-          optionsHtml = `
+                })
+                .join('<td class="opt-divider"></td>');
+              rows.push(`<tr>${cells}</tr>`);
+            }
+            optionsHtml = `
           <table class="options-table">
             ${rows.join('')}
           </table>`;
-        }
-
-        const answerRow = withAnswer
-          ? `<div class="answer-box">
+          }
+          const answerRow = withAnswer
+            ? `<div class="answer-box">
              <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
            </div>`
-          : `<div class="answer-box">
-             
+            : `<div class="answer-box">             
            </div>`;
-
-        return `
+          return `
         <div class="question-card">
           <div class="question-number">Q${i + 1}.
             <span class="meta-right">
@@ -632,10 +584,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           ${optionsHtml}
           ${answerRow}
         </div>`;
-      }).join('');
-
+        })
+        .join('');
       const docTitle = withAnswer ? 'ANSWER KEY' : 'EXAM';
-
       printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -833,8 +784,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     }, 500);
   }
 
-  /* ================= MAP FROM BANK: METHODS ================= */
-
   openBankModal(): void {
     this.showBankModal = true;
     this.bankSelectedIds.clear();
@@ -853,36 +802,26 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
 
   private loadBankMasters(): void {
     const body = { entiId: this.entiId };
-
     this.commonApi.fetchData(body, 'ims/subject', 'list?list=full').subscribe({
       next: (res: any) => {
         this.bankSubjectOptions = (res?.data || []).map((s: any) => ({
-          label: s.subjectName, value: s._id
+          label: s.subjectName,
+          value: s._id,
         }));
-      }
+      },
     });
-
-    this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
-      next: (res: any) => { this.bankAllTopics = res?.data || []; }
-    });
-
-    this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
-      next: (res: any) => { this.bankAllSubTopics = res?.data || []; }
-    });
+    // this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
+    //   next: (res: any) => { this.bankAllTopics = res?.data || []; }
+    // });
+    // this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
+    //   next: (res: any) => { this.bankAllSubTopics = res?.data || []; }
+    // });
   }
 
   onBankSubjectChange(subjectId: string): void {
     this.bankFilterSubjectId = subjectId;
     this.bankFilterTopicId = '';
     this.bankFilterSubTopicId = '';
-    this.bankSubTopicOptions = [];
-    if (subjectId) {
-      this.bankTopicOptions = this.bankAllTopics
-        .filter((t: any) => (t.subjectId?._id || t.subjectId) === subjectId)
-        .map((t: any) => ({ label: t.topicName, value: t.topicId }));
-    } else {
-      this.bankTopicOptions = [];
-    }
   }
 
   onBankTopicChange(topicId: string): void {
@@ -922,24 +861,33 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   fetchBankQuestions(): void {
     this.bankLoading = true;
     const query: any = { page: this.bankPage, limit: this.bankPageSize };
-
     if (this.bankSearch) query.search = this.bankSearch;
-    if (this.bankFilterTopicId) query.topicId = this.bankFilterTopicId;
-    if (this.bankFilterSubTopicId) query.subTopicId = this.bankFilterSubTopicId;
+    if (this.bankFilterSubjectId) query.subjectId = this.bankFilterSubjectId;
+    if (this.bankFilterTopicId?.trim())
+      query.topicId = this.bankFilterTopicId.trim();
+    if (this.bankFilterSubTopicId?.trim())
+      query.subTopicId = this.bankFilterSubTopicId.trim();
     if (this.bankFilterDifficulty) query.difficulty = this.bankFilterDifficulty;
-    if (this.bankFilterQuestionType) query.questionType = this.bankFilterQuestionType;
-
+    if (this.bankFilterQuestionType)
+      query.questionType = this.bankFilterQuestionType;
     const queryString = Object.keys(query)
-      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
+      .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
       .join('&');
-
-    this.commonApi.fetchData({ entiId: this.entiId }, 'exam/questions/bank', `list?${queryString}`)
+    console.log(queryString)
+    this.commonApi
+      .fetchData(
+        { entiId: this.entiId },
+        'exam/questions/bank',
+        `list?${queryString}`,
+      )
       .subscribe({
         next: (res: any) => {
           if (res?.status) {
             this.bankQuestions = (res.data || []).map((item: any) => ({
               ...item,
-              questionPreview: this.stripHtml(item.questionHtml || '').substring(0, 120)
+              questionPreview: this.stripHtml(
+                item.questionHtml || '',
+              ).substring(0, 120),
             }));
             this.bankTotalRecords = res.count || 0;
           }
@@ -948,7 +896,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         error: () => {
           this.bankLoading = false;
           this.alert.error('Error loading bank questions');
-        }
+        },
       });
   }
 
@@ -974,15 +922,17 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
 
   toggleSelectAll(event: any): void {
     if (event.target.checked) {
-      this.bankQuestions.forEach(q => this.bankSelectedIds.add(q._id));
+      this.bankQuestions.forEach((q) => this.bankSelectedIds.add(q._id));
     } else {
-      this.bankQuestions.forEach(q => this.bankSelectedIds.delete(q._id));
+      this.bankQuestions.forEach((q) => this.bankSelectedIds.delete(q._id));
     }
   }
 
   get allCurrentPageSelected(): boolean {
-    return this.bankQuestions.length > 0 &&
-      this.bankQuestions.every(q => this.bankSelectedIds.has(q._id));
+    return (
+      this.bankQuestions.length > 0 &&
+      this.bankQuestions.every((q) => this.bankSelectedIds.has(q._id))
+    );
   }
 
   mapSingleQuestion(recId: string): void {
@@ -990,15 +940,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       this.alert.error('Please select a section first');
       return;
     }
-
     this.bankMapping = true;
     const payload = {
       entiId: this.entiId,
       recId: recId,
       examId: this.testId,
-      sectionId: this.bankSectionId
+      sectionId: this.bankSectionId,
     };
-
     this.commonApi.fetchData(payload, 'exam/questions', 'map').subscribe({
       next: (res: any) => {
         this.bankMapping = false;
@@ -1011,7 +959,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       error: () => {
         this.bankMapping = false;
         this.alert.error('Error mapping question');
-      }
+      },
     });
   }
 
@@ -1020,25 +968,24 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       this.alert.error('Please select a section first');
       return;
     }
-
     if (this.bankSelectedIds.size === 0) {
       this.alert.error('Please select at least one question');
       return;
     }
-
     this.bankMapping = true;
     const payload = {
       entiId: this.entiId,
       recIds: Array.from(this.bankSelectedIds),
       examId: this.testId,
-      sectionId: this.bankSectionId
+      sectionId: this.bankSectionId,
     };
-
     this.commonApi.fetchData(payload, 'exam/questions', 'bulk-map').subscribe({
       next: (res: any) => {
         this.bankMapping = false;
         if (res?.status) {
-          this.alert.success(`${this.bankSelectedIds.size} question(s) mapped successfully`);
+          this.alert.success(
+            `${this.bankSelectedIds.size} question(s) mapped successfully`,
+          );
           this.bankSelectedIds.clear();
           this.loadQuestions();
           this.closeBankModal();
@@ -1047,7 +994,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       error: () => {
         this.bankMapping = false;
         this.alert.error('Error mapping questions');
-      }
+      },
     });
   }
 

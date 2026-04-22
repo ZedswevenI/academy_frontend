@@ -25,7 +25,7 @@ interface ParsedQuestion {
   selector: 'app-question-import',
   standalone: false,
   templateUrl: './question-import.component.html',
-  styleUrls: ['./question-import.component.scss']
+  styleUrls: ['./question-import.component.scss'],
 })
 export class QuestionImportComponent implements OnInit {
   questionForm!: FormGroup;
@@ -58,9 +58,10 @@ export class QuestionImportComponent implements OnInit {
       next: (res: any) => {
         this.subjects = res?.data || [];
         this.subjectOptions = this.subjects.map((s: any) => ({
-          label: s.subjectName, value: s._id
+          label: s.subjectName,
+          value: s._id,
         }));
-      }
+      },
     });
     // this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
     //   next: (res: any) => { this.allTopics = res?.data || []; }
@@ -102,19 +103,30 @@ export class QuestionImportComponent implements OnInit {
   isProcessing = false;
   currentStep: 'upload' | 'preview' | 'success' = 'upload';
 
-  constructor(private fb: FormBuilder, private breadcrump: BredcrumpService, private commonApi: CommonapiService, private alert: AlertService, private router: Router,
+  constructor(
+    private fb: FormBuilder,
+    private breadcrump: BredcrumpService,
+    private commonApi: CommonapiService,
+    private alert: AlertService,
+    private router: Router,
   ) {
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state as any;
 
     if (state?.bank) {
       this.isBankMode = true;
-      this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Import' }]);
+      this.breadcrump.set([
+        { label: 'Questions', link: '/app/exams/questions' },
+        { label: 'Import' },
+      ]);
     } else if (state?.questions) {
       this.testId = state.questions.examId || state.questions.testId;
       this.examId = state.questions.examId || state.questions.testId || '';
       this.sections = state.questions.sections || [];
-      this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Import' }]);
+      this.breadcrump.set([
+        { label: 'Exam', link: '/app/exams/exams' },
+        { label: 'Import' },
+      ]);
     }
     this.questionForm = this.fb.group({
       questionType: ['mcq-single', Validators.required],
@@ -125,7 +137,7 @@ export class QuestionImportComponent implements OnInit {
       trueFalseAnswer: [null],
       subjectiveAnswer: [''],
       matrixLeft: this.fb.array([]),
-      matrixRight: this.fb.array([])
+      matrixRight: this.fb.array([]),
     });
   }
 
@@ -170,10 +182,10 @@ export class QuestionImportComponent implements OnInit {
 
       console.log('Images found:', images);
       console.log('Relationships:', relMap);
-
     } catch (e) {
       console.error('Error processing DOCX:', e);
-      this.errorMessage = 'Failed to process DOCX file: ' + (e as Error).message;
+      this.errorMessage =
+        'Failed to process DOCX file: ' + (e as Error).message;
     } finally {
       this.isProcessing = false;
     }
@@ -192,8 +204,8 @@ export class QuestionImportComponent implements OnInit {
 
   private async extractImages(zip: JSZip): Promise<Map<string, string>> {
     const images = new Map<string, string>();
-    const files = Object.keys(zip.files).filter(f =>
-      f.startsWith('word/media/')
+    const files = Object.keys(zip.files).filter((f) =>
+      f.startsWith('word/media/'),
     );
 
     for (const path of files) {
@@ -232,7 +244,7 @@ export class QuestionImportComponent implements OnInit {
   private extractParagraphs(
     xmlDoc: Document,
     images: Map<string, string>,
-    relMap: Map<string, string>
+    relMap: Map<string, string>,
   ): string[] {
     const paragraphs: string[] = [];
     const pNodes = xmlDoc.getElementsByTagNameNS('*', 'p');
@@ -270,8 +282,6 @@ export class QuestionImportComponent implements OnInit {
         }
       }
 
-
-
       const trimmed = html.trim();
       if (trimmed) {
         paragraphs.push(trimmed);
@@ -286,7 +296,7 @@ export class QuestionImportComponent implements OnInit {
   private parseQuestions(
     xml: string,
     images: Map<string, string>,
-    relMap: Map<string, string>
+    relMap: Map<string, string>,
   ): ParsedQuestion[] {
     const xmlDoc = new DOMParser().parseFromString(xml, 'text/xml');
     const paragraphs = this.extractParagraphs(xmlDoc, images, relMap);
@@ -326,7 +336,7 @@ export class QuestionImportComponent implements OnInit {
           positiveMarks: 4,
           negativeMarks: 1,
           sortid: '',
-          solutionHtml: ''
+          solutionHtml: '',
         };
         questionTextLines = [];
         optionBuffer = [];
@@ -353,7 +363,7 @@ export class QuestionImportComponent implements OnInit {
 
       if (p.startsWith('[Marks]')) {
         const marksStr = p.replace('[Marks]', '').trim();
-        const parts = marksStr.split(',').map(s => parseFloat(s.trim()));
+        const parts = marksStr.split(',').map((s) => parseFloat(s.trim()));
         if (parts.length >= 1) current.positiveMarks = parts[0];
         if (parts.length >= 2) current.negativeMarks = parts[1];
         continue;
@@ -365,7 +375,9 @@ export class QuestionImportComponent implements OnInit {
       }
 
       if (p.startsWith('[soln]')) {
-        current.solutionHtml = this.convertToHtml(p.replace('[soln]', '').trim());
+        current.solutionHtml = this.convertToHtml(
+          p.replace('[soln]', '').trim(),
+        );
         continue;
       }
 
@@ -373,11 +385,11 @@ export class QuestionImportComponent implements OnInit {
       const inlineOptions = this.extractInlineOptions(p);
       if (inlineOptions.length >= 2) {
         // This line has multiple options
-        inlineOptions.forEach(opt => {
+        inlineOptions.forEach((opt) => {
           current!.options.push({
             label: opt.label,
             text: opt.text,
-            html: this.convertToHtml(opt.text)
+            html: this.convertToHtml(opt.text),
           });
         });
         continue;
@@ -392,7 +404,7 @@ export class QuestionImportComponent implements OnInit {
         current.options.push({
           label: label,
           text: text,
-          html: this.convertToHtml(text)
+          html: this.convertToHtml(text),
         });
         continue;
       }
@@ -403,14 +415,17 @@ export class QuestionImportComponent implements OnInit {
       }
 
       // Skip section headers
-      if (p.includes('[PHYSICS]') || p.includes('[CHEMISTRY]') || p.includes('[MATHS]')) {
+      if (
+        p.includes('[PHYSICS]') ||
+        p.includes('[CHEMISTRY]') ||
+        p.includes('[MATHS]')
+      ) {
         continue;
       }
 
       // Otherwise, it's question text
       questionTextLines.push(p);
     }
-
 
     // Save last question
     if (current) {
@@ -428,7 +443,9 @@ export class QuestionImportComponent implements OnInit {
    * Extract multiple inline options from a single paragraph
    * Example: "(A) option1 (B) option2 (C) option3 (D) option4"
    */
-  private extractInlineOptions(text: string): Array<{ label: string; text: string }> {
+  private extractInlineOptions(
+    text: string,
+  ): Array<{ label: string; text: string }> {
     const regex = /\(([A-Da-d])\)/g;
     const matches = [...text.matchAll(regex)];
 
@@ -439,7 +456,7 @@ export class QuestionImportComponent implements OnInit {
     for (let i = 0; i < matches.length; i++) {
       const label = matches[i][1].toLowerCase();
       const start = matches[i].index! + matches[i][0].length;
-      const end = (i + 1 < matches.length) ? matches[i + 1].index! : text.length;
+      const end = i + 1 < matches.length ? matches[i + 1].index! : text.length;
 
       const optionText = text.substring(start, end).trim();
 
@@ -474,51 +491,58 @@ export class QuestionImportComponent implements OnInit {
       this.alert.error('Please select a subject before submitting');
       return;
     }
-
+    if (this.isBankMode && !this.selectedTopicId.trim()) {
+      this.alert.error('Please enter a topic before submitting');
+      return;
+    }
     const payload = await this.buildBulkQuestionPayload();
     const entiId = localStorage.getItem('tenantId');
-
     if (this.isBankMode) {
-      // Inject subjectId/topicId/subTopicId into each question
       if (payload.questions?.length) {
         payload.questions = payload.questions.map((q: any) => ({
           ...q,
           subjectId: this.selectedSubjectId || undefined,
-          topicId: this.selectedTopicId || undefined,
-          subTopicId: this.selectedSubTopicId || undefined
+          topicId: this.selectedTopicId.trim() || undefined,
+          subTopicId: this.selectedSubTopicId.trim() || undefined,
         }));
       }
       const bankPayload: any = { entiId, ...payload };
-      this.commonApi.fetchData(bankPayload, 'exam/questions/bank', 'bulk-create')
+      this.commonApi
+        .fetchData(bankPayload, 'exam/questions/bank', 'bulk-create')
         .subscribe({
           next: (res: any) => {
             if (res?.status) {
-              this.alert.success(res.message || 'Questions imported successfully');
+              this.alert.success(
+                res.message || 'Questions imported successfully',
+              );
               this.router.navigate(['/app/exams/questions']);
             } else {
               this.alert.error('Error importing questions');
             }
           },
-          error: (e) => this.alert.error(e.error?.message || 'Import failed')
+          error: (e) => this.alert.error(e.error?.message || 'Import failed'),
         });
     } else {
       const examPayload = {
         entiId,
         examId: this.examId,
         sectionId: this.selectedSectionId,
-        ...payload
+        ...payload,
       };
-      this.commonApi.fetchData(examPayload, 'exam/questions', 'bulk-create')
+      this.commonApi
+        .fetchData(examPayload, 'exam/questions', 'bulk-create')
         .subscribe({
           next: (res: any) => {
             if (res?.status) {
-              this.alert.success(res.message || 'Questions imported successfully');
+              this.alert.success(
+                res.message || 'Questions imported successfully',
+              );
               this.router.navigate(['/app/exams/exams']);
             } else {
               this.alert.error('Error importing questions');
             }
           },
-          error: (e) => this.alert.error(e.error?.message || 'Import failed')
+          error: (e) => this.alert.error(e.error?.message || 'Import failed'),
         });
     }
   }
@@ -528,6 +552,8 @@ export class QuestionImportComponent implements OnInit {
     this.parsedQuestions = [];
     this.currentStep = 'upload';
     this.errorMessage = '';
+    this.selectedTopicId = '';
+    this.selectedSubTopicId = '';
   }
 
   getCorrectOptionLabels(q: ParsedQuestion): string {
@@ -547,7 +573,6 @@ export class QuestionImportComponent implements OnInit {
   }
 
   async prepareFile(base64: string): Promise<File> {
-
     const compressed = await this.compressBase64Image(base64, 20);
 
     const arr = compressed.split(',');
@@ -571,12 +596,10 @@ export class QuestionImportComponent implements OnInit {
 
   compressBase64Image(base64: string, maxSizeKB = 20): Promise<string> {
     return new Promise((resolve) => {
-
       const img = new Image();
       img.src = base64;
 
       img.onload = () => {
-
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d')!;
 
@@ -625,7 +648,7 @@ export class QuestionImportComponent implements OnInit {
       const formData = new FormData();
       formData.append('files', file); // important: key must match backend
       const res: any = await firstValueFrom(
-        this.commonApi.uploadImage(formData, 'exam/questions', 'upload-image')
+        this.commonApi.uploadImage(formData, 'exam/questions', 'upload-image'),
       );
       if (res?.status && res?.files?.length) {
         return res.files[0].s3Url;
@@ -642,36 +665,31 @@ export class QuestionImportComponent implements OnInit {
     let updatedHtml = html;
     for (const base64 of images) {
       const imageUrl = await this.uploadImage(base64);
-      updatedHtml = updatedHtml.replace(
-        base64,
-        imageUrl || ''
-      );
+      updatedHtml = updatedHtml.replace(base64, imageUrl || '');
     }
     return updatedHtml;
   }
 
-
   async buildBulkQuestionPayload(): Promise<any> {
-
     const questions = await Promise.all(
       this.parsedQuestions.map(async (q) => {
-
         const questionHtml = await this.replaceImagesWithUrls(q.questionHtml);
         const solutionHtml = q.solutionHtml
           ? await this.replaceImagesWithUrls(q.solutionHtml)
           : null;
 
-        const processedOptions = q.options && q.options.length
-          ? await Promise.all(
-            q.options.map(async (opt) => ({
-              textHtml: await this.replaceImagesWithUrls(opt.html),
-              isCorrect: q.answer
-                .split(',')
-                .map(a => a.trim().toLowerCase())
-                .includes(opt.label)
-            }))
-          )
-          : [];
+        const processedOptions =
+          q.options && q.options.length
+            ? await Promise.all(
+                q.options.map(async (opt) => ({
+                  textHtml: await this.replaceImagesWithUrls(opt.html),
+                  isCorrect: q.answer
+                    .split(',')
+                    .map((a) => a.trim().toLowerCase())
+                    .includes(opt.label),
+                })),
+              )
+            : [];
         return {
           questionType: q.qtype,
           questionHtml,
@@ -680,9 +698,9 @@ export class QuestionImportComponent implements OnInit {
           positiveMarks: q.positiveMarks,
           negativeMarks: q.negativeMarks,
           questionOptions: processedOptions,
-          solutionHtml: solutionHtml
+          solutionHtml: solutionHtml,
         };
-      })
+      }),
     );
 
     return { questions };
