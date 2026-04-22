@@ -54,7 +54,6 @@ export class QuestionImportComponent implements OnInit {
 
   private loadBankMasters(): void {
     const body = { entiId: localStorage.getItem('tenantId') };
-
     this.commonApi.fetchData(body, 'ims/subject', 'list?list=full').subscribe({
       next: (res: any) => {
         this.subjects = res?.data || [];
@@ -63,14 +62,12 @@ export class QuestionImportComponent implements OnInit {
         }));
       }
     });
-
-    this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
-      next: (res: any) => { this.allTopics = res?.data || []; }
-    });
-
-    this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
-      next: (res: any) => { this.allSubTopics = res?.data || []; }
-    });
+    // this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
+    //   next: (res: any) => { this.allTopics = res?.data || []; }
+    // });
+    // this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
+    //   next: (res: any) => { this.allSubTopics = res?.data || []; }
+    // });
   }
 
   onBankSubjectChange(subjectId: string): void {
