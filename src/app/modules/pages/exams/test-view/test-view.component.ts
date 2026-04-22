@@ -49,6 +49,9 @@ export class TestViewComponent implements OnInit {
   analyticsLoading = false;
   analyticsData: any[] = [];
   sectionAnalyticsMap: Record<string, any[]> = {};
+  subjectMap: Record<string, string> = {};
+
+  // Attempts chart
   attemptsChartData: ChartData<'bar'> = { labels: [], datasets: [] };
   attemptsChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
@@ -170,6 +173,7 @@ export class TestViewComponent implements OnInit {
     this.hasResults = this.examData.status === 'result_published';
 
     this.initGraceForm();
+    this.fetchSubjects();
 
     if (this.hasResults) {
       this.fetchBatches();
@@ -627,6 +631,30 @@ export class TestViewComponent implements OnInit {
     });
   }
 
+  /* ================= SUBJECTS ================= */
+
+  private fetchSubjects() {
+    const payload: any = {
+      entiId: this.tenantId,
+    };
+    this.commonApi.fetchData(payload, 'ims/subject', 'list?list=full').subscribe({
+      next: (res: any) => {
+        if (res?.status && res.data) {
+          this.subjectMap = res.data.reduce((acc: any, cur: any) => {
+            acc[cur._id] = cur.subjectName;
+            return acc;
+          }, {});
+          // Rebuild charts if they were already built with IDs
+          if (this.analyticsData.length > 0) this.buildAttemptsChart();
+          if (this.timingData.length > 0) this.buildTimingChart();
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching subjects:', err);
+      }
+    });
+  }
+
   /* ================= ANALYTICS ================= */
 
   fetchAnalytics() {
@@ -862,7 +890,8 @@ export class TestViewComponent implements OnInit {
 
   getSectionName(sectionId: string): string {
     const section = (this.examData.sections || []).find((s: any) => s.sectionId === sectionId);
-    return section?.sectionName || sectionId;
+    if (section?.sectionName) return section.sectionName;
+    return this.subjectMap[sectionId] || sectionId;
   }
 
   getSectionSummary(sectionId: string): { totalStudents: number; avgAccuracy: number; totalCorrect: number; totalWrong: number; totalSkipped: number } {
