@@ -449,8 +449,8 @@
             <table class="table table-sm table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th style="width:45px">#</th>
-                  <th>Question ID</th>
+                  <th style="width:100px">QNo</th>
+                  <!-- <th>Question ID</th> -->
                   <th>Correct</th>
                   <th>Wrong</th>
                   <th>Skipped</th>
@@ -461,7 +461,7 @@
               <tbody>
                 <tr *ngFor="let q of sectionAnalyticsMap[sectionId]; let i = index">
                   <td class="text-muted">{{ i + 1 }}</td>
-                  <td><code class="small">{{ q.questionId }}</code></td>
+                  <!-- <td><code class="small">{{ q.questionId }}</code></td> -->
                   <td><span class="text-success fw-semibold">{{ q.correctCount }}</span></td>
                   <td><span class="text-danger fw-semibold">{{ q.wrongCount }}</span></td>
                   <td><span class="text-warning fw-semibold">{{ q.skippedCount }}</span></td>
@@ -520,8 +520,8 @@
             <table class="table table-sm table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th style="width:45px">#</th>
-                  <th>Question ID</th>
+                  <th style="width:100px">QNo</th>
+                  <!-- <th>Question ID</th> -->
                   <th>Avg Time</th>
                   <th>Min Time</th>
                   <th>Max Time</th>
@@ -531,7 +531,7 @@
               <tbody>
                 <tr *ngFor="let t of sectionTimingMap[sectionId]; let i = index">
                   <td class="text-muted">{{ i + 1 }}</td>
-                  <td><code class="small">{{ t.questionId }}</code></td>
+                  <!-- <td><code class="small">{{ t.questionId }}</code></td> -->
                   <td><span class="fw-semibold text-primary">{{ formatSeconds(t.avgTimeTaken) }}</span></td>
                   <td><span class="text-success">{{ formatSeconds(t.minTimeTaken) }}</span></td>
                   <td><span class="text-danger">{{ formatSeconds(t.maxTimeTaken) }}</span></td>
