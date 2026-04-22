@@ -15,6 +15,7 @@ import katex from 'katex';
   styleUrl: './questions.component.scss',
 })
 export class ExamQuestionsComponent implements OnInit {
+
   loading = false;
   totalRecords = 0;
   filterForm!: FormGroup;
@@ -30,14 +31,13 @@ export class ExamQuestionsComponent implements OnInit {
 
   /* ================= TABLE COLUMNS ================= */
   columnsArray = [
-    { key: 'questionNo', label: 'Question No', sortable: true },
     { key: 'questionPreview', label: 'Question', sortable: false },
     { key: 'questionType', label: 'Type', sortable: true },
     { key: 'difficulty', label: 'Difficulty', sortable: true },
     { key: 'positiveMarks', label: '+Marks', sortable: true },
     { key: 'negativeMarks', label: '-Marks', sortable: true },
     { key: 'status', label: 'Status', sortable: true },
-    { key: 'createdAt', label: 'Created At', sortable: true },
+    { key: 'createdAt', label: 'Created At', sortable: true }
   ];
 
   dataArray: any[] = [];
@@ -45,7 +45,7 @@ export class ExamQuestionsComponent implements OnInit {
   /* ================= FILTER OPTIONS ================= */
   statusOptions = [
     { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' },
+    { label: 'Inactive', value: 'inactive' }
   ];
 
   questionTypeOptions = [
@@ -56,13 +56,13 @@ export class ExamQuestionsComponent implements OnInit {
     { label: 'Subjective', value: 'subjective' },
     { label: 'True/False', value: 'true_false' },
     { label: 'Text Based', value: 'passage_qns' },
-    { label: 'Matrix', value: 'matrix' },
+    { label: 'Matrix', value: 'matrix' }
   ];
 
   difficultyOptions = [
     { label: 'Easy', value: 'easy' },
     { label: 'Medium', value: 'medium' },
-    { label: 'Hard', value: 'hard' },
+    { label: 'Hard', value: 'hard' }
   ];
 
   /* ================= SUBJECT / TOPIC / SUBTOPIC ================= */
@@ -88,7 +88,7 @@ export class ExamQuestionsComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#10b981',
-      callback: (row: any) => this.viewQuestion(row),
+      callback: (row: any) => this.viewQuestion(row)
     },
     {
       type: 'icon',
@@ -96,7 +96,7 @@ export class ExamQuestionsComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.editQuestion(row),
+      callback: (row: any) => this.editQuestion(row)
     },
     {
       type: 'icon',
@@ -104,8 +104,8 @@ export class ExamQuestionsComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#dc2626',
-      callback: (row: any) => this.deleteQuestion(row),
-    },
+      callback: (row: any) => this.deleteQuestion(row)
+    }
   ];
 
   constructor(
@@ -118,7 +118,10 @@ export class ExamQuestionsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.breadcrumb.set([{ label: 'Exams' }, { label: 'Questions' }]);
+    this.breadcrumb.set([
+      { label: 'Exams' },
+      { label: 'Questions' },
+    ]);
     this.initForms();
     this.loadMasters();
   }
@@ -132,15 +135,12 @@ export class ExamQuestionsComponent implements OnInit {
       difficulty: [''],
       subjectId: [''],
       topicId: [''],
-      subTopicId: [''],
+      subTopicId: ['']
     });
 
     // Cascading: subject -> topic
-    this.filterForm.get('subjectId')?.valueChanges.subscribe((subjectId) => {
-      this.filterForm.patchValue(
-        { topicId: '', subTopicId: '' },
-        { emitEvent: false },
-      );
+    this.filterForm.get('subjectId')?.valueChanges.subscribe(subjectId => {
+      this.filterForm.patchValue({ topicId: '', subTopicId: '' }, { emitEvent: false });
       this.subTopicOptions = [];
       if (subjectId) {
         this.topicOptions = this.allTopics
@@ -155,7 +155,7 @@ export class ExamQuestionsComponent implements OnInit {
     });
 
     // Cascading: topic -> subtopic
-    this.filterForm.get('topicId')?.valueChanges.subscribe((topicId) => {
+    this.filterForm.get('topicId')?.valueChanges.subscribe(topicId => {
       this.filterForm.patchValue({ subTopicId: '' }, { emitEvent: false });
       if (topicId) {
         this.subTopicOptions = this.allSubTopics
@@ -170,9 +170,7 @@ export class ExamQuestionsComponent implements OnInit {
     });
   }
 
-  toggleFilters() {
-    this.showFilters = !this.showFilters;
-  }
+  toggleFilters() { this.showFilters = !this.showFilters; }
 
   clearFilters() {
     this.filterForm.reset();
@@ -191,21 +189,17 @@ export class ExamQuestionsComponent implements OnInit {
         this.subjects = res?.data || [];
         this.subjectOptions = this.subjects.map((s: any) => ({
           label: s.subjectName,
-          value: s._id,
+          value: s._id
         }));
-      },
+      }
     });
 
     this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
-      next: (res: any) => {
-        this.allTopics = res?.data || [];
-      },
+      next: (res: any) => { this.allTopics = res?.data || []; }
     });
 
     this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
-      next: (res: any) => {
-        this.allSubTopics = res?.data || [];
-      },
+      next: (res: any) => { this.allSubTopics = res?.data || []; }
     });
   }
 
@@ -218,8 +212,7 @@ export class ExamQuestionsComponent implements OnInit {
     const query: any = { page: params.page, limit: params.pageSize };
 
     if (params.sortKey) {
-      query.sort =
-        params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
+      query.sort = params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
     }
 
     const filters = this.filterForm.value;
@@ -231,28 +224,19 @@ export class ExamQuestionsComponent implements OnInit {
     if (filters.subTopicId) query.subTopicId = filters.subTopicId;
 
     const queryString = Object.keys(query)
-      .map(
-        (key) => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`,
-      )
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
       .join('&');
 
-    this.commonApi
-      .fetchData(
-        { entiId: localStorage.getItem('tenantId') },
-        'exam/questions/bank',
-        `list?${queryString}`,
-      )
+    this.commonApi.fetchData({ entiId: localStorage.getItem('tenantId') }, 'exam/questions/bank', `list?${queryString}`)
       .subscribe({
         next: (res: any) => {
           if (res?.status) {
             this.dataArray = res.data.map((item: any) => ({
               ...item,
               id: item._id,
-              questionPreview:
-                this.stripHtml(item.questionHtml).substring(0, 80) +
-                (this.stripHtml(item.questionHtml).length > 80 ? '...' : ''),
+              questionPreview: this.stripHtml(item.questionHtml).substring(0, 80) + (this.stripHtml(item.questionHtml).length > 80 ? '...' : ''),
               questionType: this.formatQuestionType(item.questionType),
-              createdAt: new Date(item.createdAt).toLocaleDateString(),
+              createdAt: new Date(item.createdAt).toLocaleDateString()
             }));
             this.totalRecords = res.count || 0;
           }
@@ -261,7 +245,7 @@ export class ExamQuestionsComponent implements OnInit {
         error: () => {
           this.loading = false;
           this.alert.error('Error loading questions');
-        },
+        }
       });
   }
 
@@ -283,7 +267,7 @@ export class ExamQuestionsComponent implements OnInit {
       subjective: 'Subjective',
       true_false: 'True/False',
       passage_qns: 'Text Based',
-      matrix: 'Matrix',
+      matrix: 'Matrix'
     };
     return map[type] || type;
   }
@@ -304,8 +288,8 @@ export class ExamQuestionsComponent implements OnInit {
           this.commonApi.fetchData(
             { url: originalUrl },
             'exam/questions/image',
-            'download',
-          ),
+            'download'
+          )
         );
         if (downloadRes?.status) {
           updatedHtml = updatedHtml.replace(originalUrl, downloadRes.url);
@@ -348,14 +332,14 @@ export class ExamQuestionsComponent implements OnInit {
     this.viewData = JSON.parse(JSON.stringify(row));
     this.showViewModal = true;
 
-    let questionHtml = await this.replaceDownloadUrls(row.questionHtml || '');
-    this.viewQuestionHtml =
-      this.sanitizer.bypassSecurityTrustHtml(questionHtml);
+    let questionHtml = await this.replaceDownloadUrls(this.viewData.questionHtml || '');
+    questionHtml = this.renderLatexInHtml(questionHtml);
+    this.viewQuestionHtml = this.sanitizer.bypassSecurityTrustHtml(questionHtml);
 
-    if (row.solutionHtml) {
-      let solutionHtml = await this.replaceDownloadUrls(row.solutionHtml);
-      this.viewSolutionHtml =
-        this.sanitizer.bypassSecurityTrustHtml(solutionHtml);
+    if (this.viewData.solutionHtml) {
+      let solutionHtml = await this.replaceDownloadUrls(this.viewData.solutionHtml);
+      solutionHtml = this.renderLatexInHtml(solutionHtml);
+      this.viewSolutionHtml = this.sanitizer.bypassSecurityTrustHtml(solutionHtml);
     } else {
       this.viewSolutionHtml = '';
     }
@@ -383,7 +367,7 @@ export class ExamQuestionsComponent implements OnInit {
 
     const payload = {
       recId: row._id,
-      entiId: localStorage.getItem('tenantId'),
+      entiId: localStorage.getItem('tenantId')
     };
 
     this.commonApi.fetchData(payload, 'exam/questions', 'delete').subscribe({
@@ -393,7 +377,7 @@ export class ExamQuestionsComponent implements OnInit {
           this.refresh();
         }
       },
-      error: () => this.alert.error('Error deleting question'),
+      error: () => this.alert.error('Error deleting question')
     });
   }
 
@@ -411,20 +395,16 @@ export class ExamQuestionsComponent implements OnInit {
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: {
         bank: true,
-        question: { recId: row._id },
-      },
+        question: { recId: row._id }
+      }
     });
   }
 
   goToCreate(): void {
-    this.router.navigate(['/app/exams/exams/question-create'], {
-      state: { bank: true },
-    });
+    this.router.navigate(['/app/exams/exams/question-create'], { state: { bank: true } });
   }
 
   goToImport(): void {
-    this.router.navigate(['/app/exams/exams/question-import'], {
-      state: { bank: true },
-    });
+    this.router.navigate(['/app/exams/exams/question-import'], { state: { bank: true } });
   }
 }
