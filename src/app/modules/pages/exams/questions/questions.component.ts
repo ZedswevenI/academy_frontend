@@ -6,6 +6,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import katex from 'katex';
 
 @Component({
   selector: 'app-exam-questions',
@@ -300,20 +301,55 @@ export class ExamQuestionsComponent implements OnInit {
     return updatedHtml;
   }
 
+  /* ================= LATEX RENDERING ================= */
+
+  private decodeHtmlEntities(text: string): string {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = text;
+    return txt.value;
+  }
+
+  private renderLatexInHtml(html: string): string {
+    if (!html) return html;
+    let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+    });
+    result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
+      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+    });
+    return result;
+  }
+
   /* ================= VIEW ================= */
 
   async viewQuestion(row: any): Promise<void> {
-    this.viewData = row;
+    this.viewData = JSON.parse(JSON.stringify(row));
     this.showViewModal = true;
 
-    let questionHtml = await this.replaceDownloadUrls(row.questionHtml || '');
+    let questionHtml = await this.replaceDownloadUrls(this.viewData.questionHtml || '');
+    questionHtml = this.renderLatexInHtml(questionHtml);
     this.viewQuestionHtml = this.sanitizer.bypassSecurityTrustHtml(questionHtml);
 
-    if (row.solutionHtml) {
-      let solutionHtml = await this.replaceDownloadUrls(row.solutionHtml);
+    if (this.viewData.solutionHtml) {
+      let solutionHtml = await this.replaceDownloadUrls(this.viewData.solutionHtml);
+      solutionHtml = this.renderLatexInHtml(solutionHtml);
       this.viewSolutionHtml = this.sanitizer.bypassSecurityTrustHtml(solutionHtml);
     } else {
       this.viewSolutionHtml = '';
+    }
+
+    if (this.viewData.questionOptions && this.viewData.questionOptions.length > 0) {
+      for (let i = 0; i < this.viewData.questionOptions.length; i++) {
+        let optHtml = await this.replaceDownloadUrls(this.viewData.questionOptions[i].textHtml || '');
+        optHtml = this.renderLatexInHtml(optHtml);
+        this.viewData.questionOptions[i].safeHtml = this.sanitizer.bypassSecurityTrustHtml(optHtml);
+      }
     }
   }
 
