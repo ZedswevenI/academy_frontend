@@ -124,7 +124,7 @@
                 style="width: 24px; height: 24px; line-height: 18px;">
                 {{ 'ABCDEFGH'[i] }}
               </span>
-              <div [innerHTML]="opt.textHtml"></div>
+              <div [innerHTML]="opt.safeHtml || opt.textHtml"></div>
             </div>
           </div>
 
