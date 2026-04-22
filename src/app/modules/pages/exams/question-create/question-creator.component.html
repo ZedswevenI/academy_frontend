@@ -13,8 +13,6 @@
         </div>
         <div class="card-body">
           <form [formGroup]="questionForm" (ngSubmit)="onSubmit()">
-
-            <!-- Exam mode: Section, Sort Order, Question ID -->
             <div class="row mb-4" *ngIf="!isBankMode">
               <div class="col-md-5">
                 <label class="form-label fw-bold">
@@ -44,7 +42,7 @@
             <!-- Bank mode: Subject, Topic, SubTopic -->
             <div class="row mb-4" *ngIf="isBankMode">
               <div class="col-md-4">
-                <label class="form-label fw-bold">Subject</label>
+                <label class="form-label fw-bold">Subject<span class="text-danger">*</span></label>
                 <select class="form-select" formControlName="bankSubjectId"
                   (change)="onBankSubjectChange($any($event.target).value)">
                   <option value="">Select Subject</option>
@@ -53,20 +51,24 @@
               </div>
 
               <div class="col-md-4">
-                <label class="form-label fw-bold">Topic</label>
-                <select class="form-select" formControlName="topicId"
+                <label class="form-label fw-bold">Topic<span class="text-danger">*</span></label>
+                <input class="form-control" formControlName="topicId" placeholder="e.g. LIGHT I" />
+
+                <!-- <select class="form-select" formControlName="topicId"
                   (change)="onBankTopicChange($any($event.target).value)">
                   <option value="">Select Topic</option>
                   <option *ngFor="let t of topicOptions" [value]="t.value">{{ t.label }}</option>
-                </select>
+                </select> -->
               </div>
 
               <div class="col-md-4">
-                <label class="form-label fw-bold">Sub Topic</label>
-                <select class="form-select" formControlName="subTopicId">
+                <label class="form-label fw-bold">Sub Topic<span class="text-danger">*</span></label>
+                <input class="form-control" formControlName="subTopicId"
+                  placeholder="e.g. REFLECTION OF LIGHT AND PLANE MIRROR" />
+                <!-- <select class="form-select" formControlName="subTopicId">
                   <option value="">Select Sub Topic</option>
                   <option *ngFor="let st of subTopicOptions" [value]="st.value">{{ st.label }}</option>
-                </select>
+                </select> -->
               </div>
             </div>
 
@@ -160,15 +162,16 @@
             <div *ngIf="questionForm.get('enablePassage')?.value" class="mb-4">
               <div class="d-flex align-items-center mb-1">
                 <span class="form-label fw-bold mb-0 me-2">Passage</span>
-                <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openPassagePopup()" title="Select Passage">
+                <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openPassagePopup()"
+                  title="Select Passage">
                   <i class="fas fa-search"></i>
                 </button>
-                <button type="button" class="btn btn-outline-info btn-sm" (click)="openPreviewFromValue('Passage', 'passageText')" title="Preview">
+                <button type="button" class="btn btn-outline-info btn-sm"
+                  (click)="openPreviewFromValue('Passage', 'passageText')" title="Preview">
                   <i class="fas fa-eye"></i>
                 </button>
               </div>
-              <app-rich-text-editor class="w-full" [value]="questionForm.value.passageText"
-                [readOnly]="true">
+              <app-rich-text-editor class="w-full" [value]="questionForm.value.passageText" [readOnly]="true">
               </app-rich-text-editor>
             </div>
 
@@ -176,12 +179,12 @@
             <div *ngIf="questionForm.get('enableInstruction')?.value" class="mb-4">
               <div class="d-flex align-items-center mb-1">
                 <span class="form-label fw-bold mb-0 me-2">Instruction</span>
-                <button type="button" class="btn btn-outline-info btn-sm" (click)="openPreviewFromValue('Instruction', 'instruction')" title="Preview">
+                <button type="button" class="btn btn-outline-info btn-sm"
+                  (click)="openPreviewFromValue('Instruction', 'instruction')" title="Preview">
                   <i class="fas fa-eye"></i>
                 </button>
               </div>
-              <app-rich-text-editor
-                (valueChange)="questionForm.get('instruction')?.setValue($event)">
+              <app-rich-text-editor (valueChange)="questionForm.get('instruction')?.setValue($event)">
               </app-rich-text-editor>
             </div>
 
@@ -257,7 +260,8 @@
                     </div>
 
                     <div class="btn-group btn-group-sm ms-2" role="group">
-                      <button type="button" class="btn btn-outline-info" (click)="openPreview('Question', 'questionEditor')" title="Preview">
+                      <button type="button" class="btn btn-outline-info"
+                        (click)="openPreview('Question', 'questionEditor')" title="Preview">
                         <i class="fas fa-eye"></i>
                       </button>
                     </div>
@@ -381,7 +385,8 @@
                                 </div>
 
                                 <div class="btn-group btn-group-sm ms-2" role="group">
-                                  <button type="button" class="btn btn-outline-info" (click)="openPreview('Option ' + (i + 1), 'optionEditor-' + i)" title="Preview">
+                                  <button type="button" class="btn btn-outline-info"
+                                    (click)="openPreview('Option ' + (i + 1), 'optionEditor-' + i)" title="Preview">
                                     <i class="fas fa-eye"></i>
                                   </button>
                                 </div>
@@ -507,7 +512,9 @@
                               </div>
 
                               <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-info" (click)="openPreview('Matrix Left ' + (i + 1), 'matrixLeftEditor-' + i)" title="Preview">
+                                <button type="button" class="btn btn-outline-info"
+                                  (click)="openPreview('Matrix Left ' + (i + 1), 'matrixLeftEditor-' + i)"
+                                  title="Preview">
                                   <i class="fas fa-eye"></i>
                                 </button>
                               </div>
@@ -562,7 +569,9 @@
                               </div>
 
                               <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-info" (click)="openPreview('Matrix Right ' + (i + 1), 'matrixRightEditor-' + i)" title="Preview">
+                                <button type="button" class="btn btn-outline-info"
+                                  (click)="openPreview('Matrix Right ' + (i + 1), 'matrixRightEditor-' + i)"
+                                  title="Preview">
                                   <i class="fas fa-eye"></i>
                                 </button>
                               </div>
@@ -608,7 +617,8 @@
             <div *ngIf="questionForm.get('enableSolution')?.value" class="mb-4">
               <div class="d-flex align-items-center mb-1">
                 <span class="form-label fw-bold mb-0 me-2">Solution</span>
-                <button type="button" class="btn btn-outline-info btn-sm" (click)="openPreviewFromValue('Solution', 'solution')" title="Preview">
+                <button type="button" class="btn btn-outline-info btn-sm"
+                  (click)="openPreviewFromValue('Solution', 'solution')" title="Preview">
                   <i class="fas fa-eye"></i>
                 </button>
               </div>
