@@ -8,10 +8,10 @@
           Total Questions: {{ questions.length }}
         </small>
       </div>
-
-
       <div class="col-md-6 text-end">
-        <button class="btn closebutton" routerLink="/app/exams/exams">Back</button>
+        <button class="btn closebutton" routerLink="/app/exams/exams">
+          Back
+        </button>
         <div class="btn-group me-2">
           <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -20,7 +20,8 @@
           <ul class="dropdown-menu">
             <li>
               <a class="dropdown-item" (click)="printQuestions(false)">
-                📄 Without Answer <small class="text-muted">(for students)</small>
+                📄 Without Answer
+                <small class="text-muted">(for students)</small>
               </a>
             </li>
             <li>
@@ -45,12 +46,10 @@
       </div>
     </div>
   </div>
-
   <!-- Loading -->
   <div *ngIf="loading" class="text-center py-5">
     <div class="spinner-border text-primary"></div>
   </div>
-
   <!-- Active Grace Marks Banner -->
   <div *ngIf="!loading && questionData?.graces?.length" class="mb-4">
     <div *ngFor="let g of questionData.graces">
@@ -74,46 +73,32 @@
       </div>
     </div>
   </div>
-
   <!-- Question Cards -->
   <div *ngFor="let q of questions; let i = index" class="card mb-4 shadow-sm">
-
     <!-- Card Header -->
     <div class="card-header d-flex justify-content-between align-items-center">
-
       <div>
         <strong>Question {{ i + 1 }}</strong>
-
         <!-- Question Type -->
         <span class="badge bg-info ms-2">
           {{ formatQuestionType(q.questionType) }}
         </span>
-
         <!-- Difficulty -->
         <span class="badge bg-secondary ms-2">
           {{ q.difficulty }}
         </span>
-
         <!-- Marks -->
-        <span class="badge bg-success ms-2">
-          +{{ q.positiveMarks }}
-        </span>
-
-        <span class="badge bg-danger ms-2">
-          -{{ q.negativeMarks }}
-        </span>
+        <span class="badge bg-success ms-2"> +{{ q.positiveMarks }} </span>
+        <span class="badge bg-danger ms-2"> -{{ q.negativeMarks }} </span>
       </div>
-
       <div *ngIf="isDraft">
         <button class="btn btn-sm btn-outline-primary me-2" (click)="editQuestion(q)">
           Edit
         </button>
-
         <button class="btn btn-sm btn-outline-danger" (click)="deleteQuestion(q)">
           Delete
         </button>
       </div>
-
       <!-- Grace Marks UI for Published/Completed Exams -->
       <div *ngIf="!isDraft" class="d-flex align-items-center gap-2">
         <ng-container *ngFor="let grace of [getGraceForQuestion(q.questionId)]">
@@ -122,7 +107,7 @@
             +{{ grace.graceMarks }} Grace
           </span>
           <button *ngIf="grace" class="btn btn-sm btn-outline-danger rounded-circle p-1"
-            style="width:24px; height:24px; line-height: 1;" (click)="removeGraceFromQuestion(grace.graceId)"
+            style="width: 24px; height: 24px; line-height: 1" (click)="removeGraceFromQuestion(grace.graceId)"
             [disabled]="graceRemovingGraceId === grace.graceId" title="Remove Grace">
             <i class="fa-solid fa-times" *ngIf="graceRemovingGraceId !== grace.graceId"></i>
             <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === grace.graceId"></span>
@@ -133,61 +118,40 @@
           </button>
         </ng-container>
       </div>
-
     </div>
-
     <!-- Card Body -->
     <div class="card-body">
-
       <!-- Question with LaTeX support and Images -->
-      <div class="mb-3 question-html" #questionContent [innerHTML]="q.questionHtml">
-      </div>
-
+      <div class="mb-3 question-html" #questionContent [innerHTML]="q.questionHtml"></div>
       <!-- Options -->
       <div *ngIf="q.questionOptions?.length">
-
         <div *ngFor="let opt of q.questionOptions; let j = index" class="option-box p-2 mb-2 rounded">
-
           <div class="d-flex align-items-start">
-            <div class="me-2 fw-bold">
-              {{ j + 1 }}.
-            </div>
+            <div class="me-2 fw-bold">{{ j + 1 }}.</div>
             <!-- Option text with LaTeX support and Images -->
-            <div class="option-content" #optionContent [innerHTML]="opt.textHtml">
-            </div>
+            <div class="option-content" #optionContent [innerHTML]="opt.textHtml"></div>
           </div>
-
         </div>
-
       </div>
-
       <!-- Correct Answer Display -->
       <div class="mt-3 border-top pt-3">
-
         <strong>Correct Answer:</strong>
-
         <span class="ms-2">
           {{ q.correctAnswer }}
         </span>
-
       </div>
-
       <!-- Solution Display (if available) with LaTeX and Images -->
       <div *ngIf="q.solutionHtml" class="mt-3 border-top pt-3 solution-section">
         <strong>Solution:</strong>
-        <div class="mt-2 solution-content" #solutionContent [innerHTML]="q.solutionHtml">
-        </div>
+        <div class="mt-2 solution-content" #solutionContent [innerHTML]="q.solutionHtml"></div>
       </div>
-
     </div>
-
   </div>
-
 </div>
 
 <!-- ================= MINI GRACE MODAL ================= -->
 <div class="app-modal-backdrop" *ngIf="showGraceModal" (click)="closeGraceModal()">
-  <div class="app-modal" style="max-width: 420px;" (click)="$event.stopPropagation()">
+  <div class="app-modal" style="max-width: 420px" (click)="$event.stopPropagation()">
     <div class="app-modal-header d-flex justify-content-between align-items-center">
       <h6 class="mb-0 fw-bold">
         <i class="fa-solid fa-gift me-2 text-primary"></i>Apply Grace Mark
@@ -200,7 +164,7 @@
       </p>
       <div class="mb-3">
         <label class="form-label fw-medium fs-13">Grace Marks <span class="text-danger">*</span></label>
-        <input type="number" class="form-control" [(ngModel)]="graceMarksInput" min="0" placeholder="e.g. 2">
+        <input type="number" class="form-control" [(ngModel)]="graceMarksInput" min="0" placeholder="e.g. 2" />
       </div>
       <div class="mb-3">
         <label class="form-label fw-medium fs-13">Note / Reason <span class="text-danger">*</span></label>
@@ -208,10 +172,12 @@
           placeholder="e.g. Wrong answer key"></textarea>
       </div>
       <div class="d-flex gap-2 justify-content-end">
-        <button class="btn btn-outline-secondary btn-sm" (click)="closeGraceModal()">Cancel</button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="closeGraceModal()">
+          Cancel
+        </button>
         <button class="btn btn-primary btn-sm" (click)="applyGrace()" [disabled]="graceApplying">
           <span class="spinner-border spinner-border-sm me-1" *ngIf="graceApplying"></span>
-          {{ graceApplying ? 'Applying...' : 'Apply Grace' }}
+          {{ graceApplying ? "Applying..." : "Apply Grace" }}
         </button>
       </div>
     </div>
@@ -230,7 +196,6 @@
         <button type="button" class="btn-close" (click)="closeBankModal()"></button>
       </div>
       <div class="modal-body">
-
         <!-- Section selector -->
         <div class="row mb-3">
           <div class="col-md-4">
@@ -246,49 +211,51 @@
             <span class="badge bg-primary fs-6">{{ bankSelectedIds.size }} selected</span>
           </div>
         </div>
-
         <hr />
-
         <!-- Filters -->
         <div class="row g-2 mb-3">
           <div class="col-md-2">
             <select class="form-select form-select-sm" [(ngModel)]="bankFilterSubjectId"
               (ngModelChange)="onBankSubjectChange($event)">
               <option value="">Subject</option>
-              <option *ngFor="let s of bankSubjectOptions" [value]="s.value">{{ s.label }}</option>
+              <option *ngFor="let s of bankSubjectOptions" [value]="s.value">
+                {{ s.label }}
+              </option>
             </select>
           </div>
           <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="bankFilterTopicId"
-              (ngModelChange)="onBankTopicChange($event)">
-              <option value="">Topic</option>
-              <option *ngFor="let t of bankTopicOptions" [value]="t.value">{{ t.label }}</option>
-            </select>
+            <input class="form-control form-control-sm" placeholder="Topic" [(ngModel)]="bankFilterTopicId"
+              (keydown.enter)="searchBank()" />
           </div>
           <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="bankFilterSubTopicId">
-              <option value="">Sub Topic</option>
-              <option *ngFor="let st of bankSubTopicOptions" [value]="st.value">{{ st.label }}</option>
-            </select>
+            <input class="form-control form-control-sm" placeholder="Sub Topic" [(ngModel)]="bankFilterSubTopicId"
+              (keydown.enter)="searchBank()" />
           </div>
           <div class="col-md-2">
             <select class="form-select form-select-sm" [(ngModel)]="bankFilterQuestionType">
               <option value="">Type</option>
-              <option *ngFor="let qt of questionTypeOptions" [value]="qt.value">{{ qt.label }}</option>
+              <option *ngFor="let qt of questionTypeOptions" [value]="qt.value">
+                {{ qt.label }}
+              </option>
             </select>
           </div>
           <div class="col-md-2">
             <select class="form-select form-select-sm" [(ngModel)]="bankFilterDifficulty">
               <option value="">Difficulty</option>
-              <option *ngFor="let d of difficultyOptions" [value]="d.value">{{ d.label }}</option>
+              <option *ngFor="let d of difficultyOptions" [value]="d.value">
+                {{ d.label }}
+              </option>
             </select>
           </div>
           <div class="col-md-2 d-flex gap-1">
-            <button class="btn btn-sm btn-primary flex-fill" (click)="searchBank()">Search</button>
-            <button class="btn btn-sm btn-outline-secondary flex-fill" (click)="clearBankFilters()">Clear</button>
+            <button class="btn btn-sm btn-primary flex-fill" (click)="searchBank()">
+              Search
+            </button>
+            <button class="btn btn-sm btn-outline-secondary flex-fill" (click)="clearBankFilters()">
+              Clear
+            </button>
           </div>
         </div>
-
         <!-- Search -->
         <div class="row mb-3">
           <div class="col-md-6">
@@ -296,26 +263,25 @@
               (keydown.enter)="searchBank()" />
           </div>
         </div>
-
         <!-- Loading -->
         <div *ngIf="bankLoading" class="text-center py-4">
           <div class="spinner-border text-primary"></div>
         </div>
-
         <!-- Questions table -->
         <div *ngIf="!bankLoading" class="table-responsive">
           <table class="table table-hover table-sm align-middle">
             <thead class="table-light">
               <tr>
-                <th style="width:40px;">
+                <th style="width: 40px">
                   <input type="checkbox" class="form-check-input" [checked]="allCurrentPageSelected"
                     (change)="toggleSelectAll($event)" />
                 </th>
+                <th>Question No</th>
                 <th>Question</th>
-                <th style="width:100px;">Type</th>
-                <th style="width:80px;">Difficulty</th>
-                <th style="width:70px;">+Marks</th>
-                <th style="width:80px;">Action</th>
+                <th style="width: 100px">Type</th>
+                <th style="width: 80px">Difficulty</th>
+                <th style="width: 70px">+Marks</th>
+                <th style="width: 80px">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -325,12 +291,23 @@
                     (change)="toggleBankSelect(q._id)" />
                 </td>
                 <td>
-                  <span class="text-truncate d-inline-block" style="max-width:400px;">
+                  <span class="text-truncate d-inline-block" style="max-width: 400px">
+                    {{ q.questionNo }}
+                  </span>
+                </td>
+                <td>
+                  <span class="text-truncate d-inline-block" style="max-width: 400px">
                     {{ q.questionPreview }}
                   </span>
                 </td>
-                <td><span class="badge bg-info text-dark">{{ formatQuestionType(q.questionType) }}</span></td>
-                <td><span class="badge bg-secondary">{{ q.difficulty }}</span></td>
+                <td>
+                  <span class="badge bg-info text-dark">{{
+                    formatQuestionType(q.questionType)
+                    }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-secondary">{{ q.difficulty }}</span>
+                </td>
                 <td>+{{ q.positiveMarks }}</td>
                 <td>
                   <button class="btn btn-sm btn-outline-success" [disabled]="bankMapping || !bankSectionId"
@@ -340,12 +317,13 @@
                 </td>
               </tr>
               <tr *ngIf="!bankQuestions.length">
-                <td colspan="6" class="text-center text-muted py-4">No questions found</td>
+                <td colspan="6" class="text-center text-muted py-4">
+                  No questions found
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
-
         <!-- Pagination -->
         <div *ngIf="bankTotalPages > 1" class="d-flex justify-content-center mt-2">
           <nav>
@@ -362,17 +340,21 @@
             </ul>
           </nav>
         </div>
-
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" (click)="closeBankModal()">Cancel</button>
-        <button type="button" class="btn btn-success"
-          [disabled]="bankMapping || bankSelectedIds.size === 0 || !bankSectionId" (click)="mapSelectedQuestions()">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeBankModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-success" [disabled]="
+            bankMapping || bankSelectedIds.size === 0 || !bankSectionId
+          " (click)="mapSelectedQuestions()">
           <span *ngIf="bankMapping">
-            <span class="spinner-border spinner-border-sm me-1"></span> Mapping...
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Mapping...
           </span>
           <span *ngIf="!bankMapping">
-            <i class="fas fa-check me-1"></i> Map {{ bankSelectedIds.size }} Question(s)
+            <i class="fas fa-check me-1"></i> Map
+            {{ bankSelectedIds.size }} Question(s)
           </span>
         </button>
       </div>

@@ -183,13 +183,13 @@ export class QuestionCreatorComponent implements OnInit {
       }
     });
 
-    this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
-      next: (res: any) => { this.allTopics = res?.data || []; }
-    });
+    // this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
+    //   next: (res: any) => { this.allTopics = res?.data || []; }
+    // });
 
-    this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
-      next: (res: any) => { this.allSubTopics = res?.data || []; }
-    });
+    // this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
+    //   next: (res: any) => { this.allSubTopics = res?.data || []; }
+    // });
   }
 
   onBankSubjectChange(subjectId: string): void {
