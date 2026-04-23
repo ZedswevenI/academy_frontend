@@ -10,11 +10,12 @@ import { DashboardService } from '../dashboard.service';
 interface KpiCard {
   label: string;
   value: string;
-  delta: number;
   icon: string;
+  delta: number,
   tone: 'blue' | 'green' | 'amber' | 'violet';
   sub: string;
   trend: number[];
+  route?: string;
 }
 
 interface Activity {
@@ -100,8 +101,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (direct) return direct;
       const user = JSON.parse(
         localStorage.getItem('user') ||
-          localStorage.getItem('authUser') ||
-          '{}',
+        localStorage.getItem('authUser') ||
+        '{}',
       );
       return user?.entiId || user?.tenantId || '';
     } catch {
@@ -562,9 +563,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       batch: p.batchCode || '—',
       date: p.ptmDate
         ? new Date(p.ptmDate).toLocaleDateString('en-IN', {
-            month: 'short',
-            day: 'numeric',
-          })
+          month: 'short',
+          day: 'numeric',
+        })
         : '—',
       time: p.startTime ? this.fmtMinutes(p.startTime) : '—',
       status: this.mapPtmStatus(p.status),

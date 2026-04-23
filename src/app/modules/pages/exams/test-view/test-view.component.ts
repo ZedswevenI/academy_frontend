@@ -21,9 +21,34 @@ export class TestViewComponent implements OnInit {
   loading = false;
   isDraft = false;
   tenantId = '';
-  activeTab: 'details' | 'results' = 'details';
+
+  /* ================= TABS ================= */
+  activeTab: 'details' | 'results' | 'question-wise' | 'participants' = 'details';
   resultSubTab: 'batches' | 'leaderboard' | 'attempts' | 'timing' = 'batches';
   hasResults = false;
+
+  /* ================= QUESTION WISE REPORT ================= */
+  questionWiseLoading = false;
+  questionWiseData: any[] = [];
+  questionWiseChartData: ChartData<'bar'> = { labels: [], datasets: [] };
+  questionWiseChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top' },
+      title: { display: true, text: 'Question Performance Overview', font: { size: 15, weight: 'bold' } }
+    },
+    scales: {
+      x: { stacked: true, title: { display: true, text: 'Question No' } },
+      y: { stacked: true, title: { display: true, text: 'Participants' }, beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  };
+
+  /* ================= PARTICIPANTS REPORT ================= */
+  participantsLoading = false;
+  participantsData: any[] = [];
+
+  /* ================= BATCH RESULTS ================= */
   batchLoading = false;
   batchData: any[] = [];
   totalBatchRecords = 0;
@@ -110,10 +135,8 @@ export class TestViewComponent implements OnInit {
   leaderboardPage = 1;
   leaderboardLimit = 20;
   leaderboardBatchId = '';
-  showStudentModal = false;
-  studentResultLoading = false;
-  studentResult: any = null;
-  studentAnswersBySection: Record<string, any[]> = {};
+
+  // Batch filter for analytics
   selectedBatchId = '';
   allBatches: any[] = [];
   showBatchModal = false;
@@ -170,7 +193,7 @@ export class TestViewComponent implements OnInit {
     }
 
     this.isDraft = this.examData.status === 'draft';
-    this.hasResults = this.examData.status === 'result_published';
+    this.hasResults = this.examData.status !== 'draft';
 
     this.initGraceForm();
     this.fetchSubjects();
@@ -631,8 +654,95 @@ export class TestViewComponent implements OnInit {
 
   /* ================= TAB ================= */
 
-  switchTab(tab: 'details' | 'results') {
+  switchTab(tab: 'details' | 'results' | 'question-wise' | 'participants') {
     this.activeTab = tab;
+    if (tab === 'question-wise' && this.questionWiseData.length === 0) {
+      this.fetchQuestionWiseReport();
+    } else if (tab === 'participants' && this.participantsData.length === 0) {
+      this.fetchParticipantsReport();
+    }
+  }
+
+  /* ================= REPORTS ================= */
+
+  fetchQuestionWiseReport() {
+    this.questionWiseLoading = true;
+    const payload: any = {
+      entiId: this.tenantId,
+      examId: this.examData.examId
+    };
+    if (this.selectedBatchId) {
+      payload.batchId = this.selectedBatchId;
+    }
+
+    this.commonApi.fetchData(payload, 'exam/result/analytics', 'question-wise').subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.questionWiseData = res.data || [];
+          this.buildQuestionWiseChart();
+        }
+        this.questionWiseLoading = false;
+      },
+      error: () => {
+        this.questionWiseLoading = false;
+        this.alert.error('Error loading question wise report');
+      }
+    });
+  }
+
+  buildQuestionWiseChart() {
+    const labels = this.questionWiseData.map(q => `Q${q.qNo}`);
+    const correctData = this.questionWiseData.map(q => q.correctedBy);
+    const incorrectData = this.questionWiseData.map(q => q.incorrectedBy);
+    const unattemptedData = this.questionWiseData.map(q => q.unattemptedBy);
+
+    this.questionWiseChartData = {
+      labels,
+      datasets: [
+        {
+          label: 'Correct',
+          data: correctData,
+          backgroundColor: '#22C55E', // success
+          borderRadius: 4
+        },
+        {
+          label: 'Incorrect',
+          data: incorrectData,
+          backgroundColor: '#EF4444', // danger
+          borderRadius: 4
+        },
+        {
+          label: 'Unattempted',
+          data: unattemptedData,
+          backgroundColor: '#F59E0B', // warning
+          borderRadius: 4
+        }
+      ]
+    };
+  }
+
+  fetchParticipantsReport() {
+    this.participantsLoading = true;
+    const payload: any = {
+      entiId: this.tenantId,
+      examId: this.examData.examId
+    };
+    if (this.selectedBatchId) {
+      payload.batchId = this.selectedBatchId;
+    }
+
+    this.commonApi.fetchData(payload, 'exam/result/analytics', 'participants').subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.participantsData = res.data || [];
+        }
+        this.participantsLoading = false;
+      },
+      error: () => {
+        this.participantsLoading = false;
+        this.alert.error('Error loading participants report');
+      }
+    });
   }
 
   switchResultSubTab(tab: 'batches' | 'leaderboard' | 'attempts' | 'timing') {
@@ -959,70 +1069,15 @@ export class TestViewComponent implements OnInit {
   /* ================= STUDENT RESULT ================= */
 
   viewStudentResult(row: any) {
-    this.showStudentModal = true;
-    this.studentResult = null;
-    this.studentAnswersBySection = {};
-    this.studentResultLoading = true;
-
-    const payload = {
-      entiId: this.tenantId,
-      examId: this.examData.examId,
-      admissionNo: row.admissionNo
-    };
-
-    this.commonApi.fetchData(payload, 'exam/result', 'my-result').subscribe({
-      next: (res: any) => {
-        if (res?.status && res.data) {
-          this.studentResult = res.data;
-          this.buildStudentAnswersBySection();
-        } else {
-          this.alert.error(res?.message || 'Result not found');
-          this.showStudentModal = false;
-        }
-        this.studentResultLoading = false;
-      },
-      error: () => {
-        this.studentResultLoading = false;
-        this.alert.error('Error loading student result');
-        this.showStudentModal = false;
+    this.router.navigate(['/app/exams/exams/student-result'], {
+      state: {
+        exam: this.examData,
+        student: row
       }
     });
   }
 
-  closeStudentModal() {
-    this.showStudentModal = false;
-    this.studentResult = null;
-    this.studentAnswersBySection = {};
-  }
 
-  private buildStudentAnswersBySection() {
-    this.studentAnswersBySection = {};
-    if (!this.studentResult?.answers) return;
-    this.studentResult.answers.forEach((a: any) => {
-      const sid = a.sectionId || 'unknown';
-      if (!this.studentAnswersBySection[sid]) {
-        this.studentAnswersBySection[sid] = [];
-      }
-      this.studentAnswersBySection[sid].push(a);
-    });
-  }
-
-  getStudentAnswerSectionKeys(): string[] {
-    return Object.keys(this.studentAnswersBySection);
-  }
-
-  getStudentSectionResult(sectionId: string): any {
-    return (this.studentResult?.sectionResults || []).find((sr: any) => sr.sectionId === sectionId) || null;
-  }
-
-  formatDateFromTimestamp(ts: number): string {
-    if (!ts) return '-';
-    const d = new Date(ts);
-    return d.toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
-  }
 
   /* ================= HELPERS ================= */
 

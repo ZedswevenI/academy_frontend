@@ -219,6 +219,7 @@
           <h3 class="card-title">Top Performers</h3>
           <p class="card-sub">This month</p>
         </div>
+        <a class="link" [routerLink]="'/app/report'">Analyze</a>
       </div>
       <ul class="performer-list">
         <li *ngFor="let p of performers; let i = index">
@@ -282,7 +283,7 @@
           <h3 class="card-title">Recent Users</h3>
           <p class="card-sub">Latest added to the system</p>
         </div>
-        <a class="link">Manage</a>
+        <a class="link" [routerLink]="'/app/org-master/users'">Manage</a>
       </div>
       <ul class="user-list">
         <li *ngFor="let u of recentUsers">

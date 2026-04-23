@@ -76,6 +76,14 @@
     <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'" (click)="switchTab('results')">
       <i class="fa-solid fa-chart-bar me-1"></i> Results
     </button>
+    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'question-wise'"
+      (click)="switchTab('question-wise')">
+      <i class="fa-solid fa-list-ol me-1"></i> Question Wise
+    </button>
+    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'participants'"
+      (click)="switchTab('participants')">
+      <i class="fa-solid fa-users me-1"></i> Participants
+    </button>
   </div>
 
   <!-- ================================================================ -->
@@ -178,6 +186,7 @@
               <thead>
                 <tr>
                   <th>#</th>
+                  <!-- <th>Section Name</th> -->
                   <th>Subject</th>
                   <th>Questions</th>
                 </tr>
@@ -262,8 +271,9 @@
           <table class="table table-hover align-middle mb-0">
             <thead>
               <tr>
-                <th style="width:60px">Rank</th>
+                <th style="width: 80px;">Rank</th>
                 <th>Admission No</th>
+                <th>Student Name</th>
                 <th>Batch</th>
                 <th>Obtained</th>
                 <th>Total</th>
@@ -284,7 +294,10 @@
                     <i *ngIf="r.rank <= 3" class="fa-solid fa-trophy me-1"></i>{{ r.rank }}
                   </span>
                 </td>
-                <td class="fw-semibold">{{ r.admissionNo }}</td>
+                <td class="fw-semibold text-muted small">{{ r.admissionNo }}</td>
+                <td>
+                  <div class="fw-bold">{{ r.studentName }}</div>
+                </td>
                 <td><span class="badge bg-light text-dark border">{{ r.batchId }}</span></td>
                 <td>
                   <span class="fw-bold text-primary">{{ r.obtainedMarks }}</span>
@@ -549,203 +562,157 @@
         <p>No timing analytics data available</p>
       </div>
     </div>
-
   </div>
 
-</div>
+  <!-- ================================================================ -->
+  <!--                      QUESTION WISE TAB                           -->
+  <!-- ================================================================ -->
+  <div *ngIf="activeTab === 'question-wise' && hasResults" class="tab-content-area">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-list-check me-2"></i>Question-wise Performance</h5>
+      <div class="d-flex align-items-center gap-2">
+        <label class="text-muted small mb-0">Filter by batch:</label>
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="selectedBatchId"
+          (ngModelChange)="fetchQuestionWiseReport()">
+          <option value="">All Batches</option>
+          <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
+        </select>
+      </div>
+    </div>
 
-<!-- ================================================================ -->
-<!--               STUDENT RESULT MODAL                               -->
-<!-- ================================================================ -->
-<div class="modal-backdrop fade show" *ngIf="showStudentModal" (click)="closeStudentModal()"></div>
-<div class="modal fade show d-block" tabindex="-1" *ngIf="showStudentModal">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-
-      <!-- Header -->
-      <div class="modal-header border-0 pb-0">
-        <div>
-          <h5 class="modal-title fw-bold">
-            <i class="fa-solid fa-user-graduate me-2"></i>Student Result
-          </h5>
-          <small class="text-muted" *ngIf="studentResult">
-            {{ studentResult.admissionNo }} | Batch: {{ studentResult.batchId }}
-          </small>
-        </div>
-        <button type="button" class="btn-close" (click)="closeStudentModal()"></button>
+    <div class="section-card">
+      <div *ngIf="questionWiseLoading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
       </div>
 
-      <div class="modal-body">
-
-        <!-- Loading -->
-        <div *ngIf="studentResultLoading" class="text-center py-5">
-          <div class="spinner-border text-primary"></div>
-        </div>
-
-        <div *ngIf="!studentResultLoading && studentResult">
-
-          <!-- Summary Cards -->
-          <div class="row g-3 mb-4">
-            <div class="col-md-2 col-sm-4">
-              <div class="student-stat-card">
-                <div class="student-stat-value text-primary">{{ studentResult.rank }}</div>
-                <div class="student-stat-label">Rank</div>
-              </div>
-            </div>
-            <div class="col-md-2 col-sm-4">
-              <div class="student-stat-card">
-                <div class="student-stat-value text-success">{{ studentResult.obtainedMarks }}</div>
-                <div class="student-stat-label">Obtained</div>
-              </div>
-            </div>
-            <div class="col-md-2 col-sm-4">
-              <div class="student-stat-card">
-                <div class="student-stat-value">{{ studentResult.totalMarks }}</div>
-                <div class="student-stat-label">Total Marks</div>
-              </div>
-            </div>
-            <div class="col-md-2 col-sm-4">
-              <div class="student-stat-card">
-                <div class="student-stat-value text-info">
-                  {{ getPercentage(studentResult.obtainedMarks, studentResult.totalMarks) }}
-                </div>
-                <div class="student-stat-label">Percentage</div>
-              </div>
-            </div>
-            <div class="col-md-2 col-sm-4">
-              <div class="student-stat-card">
-                <div class="student-stat-value text-purple">{{ studentResult.percentile }}%</div>
-                <div class="student-stat-label">Percentile</div>
-              </div>
-            </div>
-            <div class="col-md-2 col-sm-4">
-              <div class="student-stat-card">
-                <div class="student-stat-value text-muted" style="font-size:16px">{{ formatTime(studentResult.timeTaken)
-                  }}</div>
-                <div class="student-stat-label">Time Taken</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick Info Row -->
-          <div class="row g-3 mb-4">
-            <div class="col-sm-4">
-              <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3">
-                <div class="text-center">
-                  <div class="fw-bold text-success fs-5">{{ studentResult.correctCount }}</div>
-                  <small class="text-muted">Correct</small>
-                </div>
-                <div class="vr"></div>
-                <div class="text-center">
-                  <div class="fw-bold text-danger fs-5">{{ studentResult.wrongCount }}</div>
-                  <small class="text-muted">Wrong</small>
-                </div>
-                <div class="vr"></div>
-                <div class="text-center">
-                  <div class="fw-bold text-warning fs-5">{{ studentResult.skippedCount }}</div>
-                  <small class="text-muted">Skipped</small>
-                </div>
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="p-3 bg-light rounded-3">
-                <small class="text-muted d-block">Started At</small>
-                <span class="fw-medium">{{ formatDateFromTimestamp(studentResult.startedAt) }}</span>
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="p-3 bg-light rounded-3">
-                <small class="text-muted d-block">Completed At</small>
-                <span class="fw-medium">{{ formatDateFromTimestamp(studentResult.completedAt) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section-wise Results -->
-          <div *ngIf="studentResult.sectionResults?.length" class="mb-4">
-            <h6 class="fw-bold mb-3"><i class="fa-solid fa-layer-group me-2"></i>Section-wise Performance</h6>
-            <div class="row g-3">
-              <div class="col-md-4" *ngFor="let sr of studentResult.sectionResults">
-                <div class="border rounded-3 p-3 h-100">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="fw-bold">{{ getSectionName(sr.sectionId) }}</span>
-                    <span class="badge bg-primary">{{ sr.obtainedMarks }} / {{ sr.totalMarks }}</span>
-                  </div>
-                  <div class="d-flex gap-3 text-center">
-                    <div>
-                      <div class="fw-semibold text-success">{{ sr.correctCount }}</div>
-                      <small class="text-muted">Correct</small>
-                    </div>
-                    <div>
-                      <div class="fw-semibold text-danger">{{ sr.wrongCount }}</div>
-                      <small class="text-muted">Wrong</small>
-                    </div>
-                    <div>
-                      <div class="fw-semibold text-warning">{{ sr.skippedCount }}</div>
-                      <small class="text-muted">Skipped</small>
-                    </div>
-                    <div>
-                      <div class="fw-semibold">{{ sr.answeredCount }}/{{ sr.totalQuestions }}</div>
-                      <small class="text-muted">Answered</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Answers by Section -->
-          <div *ngIf="getStudentAnswerSectionKeys().length > 0">
-            <h6 class="fw-bold mb-3"><i class="fa-solid fa-list-check me-2"></i>Question-wise Answers</h6>
-
-            <div *ngFor="let sectionId of getStudentAnswerSectionKeys()" class="mb-4">
-              <div class="fw-medium text-muted mb-2">{{ getSectionName(sectionId) }}</div>
-              <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle border rounded overflow-hidden">
-                  <thead class="table-light">
-                    <tr>
-                      <th style="width:40px">#</th>
-                      <th>Question ID</th>
-                      <th>Answer</th>
-                      <th>Correct Answer</th>
-                      <th>Status</th>
-                      <th>Marks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let a of studentAnswersBySection[sectionId]; let j = index">
-                      <td class="text-muted">{{ j + 1 }}</td>
-                      <td><code style="color:#111827;font-size:13px;">{{ a.questionId }}</code></td>
-                      <td class="fw-medium">{{ a.answerRaw ?? '-' }}</td>
-                      <td class="fw-medium">{{ a.correctAnswerRaw ?? '-' }}</td>
-                      <td>
-                        <span *ngIf="a.isSkipped" class="badge bg-warning text-dark">Skipped</span>
-                        <span *ngIf="!a.isSkipped && a.isCorrect" class="badge bg-success">Correct</span>
-                        <span *ngIf="!a.isSkipped && !a.isCorrect" class="badge bg-danger">Wrong</span>
-                      </td>
-                      <td>
-                        <span [ngClass]="a.marksAwarded >= 0 ? 'text-success' : 'text-danger'" class="fw-bold">
-                          {{ a.marksAwarded >= 0 ? '+' : '' }}{{ a.marksAwarded }}
-                        </span>
-                        <small class="text-muted"> ({{ a.positiveMarks }}/{{ a.negativeMarks }})</small>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
+      <!-- Question Wise Chart -->
+      <div *ngIf="!questionWiseLoading && questionWiseChartData.labels && questionWiseChartData.labels.length > 0"
+        class="border-bottom p-4">
+        <div style="height: 350px;">
+          <canvas baseChart [data]="questionWiseChartData" [options]="questionWiseChartOptions" type="bar"></canvas>
         </div>
       </div>
 
-      <div class="modal-footer border-0">
-        <button type="button" class="btn closebutton rounded-pill px-4" (click)="closeStudentModal()">Close</button>
+      <div *ngIf="!questionWiseLoading && questionWiseData.length > 0" class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Q. No</th>
+              <th>Total Participants</th>
+              <th>Corrected By</th>
+              <th>In-corrected By</th>
+              <th>Un-attempted By</th>
+              <!-- <th>Unseen By</th> -->
+              <th>Avg Time (sec)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let q of questionWiseData">
+              <td class="fw-bold">{{ q.qNo }}</td>
+              <td>{{ q.totalParticipants }}</td>
+              <td><span class="text-success fw-bold">{{ q.correctedBy }}</span></td>
+              <td><span class="text-danger fw-bold">{{ q.incorrectedBy }}</span></td>
+              <td><span class="text-warning fw-bold">{{ q.unattemptedBy }}</span></td>
+              <!-- <td><span class="text-secondary">{{ q.unseenBy }}</span></td> -->
+              <td><span class="fw-semibold text-primary">{{ q.avgTimeTaken }}s</span></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
+      <div *ngIf="!questionWiseLoading && questionWiseData.length === 0" class="empty-state">
+        <i class="fa-solid fa-list-ol"></i>
+        <p>No report data available</p>
+      </div>
     </div>
   </div>
+
+  <!-- ================================================================ -->
+  <!--                      PARTICIPANTS TAB                            -->
+  <!-- ================================================================ -->
+  <div *ngIf="activeTab === 'participants' && hasResults" class="tab-content-area">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-users me-2"></i>Student Ranking</h5>
+      <div class="d-flex align-items-center gap-2">
+        <label class="text-muted small mb-0">Filter by batch:</label>
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="selectedBatchId"
+          (ngModelChange)="fetchParticipantsReport()">
+          <option value="">All Batches</option>
+          <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div *ngIf="participantsLoading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+      </div>
+
+      <div *ngIf="!participantsLoading && participantsData.length > 0" class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Student Name</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Correct</th>
+              <th>Incorrect</th>
+              <th>Max Score</th>
+              <th>Score</th>
+              <th>Per %</th>
+              <th>Time</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of participantsData">
+              <td>
+                <span class="rank-badge" [ngClass]="{
+                  'rank-gold': p.rank === 1,
+                  'rank-silver': p.rank === 2,
+                  'rank-bronze': p.rank === 3
+                }">
+                  {{ p.rank }}
+                </span>
+              </td>
+              <td>
+                <div class="fw-bold">{{ p.studentName }}</div>
+                <small class="text-muted">{{ p.admissionNo }}</small>
+              </td>
+              <td>{{ formatDate(p.startedAt) }}</td>
+              <td>{{ formatDate(p.completedAt) }}</td>
+              <td><span class="text-success fw-bold">{{ p.correctCount }}</span></td>
+              <td><span class="text-danger fw-bold">{{ p.wrongCount }}</span></td>
+              <td>{{ p.totalMarks }}</td>
+              <td><span class="fw-bold text-primary">{{ p.obtainedMarks }}</span></td>
+              <td>
+                <span class="badge rounded-pill"
+                  [ngClass]="p.percentage >= 75 ? 'bg-success' : p.percentage >= 40 ? 'bg-warning' : 'bg-danger'">
+                  {{ p.percentage }}%
+                </span>
+              </td>
+              <td>{{ p.timeTakenMins }}m</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
+                  (click)="viewStudentResult(p)" title="View Result">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!participantsLoading && participantsData.length === 0" class="empty-state">
+        <i class="fa-solid fa-users"></i>
+        <p>No participants data found</p>
+      </div>
+    </div>
+  </div>
+
 </div>
+
 
 <!-- ================================================================ -->
 <!--                   ASSIGN BATCH MODAL                             -->
