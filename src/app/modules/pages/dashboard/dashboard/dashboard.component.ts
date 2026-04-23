@@ -120,6 +120,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       tone: 'blue',
       sub: 'Loading...',
       trend: [],
+      route: '/app/student'
     },
     {
       label: 'Total Staff',
@@ -129,6 +130,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       tone: 'green',
       sub: 'Loading...',
       trend: [],
+      route: '/app/teachers'
     },
     {
       label: 'System Users',
@@ -138,6 +140,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       tone: 'violet',
       sub: 'Loading...',
       trend: [],
+      route: '/app/org-master/users'
     },
     {
       label: 'Active Batches',
@@ -147,6 +150,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       tone: 'blue',
       sub: 'Loading...',
       trend: [],
+      route: '/app/batch'
     },
     {
       label: 'Avg Attendance',
@@ -156,6 +160,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       tone: 'green',
       sub: 'Loading...',
       trend: [],
+      route: '/app/school-attendance'
     },
     {
       label: 'Upcoming PTMs',
@@ -165,6 +170,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       tone: 'amber',
       sub: 'Loading...',
       trend: [],
+      route: '/app/ptm'
     },
   ];
 

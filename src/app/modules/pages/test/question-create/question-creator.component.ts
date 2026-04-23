@@ -192,32 +192,38 @@ export class QuestionCreatorComponent implements OnInit {
 
         }, 0);
 
-        // 🔥 Load options
-        if (q.questionOptions?.length) {
+        // Load matrix pairs
+        if (q.questionType === 'matrix' && q.leftColumn?.length) {
+          this.matrixLeft.clear();
+          this.matrixRight.clear();
 
-          this.options.clear();
+          // Parse correctAnswer: "A:PQ;B:R"
+          const answerMap: Record<string, string[]> = {};
+          if (q.correctAnswer) {
+            q.correctAnswer.split(';').forEach((pStr: string) => {
+              const [lK, rKs] = pStr.split(':');
+              if (lK && rKs) {
+                answerMap[lK] = rKs.split('');
+              }
+            });
+          }
 
-          const correctArray = q.correctAnswer?.split(';') || [];
+          for (let i = 0; i < q.leftColumn.length; i++) {
+            const leftHtml = await this.replaceDownloadUrls(q.leftColumn[i]?.text || '');
+            const rightHtml = await this.replaceDownloadUrls(q.rightColumn?.[i]?.text || '');
+            const lKey = String.fromCharCode(65 + i);
 
-          for (let i = 0; i < q.questionOptions.length; i++) {
-
-            const opt = q.questionOptions[i];
-            const processedOptionHtml = await this.replaceDownloadUrls(opt.textHtml);
-
-            const letter = String.fromCharCode(97 + i);
-
-            this.options.push(
-              this.fb.group({
-                text: processedOptionHtml,
-                isCorrect: correctArray.includes(letter)
-              })
-            );
+            this.matrixLeft.push(this.fb.group({
+              text: leftHtml,
+              selectedMatches: [answerMap[lKey] || []]
+            }));
+            this.matrixRight.push(this.fb.group({ text: rightHtml }));
 
             setTimeout(() => {
-              const optionEditor = document.getElementById('optionEditor-' + i);
-              if (optionEditor) {
-                optionEditor.innerHTML = processedOptionHtml || '';
-              }
+              const leftEditor = document.getElementById('matrixLeftEditor-' + i);
+              const rightEditor = document.getElementById('matrixRightEditor-' + i);
+              if (leftEditor) leftEditor.innerHTML = leftHtml || '';
+              if (rightEditor) rightEditor.innerHTML = rightHtml || '';
             }, 0);
           }
         }
@@ -285,8 +291,8 @@ export class QuestionCreatorComponent implements OnInit {
   }
 
   addMatrixPair(): void {
-    this.matrixLeft.push(this.fb.control(''));
-    this.matrixRight.push(this.fb.control(''));
+    this.matrixLeft.push(this.fb.group({ text: '', selectedMatches: [[]] }));
+    this.matrixRight.push(this.fb.group({ text: '' }));
   }
 
   removeMatrixPair(index: number): void {
@@ -744,23 +750,33 @@ export class QuestionCreatorComponent implements OnInit {
       /* ================= MATRIX ================= */
       case 'matrix': {
         const leftColumn = await Promise.all(
-          formValue.matrixLeft.map(async (item: any) => ({
+          formValue.matrixLeft.map(async (item: any, i: number) => ({
             ...item,
+            key: String.fromCharCode(65 + i), // A, B, C, D...
             text: await this.replaceImagesWithUrls(item.text)
           }))
         );
 
         const rightColumn = await Promise.all(
-          formValue.matrixRight.map(async (item: any) => ({
+          formValue.matrixRight.map(async (item: any, i: number) => ({
             ...item,
+            key: String.fromCharCode(80 + i), // P, Q, R, S... (P=80)
             text: await this.replaceImagesWithUrls(item.text)
           }))
         );
 
+        const correctPairs = leftColumn.map((item, i) => {
+          const lKey = item.key;
+          const selectedKeys = (item.selectedMatches || []).join('');
+          return `${lKey}:${selectedKeys}`;
+        });
+
         return {
           ...baseData,
           leftColumn,
-          rightColumn
+          rightColumn,
+          correctAnswer: correctPairs.join(';'),
+          questionOptions: []
         };
       }
 
@@ -785,6 +801,33 @@ export class QuestionCreatorComponent implements OnInit {
   }
 
 
+
+  getMatrixLeftKey(index: number): string {
+    return String.fromCharCode(65 + index);
+  }
+
+  getMatrixRightKey(index: number): string {
+    return String.fromCharCode(80 + index);
+  }
+
+  toggleMatrixMatch(leftIndex: number, rightKey: string) {
+    const group = this.matrixLeft.at(leftIndex) as FormGroup;
+    const current = group.get('selectedMatches')?.value || [];
+    if (current.includes(rightKey)) {
+      group.get('selectedMatches')?.setValue(current.filter((k: string) => k !== rightKey));
+    } else {
+      group.get('selectedMatches')?.setValue([...current, rightKey].sort());
+    }
+  }
+
+  isMatrixMatched(leftIndex: number, rightKey: string): boolean {
+    const current = this.matrixLeft.at(leftIndex).get('selectedMatches')?.value || [];
+    return current.includes(rightKey);
+  }
+
+  get allMatrixRightKeys(): string[] {
+    return this.matrixRight.controls.map((_, i) => this.getMatrixRightKey(i));
+  }
 
   execOptionCommand(index: number, command: string) {
     const editor = document.getElementById('optionEditor-' + index) as HTMLDivElement | null;
