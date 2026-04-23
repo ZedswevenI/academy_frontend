@@ -9,18 +9,8 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { BaseChartDirective } from 'ng2-charts';
 
 @NgModule({
-  declarations: [
-    SampleComponent,
-    DashboardComponent
-  ],
-  imports: [
-    CommonModule,
-    DashboardRoutingModule,
-    UiElementsModule,
-    ReactiveFormsModule,
-    FormsModule,
-    BaseChartDirective
-  ],
+  declarations: [SampleComponent, DashboardComponent],
+  imports: [CommonModule, DashboardRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, BaseChartDirective],
   exports: []
 })
 export class DashboardModule {}
