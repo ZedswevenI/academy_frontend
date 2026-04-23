@@ -48,7 +48,8 @@
 
   <!-- KPI Cards -->
   <div class="kpi-grid">
-    <div class="kpi-card" *ngFor="let k of kpis" [class]="'tone-' + k.tone">
+    <div class="kpi-card" *ngFor="let k of kpis" [class]="'tone-' + k.tone" [routerLink]="k.route"
+      style="cursor: pointer;">
       <div class="kpi-top">
         <div class="kpi-icon"><i [class]="k.icon"></i></div>
         <span class="kpi-delta" *ngIf="k.delta !== 0" [class.up]="k.delta >= 0" [class.down]="k.delta < 0">
@@ -78,7 +79,7 @@
           <h3 class="card-title">Upcoming PTMs</h3>
           <p class="card-sub">Parent-teacher meetings scheduled from today</p>
         </div>
-        <a class="link">View all</a>
+        <a class="link" [routerLink]="'/app/ptm'">View all</a>
       </div>
       <div class="ptm-table">
         <div class="ptm-row head">
@@ -124,7 +125,7 @@
           <h3 class="card-title">Upcoming Activities</h3>
           <p class="card-sub">Planned & in-progress across batches</p>
         </div>
-        <a class="link">View all</a>
+        <a class="link" [routerLink]="'/app/activity'">View all</a>
       </div>
       <ul class="activity-list">
         <ng-container *ngIf="upcomingActivities.length; else emptyAct">
@@ -174,6 +175,7 @@
           <h3 class="card-title">Attendance Overview</h3>
           <p class="card-sub">Daily attendance across all batches</p>
         </div>
+        <a class="link me-3" [routerLink]="'/app/school-attendance'">View Detailed</a>
         <select class="card-select" [(ngModel)]="selectedPeriod" (change)="onPeriodChange(selectedPeriod)">
           <option value="week">This Week</option>
           <option value="month">This Month</option>

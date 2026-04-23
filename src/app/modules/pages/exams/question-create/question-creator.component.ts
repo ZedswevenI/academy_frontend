@@ -382,14 +382,35 @@ export class QuestionCreatorComponent implements OnInit {
         }
 
         // Load matrix pairs
-        if (q.questionType === 'matrix' && q.matrixLeft?.length) {
+        if (q.questionType === 'matrix' && q.leftColumn?.length) {
           this.matrixLeft.clear();
           this.matrixRight.clear();
-          for (let i = 0; i < q.matrixLeft.length; i++) {
-            const leftHtml = await this.replaceDownloadUrls(q.matrixLeft[i] || '');
-            const rightHtml = await this.replaceDownloadUrls(q.matrixRight?.[i] || '');
-            this.matrixLeft.push(this.fb.group({ text: leftHtml }));
+
+          // Parse correctAnswer: "A:PQ;B:R"
+          const answerMap: Record<string, string[]> = {};
+          if (q.correctAnswer) {
+            q.correctAnswer.split(';').forEach((pStr: string) => {
+              const [lK, rKs] = pStr.split(':');
+              if (lK && rKs) {
+                // If rKs is "PQ", split('') gives ["P", "Q"]
+                // If it was comma separated like "P,Q", we'd need split(',')
+                // Based on user feedback "A:Q", we'll assume no delimiter between right keys
+                answerMap[lK] = rKs.split('');
+              }
+            });
+          }
+
+          for (let i = 0; i < q.leftColumn.length; i++) {
+            const leftHtml = await this.replaceDownloadUrls(q.leftColumn[i]?.text || '');
+            const rightHtml = await this.replaceDownloadUrls(q.rightColumn?.[i]?.text || '');
+            const lKey = String.fromCharCode(65 + i);
+
+            this.matrixLeft.push(this.fb.group({
+              text: leftHtml,
+              selectedMatches: [answerMap[lKey] || []]
+            }));
             this.matrixRight.push(this.fb.group({ text: rightHtml }));
+
             setTimeout(() => {
               const leftEditor = document.getElementById('matrixLeftEditor-' + i);
               const rightEditor = document.getElementById('matrixRightEditor-' + i);
@@ -462,8 +483,8 @@ export class QuestionCreatorComponent implements OnInit {
   }
 
   addMatrixPair(): void {
-    this.matrixLeft.push(this.fb.control(''));
-    this.matrixRight.push(this.fb.control(''));
+    this.matrixLeft.push(this.fb.group({ text: '', selectedMatches: [[]] }));
+    this.matrixRight.push(this.fb.group({ text: '' }));
   }
 
   removeMatrixPair(index: number): void {
@@ -999,23 +1020,32 @@ export class QuestionCreatorComponent implements OnInit {
       /* ================= MATRIX ================= */
       case 'matrix': {
         const leftColumn = await Promise.all(
-          formValue.matrixLeft.map(async (item: any) => ({
+          formValue.matrixLeft.map(async (item: any, i: number) => ({
             ...item,
+            key: String.fromCharCode(65 + i), // A, B, C, D...
             text: await this.replaceImagesWithUrls(item.text)
           }))
         );
 
         const rightColumn = await Promise.all(
-          formValue.matrixRight.map(async (item: any) => ({
+          formValue.matrixRight.map(async (item: any, i: number) => ({
             ...item,
+            key: String.fromCharCode(80 + i), // P, Q, R, S... (P=80)
             text: await this.replaceImagesWithUrls(item.text)
           }))
         );
+
+        const correctPairs = leftColumn.map((item, i) => {
+          const lKey = item.key;
+          const selectedKeys = (item.selectedMatches || []).join('');
+          return `${lKey}:${selectedKeys}`;
+        });
 
         return {
           ...baseData,
           leftColumn,
           rightColumn,
+          correctAnswer: correctPairs.join(';'),
           questionOptions: []
         };
       }
@@ -1091,6 +1121,33 @@ export class QuestionCreatorComponent implements OnInit {
     if ((window as any).MathJax) {
       (window as any).MathJax.typesetPromise([editor]);
     }
+  }
+
+  getMatrixLeftKey(index: number): string {
+    return String.fromCharCode(65 + index);
+  }
+
+  getMatrixRightKey(index: number): string {
+    return String.fromCharCode(80 + index);
+  }
+
+  toggleMatrixMatch(leftIndex: number, rightKey: string) {
+    const group = this.matrixLeft.at(leftIndex) as FormGroup;
+    const current = group.get('selectedMatches')?.value || [];
+    if (current.includes(rightKey)) {
+      group.get('selectedMatches')?.setValue(current.filter((k: string) => k !== rightKey));
+    } else {
+      group.get('selectedMatches')?.setValue([...current, rightKey].sort());
+    }
+  }
+
+  isMatrixMatched(leftIndex: number, rightKey: string): boolean {
+    const current = this.matrixLeft.at(leftIndex).get('selectedMatches')?.value || [];
+    return current.includes(rightKey);
+  }
+
+  get allMatrixRightKeys(): string[] {
+    return this.matrixRight.controls.map((_, i) => this.getMatrixRightKey(i));
   }
 
   execMatrixLeftCommand(index: number, command: string) {
