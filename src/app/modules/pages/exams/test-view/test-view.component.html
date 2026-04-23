@@ -189,16 +189,13 @@
                   <!-- <th>Section Name</th> -->
                   <th>Subject</th>
                   <th>Questions</th>
-                  <th>Marks</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let s of examData.sections; let i = index">
                   <td class="text-muted">{{ i + 1 }}</td>
                   <td class="fw-medium">{{ s.sectionName }}</td>
-                  <!-- <td>{{ s.subjectName || '-' }}</td> -->
-                  <td>{{ s.totalQuestions || 0 }}</td>
-                  <td>{{ s.totalMarks || 0 }}</td>
+                  <td>{{ s?.numberOfQuestions }}</td>
                 </tr>
               </tbody>
             </table>

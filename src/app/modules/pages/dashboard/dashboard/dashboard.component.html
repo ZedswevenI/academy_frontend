@@ -1,22 +1,49 @@
 <div class="dashboard">
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" *ngIf="loading">
-    <div class="spinner-container">
-      <div class="spinner-border text-primary" role="status"></div>
-      <span class="ms-2 fw-medium text-primary">Summarizing academy data...</span>
-    </div>
-  </div>
-
   <!-- Header -->
   <div class="dash-header">
     <div>
-      <h1 class="dash-title">Welcome back, Admin 👋</h1>
-      <p class="dash-sub">Here's what's happening across your academy — {{ today | date:'EEEE, MMM d, y' }}</p>
+      <h1 class="dash-title">Welcome back, {{username}} 👋</h1>
+      <p class="dash-sub">
+        Here's what's happening across your academy —
+        {{ today | date: "EEEE, MMM d, y" }}
+      </p>
     </div>
     <div class="dash-actions">
-      <button class="btn-ghost"><i class="fa-solid fa-download me-2"></i>Export</button>
-      <!-- <button class="btn-primary"><i class="fa-solid fa-plus me-2"></i>Quick Add</button> -->
+      <button class="btn-ghost" (click)="loadDashboard()">
+        <i class="fa-solid fa-rotate-right me-2"></i>Refresh
+      </button>
+      <!-- <button class="btn-ghost">
+                <i class="fa-solid fa-download me-2"></i>Export
+            </button> -->
     </div>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error && !loading" style="
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    ">
+    <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    <button (click)="loadDashboard()" style="
+        margin-left: auto;
+        background: #dc2626;
+        color: #fff;
+        border: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        cursor: pointer;
+      ">
+      Retry
+    </button>
   </div>
 
   <!-- KPI Cards -->
@@ -24,14 +51,15 @@
     <div class="kpi-card" *ngFor="let k of kpis" [class]="'tone-' + k.tone">
       <div class="kpi-top">
         <div class="kpi-icon"><i [class]="k.icon"></i></div>
-        <button class="kpi-nav-btn" [routerLink]="k.route" *ngIf="k.route">
-          <i class="fa-solid fa-arrow-right"></i>
-        </button>
+        <span class="kpi-delta" *ngIf="k.delta !== 0" [class.up]="k.delta >= 0" [class.down]="k.delta < 0">
+          <i class="fa-solid" [class.fa-arrow-up]="k.delta >= 0" [class.fa-arrow-down]="k.delta < 0"></i>
+          {{ k.delta > 0 ? "+" : "" }}{{ k.delta }}%
+        </span>
       </div>
       <div class="kpi-label">{{ k.label }}</div>
       <div class="kpi-value-row">
         <div class="kpi-value">{{ k.value }}</div>
-        <svg class="kpi-spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <svg class="kpi-spark" viewBox="0 0 100 30" preserveAspectRatio="none" *ngIf="k.trend.length">
           <path [attr.d]="sparklineArea(k.trend)" class="spark-area"></path>
           <path [attr.d]="sparklinePath(k.trend)" class="spark-line"></path>
         </svg>
@@ -42,7 +70,102 @@
       </div>
     </div>
   </div>
+  <!-- Row 3: Upcoming PTMs + Upcoming Activities (NEW) -->
+  <div class="bottom-row">
+    <div class="card list-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Upcoming PTMs</h3>
+          <p class="card-sub">Parent-teacher meetings scheduled from today</p>
+        </div>
+        <a class="link">View all</a>
+      </div>
+      <div class="ptm-table">
+        <div class="ptm-row head">
+          <span>Student</span>
+          <span>Batch</span>
+          <span>When</span>
+          <span>Status</span>
+        </div>
+        <ng-container *ngIf="ptms.length; else emptyPtm">
+          <div class="ptm-row" *ngFor="let p of ptms">
+            <span>
+              <div class="ptm-name">{{ p.student }}</div>
+              <div class="ptm-sub">{{ p.parent }}</div>
+            </span>
+            <span class="ptm-batch">{{ p.batch }}</span>
+            <span>
+              <div class="ptm-name">{{ p.date }}</div>
+              <div class="ptm-sub">{{ p.time }}</div>
+            </span>
+            <span>
+              <span class="chip" [class.green]="p.status === 'Confirmed'" [class.blue]="p.status === 'Scheduled'"
+                [class.amber]="p.status === 'Pending'">{{
+                p.status }}</span>
+            </span>
+          </div>
+        </ng-container>
+        <ng-template #emptyPtm>
+          <div style="
+              text-align: center;
+              padding: 1.5rem 0;
+              color: #94a3b8;
+              font-size: 0.8rem;
+            ">
+            No upcoming PTMs
+          </div>
+        </ng-template>
+      </div>
+    </div>
 
+    <div class="card list-card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Upcoming Activities</h3>
+          <p class="card-sub">Planned & in-progress across batches</p>
+        </div>
+        <a class="link">View all</a>
+      </div>
+      <ul class="activity-list">
+        <ng-container *ngIf="upcomingActivities.length; else emptyAct">
+          <li *ngFor="let a of upcomingActivities">
+            <div class="act-icon" [class]="'tone-' + getActivityStatusClass(a.status)">
+              <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <div class="act-body">
+              <div class="act-title">{{ a.activityName }}</div>
+              <div class="act-meta">
+                {{ a.batchCode }} · {{ formatActivityDate(a.startDate) }}
+                <span *ngIf="a.endDate && a.endDate !== a.startDate">
+                  → {{ formatActivityDate(a.endDate) }}</span>
+              </div>
+            </div>
+            <span class="chip" [class.blue]="a.status === 'PLANNED'" [class.green]="a.status === 'IN_PROGRESS'"
+              [class.amber]="a.status === 'COMPLETED'">
+              {{
+              a.status === "IN_PROGRESS"
+              ? "In Progress"
+              : a.status === "PLANNED"
+              ? "Planned"
+              : a.status
+              }}
+            </span>
+          </li>
+        </ng-container>
+        <ng-template #emptyAct>
+          <li style="
+              justify-content: center;
+              color: #94a3b8;
+              font-size: 0.8rem;
+              padding: 1.5rem 0;
+              list-style: none;
+            ">
+            No upcoming activities
+          </li>
+        </ng-template>
+      </ul>
+    </div>
+  </div>
   <!-- Charts row 1 -->
   <div class="charts-row">
     <div class="card chart-card wide">
@@ -51,10 +174,14 @@
           <h3 class="card-title">Attendance Overview</h3>
           <p class="card-sub">Daily attendance across all batches</p>
         </div>
+        <select class="card-select" [(ngModel)]="selectedPeriod" (change)="onPeriodChange(selectedPeriod)">
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+        </select>
       </div>
       <div class="chart-wrap">
-        <canvas baseChart [type]="'line'" [data]="attendanceLineData" [options]="attendanceLineOptions">
-        </canvas>
+        <canvas baseChart [type]="'line'" [data]="attendanceLineData" [options]="attendanceLineOptions"></canvas>
       </div>
     </div>
 
@@ -66,8 +193,7 @@
         </div>
       </div>
       <div class="chart-wrap doughnut">
-        <canvas baseChart [type]="'doughnut'" [data]="programDoughnutData" [options]="programDoughnutOptions">
-        </canvas>
+        <canvas baseChart [type]="'doughnut'" [data]="programDoughnutData" [options]="programDoughnutOptions"></canvas>
       </div>
     </div>
   </div>
@@ -80,11 +206,10 @@
           <h3 class="card-title">Batch Performance</h3>
           <p class="card-sub">Average test scores per batch</p>
         </div>
-        <span class="badge-soft"><i class="fa-solid fa-chart-column me-1"></i>Last Test</span>
+        <span class="badge-soft"><i class="fa-solid fa-chart-column me-1"></i>Combined Score</span>
       </div>
       <div class="chart-wrap">
-        <canvas baseChart [type]="'bar'" [data]="batchBarData" [options]="batchBarOptions">
-        </canvas>
+        <canvas baseChart [type]="'bar'" [data]="batchBarData" [options]="batchBarOptions"></canvas>
       </div>
     </div>
 
@@ -98,13 +223,22 @@
       </div>
       <ul class="performer-list">
         <li *ngFor="let p of performers; let i = index">
-          <span class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">{{ i + 1 }}</span>
+          <span class="rank" [class.gold]="i === 0" [class.silver]="i === 1" [class.bronze]="i === 2">{{ i + 1
+            }}</span>
           <div class="avatar">{{ p.avatar }}</div>
           <div class="perf-info">
             <div class="perf-name">{{ p.name }}</div>
             <div class="perf-meta">{{ p.batch }}</div>
           </div>
           <div class="perf-score">{{ p.score }}%</div>
+        </li>
+        <li *ngIf="!performers.length" style="
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            padding: 1.5rem 0;
+          ">
+          No performance data yet
         </li>
       </ul>
     </div>
@@ -118,7 +252,9 @@
           <h3 class="card-title">Staff by Department</h3>
           <p class="card-sub">Teaching & non-teaching distribution</p>
         </div>
-        <a class="link" [routerLink]="'/app/org-master/staff'">Manage</a>
+        <span class="badge-soft">
+          <i class="fa-solid fa-chalkboard-user me-1"></i>{{ kpis[1].value }} Staff
+        </span>
       </div>
       <ul class="dept-list">
         <li *ngFor="let d of staffDepts">
@@ -127,8 +263,16 @@
             <span class="dept-count">{{ d.count }} members</span>
           </div>
           <div class="dept-bar">
-            <div class="dept-bar-fill" [style.width.%]="(d.count / 20) * 100" [style.background]="d.color"></div>
+            <div class="dept-bar-fill" [style.width.%]="(d.count / d.total) * 100" [style.background]="d.color"></div>
           </div>
+        </li>
+        <li *ngIf="!staffDepts.length" style="
+            color: #94a3b8;
+            font-size: 0.8rem;
+            padding: 1rem 0;
+            text-align: center;
+          ">
+          No department data
         </li>
       </ul>
     </div>
@@ -137,7 +281,7 @@
       <div class="card-header">
         <div>
           <h3 class="card-title">Recent Users</h3>
-          <p class="card-sub">Latest system access</p>
+          <p class="card-sub">Latest added to the system</p>
         </div>
         <a class="link" [routerLink]="'/app/org-master/users'">Manage</a>
       </div>
@@ -151,67 +295,51 @@
           <div class="user-meta">
             <span class="role-tag">{{ u.role }}</span>
             <span class="status-dot" [class.green]="u.status === 'Active'" [class.amber]="u.status === 'Invited'"
-              [class.gray]="u.status === 'Inactive'">{{ u.status }}</span>
+              [class.gray]="u.status === 'Inactive'">{{ u.status
+              }}</span>
           </div>
         </li>
       </ul>
     </div>
   </div>
 
-  <!-- Bottom row -->
-  <div class="bottom-row">
-    <div class="card list-card">
+  <!-- Inactive Users row (NEW) — only shown when there are inactive users -->
+  <div class="charts-row" *ngIf="inactiveUsers.length">
+    <div class="card" style="grid-column: 1 / -1">
       <div class="card-header">
         <div>
-          <h3 class="card-title">Recent Activity</h3>
-          <p class="card-sub">Latest updates from your academy</p>
+          <h3 class="card-title">
+            <i class="fa-solid fa-user-clock me-2" style="color: #d97706"></i>Inactive Portal Users
+          </h3>
+          <p class="card-sub">
+            Active accounts with no login in the last 3 days
+          </p>
         </div>
-        <a class="link" [routerLink]="'/app/activity'">View all</a>
+        <span class="badge-soft" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ inactiveUsersCount }} users
+        </span>
       </div>
-      <ul class="activity-list">
-        <li *ngFor="let a of activities">
-          <div class="act-icon" [class]="'tone-' + a.tone"><i [class]="a.icon"></i></div>
-          <div class="act-body">
-            <div class="act-title">{{ a.title }}</div>
-            <div class="act-meta">{{ a.meta }}</div>
+      <ul class="user-list">
+        <li *ngFor="let u of inactiveUsers">
+          <div class="avatar" style="background: linear-gradient(135deg, #fbbf24, #d97706)">
+            {{ u.avatar }}
           </div>
-          <div class="act-time">{{ a.time }}</div>
+          <div class="user-info">
+            <div class="user-name">{{ u.name }}</div>
+            <div class="user-email">{{ u.email }}</div>
+          </div>
+          <div class="user-meta">
+            <span class="role-tag">{{ u.roleLabel }}</span>
+            <span class="status-dot gray">
+              <i class="fa-regular fa-clock me-1" style="font-size: 0.65rem"></i>
+              {{
+              formatLastSeen(u.lastLoginAt, u.neverLoggedIn, u.daysSinceLogin)
+              }}
+            </span>
+            <span *ngIf="u.centerName" class="role-tag" style="font-size: 0.65rem">{{ u.centerName }}</span>
+          </div>
         </li>
       </ul>
     </div>
-
-    <div class="card list-card">
-      <div class="card-header">
-        <div>
-          <h3 class="card-title">Upcoming PTMs</h3>
-          <p class="card-sub">Parent-teacher meetings this week</p>
-        </div>
-        <a class="link" [routerLink]="'/app/ptm'">View all</a>
-      </div>
-      <div class="ptm-table">
-        <div class="ptm-row head">
-          <span>Student</span>
-          <span>Batch</span>
-          <span>When</span>
-          <span>Status</span>
-        </div>
-        <div class="ptm-row" *ngFor="let p of ptms">
-          <span>
-            <div class="ptm-name">{{ p.student }}</div>
-            <div class="ptm-sub">{{ p.parent }}</div>
-          </span>
-          <span class="ptm-batch">{{ p.batch }}</span>
-          <span>
-            <div class="ptm-name">{{ p.date }}</div>
-            <div class="ptm-sub">{{ p.time }}</div>
-          </span>
-          <span>
-            <span class="chip" [class.green]="p.status === 'Confirmed'" [class.blue]="p.status === 'Scheduled'"
-              [class.amber]="p.status === 'Pending'">{{ p.status }}</span>
-          </span>
-        </div>
-      </div>
-    </div>
   </div>
-
 </div>
