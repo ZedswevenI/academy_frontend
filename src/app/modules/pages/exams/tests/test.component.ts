@@ -708,7 +708,7 @@ export class TestComponent implements OnInit, OnDestroy {
         const res: any = await firstValueFrom(
           this.commonApi.fetchData(
             { url: originalUrl },
-            'exam/question/image',
+            'exam/questions/image',
             'download'
           )
         );

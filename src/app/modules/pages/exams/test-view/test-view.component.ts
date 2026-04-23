@@ -124,12 +124,6 @@ export class TestViewComponent implements OnInit {
   leaderboardLimit = 20;
   leaderboardBatchId = '';
 
-  /* ================= STUDENT RESULT MODAL ================= */
-  showStudentModal = false;
-  studentResultLoading = false;
-  studentResult: any = null;
-  studentAnswersBySection: Record<string, any[]> = {};
-
   // Batch filter for analytics
   selectedBatchId = '';
   allBatches: any[] = [];
@@ -980,70 +974,15 @@ export class TestViewComponent implements OnInit {
   /* ================= STUDENT RESULT ================= */
 
   viewStudentResult(row: any) {
-    this.showStudentModal = true;
-    this.studentResult = null;
-    this.studentAnswersBySection = {};
-    this.studentResultLoading = true;
-
-    const payload = {
-      entiId: this.tenantId,
-      examId: this.examData.examId,
-      admissionNo: row.admissionNo
-    };
-
-    this.commonApi.fetchData(payload, 'exam/result', 'my-result').subscribe({
-      next: (res: any) => {
-        if (res?.status && res.data) {
-          this.studentResult = res.data;
-          this.buildStudentAnswersBySection();
-        } else {
-          this.alert.error(res?.message || 'Result not found');
-          this.showStudentModal = false;
-        }
-        this.studentResultLoading = false;
-      },
-      error: () => {
-        this.studentResultLoading = false;
-        this.alert.error('Error loading student result');
-        this.showStudentModal = false;
+    this.router.navigate(['/app/exams/exams/student-result'], {
+      state: {
+        exam: this.examData,
+        student: row
       }
     });
   }
 
-  closeStudentModal() {
-    this.showStudentModal = false;
-    this.studentResult = null;
-    this.studentAnswersBySection = {};
-  }
 
-  private buildStudentAnswersBySection() {
-    this.studentAnswersBySection = {};
-    if (!this.studentResult?.answers) return;
-    this.studentResult.answers.forEach((a: any) => {
-      const sid = a.sectionId || 'unknown';
-      if (!this.studentAnswersBySection[sid]) {
-        this.studentAnswersBySection[sid] = [];
-      }
-      this.studentAnswersBySection[sid].push(a);
-    });
-  }
-
-  getStudentAnswerSectionKeys(): string[] {
-    return Object.keys(this.studentAnswersBySection);
-  }
-
-  getStudentSectionResult(sectionId: string): any {
-    return (this.studentResult?.sectionResults || []).find((sr: any) => sr.sectionId === sectionId) || null;
-  }
-
-  formatDateFromTimestamp(ts: number): string {
-    if (!ts) return '-';
-    const d = new Date(ts);
-    return d.toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
-  }
 
   /* ================= HELPERS ================= */
 

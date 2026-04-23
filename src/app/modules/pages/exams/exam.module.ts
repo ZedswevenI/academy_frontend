@@ -20,9 +20,10 @@ import { ExamQuestionsComponent } from './questions/questions.component';
 import { ResultBatchComponent } from './result-batch/result-batch.component';
 import { ResultViewComponent } from './result-view/result-view.component';
 import { AnswerImportComponent } from './answer-import/answer-import.component';
+import { StudentResultComponent } from './student-result/student-result.component';
 
 @NgModule({
-  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent,QuestionArrangementComponent, ExamInstructionsComponent, ExamPassageComponent, ExamQuestionsComponent, ResultBatchComponent, ResultViewComponent, AnswerImportComponent],
+  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent,QuestionArrangementComponent, ExamInstructionsComponent, ExamPassageComponent, ExamQuestionsComponent, ResultBatchComponent, ResultViewComponent, AnswerImportComponent, StudentResultComponent],
   imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass,DragDropModule, BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],
   exports: []

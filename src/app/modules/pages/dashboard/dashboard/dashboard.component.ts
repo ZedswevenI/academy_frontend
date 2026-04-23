@@ -1,15 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { DashboardService } from '../../../../service/dashboard/dashboard.service';
+import { AlertService } from '../../../../service/alert/alert.service';
 
 interface KpiCard {
   label: string;
   value: string;
-  delta: number;
   icon: string;
   tone: 'blue' | 'green' | 'amber' | 'violet';
   sub: string;
   trend: number[];
+  route?: string;
 }
 
 interface Activity {
@@ -58,42 +60,44 @@ interface UserRow {
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   today = new Date();
+  loading = false;
+  tenantId = '';
 
   kpis: KpiCard[] = [
     {
-      label: 'Total Students', value: '1,248', delta: 4.8,
+      label: 'Total Students', value: '1,248',
       icon: 'fa-solid fa-user-graduate', tone: 'blue',
       sub: '+32 new this week',
       trend: [18, 22, 20, 26, 24, 30, 34]
     },
     {
-      label: 'Total Staff', value: '86', delta: 3.2,
+      label: 'Total Staff', value: '86',
       icon: 'fa-solid fa-chalkboard-user', tone: 'green',
       sub: '72 teaching · 14 admin',
       trend: [74, 76, 78, 80, 82, 84, 86]
     },
     {
-      label: 'System Users', value: '142', delta: 5.4,
+      label: 'System Users', value: '142',
       icon: 'fa-solid fa-users', tone: 'violet',
       sub: '128 active · 14 invited',
       trend: [110, 118, 122, 128, 132, 138, 142]
     },
     {
-      label: 'Active Batches', value: '36', delta: 2.1,
+      label: 'Active Batches', value: '36',
       icon: 'fa-solid fa-layer-group', tone: 'blue',
       sub: '28 ongoing · 8 upcoming',
       trend: [30, 31, 32, 33, 34, 35, 36]
     },
     {
-      label: 'Avg Attendance', value: '92.4%', delta: 1.6,
+      label: 'Avg Attendance', value: '92.4%',
       icon: 'fa-solid fa-clipboard-check', tone: 'green',
       sub: 'Target 90% · met 6/6 days',
       trend: [88, 90, 91, 90, 92, 93, 92]
     },
     {
-      label: 'Upcoming PTMs', value: '14', delta: -0.8,
+      label: 'Upcoming PTMs', value: '14',
       icon: 'fa-solid fa-people-group', tone: 'amber',
       sub: '9 confirmed · 5 pending',
       trend: [22, 20, 18, 17, 16, 15, 14]
@@ -244,13 +248,7 @@ export class DashboardComponent {
   programDoughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '68%',
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, padding: 14, font: { size: 11 }, color: '#475569' }
-      }
-    }
+    cutout: '68%'
   };
 
   activities: Activity[] = [
@@ -277,7 +275,214 @@ export class DashboardComponent {
     { name: 'Arjun Kapoor', batch: 'Foundation', score: 89, avatar: 'AK' }
   ];
 
-  constructor(private breadcrump: BredcrumpService) {
-    this.breadcrump.set([{ label: 'Dashboard' }]);
+  constructor(
+    private breadcrumb: BredcrumpService,
+    private dashboardService: DashboardService,
+    private alert: AlertService
+  ) {
+    this.breadcrumb.set([{ label: 'Dashboard' }]);
+    this.tenantId = localStorage.getItem('tenantId') || '';
+  }
+
+  ngOnInit(): void {
+    this.fetchDashboardData();
+  }
+
+  fetchDashboardData() {
+    if (!this.tenantId) return;
+
+    this.loading = true;
+    this.dashboardService.getSummary({ entiId: this.tenantId, period: 'week' }).subscribe({
+      next: (res: any) => {
+        if (res?.status && res.data) {
+          this.mapDashboardData(res.data);
+        }
+        this.loading = false;
+      },
+      error: (err: any) => {
+        this.loading = false;
+        console.error('Error fetching dashboard data:', err);
+      }
+    });
+  }
+
+  private mapDashboardData(data: any) {
+    // 1. Map KPIs
+    if (data.kpis) {
+      const k = data.kpis;
+      this.kpis = [
+        {
+          label: 'Total Students',
+          value: k.students?.total?.toLocaleString() || '0',
+          icon: 'fa-solid fa-user-graduate',
+          tone: 'blue',
+          sub: 'Total active enrollment',
+          trend: [18, 22, 20, 26, 24, 30, 34],
+          route: '/app/student'
+        },
+        {
+          label: 'Total Staff',
+          value: k.staff?.total?.toString() || '0',
+          icon: 'fa-solid fa-chalkboard-user',
+          tone: 'green',
+          sub: `${k.staff?.teaching || 0} teaching · ${k.staff?.nonTeaching || 0} admin`,
+          trend: [74, 76, 78, 80, 82, 84, 86],
+          route: '/app/org-master/staff'
+        },
+        {
+          label: 'System Users',
+          value: k.users?.total?.toString() || '0',
+          icon: 'fa-solid fa-users',
+          tone: 'violet',
+          sub: `${k.users?.total - k.users?.inactiveCount || 0} active · ${k.users?.inactiveCount || 0} inactive`,
+          trend: [110, 118, 122, 128, 132, 138, 142],
+          route: '/app/org-master/users'
+        },
+        {
+          label: 'Active Batches',
+          value: k.batches?.total?.toString() || '0',
+          icon: 'fa-solid fa-layer-group',
+          tone: 'blue',
+          sub: 'Ongoing programs',
+          trend: [30, 31, 32, 33, 34, 35, 36],
+          route: '/app/batch'
+        },
+        {
+          label: 'Avg Attendance',
+          value: k.attendance?.todayPct ? `${k.attendance.todayPct}%` : 'N/A',
+          icon: 'fa-solid fa-clipboard-check',
+          tone: 'green',
+          sub: `${k.attendance?.batchesMarked || 0} batches marked today`,
+          trend: [88, 90, 91, 90, 92, 93, 92],
+          route: '/app/attendance'
+        },
+        {
+          label: 'Upcoming PTMs',
+          value: k.ptms?.upcoming?.toString() || '0',
+          icon: 'fa-solid fa-people-group',
+          tone: 'amber',
+          sub: 'Scheduled meetings',
+          trend: [22, 20, 18, 17, 16, 15, 14],
+          route: '/app/ptm'
+        }
+      ];
+    }
+
+    // 2. Map Attendance Trend
+    if (data.attendanceTrend) {
+      const current = data.attendanceTrend.current || [];
+      const previous = data.attendanceTrend.previous || [];
+      
+      this.attendanceLineData = {
+        labels: current.map((i: any) => this.formatDateLabel(i.date)),
+        datasets: [
+          {
+            ...this.attendanceLineData.datasets[0],
+            data: current.map((i: any) => i.presentPct)
+          },
+          {
+            ...this.attendanceLineData.datasets[1],
+            data: previous.map((i: any) => i.presentPct)
+          }
+        ]
+      };
+    }
+
+    // 3. Map Students by Program
+    if (data.studentsByProgram) {
+      this.programDoughnutData = {
+        labels: data.studentsByProgram.map((p: any) => p.programName),
+        datasets: [
+          {
+            ...this.programDoughnutData.datasets[0],
+            data: data.studentsByProgram.map((p: any) => p.count)
+          }
+        ]
+      };
+    }
+
+    // 4. Map Batch Performance
+    if (data.batchPerformance) {
+      this.batchBarData = {
+        labels: data.batchPerformance.map((b: any) => b.batchCode || b.batchName),
+        datasets: [
+          {
+            ...this.batchBarData.datasets[0],
+            data: data.batchPerformance.map((b: any) => b.avgCombined)
+          }
+        ]
+      };
+    }
+
+    // 5. Map Top Performers
+    if (data.topPerformers) {
+      this.performers = data.topPerformers.map((p: any) => ({
+        name: p.name,
+        batch: p.batchCode || 'Unknown',
+        score: p.score,
+        avatar: p.avatar
+      }));
+    }
+
+    // 6. Map Staff by Department
+    if (data.staffByDepartment?.data) {
+      const colors = ['#2563EB', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#0EA5E9'];
+      this.staffDepts = data.staffByDepartment.data.map((d: any, i: number) => ({
+        name: d.departmentName,
+        count: d.count,
+        total: data.staffByDepartment.total,
+        color: colors[i % colors.length]
+      }));
+    }
+
+    // 7. Map Recent Users
+    if (data.recentUsers) {
+      const tones: any[] = ['blue', 'green', 'amber', 'violet'];
+      this.recentUsers = data.recentUsers.map((u: any, i: number) => ({
+        name: u.name,
+        email: u.email,
+        role: u.roleLabel || 'User',
+        status: u.status === 'Active' ? 'Active' : 'Inactive',
+        avatar: u.avatar,
+        tone: tones[i % tones.length]
+      }));
+    }
+
+    // 8. Map Activities
+    if (data.upcomingActivities?.data) {
+      this.activities = data.upcomingActivities.data.map((a: any) => ({
+        icon: 'fa-solid fa-calendar-check',
+        tone: 'blue',
+        title: a.activityName,
+        meta: `${a.batchCode} · ${a.status.toLowerCase()}`,
+        time: this.formatRelativeTime(a.startDate)
+      }));
+    }
+
+    // 9. Map PTMs
+    if (data.upcomingPtms?.data) {
+      this.ptms = data.upcomingPtms.data.map((p: any) => ({
+        student: p.studentName,
+        parent: p.admissionNo,
+        batch: p.batchCode,
+        date: new Date(p.ptmDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        time: p.startTime,
+        status: p.status === 'SCHEDULED' ? 'Scheduled' : 'Confirmed'
+      }));
+    }
+  }
+
+  private formatDateLabel(ms: number): string {
+    const d = new Date(ms);
+    return d.toLocaleDateString(undefined, { weekday: 'short' });
+  }
+
+  private formatRelativeTime(ms: number): string {
+    const diff = ms - Date.now();
+    if (diff < 0) return 'Just now';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return 'Soon';
+    if (hours < 24) return `${hours}h group`;
+    return `${Math.floor(hours / 24)}d away`;
   }
 }

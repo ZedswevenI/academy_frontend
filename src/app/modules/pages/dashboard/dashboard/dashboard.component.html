@@ -1,4 +1,11 @@
 <div class="dashboard">
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner-container">
+      <div class="spinner-border text-primary" role="status"></div>
+      <span class="ms-2 fw-medium text-primary">Summarizing academy data...</span>
+    </div>
+  </div>
 
   <!-- Header -->
   <div class="dash-header">
@@ -17,10 +24,9 @@
     <div class="kpi-card" *ngFor="let k of kpis" [class]="'tone-' + k.tone">
       <div class="kpi-top">
         <div class="kpi-icon"><i [class]="k.icon"></i></div>
-        <span class="kpi-delta" [class.up]="k.delta >= 0" [class.down]="k.delta < 0">
-          <i class="fa-solid" [class.fa-arrow-up]="k.delta >= 0" [class.fa-arrow-down]="k.delta < 0"></i>
-          {{ k.delta > 0 ? '+' : '' }}{{ k.delta }}%
-        </span>
+        <button class="kpi-nav-btn" [routerLink]="k.route" *ngIf="k.route">
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
       <div class="kpi-label">{{ k.label }}</div>
       <div class="kpi-value-row">
@@ -45,11 +51,6 @@
           <h3 class="card-title">Attendance Overview</h3>
           <p class="card-sub">Daily attendance across all batches</p>
         </div>
-        <select class="card-select">
-          <option>This Week</option>
-          <option>This Month</option>
-          <option>This Quarter</option>
-        </select>
       </div>
       <div class="chart-wrap">
         <canvas baseChart [type]="'line'" [data]="attendanceLineData" [options]="attendanceLineOptions">
@@ -93,6 +94,7 @@
           <h3 class="card-title">Top Performers</h3>
           <p class="card-sub">This month</p>
         </div>
+        <a class="link" [routerLink]="'/app/report'">Analyze</a>
       </div>
       <ul class="performer-list">
         <li *ngFor="let p of performers; let i = index">
@@ -116,7 +118,7 @@
           <h3 class="card-title">Staff by Department</h3>
           <p class="card-sub">Teaching & non-teaching distribution</p>
         </div>
-        <span class="badge-soft"><i class="fa-solid fa-chalkboard-user me-1"></i>86 Staff</span>
+        <a class="link" [routerLink]="'/app/org-master/staff'">Manage</a>
       </div>
       <ul class="dept-list">
         <li *ngFor="let d of staffDepts">
@@ -137,7 +139,7 @@
           <h3 class="card-title">Recent Users</h3>
           <p class="card-sub">Latest system access</p>
         </div>
-        <a class="link">Manage</a>
+        <a class="link" [routerLink]="'/app/org-master/users'">Manage</a>
       </div>
       <ul class="user-list">
         <li *ngFor="let u of recentUsers">
@@ -164,7 +166,7 @@
           <h3 class="card-title">Recent Activity</h3>
           <p class="card-sub">Latest updates from your academy</p>
         </div>
-        <a class="link">View all</a>
+        <a class="link" [routerLink]="'/app/activity'">View all</a>
       </div>
       <ul class="activity-list">
         <li *ngFor="let a of activities">
@@ -184,7 +186,7 @@
           <h3 class="card-title">Upcoming PTMs</h3>
           <p class="card-sub">Parent-teacher meetings this week</p>
         </div>
-        <a class="link">View all</a>
+        <a class="link" [routerLink]="'/app/ptm'">View all</a>
       </div>
       <div class="ptm-table">
         <div class="ptm-row head">
