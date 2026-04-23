@@ -76,6 +76,14 @@
     <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'" (click)="switchTab('results')">
       <i class="fa-solid fa-chart-bar me-1"></i> Results
     </button>
+    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'question-wise'"
+      (click)="switchTab('question-wise')">
+      <i class="fa-solid fa-list-ol me-1"></i> Question Wise
+    </button>
+    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'participants'"
+      (click)="switchTab('participants')">
+      <i class="fa-solid fa-users me-1"></i> Participants
+    </button>
   </div>
 
   <!-- ================================================================ -->
@@ -266,8 +274,9 @@
           <table class="table table-hover align-middle mb-0">
             <thead>
               <tr>
-                <th style="width:60px">Rank</th>
+                <th style="width: 80px;">Rank</th>
                 <th>Admission No</th>
+                <th>Student Name</th>
                 <th>Batch</th>
                 <th>Obtained</th>
                 <th>Total</th>
@@ -288,7 +297,10 @@
                     <i *ngIf="r.rank <= 3" class="fa-solid fa-trophy me-1"></i>{{ r.rank }}
                   </span>
                 </td>
-                <td class="fw-semibold">{{ r.admissionNo }}</td>
+                <td class="fw-semibold text-muted small">{{ r.admissionNo }}</td>
+                <td>
+                  <div class="fw-bold">{{ r.studentName }}</div>
+                </td>
                 <td><span class="badge bg-light text-dark border">{{ r.batchId }}</span></td>
                 <td>
                   <span class="fw-bold text-primary">{{ r.obtainedMarks }}</span>
@@ -553,7 +565,153 @@
         <p>No timing analytics data available</p>
       </div>
     </div>
+  </div>
 
+  <!-- ================================================================ -->
+  <!--                      QUESTION WISE TAB                           -->
+  <!-- ================================================================ -->
+  <div *ngIf="activeTab === 'question-wise' && hasResults" class="tab-content-area">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-list-check me-2"></i>Question-wise Performance</h5>
+      <div class="d-flex align-items-center gap-2">
+        <label class="text-muted small mb-0">Filter by batch:</label>
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="selectedBatchId"
+          (ngModelChange)="fetchQuestionWiseReport()">
+          <option value="">All Batches</option>
+          <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div *ngIf="questionWiseLoading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+      </div>
+
+      <!-- Question Wise Chart -->
+      <div *ngIf="!questionWiseLoading && questionWiseChartData.labels && questionWiseChartData.labels.length > 0"
+        class="border-bottom p-4">
+        <div style="height: 350px;">
+          <canvas baseChart [data]="questionWiseChartData" [options]="questionWiseChartOptions" type="bar"></canvas>
+        </div>
+      </div>
+
+      <div *ngIf="!questionWiseLoading && questionWiseData.length > 0" class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Q. No</th>
+              <th>Total Participants</th>
+              <th>Corrected By</th>
+              <th>In-corrected By</th>
+              <th>Un-attempted By</th>
+              <!-- <th>Unseen By</th> -->
+              <th>Avg Time (sec)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let q of questionWiseData">
+              <td class="fw-bold">{{ q.qNo }}</td>
+              <td>{{ q.totalParticipants }}</td>
+              <td><span class="text-success fw-bold">{{ q.correctedBy }}</span></td>
+              <td><span class="text-danger fw-bold">{{ q.incorrectedBy }}</span></td>
+              <td><span class="text-warning fw-bold">{{ q.unattemptedBy }}</span></td>
+              <!-- <td><span class="text-secondary">{{ q.unseenBy }}</span></td> -->
+              <td><span class="fw-semibold text-primary">{{ q.avgTimeTaken }}s</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!questionWiseLoading && questionWiseData.length === 0" class="empty-state">
+        <i class="fa-solid fa-list-ol"></i>
+        <p>No report data available</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!--                      PARTICIPANTS TAB                            -->
+  <!-- ================================================================ -->
+  <div *ngIf="activeTab === 'participants' && hasResults" class="tab-content-area">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-users me-2"></i>Student Ranking</h5>
+      <div class="d-flex align-items-center gap-2">
+        <label class="text-muted small mb-0">Filter by batch:</label>
+        <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="selectedBatchId"
+          (ngModelChange)="fetchParticipantsReport()">
+          <option value="">All Batches</option>
+          <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div *ngIf="participantsLoading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+      </div>
+
+      <div *ngIf="!participantsLoading && participantsData.length > 0" class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Student Name</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Correct</th>
+              <th>Incorrect</th>
+              <th>Max Score</th>
+              <th>Score</th>
+              <th>Per %</th>
+              <th>Time</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of participantsData">
+              <td>
+                <span class="rank-badge" [ngClass]="{
+                  'rank-gold': p.rank === 1,
+                  'rank-silver': p.rank === 2,
+                  'rank-bronze': p.rank === 3
+                }">
+                  {{ p.rank }}
+                </span>
+              </td>
+              <td>
+                <div class="fw-bold">{{ p.studentName }}</div>
+                <small class="text-muted">{{ p.admissionNo }}</small>
+              </td>
+              <td>{{ formatDate(p.startedAt) }}</td>
+              <td>{{ formatDate(p.completedAt) }}</td>
+              <td><span class="text-success fw-bold">{{ p.correctCount }}</span></td>
+              <td><span class="text-danger fw-bold">{{ p.wrongCount }}</span></td>
+              <td>{{ p.totalMarks }}</td>
+              <td><span class="fw-bold text-primary">{{ p.obtainedMarks }}</span></td>
+              <td>
+                <span class="badge rounded-pill"
+                  [ngClass]="p.percentage >= 75 ? 'bg-success' : p.percentage >= 40 ? 'bg-warning' : 'bg-danger'">
+                  {{ p.percentage }}%
+                </span>
+              </td>
+              <td>{{ p.timeTakenMins }}m</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
+                  (click)="viewStudentResult(p)" title="View Result">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="!participantsLoading && participantsData.length === 0" class="empty-state">
+        <i class="fa-solid fa-users"></i>
+        <p>No participants data found</p>
+      </div>
+    </div>
   </div>
 
 </div>

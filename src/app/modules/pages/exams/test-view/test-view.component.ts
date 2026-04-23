@@ -23,9 +23,30 @@ export class TestViewComponent implements OnInit {
   tenantId = '';
 
   /* ================= TABS ================= */
-  activeTab: 'details' | 'results' = 'details';
+  activeTab: 'details' | 'results' | 'question-wise' | 'participants' = 'details';
   resultSubTab: 'batches' | 'leaderboard' | 'attempts' | 'timing' = 'batches';
   hasResults = false;
+
+  /* ================= QUESTION WISE REPORT ================= */
+  questionWiseLoading = false;
+  questionWiseData: any[] = [];
+  questionWiseChartData: ChartData<'bar'> = { labels: [], datasets: [] };
+  questionWiseChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top' },
+      title: { display: true, text: 'Question Performance Overview', font: { size: 15, weight: 'bold' } }
+    },
+    scales: {
+      x: { stacked: true, title: { display: true, text: 'Question No' } },
+      y: { stacked: true, title: { display: true, text: 'Participants' }, beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  };
+
+  /* ================= PARTICIPANTS REPORT ================= */
+  participantsLoading = false;
+  participantsData: any[] = [];
 
   /* ================= BATCH RESULTS ================= */
   batchLoading = false;
@@ -185,7 +206,7 @@ export class TestViewComponent implements OnInit {
     }
 
     this.isDraft = this.examData.status === 'draft';
-    this.hasResults = this.examData.status === 'result_published';
+    this.hasResults = this.examData.status !== 'draft';
 
     this.initGraceForm();
     this.fetchSubjects();
@@ -646,8 +667,95 @@ export class TestViewComponent implements OnInit {
 
   /* ================= TAB ================= */
 
-  switchTab(tab: 'details' | 'results') {
+  switchTab(tab: 'details' | 'results' | 'question-wise' | 'participants') {
     this.activeTab = tab;
+    if (tab === 'question-wise' && this.questionWiseData.length === 0) {
+      this.fetchQuestionWiseReport();
+    } else if (tab === 'participants' && this.participantsData.length === 0) {
+      this.fetchParticipantsReport();
+    }
+  }
+
+  /* ================= REPORTS ================= */
+
+  fetchQuestionWiseReport() {
+    this.questionWiseLoading = true;
+    const payload: any = {
+      entiId: this.tenantId,
+      examId: this.examData.examId
+    };
+    if (this.selectedBatchId) {
+      payload.batchId = this.selectedBatchId;
+    }
+
+    this.commonApi.fetchData(payload, 'exam/result/analytics', 'question-wise').subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.questionWiseData = res.data || [];
+          this.buildQuestionWiseChart();
+        }
+        this.questionWiseLoading = false;
+      },
+      error: () => {
+        this.questionWiseLoading = false;
+        this.alert.error('Error loading question wise report');
+      }
+    });
+  }
+
+  buildQuestionWiseChart() {
+    const labels = this.questionWiseData.map(q => `Q${q.qNo}`);
+    const correctData = this.questionWiseData.map(q => q.correctedBy);
+    const incorrectData = this.questionWiseData.map(q => q.incorrectedBy);
+    const unattemptedData = this.questionWiseData.map(q => q.unattemptedBy);
+
+    this.questionWiseChartData = {
+      labels,
+      datasets: [
+        {
+          label: 'Correct',
+          data: correctData,
+          backgroundColor: '#22C55E', // success
+          borderRadius: 4
+        },
+        {
+          label: 'Incorrect',
+          data: incorrectData,
+          backgroundColor: '#EF4444', // danger
+          borderRadius: 4
+        },
+        {
+          label: 'Unattempted',
+          data: unattemptedData,
+          backgroundColor: '#F59E0B', // warning
+          borderRadius: 4
+        }
+      ]
+    };
+  }
+
+  fetchParticipantsReport() {
+    this.participantsLoading = true;
+    const payload: any = {
+      entiId: this.tenantId,
+      examId: this.examData.examId
+    };
+    if (this.selectedBatchId) {
+      payload.batchId = this.selectedBatchId;
+    }
+
+    this.commonApi.fetchData(payload, 'exam/result/analytics', 'participants').subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          this.participantsData = res.data || [];
+        }
+        this.participantsLoading = false;
+      },
+      error: () => {
+        this.participantsLoading = false;
+        this.alert.error('Error loading participants report');
+      }
+    });
   }
 
   switchResultSubTab(tab: 'batches' | 'leaderboard' | 'attempts' | 'timing') {

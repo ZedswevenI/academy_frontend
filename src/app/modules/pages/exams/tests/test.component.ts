@@ -127,7 +127,7 @@ export class TestComponent implements OnInit, OnDestroy {
         { text: 'Import Answers', icon: 'fa-solid fa-clipboard-check', callback: (row: any) => this.importAnswers(row) },
         { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', hidden: (row: any) => row.status === 'result_published' || row.status === 'completed', callback: (row: any) => this.rearrange(row) },
         { text: 'Publish Exam', icon: 'fa-solid fa-paper-plane', hidden: (row: any) => row.status !== 'draft', callback: (row: any) => this.publishExam(row) },
-        { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'draft' || row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
+        { text: 'Assign Batch', icon: 'fa-solid fa-users', hidden: (row: any) => row.status === 'result_published', callback: (row: any) => this.openBatchModal(row) },
         { text: 'Publish Result', icon: 'fa-solid fa-bullhorn', hidden: (row: any) => row.status !== 'published' && !(row.graces && row.graces.length > 0), callback: (row: any) => this.publishResult(row) },
         { text: 'Result', icon: 'fa-solid fa-chart-bar', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.viewResult(row) },
         { text: 'Reevaluate', icon: 'fa-solid fa-arrows-rotate', hidden: (row: any) => row.status !== 'result_published', callback: (row: any) => this.reevaluateResults(row) },
