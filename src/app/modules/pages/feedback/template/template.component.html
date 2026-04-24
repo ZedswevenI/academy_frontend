@@ -1,6 +1,5 @@
-<div class="ms-3 me-3 pt-1 pb-1">
+<!-- <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
         <div class="d-flex align-items-center justify-content-between mb-4">
             <h1 class="fw-bold mb-0" style="font-size: 28px;">
                 <i class="fa-regular fa-file-lines me-2"></i>Feedback Templates
@@ -11,7 +10,6 @@
                 New Template
             </button>
         </div>
-
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="true"
             success="ACTIVE" primary="INACTIVE" [totalRecords]="totalRecords" (requestData)="loadTableData($event)"
             [actions]="actions" [searchPlaceholder]="'Search templates...'">
@@ -19,11 +17,9 @@
 
     </div>
 </div>
-
 <div class="modal fade" id="templateFormModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-4">
-
             <div class="modal-header border-bottom">
                 <h5 class="modal-title fw-bold">
                     <i class="fa-regular fa-file-lines me-2 text-primary"></i>
@@ -31,7 +27,6 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
             <div class="modal-body p-4">
                 <form [formGroup]="templateForm">
                     <div class="row g-3 mb-4">
@@ -218,7 +213,6 @@
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="templateDeleteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
         <div class="modal-content rounded-4" *ngIf="templateToDelete">
@@ -234,6 +228,343 @@
                 <p class="text-muted small mb-0">
                     This will fail if any active forms use this template.
                 </p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                    (click)="templateToDelete = null">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4" data-bs-dismiss="modal"
+                    (click)="confirmDelete()">
+                    <i class="fa-solid fa-trash-can me-2"></i>Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size: 28px;">
+                <i class="fa-regular fa-file-lines me-2"></i>Feedback Templates
+            </h1>
+            <button class="btn btn-newbutton rounded-pill fs-16 fw-medium" (click)="openCreateModal()">
+                <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
+                New Template
+            </button>
+        </div>
+
+        <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="true"
+            success="ACTIVE" primary="INACTIVE" [totalRecords]="totalRecords" (requestData)="loadTableData($event)"
+            [actions]="actions" [searchPlaceholder]="'Search templates...'">
+        </custom-table>
+
+    </div>
+</div>
+
+<!-- ═══ TEMPLATE FORM MODAL ══════════════════════════════════════════════════ -->
+<div class="modal fade" id="templateFormModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4">
+
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-regular fa-file-lines me-2 text-primary"></i>
+                    {{ isEditMode ? 'Edit Template' : 'New Template' }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form [formGroup]="templateForm">
+
+                    <!-- Basic info -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <formfield label="Template Title" formControlName="title"
+                                [control]="templateForm.get('title')" placeholder="e.g. Staff Feedback — Q1 2025"
+                                [required]="true">
+                            </formfield>
+                        </div>
+                        <div class="col-md-6">
+                            <selectbox label="Category" [options]="category_options" formControlName="category"
+                                [control]="templateForm.get('category')" [required]="true">
+                            </selectbox>
+                        </div>
+                        <div class="col-12">
+                            <description label="Description (optional)" formControlName="description"
+                                [control]="templateForm.get('description')"
+                                placeholder="Brief description of this template...">
+                            </description>
+                        </div>
+                    </div>
+
+                    <!-- Question list header -->
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <h6 class="fw-bold mb-0">
+                                Questions
+                                <span class="badge bg-primary rounded-pill ms-2">{{ questions.length }}</span>
+                            </h6>
+                            <span *ngIf="getPartACount() > 0"
+                                class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill"
+                                style="font-size: 11px;">
+                                Part A: {{ getPartACount() }}
+                            </span>
+                            <span *ngIf="getPartBCount() > 0"
+                                class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill"
+                                style="font-size: 11px;">
+                                Part B: {{ getPartBCount() }}
+                            </span>
+                            <span *ngIf="getSubjectBasedCount() > 0"
+                                class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
+                                style="font-size: 11px;">
+                                {{ getSubjectBasedCount() }} subject-based
+                            </span>
+                        </div>
+                    </div>
+
+                    <div *ngIf="questions.length === 0" class="text-center text-muted py-4 border rounded-3 mb-3">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        No questions yet — click "Add Question" to start
+                    </div>
+
+                    <!-- Question cards -->
+                    <div formArrayName="questions" class="d-flex flex-column gap-3">
+                        <div *ngFor="let q of questions.controls; let i = index" [formGroupName]="i"
+                            class="border rounded-3 overflow-hidden"
+                            [class.border-success]="q.get('part')?.value === 'A'"
+                            [class.border-warning]="q.get('part')?.value === 'B'">
+
+                            <!-- Card header -->
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2"
+                                [class.bg-success]="q.get('part')?.value === 'A'"
+                                [class.bg-warning]="q.get('part')?.value === 'B'" [class.bg-opacity-10]="true">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-semibold small text-muted">Q{{ i + 1 }}</span>
+                                    <span class="badge rounded-pill" [class.bg-success]="q.get('part')?.value === 'A'"
+                                        [class.bg-warning]="q.get('part')?.value === 'B'"
+                                        [class.text-dark]="q.get('part')?.value === 'B'" style="font-size: 10px;">
+                                        Part {{ q.get('part')?.value || 'A' }}
+                                    </span>
+                                    <span *ngIf="q.get('fieldType')?.value === 'score'"
+                                        class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill"
+                                        style="font-size: 10px;">
+                                        <i class="fa-solid fa-star me-1"></i>Score
+                                    </span>
+                                    <span *ngIf="isSubjectBasedQ(i)"
+                                        class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
+                                        style="font-size: 10px;">
+                                        <i class="fa-solid fa-book-open me-1"></i>Subject-based
+                                    </span>
+                                    <span *ngIf="isSubjectBasedQ(i) && !hasSubjectPlaceholder(i)"
+                                        class="badge bg-warning text-dark rounded-pill" style="font-size: 10px;">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Missing &#123;subject&#125;
+                                    </span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill"
+                                    (click)="removeQuestion(i)">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+
+                            <!-- Card body -->
+                            <div class="p-3 bg-white">
+                                <div class="row g-2">
+
+                                    <!-- Row 1: Type · Part · Max Score · Question text -->
+                                    <div class="col-md-2">
+                                        <label class="form-label small fw-medium">
+                                            Type <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select form-select-sm rounded-3"
+                                            formControlName="fieldType">
+                                            <option *ngFor="let t of fieldType_options" [value]="t.value">
+                                                {{ t.label }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <label class="form-label small fw-medium">Part</label>
+                                        <select class="form-select form-select-sm rounded-3" formControlName="part">
+                                            <option *ngFor="let p of part_options" [value]="p.value">
+                                                {{ p.value }} — {{ p.value === 'A' ? 'Teaching' : 'Research' }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-2" *ngIf="isScoreType(i)">
+                                        <label class="form-label small fw-medium">Max Score</label>
+                                        <input type="number" class="form-control form-control-sm rounded-3"
+                                            formControlName="maxScore" min="1" max="100" placeholder="10">
+                                    </div>
+
+                                    <div class="col-md-2" *ngIf="isScoreType(i)">
+                                        <label class="form-label small fw-medium">Weightage</label>
+                                        <input type="number" class="form-control form-control-sm rounded-3"
+                                            formControlName="weightage" min="1" placeholder="1">
+                                    </div>
+
+                                    <div [class]="isScoreType(i) ? 'col-md-4' : 'col-md-10'">
+                                        <label class="form-label small fw-medium">
+                                            Question Text <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm rounded-3"
+                                            formControlName="fieldText"
+                                            [placeholder]="isSubjectBasedQ(i) ? 'e.g. Rate your {subject} teacher...' : 'Enter question text...'">
+                                    </div>
+
+                                    <!-- Options list (radio/checkbox only) — each option has label + score -->
+                                    <div class="col-12" *ngIf="needsOptions(i)">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <label class="form-label small fw-medium mb-0">
+                                                Options <span class="text-danger">*</span>
+                                                <span class="text-muted fw-normal ms-1">(min 2, each with a
+                                                    score)</span>
+                                            </label>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill"
+                                                (click)="addOption(i)">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Option
+                                            </button>
+                                        </div>
+                                        <div formArrayName="optionsList" class="d-flex flex-column gap-2">
+                                            <div *ngFor="let opt of getOptions(i).controls; let oi = index"
+                                                [formGroupName]="oi" class="d-flex align-items-center gap-2">
+                                                <input type="text"
+                                                    class="form-control form-control-sm rounded-3 flex-grow-1"
+                                                    formControlName="label" placeholder="Option label e.g. Excellent">
+                                                <div class="input-group input-group-sm"
+                                                    style="width:110px;flex-shrink:0">
+                                                    <span class="input-group-text" style="font-size:11px">Score</span>
+                                                    <input type="number" class="form-control form-control-sm"
+                                                        formControlName="score" min="0" placeholder="0">
+                                                </div>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-outline-danger rounded-pill flex-shrink-0"
+                                                    (click)="removeOption(i, oi)"
+                                                    [disabled]="getOptions(i).length <= 1">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div *ngIf="getOptions(i).length === 0" class="text-muted small mt-1">
+                                            <i class="fa-solid fa-circle-info me-1"></i>
+                                            Click "Add Option" to add choices
+                                        </div>
+                                    </div>
+
+                                    <!-- Score type info -->
+                                    <div class="col-12" *ngIf="isScoreType(i)">
+                                        <div
+                                            class="d-flex align-items-center gap-2 p-2 bg-info bg-opacity-10 rounded-3 border border-info border-opacity-25">
+                                            <i class="fa-solid fa-circle-info text-info small"></i>
+                                            <span class="text-muted" style="font-size:11px">
+                                                Students will rate this question from 0 to {{ q.get('maxScore')?.value
+                                                || 10 }}.
+                                                Contributes to {{ q.get('part')?.value === 'A' ? 'TEA%' : 'REA%' }} in
+                                                the report.
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Subject-based toggle -->
+                                    <div class="col-12">
+                                        <div class="d-flex align-items-start gap-3 p-3 rounded-3 border"
+                                            [class.border-primary]="isSubjectBasedQ(i)"
+                                            [class.bg-primary]="isSubjectBasedQ(i)"
+                                            [class.bg-opacity-10]="isSubjectBasedQ(i)"
+                                            [class.bg-light]="!isSubjectBasedQ(i)">
+                                            <div class="form-check form-switch mb-0 flex-shrink-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    style="width:2.2em;height:1.2em;cursor:pointer;margin-top:2px"
+                                                    formControlName="isSubjectBased">
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-medium small" [class.text-primary]="isSubjectBasedQ(i)">
+                                                    Subject-based question
+                                                </div>
+                                                <div class="text-muted" style="font-size:11px;line-height:1.5">
+                                                    Enable if this question repeats for each subject/teacher.
+                                                    Use <code class="bg-white px-1 rounded">&#123;subject&#125;</code>
+                                                    as placeholder.
+                                                </div>
+                                                <div *ngIf="isSubjectBasedQ(i) && hasSubjectPlaceholder(i)"
+                                                    class="mt-2">
+                                                    <div class="text-primary small fw-medium mb-1">
+                                                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>
+                                                        Preview — expands into:
+                                                    </div>
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        <span *ngFor="let sub of previewSubjects"
+                                                            class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill"
+                                                            style="font-size:11px;font-weight:400">
+                                                            {{ getPreviewText(i, sub) }}
+                                                        </span>
+                                                        <span
+                                                            class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill"
+                                                            style="font-size:11px;font-weight:400">
+                                                            + more per batch subjects...
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Question at bottom for better UX -->
+                    <div class="text-center mt-3" *ngIf="questions.length > 0">
+                        <button type="button" class="btn btn-outline-primary rounded-pill" (click)="addQuestion()">
+                            <i class="fa-solid fa-plus me-2"></i>Add Another Question
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer border-top justify-content-between">
+                <div class="text-muted small" *ngIf="questions.length > 0">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    {{ questions.length }} question(s)
+                    <span *ngIf="getPartACount()"> · Part A: {{ getPartACount() }}</span>
+                    <span *ngIf="getPartBCount()"> · Part B: {{ getPartBCount() }}</span>
+                    <span *ngIf="getSubjectBasedCount()"> · {{ getSubjectBasedCount() }} subject-based</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4"
+                        [disabled]="templateForm.invalid || !questions.length || saving" (click)="saveTemplate()">
+                        <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
+                        {{ saving ? 'Saving...' : (isEditMode ? 'Update Template' : 'Create Template') }}
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ═══ DELETE MODAL ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="templateDeleteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content rounded-4" *ngIf="templateToDelete">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <span
+                        class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10"
+                        style="width:64px;height:64px">
+                        <i class="fa-solid fa-trash-can text-danger fs-4"></i>
+                    </span>
+                </div>
+                <h5 class="fw-bold mb-1">Delete Template?</h5>
+                <p class="fw-semibold mb-1">{{ templateToDelete.title }}</p>
+                <p class="text-muted small mb-0">This will fail if any active forms use this template.</p>
             </div>
             <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
