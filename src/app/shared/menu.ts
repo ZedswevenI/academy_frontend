@@ -338,6 +338,12 @@ export const MENU_ITEMS: MenuItem[] = [
         icon: 'fa-solid fa-newspaper',
         route: '/app/feedback/feedback/template',
         roles: ['L1', 'L3']
+      },
+      {
+        label: 'Report',
+        icon: 'fa-solid fa-table-list',
+        route: '/app/feedback/consolidated-report',
+        roles: ['L1', 'L3']
       }
     ]
   },
