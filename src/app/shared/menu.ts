@@ -286,12 +286,12 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/activity',
     roles: ['L1', 'L3', 'L4']
   },
-  // {
-  //   label: 'Student Performance',
-  //   icon: 'fa-solid fa-chart-column',
-  //   route: '/app/performance',
-  //   roles: ['L1', 'L3', 'L4']
-  // },
+  {
+    label: 'Student Performance',
+    icon: 'fa-solid fa-chart-column',
+    route: '/app/performance',
+    roles: ['L1', 'L3', 'L4']
+  },
   {
     label: 'Tasks',
     icon: 'fa-solid fa-list-check',

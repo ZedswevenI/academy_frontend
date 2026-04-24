@@ -114,8 +114,13 @@ export class FeedbackresultsComponent implements OnInit {
   results: any = null;
   batchResults: any[] = [];
   activeBatch = '';
-  activeStaff = ''; // for STAFF category: which staff is shown
+  activeStaff = '';
   formId = '';
+  activeTab: 'results' | 'report' = 'results';
+  reportRows: any[] = [];
+  partAHeaders: any[] = [];
+  partBHeaders: any[] = [];
+  reportSummary: any = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -136,6 +141,52 @@ export class FeedbackresultsComponent implements OnInit {
     this.fetchResults(this.formId);
   }
 
+  loadReportTab(): void {
+    if (this.reportRows.length) return;
+    this.reportLoading = true;
+    this.commonApi
+      .fetchData(
+        { tenantId: this.tenantId, formId: this.formId },
+        'feedback',
+        'report',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.reportLoading = false;
+          if (res?.status) {
+            this.reportSummary = res.data;
+            this.reportRows = res.data.rows || [];
+            this.partAHeaders = res.data.partAHeaders || [];
+            this.partBHeaders = res.data.partBHeaders || [];
+          }
+        },
+        error: () => {
+          this.reportLoading = false;
+        },
+      });
+  }
+
+  switchTab(tab: 'results' | 'report'): void {
+    this.activeTab = tab;
+    if (tab === 'report') this.loadReportTab();
+  }
+
+  scoreClass(v: number | null): string {
+    if (v == null) return 'text-muted';
+    if (v >= 9) return 'text-success fw-semibold';
+    if (v >= 7) return 'text-primary';
+    if (v >= 5) return 'text-warning';
+    return 'text-danger';
+  }
+
+  pctClass(v: number | null): string {
+    if (v == null) return 'text-muted';
+    if (v >= 90) return 'text-success fw-bold';
+    if (v >= 75) return 'text-primary fw-bold';
+    if (v >= 50) return 'text-warning fw-bold';
+    return 'text-danger fw-bold';
+  }
+
   fetchResults(formId: string): void {
     this.loading = true;
     this.commonApi
@@ -146,7 +197,6 @@ export class FeedbackresultsComponent implements OnInit {
             this.results = res.data;
             this.batchResults = res.data.batchResults || [];
             this.activeBatch = this.batchResults[0]?.batchCode || '';
-            // For STAFF category, default to first staff in first batch
             if (this.results.category === 'STAFF') {
               this.activeStaff =
                 this.batchResults[0]?.staffResults?.[0]?.staffId || '';
@@ -556,5 +606,19 @@ export class FeedbackresultsComponent implements OnInit {
     const avg =
       partB.reduce((s: number, q: any) => s + q.avgScore, 0) / partB.length;
     return Math.round((avg / maxScore) * 1000) / 10;
+  }
+
+  getAvgTea(): string {
+    const v = this.reportRows.filter((r) => r.teaPct != null);
+    return v.length
+      ? (v.reduce((s, r) => s + r.teaPct, 0) / v.length).toFixed(1) + '%'
+      : '—';
+  }
+
+  getAvgRea(): string {
+    const v = this.reportRows.filter((r) => r.reaPct != null);
+    return v.length
+      ? (v.reduce((s, r) => s + r.reaPct, 0) / v.length).toFixed(1) + '%'
+      : '—';
   }
 }

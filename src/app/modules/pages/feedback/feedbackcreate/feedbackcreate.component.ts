@@ -413,6 +413,7 @@ export class FeedbackcreateComponent implements OnInit {
       description: [''],
       templateId: ['', Validators.required],
       batchCode: ['', Validators.required],
+      phase:       [null], 
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
     });
@@ -563,19 +564,17 @@ export class FeedbackcreateComponent implements OnInit {
           if (!res?.data) return;
           const d = res.data;
           const batchCode = d.assignedBatches?.[0] || '';
-
           this.feedbackForm.patchValue({
             title: d.title,
             description: d.description || '',
             templateId: d.templateId,
+            phase: d.phase || null,
             batchCode,
             startDate: this.tsToDate(d.startDate),
             endDate: this.tsToDate(d.endDate),
           });
-
           if (batchCode) {
             this.onBatchSelect(batchCode);
-            // Restore saved staff assignments
             if (d.staffAssignments?.length) {
               this.selectedFaculties = d.staffAssignments.map(
                 (s: any): StaffOption => ({
@@ -590,7 +589,6 @@ export class FeedbackcreateComponent implements OnInit {
               );
             }
           }
-
           if (d.templateId) this.onTemplateSelect(d.templateId);
         },
         error: () => this.alert.error('Error loading form'),
@@ -633,6 +631,7 @@ export class FeedbackcreateComponent implements OnInit {
       title: f.title,
       description: f.description || null,
       templateId: f.templateId,
+      phase: f.phase ? String(f.phase) : null,
       staffAssignments,
       assignedBatches: [this.selectedBatchCode],
       startDate: new Date(f.startDate).getTime(),

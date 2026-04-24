@@ -137,14 +137,12 @@
 
         <form [formGroup]="feedbackForm">
             <div class="row g-3">
-
                 <!-- Title -->
                 <div class="col-md-6">
                     <formfield label="Form Title" formControlName="title" [control]="feedbackForm.get('title')"
                         placeholder="e.g. Mid-term Staff Feedback" [required]="true">
                     </formfield>
                 </div>
-
                 <!-- Template -->
                 <div class="col-md-6">
                     <selectbox label="Select Template" placeholder="Choose an active template"
@@ -157,7 +155,11 @@
                         <a routerLink="/app/feedback/template" class="ms-1">Manage templates</a>
                     </div>
                 </div>
-
+                <div class="col-md-2">
+                    <formfield label="Phase" type="number" formControlName="phase" [control]="feedbackForm.get('phase')"
+                        placeholder="e.g. 5">
+                    </formfield>
+                </div>
                 <!-- Batch — single select -->
                 <div class="col-md-6">
                     <selectbox label="Select Batch" placeholder="Choose a batch" [options]="batch_options"
@@ -168,7 +170,6 @@
                         Faculty list loads from the selected batch
                     </div>
                 </div>
-
                 <!-- Dates -->
                 <div class="col-md-3">
                     <formfield label="Start Date" type="date" formControlName="startDate"
@@ -180,12 +181,10 @@
                         [control]="feedbackForm.get('endDate')" [min]="minDate" [required]="true">
                     </formfield>
                 </div>
-
                 <!-- Faculty panel — shown once a batch is selected -->
                 <div class="col-12" *ngIf="selectedBatchCode">
                     <div class="border rounded-3 p-3"
                         [class.border-danger]="isStaffTemplate && !selectedFaculties.length">
-
                         <!-- Panel header -->
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <div>
@@ -202,52 +201,12 @@
                                     </span>
                                 </div>
                             </div>
-
-                            <!-- Action buttons -->
-                            <!-- <div class="d-flex gap-2 align-items-center">
-                                <div class="p-2 border-bottom">
-                                    <input type="text" class="form-control form-control-sm"
-                                        placeholder="Search staff..." [(ngModel)]="searchStaff">
-                                </div>
-                                <div *ngFor="let f of availableFaculties | staffSearch:searchStaff"
-                                    class="d-flex align-items-center gap-2 px-3 py-2 border-bottom dropdown-item"
-                                    style="cursor:pointer" (click)="addFaculty(f)">
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
-                                    *ngIf="availableFaculties.length" (click)="addAllFaculties()">
-                                    <i class="fa-solid fa-users me-1"></i>Add All
-                                </button>
-                                <div class="position-relative" *ngIf="availableFaculties.length">
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"
-                                        (click)="showAddDropdown = !showAddDropdown">
-                                        <i class="fa-solid fa-user-plus me-1"></i>Add Faculty
-                                        <i class="fa-solid fa-chevron-down ms-1" style="font-size:10px"></i>
-                                    </button>
-                                    <div *ngIf="showAddDropdown"
-                                        class="position-absolute end-0 mt-1 bg-white border rounded-3 shadow-sm"
-                                        style="z-index:999;min-width:260px;max-height:220px;overflow-y:auto">
-                                        <div *ngFor="let f of availableFaculties"
-                                            class="d-flex align-items-center gap-2 px-3 py-2 border-bottom"
-                                            style="cursor:pointer" (click)="addFaculty(f)">
-                                            <div class="flex-grow-1">
-                                                <div class="fw-medium small">{{ f.staffName }}</div>
-                                                <div class="text-muted" style="font-size:11px">
-                                                    <span *ngIf="f.staffCode" class="me-2">{{ f.staffCode }}</span>
-                                                    <span *ngIf="f.subjectName">{{ f.subjectName }}</span>
-                                                </div>
-                                            </div>
-                                            <i class="fa-solid fa-plus text-primary small"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> -->
                             <!-- Action buttons -->
                             <div class="d-flex gap-2 align-items-center">
                                 <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
                                     *ngIf="availableFaculties.length" (click)="addAllFaculties()">
                                     <i class="fa-solid fa-users me-1"></i>Add All
                                 </button>
-
                                 <!-- Add faculty dropdown -->
                                 <div class="position-relative">
                                     <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"
@@ -255,7 +214,6 @@
                                         <i class="fa-solid fa-user-plus me-1"></i>Add Faculty
                                         <i class="fa-solid fa-chevron-down ms-1" style="font-size:10px"></i>
                                     </button>
-
                                     <div *ngIf="showAddDropdown"
                                         class="position-absolute end-0 mt-1 bg-white border rounded-3 shadow-sm"
                                         style="z-index:999;min-width:280px;max-height:260px;overflow-y:auto">
@@ -285,14 +243,12 @@
                                 </div>
                             </div>
                         </div>
-
                         <!-- No faculty mapped -->
                         <div *ngIf="allFacultiesInBatch.length === 0"
                             class="text-center text-muted py-3 border rounded-3 border-dashed">
                             <i class="fa-solid fa-circle-info me-2"></i>
                             No faculty mapped to this batch
                         </div>
-
                         <!-- Selected faculty chips -->
                         <div *ngIf="selectedFaculties.length" class="d-flex flex-wrap gap-2">
                             <div *ngFor="let f of selectedFaculties"

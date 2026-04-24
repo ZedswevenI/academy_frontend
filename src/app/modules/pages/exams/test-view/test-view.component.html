@@ -1,6 +1,4 @@
 <div class="exam-view-container">
-
-  <!-- ===== TOP BAR ===== -->
   <div class="top-bar">
     <div class="d-flex align-items-center gap-3">
       <h4 class="fw-bold mb-0">{{ examData.examName || 'Exam' }}</h4>
@@ -16,8 +14,6 @@
         class="btn btn-outline-success btn-sm rounded-pill px-3" (click)="editExam()">
         <i class="fa-regular fa-pen-to-square me-1"></i> Edit
       </button>
-
-      <!-- More Actions Dropdown -->
       <div class="dropdown" *ngIf="!authService.assignmentRole()">
         <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 dropdown-toggle" type="button"
           data-bs-toggle="dropdown" aria-expanded="false">
@@ -67,15 +63,14 @@
       </button>
     </div>
   </div>
-
   <!-- ===== MAIN TABS ===== -->
   <div class="tab-bar">
     <button class="tab-btn" [class.active]="activeTab === 'details'" (click)="switchTab('details')">
       <i class="fa-solid fa-info-circle me-1"></i> Details
     </button>
-    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'" (click)="switchTab('results')">
+    <!-- <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'" (click)="switchTab('results')">
       <i class="fa-solid fa-chart-bar me-1"></i> Results
-    </button>
+    </button> -->
     <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'question-wise'"
       (click)="switchTab('question-wise')">
       <i class="fa-solid fa-list-ol me-1"></i> Question Wise
