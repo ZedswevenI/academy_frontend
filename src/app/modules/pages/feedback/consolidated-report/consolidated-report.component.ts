@@ -290,9 +290,7 @@ export class ConsolidatedReportComponent implements OnInit {
         : 'All Staff';
       const batches = [...new Set(this.rows.map((r) => r.batchCode))].join(
         ', ',
-      );
-
-      // Header
+      )
       bold(13);
       doc.text('CONSOLIDATED FEEDBACK REPORT', pageW / 2, 12, {
         align: 'center',
@@ -310,8 +308,6 @@ export class ConsolidatedReportComponent implements OnInit {
       doc.setDrawColor(0);
       doc.setLineWidth(0.3);
       doc.line(ml, 26, pageW - mr, 26);
-
-      // Build table head
       const head: any[][] = [
         [
           {
@@ -322,6 +318,7 @@ export class ConsolidatedReportComponent implements OnInit {
             content: 'BATCH',
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
           },
+          { content: 'PHASE', styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 } },
           {
             content: 'STRENGTH',
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
@@ -332,8 +329,6 @@ export class ConsolidatedReportComponent implements OnInit {
           },
         ],
       ];
-
-      // Add part columns to header
       const partColors: Record<string, { fill: number[]; text: number[] }> = {
         A: { fill: [219, 234, 254], text: [30, 64, 175] },
         B: { fill: [254, 249, 195], text: [146, 64, 14] },
@@ -344,7 +339,6 @@ export class ConsolidatedReportComponent implements OnInit {
         B: { fill: [255, 251, 235], text: [146, 64, 14] },
         C: { fill: [236, 253, 245], text: [6, 95, 70] },
       };
-
       this.partKeys.forEach((part) => {
         const col = partColors[part] || {
           fill: [241, 245, 249],
@@ -363,8 +357,6 @@ export class ConsolidatedReportComponent implements OnInit {
           });
         });
       });
-
-      // Add part % columns to header
       this.partKeys.forEach((part) => {
         const col = pctColors[part] || {
           fill: [241, 245, 249],
@@ -381,8 +373,6 @@ export class ConsolidatedReportComponent implements OnInit {
           },
         });
       });
-
-      // Build body
       const body: any[][] = this.rows.map((r: any) => {
         const row: any[] = [
           {
@@ -390,13 +380,13 @@ export class ConsolidatedReportComponent implements OnInit {
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 },
           },
           { content: r.batchCode, styles: { halign: 'center', fontSize: 6.5 } },
+          { content: r.phase || '—', styles: { halign: 'center', fontSize: 6.5 } },
           { content: r.strength, styles: { halign: 'center', fontSize: 6.5 } },
           {
             content: r.responseCount,
             styles: { halign: 'center', fontSize: 6.5 },
           },
         ];
-
         this.partKeys.forEach((part) => {
           const bg =
             part === 'A'
@@ -411,7 +401,6 @@ export class ConsolidatedReportComponent implements OnInit {
             });
           });
         });
-
         this.partKeys.forEach((part) => {
           const pct = r.partPct?.[part];
           const col = pctColors[part] || {
@@ -439,11 +428,8 @@ export class ConsolidatedReportComponent implements OnInit {
             },
           });
         });
-
         return row;
       });
-
-      // Summary row
       const summaryRow: any[] = [
         {
           content: 'OVERALL AVERAGE',
@@ -482,7 +468,6 @@ export class ConsolidatedReportComponent implements OnInit {
         });
       });
       body.push(summaryRow);
-
       autoTable(doc, {
         startY: 28,
         head,
@@ -520,7 +505,6 @@ export class ConsolidatedReportComponent implements OnInit {
       doc.text('Overall  ' + summaryLine, pageW / 2, finalY + 7, {
         align: 'center',
       });
-
       doc.save(
         'Feedback_Consolidated_Report_' +
           startFmt.replace(/ /g, '_') +

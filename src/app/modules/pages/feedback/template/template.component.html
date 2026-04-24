@@ -389,7 +389,7 @@
                                         <label class="form-label small fw-medium">Part</label>
                                         <select class="form-select form-select-sm rounded-3" formControlName="part">
                                             <option *ngFor="let p of part_options" [value]="p.value">
-                                                {{ p.value }} — {{ p.value === 'A' ? 'Teaching' : 'Research' }}
+                                                {{ p.value }} — {{ p.value === 'A' ? 'Teaching' : 'Non-Teaching' }}
                                             </option>
                                         </select>
                                     </div>

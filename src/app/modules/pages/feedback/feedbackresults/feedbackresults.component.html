@@ -141,238 +141,329 @@
 </div> -->
 
 <div class="ms-3 me-3 pt-1 pb-1">
-
     <div *ngIf="loading" class="text-center py-5">
         <span class="spinner-border text-primary"></span>
     </div>
-
-    <div *ngIf="!loading && results">
-        <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
-            <!-- Page header -->
-            <div class="d-flex align-items-center gap-3 mb-4">
-                <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
-                    <i class="fa-solid fa-arrow-left me-1"></i>Back
-                </button>
-                <div class="flex-grow-1">
-                    <h1 class="fw-bold mb-0" style="font-size: 22px;">
-                        <i class="fa-regular fa-chart-bar me-2"></i>{{ results.title }}
-                    </h1>
-                    <div class="text-muted small mt-1">
-                        {{ results.category }}
-                        · Batches: {{ results.assignedBatches?.join(', ') }}
-                        · {{ results.startDate | date:'dd MMM yyyy' }} → {{ results.endDate | date:'dd MMM yyyy' }}
+    <!-- Tab switcher -->
+    <div class="d-flex gap-2 mb-4">
+        <button class="btn btn-sm rounded-pill px-4" [class.btn-primary]="activeTab === 'results'"
+            [class.btn-outline-secondary]="activeTab !== 'results'" (click)="switchTab('results')">
+            <i class="fa-solid fa-chart-bar me-1"></i>Results
+        </button>
+        <button class="btn btn-sm rounded-pill px-4" [class.btn-dark]="activeTab === 'report'"
+            [class.btn-outline-secondary]="activeTab !== 'report'" (click)="switchTab('report')">
+            <i class="fa-solid fa-table-list me-1"></i>Tabular Report
+        </button>
+    </div>
+    <div *ngIf="activeTab === 'results'">
+        <div *ngIf="!loading && results">
+            <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
+                        <i class="fa-solid fa-arrow-left me-1"></i>Back
+                    </button>
+                    <div class="flex-grow-1">
+                        <h1 class="fw-bold mb-0" style="font-size: 22px;">
+                            <i class="fa-regular fa-chart-bar me-2"></i>{{ results.title }}
+                        </h1>
+                        <div class="text-muted small mt-1">
+                            {{ results.category }}
+                            · Batches: {{ results.assignedBatches?.join(', ') }}
+                            · {{ results.startDate | date:'dd MMM yyyy' }} → {{ results.endDate | date:'dd MMM yyyy' }}
+                        </div>
                     </div>
+                    <span class="badge rounded-pill px-3 py-2" [class.bg-success]="results.status === 'ACTIVE'"
+                        [class.bg-secondary]="results.status === 'CLOSED'"
+                        [class.bg-warning]="results.status === 'DRAFT'">
+                        {{ results.status }}
+                    </span>
                 </div>
-                <span class="badge rounded-pill px-3 py-2" [class.bg-success]="results.status === 'ACTIVE'"
-                    [class.bg-secondary]="results.status === 'CLOSED'" [class.bg-warning]="results.status === 'DRAFT'">
-                    {{ results.status }}
-                </span>
-                <!-- Report download — only for STAFF category -->
-                <button *ngIf="isStaffCategory" class="btn btn-sm btn-outline-danger rounded-pill"
-                    (click)="downloadReport()" [disabled]="reportLoading">
-                    <span *ngIf="reportLoading" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="fa-solid fa-file-pdf me-1" *ngIf="!reportLoading"></i>
-                    Download Report
-                </button>
-            </div>
-
-            <!-- KPI summary -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-4 col-6">
-                    <div class="p-3 border rounded-3 text-center">
-                        <div class="fw-bold" style="font-size:28px">{{ results.totalAssignedStudents }}</div>
-                        <div class="text-muted small">Total Students Assigned</div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4 col-6">
+                        <div class="p-3 border rounded-3 text-center">
+                            <div class="fw-bold" style="font-size:28px">{{ results.totalAssignedStudents }}</div>
+                            <div class="text-muted small">Total Students Assigned</div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-6">
-                    <div class="p-3 border rounded-3 text-center">
-                        <div class="fw-bold text-success" style="font-size:28px">{{ results.totalResponses }}</div>
-                        <div class="text-muted small">Responses Received</div>
+                    <div class="col-md-4 col-6">
+                        <div class="p-3 border rounded-3 text-center">
+                            <div class="fw-bold text-success" style="font-size:28px">{{ results.totalResponses }}</div>
+                            <div class="text-muted small">Responses Received</div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-6">
-                    <div class="p-3 border rounded-3 text-center">
-                        <div class="fw-bold text-primary" style="font-size:28px">{{ results.responseRate }}%</div>
-                        <div class="text-muted small">Response Rate</div>
-                        <div class="progress mt-2" style="height:6px">
-                            <div class="progress-bar bg-primary" [style.width]="results.responseRate + '%'"></div>
+                    <div class="col-md-4 col-6">
+                        <div class="p-3 border rounded-3 text-center">
+                            <div class="fw-bold text-primary" style="font-size:28px">{{ results.responseRate }}%</div>
+                            <div class="text-muted small">Response Rate</div>
+                            <div class="progress mt-2" style="height:6px">
+                                <div class="progress-bar bg-primary" [style.width]="results.responseRate + '%'"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <hr>
+                <hr>
 
-            <!-- Batch tabs -->
-            <div class="mb-3" *ngIf="batchResults.length > 1">
-                <div class="fw-semibold small text-muted mb-2">View by batch</div>
-                <div class="d-flex flex-wrap gap-2">
-                    <button *ngFor="let b of batchResults" class="btn btn-sm rounded-pill"
-                        [class.btn-primary]="activeBatch === b.batchCode"
-                        [class.btn-outline-secondary]="activeBatch !== b.batchCode"
-                        (click)="activeBatch = b.batchCode; activeStaff = b.staffResults?.[0]?.staffId || ''">
-                        {{ b.batchCode }}
-                        <span class="badge ms-1 rounded-pill" [class.bg-white]="activeBatch === b.batchCode"
-                            [class.text-primary]="activeBatch === b.batchCode"
-                            [class.bg-secondary]="activeBatch !== b.batchCode">
-                            {{ b.totalResponses }}
+                <!-- Batch tabs -->
+                <div class="mb-3" *ngIf="batchResults.length > 1">
+                    <div class="fw-semibold small text-muted mb-2">View by batch</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button *ngFor="let b of batchResults" class="btn btn-sm rounded-pill"
+                            [class.btn-primary]="activeBatch === b.batchCode"
+                            [class.btn-outline-secondary]="activeBatch !== b.batchCode"
+                            (click)="activeBatch = b.batchCode; activeStaff = b.staffResults?.[0]?.staffId || ''">
+                            {{ b.batchCode }}
+                            <span class="badge ms-1 rounded-pill" [class.bg-white]="activeBatch === b.batchCode"
+                                [class.text-primary]="activeBatch === b.batchCode"
+                                [class.bg-secondary]="activeBatch !== b.batchCode">
+                                {{ b.totalResponses }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Staff tabs — only for STAFF category -->
+                <div class="mb-4" *ngIf="isStaffCategory && activeStaffList.length">
+                    <div class="fw-semibold small text-muted mb-2">View by staff member</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button *ngFor="let s of activeStaffList" class="btn btn-sm rounded-pill"
+                            [class.btn-dark]="activeStaff === s.staffId"
+                            [class.btn-outline-secondary]="activeStaff !== s.staffId" (click)="activeStaff = s.staffId">
+                            <span class="fw-semibold">{{ s.staffCode || s.staffId }}</span>
+                            <span class="text-muted ms-1" style="font-size:11px" *ngIf="s.staffName">{{ s.staffName
+                                }}</span>
+                            <span class="badge ms-1 rounded-pill" [class.bg-white]="activeStaff === s.staffId"
+                                [class.text-dark]="activeStaff === s.staffId"
+                                [class.bg-secondary]="activeStaff !== s.staffId">
+                                {{ s.responseCount }}
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Active staff summary row -->
+                    <div *ngIf="activeStaffResult" class="d-flex flex-wrap gap-2 mt-2">
+                        <span *ngIf="activeStaffResult.subjectName"
+                            class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill"
+                            style="font-size:11px">
+                            <i class="fa-solid fa-book me-1"></i>{{ activeStaffResult.subjectName }}
                         </span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Staff tabs — only for STAFF category -->
-            <div class="mb-4" *ngIf="isStaffCategory && activeStaffList.length">
-                <div class="fw-semibold small text-muted mb-2">View by staff member</div>
-                <div class="d-flex flex-wrap gap-2">
-                    <button *ngFor="let s of activeStaffList" class="btn btn-sm rounded-pill"
-                        [class.btn-dark]="activeStaff === s.staffId"
-                        [class.btn-outline-secondary]="activeStaff !== s.staffId" (click)="activeStaff = s.staffId">
-                        <span class="fw-semibold">{{ s.staffCode || s.staffId }}</span>
-                        <span class="text-muted ms-1" style="font-size:11px" *ngIf="s.staffName">{{ s.staffName
-                            }}</span>
-                        <span class="badge ms-1 rounded-pill" [class.bg-white]="activeStaff === s.staffId"
-                            [class.text-dark]="activeStaff === s.staffId"
-                            [class.bg-secondary]="activeStaff !== s.staffId">
-                            {{ s.responseCount }}
+                        <span
+                            class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill"
+                            style="font-size:11px" *ngIf="getTeaPct() !== null">
+                            TEA% {{ getTeaPct() | number:'1.1-1' }}%
                         </span>
-                    </button>
+                        <span
+                            class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill"
+                            style="font-size:11px" *ngIf="getReaPct() !== null">
+                            REA% {{ getReaPct() | number:'1.1-1' }}%
+                        </span>
+                    </div>
                 </div>
 
-                <!-- Active staff summary row -->
-                <div *ngIf="activeStaffResult" class="d-flex flex-wrap gap-2 mt-2">
-                    <span *ngIf="activeStaffResult.subjectName"
-                        class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill"
-                        style="font-size:11px">
-                        <i class="fa-solid fa-book me-1"></i>{{ activeStaffResult.subjectName }}
-                    </span>
-                    <span
-                        class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill"
-                        style="font-size:11px" *ngIf="getTeaPct() !== null">
-                        TEA% {{ getTeaPct() | number:'1.1-1' }}%
-                    </span>
-                    <span
-                        class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill"
-                        style="font-size:11px" *ngIf="getReaPct() !== null">
-                        REA% {{ getReaPct() | number:'1.1-1' }}%
-                    </span>
-                </div>
-            </div>
+                <hr>
 
-            <hr>
+                <!-- Question-by-question results -->
+                <div class="d-flex flex-column gap-4 mt-4" *ngIf="questionSummary.length">
+                    <div *ngFor="let q of questionSummary; let i = index" class="p-4 border rounded-3"
+                        [class.border-success]="q.part === 'A'" [class.border-warning]="q.part === 'B'">
 
-            <!-- Question-by-question results -->
-            <div class="d-flex flex-column gap-4 mt-4" *ngIf="questionSummary.length">
-                <div *ngFor="let q of questionSummary; let i = index" class="p-4 border rounded-3"
-                    [class.border-success]="q.part === 'A'" [class.border-warning]="q.part === 'B'">
-
-                    <!-- Question header -->
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="flex-grow-1">
-                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                <div class="text-muted small">Question {{ i + 1 }}</div>
-                                <!-- Part badge -->
-                                <span class="badge rounded-pill" [class.bg-success]="q.part === 'A'"
-                                    [class.bg-warning]="q.part === 'B'" [class.text-dark]="q.part === 'B'"
-                                    [class.bg-secondary]="!q.part" style="font-size:10px">
-                                    Part {{ q.part || '?' }}
+                        <!-- Question header -->
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                    <div class="text-muted small">Question {{ i + 1 }}</div>
+                                    <!-- Part badge -->
+                                    <span class="badge rounded-pill" [class.bg-success]="q.part === 'A'"
+                                        [class.bg-warning]="q.part === 'B'" [class.text-dark]="q.part === 'B'"
+                                        [class.bg-secondary]="!q.part" style="font-size:10px">
+                                        Part {{ q.part || '?' }}
+                                    </span>
+                                    <!-- Subject badge -->
+                                    <span *ngIf="q.isSubjectBased"
+                                        class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
+                                        style="font-size:11px">
+                                        <i class="fa-solid fa-book-open me-1"></i>{{ q.subjectName }}
+                                    </span>
+                                    <span *ngIf="q.staffName && q.isSubjectBased"
+                                        class="badge bg-success bg-opacity-10 text-success rounded-pill"
+                                        style="font-size:11px">
+                                        <i class="fa-solid fa-chalkboard-teacher me-1"></i>{{ q.staffName }}
+                                    </span>
+                                </div>
+                                <div class="fw-semibold">{{ q.fieldText }}</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-3">
+                                <span class="badge bg-secondary rounded-pill">{{ q.fieldType }}</span>
+                                <span *ngIf="q.fieldType === 'score' && q.avgScore != null"
+                                    class="badge rounded-pill fw-bold px-3"
+                                    [class.bg-success]="q.avgScore >= (q.maxScore * 0.75)"
+                                    [class.bg-warning]="q.avgScore >= (q.maxScore * 0.5) && q.avgScore < (q.maxScore * 0.75)"
+                                    [class.bg-danger]="q.avgScore < (q.maxScore * 0.5)"
+                                    [class.text-dark]="q.avgScore >= (q.maxScore * 0.5) && q.avgScore < (q.maxScore * 0.75)">
+                                    {{ q.avgScore | number:'1.2-2' }} / {{ q.maxScore }}
                                 </span>
-                                <!-- Subject badge -->
-                                <span *ngIf="q.isSubjectBased"
-                                    class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
-                                    style="font-size:11px">
-                                    <i class="fa-solid fa-book-open me-1"></i>{{ q.subjectName }}
-                                </span>
-                                <span *ngIf="q.staffName && q.isSubjectBased"
-                                    class="badge bg-success bg-opacity-10 text-success rounded-pill"
-                                    style="font-size:11px">
-                                    <i class="fa-solid fa-chalkboard-teacher me-1"></i>{{ q.staffName }}
+                                <span class="badge bg-light text-dark border rounded-pill">
+                                    {{ q.totalAnswered }} answered
                                 </span>
                             </div>
-                            <div class="fw-semibold">{{ q.fieldText }}</div>
                         </div>
-                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-3">
-                            <span class="badge bg-secondary rounded-pill">{{ q.fieldType }}</span>
-                            <span *ngIf="q.fieldType === 'score' && q.avgScore != null"
-                                class="badge rounded-pill fw-bold px-3"
-                                [class.bg-success]="q.avgScore >= (q.maxScore * 0.75)"
-                                [class.bg-warning]="q.avgScore >= (q.maxScore * 0.5) && q.avgScore < (q.maxScore * 0.75)"
-                                [class.bg-danger]="q.avgScore < (q.maxScore * 0.5)"
-                                [class.text-dark]="q.avgScore >= (q.maxScore * 0.5) && q.avgScore < (q.maxScore * 0.75)">
-                                {{ q.avgScore | number:'1.2-2' }} / {{ q.maxScore }}
-                            </span>
-                            <span class="badge bg-light text-dark border rounded-pill">
-                                {{ q.totalAnswered }} answered
-                            </span>
-                        </div>
-                    </div>
 
-                    <!-- Score type: horizontal progress bar -->
-                    <div *ngIf="q.fieldType === 'score' && q.avgScore != null">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="flex-grow-1">
-                                <div class="progress" style="height:10px;border-radius:99px">
-                                    <div class="progress-bar" [class.bg-success]="q.avgScore >= (q.maxScore * 0.75)"
-                                        [class.bg-warning]="q.avgScore >= (q.maxScore * 0.5) && q.avgScore < (q.maxScore * 0.75)"
-                                        [class.bg-danger]="q.avgScore < (q.maxScore * 0.5)"
-                                        [style.width]="((q.avgScore / q.maxScore) * 100) + '%'"
-                                        style="border-radius:99px;transition:width .6s ease">
+                        <!-- Score type: horizontal progress bar -->
+                        <div *ngIf="q.fieldType === 'score' && q.avgScore != null">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="flex-grow-1">
+                                    <div class="progress" style="height:10px;border-radius:99px">
+                                        <div class="progress-bar" [class.bg-success]="q.avgScore >= (q.maxScore * 0.75)"
+                                            [class.bg-warning]="q.avgScore >= (q.maxScore * 0.5) && q.avgScore < (q.maxScore * 0.75)"
+                                            [class.bg-danger]="q.avgScore < (q.maxScore * 0.5)"
+                                            [style.width]="((q.avgScore / q.maxScore) * 100) + '%'"
+                                            style="border-radius:99px;transition:width .6s ease">
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="fw-semibold text-muted small" style="width:80px;text-align:right">
+                                    {{ ((q.avgScore / q.maxScore) * 100) | number:'1.1-1' }}%
+                                </span>
+                            </div>
+                            <div class="text-muted mt-1" style="font-size:11px">
+                                Avg: {{ q.avgScore | number:'1.2-2' }} out of {{ q.maxScore }}
+                                · {{ q.totalAnswered }} response(s)
+                            </div>
+                        </div>
+
+                        <!-- Radio / Checkbox: bar chart -->
+                        <div *ngIf="q.fieldType !== 'text' && q.fieldType !== 'score'" class="d-flex flex-column gap-2">
+                            <div *ngFor="let opt of getOptionEntries(q.optionCounts)"
+                                class="d-flex align-items-center gap-3">
+                                <div style="width:160px;font-size:13px" class="text-truncate flex-shrink-0"
+                                    [title]="opt.key">{{ opt.key }}</div>
+                                <div class="flex-grow-1 position-relative" style="height:28px">
+                                    <div class="rounded-2 h-100"
+                                        style="background:var(--bs-primary-bg-subtle);transition:width .4s ease"
+                                        [style.width]="getBarWidth(opt.value, getMaxCount(q.optionCounts))">
+                                    </div>
+                                    <div class="position-absolute top-0 start-0 h-100 d-flex align-items-center px-2"
+                                        style="font-size:12px;font-weight:500">
+                                        {{ opt.value }}
+                                        <span class="text-muted ms-1">({{ q.optionPercentages[opt.key] }}%)</span>
                                     </div>
                                 </div>
                             </div>
-                            <span class="fw-semibold text-muted small" style="width:80px;text-align:right">
-                                {{ ((q.avgScore / q.maxScore) * 100) | number:'1.1-1' }}%
-                            </span>
                         </div>
-                        <div class="text-muted mt-1" style="font-size:11px">
-                            Avg: {{ q.avgScore | number:'1.2-2' }} out of {{ q.maxScore }}
-                            · {{ q.totalAnswered }} response(s)
-                        </div>
-                    </div>
 
-                    <!-- Radio / Checkbox: bar chart -->
-                    <div *ngIf="q.fieldType !== 'text' && q.fieldType !== 'score'" class="d-flex flex-column gap-2">
-                        <div *ngFor="let opt of getOptionEntries(q.optionCounts)"
-                            class="d-flex align-items-center gap-3">
-                            <div style="width:160px;font-size:13px" class="text-truncate flex-shrink-0"
-                                [title]="opt.key">{{ opt.key }}</div>
-                            <div class="flex-grow-1 position-relative" style="height:28px">
-                                <div class="rounded-2 h-100"
-                                    style="background:var(--bs-primary-bg-subtle);transition:width .4s ease"
-                                    [style.width]="getBarWidth(opt.value, getMaxCount(q.optionCounts))">
-                                </div>
-                                <div class="position-absolute top-0 start-0 h-100 d-flex align-items-center px-2"
-                                    style="font-size:12px;font-weight:500">
-                                    {{ opt.value }}
-                                    <span class="text-muted ms-1">({{ q.optionPercentages[opt.key] }}%)</span>
+                        <!-- Text answers -->
+                        <div *ngIf="q.fieldType === 'text'">
+                            <div *ngIf="!q.textAnswers?.length" class="text-muted small">No responses yet</div>
+                            <div *ngIf="q.textAnswers?.length" class="d-flex flex-column gap-2">
+                                <div *ngFor="let ans of q.textAnswers"
+                                    class="p-2 bg-light rounded-3 small border-start border-3"
+                                    [class.border-success]="q.part === 'A'" [class.border-warning]="q.part === 'B'"
+                                    [class.border-secondary]="!q.part">
+                                    {{ ans }}
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Text answers -->
-                    <div *ngIf="q.fieldType === 'text'">
-                        <div *ngIf="!q.textAnswers?.length" class="text-muted small">No responses yet</div>
-                        <div *ngIf="q.textAnswers?.length" class="d-flex flex-column gap-2">
-                            <div *ngFor="let ans of q.textAnswers"
-                                class="p-2 bg-light rounded-3 small border-start border-3"
-                                [class.border-success]="q.part === 'A'" [class.border-warning]="q.part === 'B'"
-                                [class.border-secondary]="!q.part">
-                                {{ ans }}
-                            </div>
-                        </div>
                     </div>
-
                 </div>
-            </div>
 
-            <div *ngIf="!questionSummary.length" class="text-center text-muted py-5 border rounded-3 mt-3">
-                <i class="fa-solid fa-inbox fa-2x mb-2 opacity-25 d-block"></i>
-                No results yet for this selection
-            </div>
+                <div *ngIf="!questionSummary.length" class="text-center text-muted py-5 border rounded-3 mt-3">
+                    <i class="fa-solid fa-inbox fa-2x mb-2 opacity-25 d-block"></i>
+                    No results yet for this selection
+                </div>
 
+            </div>
         </div>
     </div>
-
+    <!-- REPORT TAB -->
+    <div *ngIf="activeTab === 'report'">
+        <div *ngIf="reportLoading" class="text-center py-4">
+            <span class="spinner-border spinner-border-sm text-primary"></span>
+            <span class="text-muted small ms-2">Loading report...</span>
+        </div>
+        <div *ngIf="!reportLoading && !reportRows.length && reportSummary" class="text-center py-4 text-muted">
+            No report data available
+        </div>
+        <ng-container *ngIf="!reportLoading && reportRows.length">
+            <!-- Export button -->
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-sm btn-danger rounded-pill px-4" (click)="downloadReport()"
+                    [disabled]="reportLoading">
+                    <i class="fa-solid fa-file-pdf me-1"></i>Export PDF
+                </button>
+            </div>
+            <!-- Report table -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle" style="font-size:12px">
+                    <thead>
+                        <tr class="text-center">
+                            <th class="table-dark text-start">Staff</th>
+                            <th class="table-dark">Batch</th>
+                            <th class="table-dark">Strength</th>
+                            <th class="table-dark">Responses</th>
+                            <th *ngFor="let h of partAHeaders" class="table-primary text-primary"
+                                style="font-size:11px;min-width:36px" [title]="h.fieldText">
+                                {{ h.label }}
+                            </th>
+                            <th *ngFor="let h of partBHeaders" class="table-warning text-warning-emphasis"
+                                style="font-size:11px;min-width:36px" [title]="h.fieldText">
+                                {{ h.label }}
+                            </th>
+                            <th class="table-success text-success">TEA%</th>
+                            <th class="table-warning text-warning-emphasis">REA%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let r of reportRows">
+                            <td>
+                                <div class="fw-semibold">{{ r.staffCode || '—' }}</div>
+                                <div class="text-muted" style="font-size:10px" *ngIf="r.staffName">
+                                    {{ r.staffName }}
+                                </div>
+                                <div *ngIf="r.subjectName"
+                                    class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
+                                    style="font-size:9px">{{ r.subjectName }}</div>
+                            </td>
+                            <td class="text-center">{{ r.batchCode }}</td>
+                            <td class="text-center">{{ r.strength }}</td>
+                            <td class="text-center">{{ r.responseCount }}</td>
+                            <td *ngFor="let v of r.partAScores" class="text-center" style="background:#eff6ff">
+                                <span [class]="scoreClass(v)">
+                                    {{ v != null ? v.toFixed(2) : '—' }}
+                                </span>
+                            </td>
+                            <td *ngFor="let v of r.partBScores" class="text-center" style="background:#fffbeb">
+                                <span [class]="scoreClass(v)">
+                                    {{ v != null ? v.toFixed(2) : '—' }}
+                                </span>
+                            </td>
+                            <td class="text-center" style="background:#f0fdf4">
+                                <span [class]="pctClass(r.teaPct)">
+                                    {{ r.teaPct != null ? (r.teaPct.toFixed(1) + '%') : '—' }}
+                                </span>
+                            </td>
+                            <td class="text-center" style="background:#fffbeb">
+                                <span [class]="pctClass(r.reaPct)">
+                                    {{ r.reaPct != null ? (r.reaPct.toFixed(1) + '%') : '—' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-bold text-center">
+                            <td colspan="4" class="text-end pe-3">Overall Average</td>
+                            <td *ngFor="let h of partAHeaders" style="background:#eff6ff"></td>
+                            <td *ngFor="let h of partBHeaders" style="background:#fffbeb"></td>
+                            <td class="text-success" style="background:#f0fdf4">
+                                {{ getAvgTea() }}
+                            </td>
+                            <td class="text-warning-emphasis" style="background:#fffbeb">
+                                {{ getAvgRea() }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </ng-container>
+    </div>
 </div>
