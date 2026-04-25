@@ -1,0 +1,123 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size:28px;">
+                <i class="fa-solid fa-chart-line me-2"></i>Performance
+            </h1>
+            <div class="d-flex gap-2">
+                <button *ngIf="canSync && selectedBatchId" class="btn btn-outline-success rounded-pill px-3"
+                    [disabled]="syncing" (click)="syncBatch()">
+                    <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
+                    {{ syncing ? 'Syncing...' : 'Sync Batch' }}
+                </button>
+                <button *ngIf="selectedBatchId" class="btn btn-outline-primary rounded-pill px-3"
+                    (click)="goToReport()">
+                    <i class="fa-solid fa-chart-bar me-1"></i>Batch Report
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <selectbox label="Batch" placeholder="Select Batch" [options]="batch_options"
+                    [(ngModel)]="selectedBatchId" (ngModelChange)="onBatchChange($event)">
+                </selectbox>
+            </div>
+            <div class="col-md-3">
+                <selectbox label="Academic Year" placeholder="Select Year" [options]="year_options"
+                    [(ngModel)]="selectedYear">
+                </selectbox>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn submitbutton px-4 w-100" style="border-radius:30px;"
+                    [disabled]="!selectedBatchId || !selectedYear || loading" (click)="onApply()">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    {{ loading ? 'Loading...' : 'Apply' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="mt-2">
+            <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+                [totalRecords]="totalRecords" searchPlaceholder="Search student name or admission no..."
+                (requestData)="loadTableData($event)">
+            </custom-table>
+        </div>
+
+    </div>
+</div>
+
+<!-- ══ Override Modal ══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="overrideModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4" *ngIf="overrideStudent">
+
+            <div class="modal-header border-0 px-4 pt-4 pb-2">
+                <div>
+                    <h5 class="fw-bold mb-0">Override Assignment</h5>
+                    <div class="text-muted small">{{ overrideStudent.studentName }} · {{ overrideStudent.admissionNo }}
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body px-4 pb-4">
+
+                <!-- Subject select -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Subject</label>
+                    <select class="form-select rounded-3" [(ngModel)]="overrideForm.subjectId"
+                        (ngModelChange)="onOverrideSubjectChange()">
+                        <option value="">— Select subject —</option>
+                        <option *ngFor="let s of overrideSubjects" [value]="s.subjectId">
+                            {{ s.subjectName || s.subjectId }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small">CGPA (0–10)</label>
+                        <input type="number" class="form-control rounded-3" [(ngModel)]="overrideForm.cgpa" min="0"
+                            max="10" step="0.01" placeholder="e.g. 8.5">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small">Attempts</label>
+                        <input type="number" class="form-control rounded-3" [(ngModel)]="overrideForm.attempts" min="0"
+                            step="1" placeholder="e.g. 10">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small">Marks Secured</label>
+                        <input type="number" class="form-control rounded-3" [(ngModel)]="overrideForm.marksSecured"
+                            min="0" placeholder="e.g. 850">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small">Total Marks</label>
+                        <input type="number" class="form-control rounded-3" [(ngModel)]="overrideForm.marksTotal"
+                            min="0" placeholder="e.g. 1000">
+                    </div>
+                </div>
+
+                <div class="alert alert-warning rounded-3 mt-3 py-2 px-3 small mb-0">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    Overridden data will not be replaced by auto-sync.
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 px-4 pb-4 pt-0 gap-2">
+                <button class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn submitbutton rounded-pill px-4"
+                    [disabled]="overrideSaving || !overrideForm.subjectId" (click)="saveOverride()">
+                    <span *ngIf="overrideSaving" class="spinner-border spinner-border-sm me-1"></span>
+                    {{ overrideSaving ? 'Saving...' : 'Save Override' }}
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
