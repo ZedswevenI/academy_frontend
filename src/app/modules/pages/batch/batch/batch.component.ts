@@ -89,13 +89,37 @@ export class BatchComponent implements OnInit {
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       dropdown: [
-        { text: 'Edit Batch', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.openEdit(row) },
-        { text: 'Assign Students', icon: 'fa-solid fa-user-plus', callback: (row: any) => this.openAssignStudents(row) },
-        { text: 'Assign Staff', icon: 'fa-solid fa-users-gear', callback: (row: any) => this.openStaffMap(row) },
-        { text: 'Promote Batch', icon: 'fa-solid fa-arrow-up-right-dots', callback: (row: any) => this.openPromote(row) },
-        { text: 'Log Late Entry', icon: 'fa-solid fa-clock-rotate-left', callback: (row: any) => this.openLateEntry(row) },
-        { text: 'Add Special Class', icon: 'fa-solid fa-calendar-plus', callback: (row: any) => this.openSpecialClass(row) },
-      ]
+        {
+          text: 'Edit Batch',
+          icon: 'fa-regular fa-pen-to-square',
+          callback: (row: any) => this.openEdit(row),
+        },
+        {
+          text: 'Assign Students',
+          icon: 'fa-solid fa-user-plus',
+          callback: (row: any) => this.openAssignStudents(row),
+        },
+        {
+          text: 'Assign Staff',
+          icon: 'fa-solid fa-users-gear',
+          callback: (row: any) => this.openStaffMap(row),
+        },
+        {
+          text: 'Promote Batch',
+          icon: 'fa-solid fa-arrow-up-right-dots',
+          callback: (row: any) => this.openPromote(row),
+        },
+        {
+          text: 'Log Late Entry',
+          icon: 'fa-solid fa-clock-rotate-left',
+          callback: (row: any) => this.openLateEntry(row),
+        },
+        {
+          text: 'Add Special Class',
+          icon: 'fa-solid fa-calendar-plus',
+          callback: (row: any) => this.openSpecialClass(row),
+        },
+      ],
     },
   ];
 
@@ -1031,12 +1055,24 @@ export class BatchComponent implements OnInit {
     });
   }
 
-  // ✅ FIX: filter staff by subject correctly using staffId string comparison
   onStaffDraftSubjectChanged(subjectId: any) {
+    // const sid = safeTrim(subjectId);
+    // const filtered = sid
+    //   ? this.staffListFull.filter((st: any) => safeTrim(st?.subject) === sid)
+    //   : this.staffListFull;
     const sid = safeTrim(subjectId);
-    // Show all TEACHING staff when no subject selected; otherwise filter by subject
     const filtered = sid
-      ? this.staffListFull.filter((st: any) => safeTrim(st?.subject) === sid)
+      ? this.staffListFull.filter((st: any) => {
+          const subjects = Array.isArray(st?.subject)
+            ? st.subject
+            : st?.subject
+              ? [st.subject]
+              : [];
+          return subjects.some((s: any) => {
+            const id = safeTrim(String(s?._id || s));
+            return id === sid;
+          });
+        })
       : this.staffListFull;
     this.staffOptionsFiltered = [
       { label: 'Select', value: '' },
@@ -1137,7 +1173,7 @@ export class BatchComponent implements OnInit {
       },
     });
   }
-  
+
   // ── LATE ENTRY ────────────────────────────────────────────────────────────────
   openLateEntry(row: any) {
     const b = row?._raw || row;
