@@ -1,5 +1,3 @@
-<!-- view-batch.component.html -->
-
 <!-- ── PAGE HEADER ─────────────────────────────────────────────────────────── -->
 <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
     <div>
@@ -122,6 +120,10 @@
             <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-primary rounded-pill"
                 (click)="openOffcanvas('assign')">
                 <i class="fa-solid fa-user-plus me-1"></i> Assign Students
+            </button>
+            <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-success rounded-pill"
+                (click)="openOffcanvas('import')">
+                <i class="fa-solid fa-file-import me-1"></i> Import from Excel
             </button>
             <button *ngIf="activeTab === 'faculty'" class="btn btn-sm btn-outline-primary rounded-pill"
                 (click)="openOffcanvas('staff')">
@@ -419,9 +421,12 @@
 <!-- ═══════════════════════════════════════════════════════════════
      OFFCANVAS — Edit / Staff Map / Assign Students / Shuffle
      ════════════════════════════════════════════════════════════ -->
-<div class="offcanvas-backdrop fade show" *ngIf="showOffcanvas" (click)="closeOffcanvas()"></div>
-<div class="offcanvas offcanvas-end show" style="width:480px" tabindex="-1" *ngIf="showOffcanvas">
-
+<!-- <div class="offcanvas-backdrop fade show" *ngIf="showOffcanvas" (click)="closeOffcanvas()"></div> -->
+<div class="offcanvas-backdrop fade show" *ngIf="showOffcanvas" (click)="closeOffcanvas()" style="top:60px;">
+</div>
+<!-- <div class="offcanvas offcanvas-end show" style="width:480px" tabindex="-1" *ngIf="showOffcanvas"> -->
+<div class="offcanvas offcanvas-end show" style="width:480px; top:60px; height:calc(100vh - 60px);" tabindex="-1"
+    *ngIf="showOffcanvas">
     <!-- HEADER -->
     <div class="offcanvas-header border-bottom">
         <div>
@@ -433,6 +438,9 @@
                     <span *ngSwitchCase="'shuffle'"><i class="fa-solid fa-shuffle me-1"></i> Shuffle Students</span>
                     <span *ngSwitchCase="'classTeacher'"><i class="fa-solid fa-user-tie me-1"></i> Assign Class
                         Teacher</span>
+                    <span *ngSwitchCase="'import'">
+                        <i class="fa-solid fa-file-import me-1"></i> Import Students from Excel
+                    </span>
                 </ng-container>
             </h6>
             <div class="text-muted small">{{ batch?.batchName }} ({{ batch?.batchCode }})</div>
@@ -442,7 +450,6 @@
 
     <!-- BODY -->
     <div class="offcanvas-body overflow-auto">
-
         <!-- ── EDIT MODE ──────────────────────────────────────────────────────── -->
         <ng-container *ngIf="offcanvasMode === 'edit'">
             <form [formGroup]="editForm" class="row g-3">
@@ -610,6 +617,110 @@
                 <div class="form-text">Section label for this batch (e.g. Section A)</div>
             </div>
         </ng-container>
+
+        <ng-container *ngIf="offcanvasMode === 'import'">
+            <!-- Instructions -->
+            <div class="alert alert-light border-0 small mb-3">
+                <i class="fa-solid fa-circle-info me-1 text-primary"></i>
+                Upload an Excel file with a column containing <strong>Registration Numbers</strong>
+                or <strong>Admission Numbers</strong>. Only students who are eligible
+                (same program, center, academic year, and not yet in a batch) will be matched.
+            </div>
+            <!-- Add this after the form-text div inside the file upload section -->
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="downloadSampleExcel()">
+                    <i class="fa-solid fa-download me-1"></i> Download Sample Excel
+                </button>
+                <span class="text-muted" style="font-size:11px;">
+                    Column header must be: <code>registrationNumber</code>
+                </span>
+            </div>
+            <!-- File upload -->
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Upload Excel / CSV</label>
+                <input type="file" class="form-control form-control-sm" accept=".xlsx,.xls,.csv"
+                    (change)="onImportFileSelected($event)" />
+                <div class="form-text">Supported: .xlsx, .xls, .csv</div>
+            </div>
+            <!-- Loading eligible students -->
+            <div *ngIf="importLoading" class="text-center py-3 text-muted small">
+                <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading eligible students...
+            </div>
+            <!-- Results — only shown after file is parsed -->
+            <div *ngIf="!importLoading && (importRows.length || importUnmatched.length)">
+                <!-- Summary chips -->
+                <div class="d-flex gap-2 mb-3 flex-wrap">
+                    <span class="badge rounded-pill px-3 py-2"
+                        style="background:#dcfce7; color:#166534; font-size:13px;">
+                        <i class="fa-solid fa-circle-check me-1"></i>
+                        {{ importRows.length }} matched
+                    </span>
+                    <span *ngIf="importUnmatched.length" class="badge rounded-pill px-3 py-2"
+                        style="background:#fee2e2; color:#991b1b; font-size:13px;">
+                        <i class="fa-solid fa-circle-xmark me-1"></i>
+                        {{ importUnmatched.length }} not found
+                    </span>
+                </div>
+                <!-- Matched students table -->
+                <div *ngIf="importRows.length" class="mb-3">
+                    <div class="fw-semibold small mb-2 text-success">
+                        <i class="fa-solid fa-circle-check me-1"></i>Matched Students
+                    </div>
+                    <div class="border rounded-3 overflow-hidden" style="max-height:280px; overflow-y:auto;">
+                        <table class="table table-sm align-middle mb-0" style="font-size:13px;">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Excel Value</th>
+                                    <th>Name</th>
+                                    <th>Enrollment No</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let r of importRows; let i = index">
+                                    <td class="text-muted">{{ i + 1 }}</td>
+                                    <td class="fw-semibold">{{ r.excelValue }}</td>
+                                    <td>{{ r.studentName }}</td>
+                                    <td class="text-muted">{{ r.admissionNo }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Unmatched rows -->
+                <div *ngIf="importUnmatched.length">
+                    <div class="fw-semibold small mb-2 text-danger">
+                        <i class="fa-solid fa-circle-xmark me-1"></i>
+                        Not Found / Not Eligible ({{ importUnmatched.length }})
+                    </div>
+                    <div class="border rounded-3 overflow-hidden"
+                        style="max-height:160px; overflow-y:auto; background:#fef2f2;">
+                        <table class="table table-sm align-middle mb-0" style="font-size:12px;">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Excel Value</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let r of importUnmatched; let i = index">
+                                    <td class="text-muted">{{ i + 1 }}</td>
+                                    <td class="text-danger fw-semibold">{{ r.excelValue }}</td>
+                                    <td class="text-muted small">Not eligible or already in a batch</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- Empty state before file upload -->
+            <div *ngIf="!importLoading && !importRows.length && !importUnmatched.length && !importFileName"
+                class="text-center py-5 text-muted">
+                <i class="fa-solid fa-file-excel fa-2x mb-2 d-block opacity-25"></i>
+                <div class="small">Upload an Excel file to begin matching</div>
+            </div>
+        </ng-container>
     </div>
 
     <!-- FOOTER -->
@@ -626,6 +737,12 @@
         <button *ngIf="offcanvasMode === 'assign'" class="btn btn-sm btn-primary" (click)="assignStudents()"
             [disabled]="loading || !selectedStudentIds.size">
             <i class="fa-solid fa-user-plus me-1"></i> Assign
+        </button>
+        <button *ngIf="offcanvasMode === 'import'" class="btn btn-sm btn-success" (click)="submitImport()"
+            [disabled]="loading || !importRows.length">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+            <i class="fa-solid fa-user-plus me-1" *ngIf="!loading"></i>
+            Assign {{ importRows.length }} Student{{ importRows.length !== 1 ? 's' : '' }}
         </button>
         <button *ngIf="offcanvasMode === 'shuffle'" class="btn btn-sm btn-warning" (click)="saveShuffleBatch()"
             [disabled]="loading || !shuffleSelectedCount">
@@ -760,53 +877,6 @@
         </div>
     </div>
 </div>
-<!-- <div class="modal fade show d-block" tabindex="-1" *ngIf="showPromoteModal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h6 class="modal-title fw-semibold">
-                    <i class="fa-solid fa-arrow-up-right-dots me-1 text-primary"></i> Promote Batch
-                </h6>
-                <button type="button" class="btn-close" (click)="closePromoteModal()"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning border-0 small mb-3">
-                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
-                    This advances the batch to the <b>next Academic Year</b> and increments the Class No. All assigned
-                    students remain.
-                </div>
-                <div class="border rounded-3 p-3 bg-light">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="text-muted small">Batch</div>
-                            <div class="fw-semibold">{{ batch?.batchName }}</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-muted small">Current AY</div>
-                            <div class="fw-semibold">{{ batch?.academicYear }}</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-muted small">Year No</div>
-                            <div class="fw-semibold">Yr {{ batch?.yearNo }} → Yr {{ (batch?.yearNo || 0) + 1 }}</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-muted small">Class No</div>
-                            <div class="fw-semibold">Cls {{ batch?.classNo }} → Cls {{ (batch?.classNo || 0) + 1 }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closePromoteModal()">Cancel</button>
-                <button class="btn btn-sm btn-primary" (click)="confirmPromote()" [disabled]="loading">
-                    <i class="fa-solid fa-arrow-up-right-dots me-1"></i> Confirm Promote
-                </button>
-            </div>
-        </div>
-    </div>
-</div> -->
-
 <!-- ═══════════════════════════════════════════════════════════════
      LATE ENTRY MODAL
      ════════════════════════════════════════════════════════════ -->

@@ -463,6 +463,12 @@ export const MENU_ITEMS: MenuItem[] = [
         roles: ['L1']
       },
       {
+        label: 'Subject',
+        icon: 'fa-solid fa-book',
+        route: '/app/org-master/subject',
+        roles: ['L1']
+      },
+      {
         label: 'Topic',
         icon: 'fa-solid fa-book-open',
         route: '/app/org-master/topics',
@@ -492,18 +498,6 @@ export const MENU_ITEMS: MenuItem[] = [
         route: '/app/org-master/users',
         roles: ['L1']
       }
-      // {
-      //   label: 'CGPA Config',
-      //   icon: 'fa-solid fa-cogs',
-      //   route: '/app/org-master/cgpa',
-      //   roles: ['L1']
-      // },
-      // {
-      //   label: 'Exam Config',
-      //   icon: 'fa-solid fa-sliders-h',
-      //   route: '/app/org-master/exam',
-      //   roles: ['L1']
-      // }
     ]
   }
 ];

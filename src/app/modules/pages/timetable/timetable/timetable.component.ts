@@ -2067,9 +2067,26 @@ export class TimetableComponent implements OnInit, OnDestroy {
   private getStaffFromCsv(value: string) {
     return this.staffByKey.get(safeTrim(value).toLowerCase()) || null;
   }
-  private getSubjectFromStaff(staff: any) {
-    const subId = safeTrim(staff?.subject);
-    return subId ? this.subjectById.get(subId) || null : null;
+
+  // private getSubjectFromStaff(staff: any) {
+  //   const subId = safeTrim(staff?.subject);
+  //   return subId ? this.subjectById.get(subId) || null : null;
+  // }
+
+  private getSubjectFromStaff(staff: any): any {
+    const subjects = Array.isArray(staff?.subject)
+      ? staff.subject
+      : staff?.subject
+        ? [staff.subject]
+        : [];
+    for (const s of subjects) {
+      const id = safeTrim(s?._id || s);
+      if (id) {
+        const found = this.subjectById.get(id);
+        if (found) return found;
+      }
+    }
+    return null;
   }
 
   private buildWeekPayloadFromRows(

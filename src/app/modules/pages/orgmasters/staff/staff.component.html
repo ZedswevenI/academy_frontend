@@ -9,7 +9,8 @@
                 <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openImport()">
                     <i class="fa-solid fa-file-import"></i><span>Import Staff</span>
                 </button>
-                <button *appHasRole="['L6','L1']" class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="add()">
+                <button *appHasRole="['L6','L1']" class="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                    (click)="add()">
                     <i class="fa-solid fa-plus"></i><span>Add Staff</span>
                 </button>
             </div>
@@ -179,15 +180,14 @@
                                     Faculty Type is required</div>
                             </div>
                             <div class="col-md-9" *ngIf="staffForm.get('facultyType')?.value === 'TEACHING'">
-                                <selectbox label="Subject" [required]="true" [options]="subjectOptions"
+                                <multiselect label="Subject" [required]="true" [options]="subjectOptions"
                                     optionLabel="label" optionValue="value" [control]="staffForm.get('subject')"
-                                    formControlName="subject"></selectbox>
+                                    formControlName="subject"></multiselect>
                                 <div class="text-danger small mt-1"
                                     *ngIf="staffForm.get('subject')?.touched && staffForm.get('subject')?.invalid">
                                     Subject is required for Teaching faculty</div>
                             </div>
                         </ng-container>
-
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Weekoff</label>
                             <div class="d-flex flex-wrap gap-2">
@@ -199,9 +199,7 @@
                             </div>
                             <div class="form-text">You can select multiple weekoff days.</div>
                         </div>
-
                     </div>
-
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Cancel</button>
                         <button type="submit" class="btn btn-primary" [disabled]="staffForm.invalid">
@@ -485,10 +483,23 @@
                         <div class="border rounded p-3 h-100">
                             <div class="small text-muted">Faculty Type</div>
                             <div class="fw-semibold">{{ viewRec.facultyType || "-" }}</div>
-                            <div class="mt-2" *ngIf="viewRec.facultyType === 'TEACHING'">
+                            <!-- <div class="mt-2" *ngIf="viewRec.facultyType === 'TEACHING'">
                                 <div class="small text-muted">Subject</div>
                                 <div class="fw-semibold">{{ viewRec.subject?.subjectName || viewRec.subjectName || "-"
                                     }}</div>
+                            </div> -->
+                            <div class="mt-2" *ngIf="viewRec.facultyType === 'TEACHING'">
+                                <div class="small text-muted">Subject(s)</div>
+                                <!-- Array of populated objects -->
+                                <div *ngIf="viewRec.subject?.length; else noSubject">
+                                    <span *ngFor="let s of viewRec.subject"
+                                        class="badge bg-primary-subtle text-primary me-1 mb-1">
+                                        {{ s?.subjectName || s }}
+                                    </span>
+                                </div>
+                                <ng-template #noSubject>
+                                    <div class="fw-semibold">—</div>
+                                </ng-template>
                             </div>
                         </div>
                     </div>
