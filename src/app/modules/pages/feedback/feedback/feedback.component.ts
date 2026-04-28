@@ -50,15 +50,37 @@ export class FeedbackComponent implements OnInit {
         this.router.navigate(['/app/feedback/results', row._id]),
     },
     {
+      type: 'icon',
+      icon: 'fa-solid fa-table-list',
+      tooltip: 'Consolidated Report',
+      color: '#6B7280',
+      hoverColor: '#DC2626',
+      callback: (row: any) =>
+        this.router.navigate(['/app/feedback/report', row._id]),
+    },
+    {
       type: 'dropdown',
       text: 'Actions',
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       dropdown: [
-        { text: 'Edit', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.router.navigate(['/app/feedback/edit', row._id]) },
-        { text: 'Change Status', icon: 'fa-solid fa-arrows-rotate', callback: (row: any) => this.openStatusModal(row) },
-        { text: 'Delete', icon: 'fa-regular fa-trash-can', callback: (row: any) => this.openDeleteModal(row) },
-      ]
+        {
+          text: 'Edit',
+          icon: 'fa-regular fa-pen-to-square',
+          callback: (row: any) =>
+            this.router.navigate(['/app/feedback/edit', row._id]),
+        },
+        {
+          text: 'Change Status',
+          icon: 'fa-solid fa-arrows-rotate',
+          callback: (row: any) => this.openStatusModal(row),
+        },
+        {
+          text: 'Delete',
+          icon: 'fa-regular fa-trash-can',
+          callback: (row: any) => this.openDeleteModal(row),
+        },
+      ],
     },
   ];
   selectedForm: any = null;

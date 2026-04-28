@@ -286,12 +286,12 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/activity',
     roles: ['L1', 'L3', 'L4']
   },
-  // {
-  //   label: 'Student Performance',
-  //   icon: 'fa-solid fa-chart-column',
-  //   route: '/app/performance',
-  //   roles: ['L1', 'L3', 'L4']
-  // },
+  {
+    label: 'Student Performance',
+    icon: 'fa-solid fa-chart-column',
+    route: '/app/performance',
+    roles: ['L1', 'L3', 'L4']
+  },
   {
     label: 'Tasks',
     icon: 'fa-solid fa-list-check',
@@ -337,6 +337,12 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Templates',
         icon: 'fa-solid fa-newspaper',
         route: '/app/feedback/feedback/template',
+        roles: ['L1', 'L3']
+      },
+      {
+        label: 'Report',
+        icon: 'fa-solid fa-table-list',
+        route: '/app/feedback/consolidated-report',
         roles: ['L1', 'L3']
       }
     ]
@@ -457,6 +463,12 @@ export const MENU_ITEMS: MenuItem[] = [
         roles: ['L1']
       },
       {
+        label: 'Subject',
+        icon: 'fa-solid fa-book',
+        route: '/app/org-master/subject',
+        roles: ['L1']
+      },
+      {
         label: 'Topic',
         icon: 'fa-solid fa-book-open',
         route: '/app/org-master/topics',
@@ -486,18 +498,6 @@ export const MENU_ITEMS: MenuItem[] = [
         route: '/app/org-master/users',
         roles: ['L1']
       }
-      // {
-      //   label: 'CGPA Config',
-      //   icon: 'fa-solid fa-cogs',
-      //   route: '/app/org-master/cgpa',
-      //   roles: ['L1']
-      // },
-      // {
-      //   label: 'Exam Config',
-      //   icon: 'fa-solid fa-sliders-h',
-      //   route: '/app/org-master/exam',
-      //   roles: ['L1']
-      // }
     ]
   }
 ];

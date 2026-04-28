@@ -143,7 +143,7 @@ export class StaffComponent implements OnInit {
       payroll: ['', Validators.required],
       department: ['', Validators.required],
       facultyType: [null],
-      subject: [null],
+      subject: [[]],
       weekoff: [[]],
       salaryCtc: [null],
       monthlySalary: [null],
@@ -262,13 +262,10 @@ export class StaffComponent implements OnInit {
         accessCtrl.enable({ emitEvent: false });
       }
     }
-
     const centerValue =
       s?.centerId?.centerId || s?.centerId?._id || s?.centerId || '';
-    // FIX #8: prefer _id for department since departmentOptions.value = d._id
     const deptValue = s?.department?._id || s?.department || '';
     const subjValue = s?.subject?._id || s?.subject || null;
-
     this.staffForm.patchValue({
       staffName: s.staffName || '',
       staffCode: s.staffCode || '',
@@ -282,7 +279,8 @@ export class StaffComponent implements OnInit {
       payroll: s.payroll || '',
       department: deptValue,
       facultyType: s.facultyType || null,
-      subject: subjValue,
+      // subject: subjValue,
+      subject: Array.isArray(s.subject) ? s.subject.map((x: any) => x._id || x) : [],
       salaryCtc: s.salaryCtc ?? null,
       monthlySalary: s.monthlySalary ?? null,
       weekoff: Array.isArray(s.weekoff) ? s.weekoff : [],
@@ -324,10 +322,8 @@ export class StaffComponent implements OnInit {
       return;
     }
     const relievingMs = this.dateInputToMs(form.relievingDate);
-
     const payload: any = {
       entiId: this.entiId,
-      // FIX #10: renamed to actingUserId so it does NOT collide with Staff.userId field
       actingUserId: localStorage.getItem('userId') || '',
       staffName: (form.staffName || '').toString().trim(),
       staffCode: (form.staffCode || '').toString().trim().toUpperCase(),
@@ -339,14 +335,14 @@ export class StaffComponent implements OnInit {
       joiningDate: joiningMs,
       relievingDate: relievingMs || null,
       payroll: form.payroll,
-      // FIX #5: only send createSystemAccess=true when NOT already linked
       createSystemAccess: this.systemAccessLinked ? false : createSystemAccess,
       department: form.department,
       facultyType: form.role === 'Faculty' ? form.facultyType : null,
-      subject:
-        form.role === 'Faculty' && form.facultyType === 'TEACHING'
-          ? form.subject
-          : null,
+      // subject:
+      //   form.role === 'Faculty' && form.facultyType === 'TEACHING'
+      //     ? form.subject
+      //     : null,
+      subject: form.role === 'Faculty' && form.facultyType === 'TEACHING' ? (form.subject || []) : [],
       salaryCtc: form.salaryCtc ? Number(form.salaryCtc) : null,
       monthlySalary: form.monthlySalary ? Number(form.monthlySalary) : null,
       weekoff: Array.isArray(form.weekoff) ? form.weekoff : [],

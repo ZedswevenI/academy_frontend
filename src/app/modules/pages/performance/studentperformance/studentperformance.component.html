@@ -1,0 +1,424 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-5">
+        <span class="spinner-border text-primary"></span>
+    </div>
+
+    <div *ngIf="!loading">
+
+        <!-- ── Header card ──────────────────────────────────────────────────── -->
+        <div class="bg-white rounded-4 shadow-sm p-4 mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
+                        <i class="fa-solid fa-arrow-left me-1"></i>Back
+                    </button>
+                    <div>
+                        <h1 class="fw-bold mb-0" style="font-size:22px;">
+                            {{ student?.admissionNo || studentId }}
+                        </h1>
+                        <div class="text-muted small">Academic Year: {{ academicYear }}</div>
+                    </div>
+                </div>
+                <button *ngIf="['L1','L3','L4'].includes(roleLevel)" class="btn btn-outline-success rounded-pill px-3"
+                    [disabled]="syncing" (click)="syncStudent()">
+                    <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
+                    {{ syncing ? 'Syncing...' : 'Sync' }}
+                </button>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center h-100" style="background:#f0f9ff; border:1px solid #bae6fd;">
+                        <div class="fw-bold mb-1" style="font-size:26px; color:#0284c7;">
+                            {{ num(student?.summary?.combinedScore, 1) }}
+                        </div>
+                        <div class="text-muted small fw-semibold">Combined Score</div>
+                        <div class="text-muted" style="font-size:11px;">Rank: {{ student?.summary?.batchRank != null ?
+                            '#' + student.summary.batchRank : '—' }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center h-100" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                        <div class="fw-bold mb-1" style="font-size:26px; color:#16a34a;">
+                            {{ num(student?.summary?.assignmentAvgCgpa, 2) }}
+                        </div>
+                        <div class="text-muted small fw-semibold">Assignment CGPA</div>
+                        <div class="text-muted" style="font-size:11px;">{{ pct(student?.summary?.assignmentAvgPct) }}
+                            avg</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center h-100" style="background:#fff7ed; border:1px solid #fed7aa;">
+                        <div class="fw-bold mb-1" style="font-size:26px; color:#ea580c;">
+                            {{ pct(student?.summary?.mockAvgPct) }}
+                        </div>
+                        <div class="text-muted small fw-semibold">Mock Avg %</div>
+                        <div class="text-muted" style="font-size:11px;">
+                            Best: {{ pct(student?.summary?.mockBestPct) }}
+                            · Rank: {{ student?.summary?.mockBestRank != null ? '#' + student.summary.mockBestRank : '—'
+                            }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center h-100" style="background:#fdf4ff; border:1px solid #e9d5ff;">
+                        <div class="fw-bold mb-1" style="font-size:26px; color:#9333ea;">
+                            {{ pct(student?.summary?.schoolAvgPct) }}
+                        </div>
+                        <div class="text-muted small fw-semibold">School Avg %</div>
+                        <div class="text-muted" style="font-size:11px;">Best: {{ pct(student?.summary?.schoolBestPct) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Tab Card ──────────────────────────────────────────────────────── -->
+        <div class="bg-white rounded-4 shadow-sm p-4">
+
+            <!-- Tab nav -->
+            <ul class="nav nav-tabs border-bottom mb-4">
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" [class.active]="activeTab==='assignment'"
+                        (click)="setTab('assignment')" href="javascript:void(0)">
+                        <i class="fa-solid fa-book-open me-1"></i>Assignment
+                        <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{ assignments.length
+                            }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" [class.active]="activeTab==='mock'" (click)="setTab('mock')"
+                        href="javascript:void(0)">
+                        <i class="fa-solid fa-file-pen me-1"></i>Mock Exams
+                        <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{
+                            student?.summary?.mockExamCount || 0 }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" [class.active]="activeTab==='school'" (click)="setTab('school')"
+                        href="javascript:void(0)">
+                        <i class="fa-solid fa-school me-1"></i>School Exams
+                        <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{
+                            student?.summary?.schoolExamCount || 0 }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" [class.active]="activeTab==='remarks'" (click)="setTab('remarks')"
+                        href="javascript:void(0)">
+                        <i class="fa-regular fa-comment me-1"></i>Staff Remarks
+                        <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{
+                            staffFeedback.length }}</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- ── TAB: Assignment ──────────────────────────────────────────────── -->
+            <div *ngIf="activeTab==='assignment'">
+                <div *ngIf="!assignments.length" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-book-open fa-2x mb-3 d-block opacity-25"></i>
+                    No assignment data yet. Run sync to load.
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6 col-lg-4" *ngFor="let s of assignments">
+                        <div class="border rounded-3 p-3 h-100 position-relative"
+                            style="border-color:#e2e8f0!important;">
+                            <!-- Overridden badge -->
+                            <span *ngIf="s.overridden"
+                                class="badge bg-warning text-dark position-absolute top-0 end-0 m-2"
+                                style="font-size:10px;">
+                                <i class="fa-solid fa-pen me-1"></i>Override
+                            </span>
+                            <div class="fw-bold mb-2" style="font-size:14px;">{{ s.subjectName || s.subjectId ||
+                                'Unknown Subject' }}</div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">CGPA</span>
+                                <span class="fw-bold" style="color:#16a34a;">{{ num(s.cgpa, 2) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">Marks</span>
+                                <span class="fw-semibold small">{{ s.obtainedMarks != null ? s.obtainedMarks : '—' }} /
+                                    {{ s.totalMarks != null ? s.totalMarks : '—' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">Attempts</span>
+                                <span class="fw-semibold small">{{ s.attempts ?? '—' }}</span>
+                            </div>
+                            <!-- Progress bar -->
+                            <div class="mt-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted" style="font-size:11px;">Score %</span>
+                                    <span class="fw-bold" style="font-size:12px;">{{ pct(s.percentage) }}</span>
+                                </div>
+                                <div class="progress" style="height:6px; border-radius:6px;">
+                                    <div class="progress-bar" [style.width]="(s.percentage || 0) + '%'"
+                                        [style.background]="(s.percentage || 0) >= 75 ? '#16a34a' : (s.percentage || 0) >= 50 ? '#f59e0b' : '#ef4444'"
+                                        style="border-radius:6px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── TAB: Mock Exams ──────────────────────────────────────────────── -->
+            <div *ngIf="activeTab==='mock'">
+                <div *ngIf="mockLoading" class="text-center py-4">
+                    <span class="spinner-border text-primary spinner-border-sm"></span>
+                </div>
+                <div *ngIf="!mockLoading && !mockExams.length" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-file-pen fa-2x mb-3 d-block opacity-25"></i>
+                    No mock exam records found.
+                </div>
+                <div *ngIf="!mockLoading && mockExams.length">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" style="font-size:14px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:32px;"></th>
+                                    <th>Exam Name</th>
+                                    <th class="text-center">Score</th>
+                                    <th class="text-center">%</th>
+                                    <th class="text-center">Rank</th>
+                                    <th class="text-center">Synced</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <ng-container *ngFor="let m of mockExams">
+                                    <!-- Main row -->
+                                    <tr [style.cursor]="m.sectionResults?.length ? 'pointer' : 'default'"
+                                        (click)="m.sectionResults?.length && toggleMockExpand(m.examId)">
+                                        <td>
+                                            <i *ngIf="m.sectionResults?.length" class="fa-solid text-muted"
+                                                [class.fa-chevron-down]="expandedMockId !== m.examId"
+                                                [class.fa-chevron-up]="expandedMockId === m.examId">
+                                            </i>
+                                        </td>
+                                        <td class="fw-semibold">{{ m.examName || m.examId }}</td>
+                                        <td class="text-center">{{ m.obtainedMarks ?? '—' }} / {{ m.totalMarks ?? '—' }}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill px-2"
+                                                [style.background]="(m.percentage||0)>=75?'#dcfce7':((m.percentage||0)>=50?'#fef9c3':'#fee2e2')"
+                                                [style.color]="(m.percentage||0)>=75?'#166534':((m.percentage||0)>=50?'#92400e':'#991b1b')">
+                                                {{ pct(m.percentage) }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">{{ m.rank != null ? '#' + m.rank : '—' }}</td>
+                                        <td class="text-center text-muted small">{{ formatDate(m.syncedAt) }}</td>
+                                    </tr>
+                                    <!-- Expanded section results -->
+                                    <tr *ngIf="expandedMockId === m.examId && m.sectionResults?.length">
+                                        <td colspan="6" class="p-0">
+                                            <div class="px-4 py-3"
+                                                style="background:#f8fafc; border-top:1px solid #e2e8f0;">
+                                                <div class="text-muted fw-semibold small mb-2">Section Breakdown</div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm mb-0" style="font-size:12px;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Subject</th>
+                                                                <th class="text-center">Score</th>
+                                                                <th class="text-center">Correct</th>
+                                                                <th class="text-center">Wrong</th>
+                                                                <th class="text-center">Skipped</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr *ngFor="let sec of m.sectionResults">
+                                                                <td>{{ sec.subjectName || sec.sectionId || '—' }}</td>
+                                                                <td class="text-center">{{ sec.obtainedMarks }} / {{
+                                                                    sec.totalMarks }}</td>
+                                                                <td class="text-center text-success fw-semibold">{{
+                                                                    sec.correctCount }}</td>
+                                                                <td class="text-center text-danger fw-semibold">{{
+                                                                    sec.wrongCount }}</td>
+                                                                <td class="text-center text-muted">{{ sec.skippedCount
+                                                                    }}</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-container>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div *ngIf="mockPages > 1" class="d-flex justify-content-center gap-1 mt-3">
+                        <button class="btn btn-sm btn-outline-secondary rounded-2" [disabled]="mockPage===1"
+                            (click)="onMockPageChange(mockPage-1)">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button *ngFor="let p of mockPageRange" class="btn btn-sm rounded-2"
+                            [class.btn-primary]="p===mockPage" [class.btn-outline-secondary]="p!==mockPage"
+                            (click)="onMockPageChange(p)">{{ p }}</button>
+                        <button class="btn btn-sm btn-outline-secondary rounded-2" [disabled]="mockPage===mockPages"
+                            (click)="onMockPageChange(mockPage+1)">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted small text-center mt-2">{{ mockTotal }} total exams</div>
+                </div>
+            </div>
+
+            <!-- ── TAB: School Exams ────────────────────────────────────────────── -->
+            <div *ngIf="activeTab==='school'">
+                <div *ngIf="schoolLoading" class="text-center py-4">
+                    <span class="spinner-border text-primary spinner-border-sm"></span>
+                </div>
+                <div *ngIf="!schoolLoading && !schoolExams.length" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-school fa-2x mb-3 d-block opacity-25"></i>
+                    No school exam records found.
+                </div>
+                <div *ngIf="!schoolLoading && schoolExams.length">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" style="font-size:14px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:32px;"></th>
+                                    <th>Exam Name</th>
+                                    <th class="text-center">Date</th>
+                                    <th class="text-center">Score</th>
+                                    <th class="text-center">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <ng-container *ngFor="let e of schoolExams">
+                                    <tr [style.cursor]="e.subjects?.length ? 'pointer' : 'default'"
+                                        (click)="e.subjects?.length && toggleSchoolExpand(e.examId)">
+                                        <td>
+                                            <i *ngIf="e.subjects?.length" class="fa-solid text-muted"
+                                                [class.fa-chevron-down]="expandedSchoolId !== e.examId"
+                                                [class.fa-chevron-up]="expandedSchoolId === e.examId">
+                                            </i>
+                                        </td>
+                                        <td class="fw-semibold">{{ e.examName || e.examId }}</td>
+                                        <td class="text-center text-muted">{{ formatDate(e.examDate) }}</td>
+                                        <td class="text-center">{{ e.obtainedMarks ?? '—' }} / {{ e.totalMarks ?? '—' }}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill px-2"
+                                                [style.background]="(e.percentage||0)>=75?'#dcfce7':((e.percentage||0)>=50?'#fef9c3':'#fee2e2')"
+                                                [style.color]="(e.percentage||0)>=75?'#166534':((e.percentage||0)>=50?'#92400e':'#991b1b')">
+                                                {{ pct(e.percentage) }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <!-- Expanded subject results -->
+                                    <tr *ngIf="expandedSchoolId === e.examId && e.subjects?.length">
+                                        <td colspan="5" class="p-0">
+                                            <div class="px-4 py-3"
+                                                style="background:#f8fafc; border-top:1px solid #e2e8f0;">
+                                                <div class="text-muted fw-semibold small mb-2">Subject-wise Marks</div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm mb-0" style="font-size:12px;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Subject</th>
+                                                                <th class="text-center">Obtained</th>
+                                                                <th class="text-center">Max</th>
+                                                                <th class="text-center">Grade</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr *ngFor="let sub of e.subjects">
+                                                                <td>{{ sub.subjectName || '—' }}</td>
+                                                                <td class="text-center fw-semibold">{{ sub.obtainedMarks
+                                                                    ?? '—' }}</td>
+                                                                <td class="text-center text-muted">{{ sub.maxMarks ??
+                                                                    '—' }}</td>
+                                                                <td class="text-center">
+                                                                    <span *ngIf="sub.grade"
+                                                                        class="badge bg-secondary rounded-pill">{{
+                                                                        sub.grade }}</span>
+                                                                    <span *ngIf="!sub.grade">—</span>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-container>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div *ngIf="schoolPages > 1" class="d-flex justify-content-center gap-1 mt-3">
+                        <button class="btn btn-sm btn-outline-secondary rounded-2" [disabled]="schoolPage===1"
+                            (click)="onSchoolPageChange(schoolPage-1)">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button *ngFor="let p of schoolPageRange" class="btn btn-sm rounded-2"
+                            [class.btn-primary]="p===schoolPage" [class.btn-outline-secondary]="p!==schoolPage"
+                            (click)="onSchoolPageChange(p)">{{ p }}</button>
+                        <button class="btn btn-sm btn-outline-secondary rounded-2" [disabled]="schoolPage===schoolPages"
+                            (click)="onSchoolPageChange(schoolPage+1)">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted small text-center mt-2">{{ schoolTotal }} total exams</div>
+                </div>
+            </div>
+
+            <!-- ── TAB: Staff Remarks ───────────────────────────────────────────── -->
+            <div *ngIf="activeTab==='remarks'">
+
+                <!-- Add remark -->
+                <div *ngIf="canAddRemark" class="mb-4 p-3 rounded-3 border"
+                    style="border-color:#e2e8f0!important; background:#f8fafc;">
+                    <label class="form-label fw-semibold small mb-2">Add Remark</label>
+                    <textarea class="form-control rounded-3 mb-2" rows="3" [(ngModel)]="remarkText"
+                        placeholder="Enter your remarks about this student's performance..."></textarea>
+                    <button class="btn submitbutton rounded-pill px-4" [disabled]="remarkSaving || !remarkText.trim()"
+                        (click)="addRemark()">
+                        <span *ngIf="remarkSaving" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ remarkSaving ? 'Saving...' : 'Add Remark' }}
+                    </button>
+                </div>
+
+                <!-- Remarks list -->
+                <div *ngIf="!staffFeedback.length" class="text-center py-5 text-muted">
+                    <i class="fa-regular fa-comment fa-2x mb-3 d-block opacity-25"></i>
+                    No remarks yet.
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                    <div *ngFor="let f of staffFeedback" class="d-flex gap-3 p-3 rounded-3 border"
+                        style="border-color:#e2e8f0!important;">
+                        <!-- Avatar -->
+                        <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle fw-bold text-white"
+                            style="width:40px; height:40px; min-width:40px; background:#6366f1; font-size:13px;">
+                            {{ getInitials(f.staffName) }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-semibold" style="font-size:14px;">{{ f.staffName || 'Staff' }}</div>
+                                    <div class="text-muted" style="font-size:12px;">{{ formatDateTime(f.addedAt) }}
+                                    </div>
+                                </div>
+                                <button *ngIf="canDeleteRemark" class="btn btn-sm btn-link text-danger p-0"
+                                    (click)="deleteRemark(f.feedbackId)" title="Delete">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2" style="font-size:14px; color:#374151;">{{ f.remarks }}</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

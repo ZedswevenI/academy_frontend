@@ -405,14 +405,31 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
+  // private buildSubjectStaffMap() {
+  //   this.subjectIdToStaff = new Map<string, any[]>();
+  //   this.staffFull.forEach((s: any) => {
+  //     const subId = safeTrim(s?.subject);
+  //     if (!subId) return;
+  //     if (!this.subjectIdToStaff.has(subId))
+  //       this.subjectIdToStaff.set(subId, []);
+  //     this.subjectIdToStaff.get(subId)!.push(s);
+  //   });
+  // }
+
   private buildSubjectStaffMap() {
     this.subjectIdToStaff = new Map<string, any[]>();
     this.staffFull.forEach((s: any) => {
-      const subId = safeTrim(s?.subject);
-      if (!subId) return;
-      if (!this.subjectIdToStaff.has(subId))
-        this.subjectIdToStaff.set(subId, []);
-      this.subjectIdToStaff.get(subId)!.push(s);
+      const subjects = Array.isArray(s?.subject)
+        ? s.subject
+        : s?.subject
+          ? [s.subject]
+          : [];
+      subjects.forEach((sub: any) => {
+        const id = safeTrim(sub?._id || sub);
+        if (!id) return;
+        if (!this.subjectIdToStaff.has(id)) this.subjectIdToStaff.set(id, []);
+        this.subjectIdToStaff.get(id)!.push(s);
+      });
     });
   }
 
@@ -479,12 +496,23 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         const batchSubjectIds = new Set(
           this.batchSubjects.map((s: any) => safeTrim(s?._id)).filter(Boolean),
         );
+        // this.batchStaffFull = batchSubjectIds.size
+        //   ? this.staffFull.filter((s: any) =>
+        //       batchSubjectIds.has(safeTrim(s?.subject)),
+        //     )
+        //   : this.staffFull;
         this.batchStaffFull = batchSubjectIds.size
-          ? this.staffFull.filter((s: any) =>
-              batchSubjectIds.has(safeTrim(s?.subject)),
-            )
+          ? this.staffFull.filter((s: any) => {
+              const subjects = Array.isArray(s?.subject)
+                ? s.subject
+                : s?.subject
+                  ? [s.subject]
+                  : [];
+              return subjects.some((sub: any) =>
+                batchSubjectIds.has(safeTrim(sub?._id || sub)),
+              );
+            })
           : this.staffFull;
-
         if (!this.batchStaffFull.length) this.batchStaffFull = this.staffFull;
       });
   }
