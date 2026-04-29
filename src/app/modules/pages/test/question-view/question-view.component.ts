@@ -26,6 +26,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
+  @ViewChildren('matrixContent') matrixElements!: QueryList<ElementRef>;
 
   constructor(
     private commonApi: CommonapiService,
@@ -111,6 +112,42 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           )
           : [];
 
+        const leftColumn = q.leftColumn?.length
+          ? await Promise.all(
+            q.leftColumn.map(async (item: any, i: number) => {
+              let text = await this.replaceDownloadUrls(item?.text || '');
+              text = this.normalizeDelimiters(text);
+              return {
+                ...item,
+                key: item?.key || String.fromCharCode(65 + i),
+                textHtml: this.sanitizeHtml(text),
+              };
+            })
+          )
+          : [];
+
+        const rightColumn = q.rightColumn?.length
+          ? await Promise.all(
+            q.rightColumn.map(async (item: any, i: number) => {
+              let text = await this.replaceDownloadUrls(item?.text || '');
+              text = this.normalizeDelimiters(text);
+              return {
+                ...item,
+                key: item?.key || String.fromCharCode(80 + i),
+                textHtml: this.sanitizeHtml(text),
+              };
+            })
+          )
+          : [];
+
+        const matchMap: Record<string, string[]> = {};
+        if (q.correctAnswer && q.questionType === 'matrix') {
+          q.correctAnswer.split(';').forEach((pStr: string) => {
+            const [lK, rKs] = pStr.split(':');
+            if (lK && rKs) matchMap[lK.trim()] = rKs.trim().split('');
+          });
+        }
+
         return {
           ...q,
           questionNumber: index + 1,
@@ -119,7 +156,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           questionOptions: options.map(o => ({
             ...o,
             textHtml: this.sanitizeHtml(o.textHtml)
-          }))
+          })),
+          leftColumn,
+          rightColumn,
+          matrixMatches: leftColumn.map((l: any) => ({
+            key: l.key,
+            matches: matchMap[l.key] || [],
+          })),
         };
       })
     );
@@ -215,6 +258,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           this.renderMathInElement(element.nativeElement);
         } catch (err) {
           console.error(`Error rendering solution ${idx}:`, err);
+        }
+      });
+
+      this.matrixElements?.forEach((element, idx) => {
+        try {
+          this.renderMathInElement(element.nativeElement);
+        } catch (err) {
+          console.error(`Error rendering matrix ${idx}:`, err);
         }
       });
 

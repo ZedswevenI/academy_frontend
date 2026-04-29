@@ -192,6 +192,32 @@ export class QuestionCreatorComponent implements OnInit {
 
         }, 0);
 
+        // 🔥 Load options
+        if (q.questionOptions?.length) {
+
+          this.options.clear();
+
+          for (let i = 0; i < q.questionOptions.length; i++) {
+
+            const opt = q.questionOptions[i];
+            const processedOptionHtml = await this.replaceDownloadUrls(opt.textHtml);
+
+            this.options.push(
+              this.fb.group({
+                text: processedOptionHtml,
+                isCorrect: opt.isCorrect || false
+              })
+            );
+
+            setTimeout(() => {
+              const optionEditor = document.getElementById('optionEditor-' + i);
+              if (optionEditor) {
+                optionEditor.innerHTML = processedOptionHtml || '';
+              }
+            }, 0);
+          }
+        }
+
         // Load matrix pairs
         if (q.questionType === 'matrix' && q.leftColumn?.length) {
           this.matrixLeft.clear();

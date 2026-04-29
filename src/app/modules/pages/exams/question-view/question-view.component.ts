@@ -40,6 +40,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
+  @ViewChildren('matrixContent') matrixElements!: QueryList<ElementRef>;
   showBankModal = false;
   bankQuestions: any[] = [];
   bankLoading = false;
@@ -187,6 +188,33 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
               }),
             )
           : [];
+        const leftColumn = q.leftColumn?.length
+          ? await Promise.all(
+              q.leftColumn.map(async (item: any, i: number) => {
+                let text = await this.replaceDownloadUrls(item?.text || '');
+                text = this.normalizeDelimiters(text);
+                return {
+                  ...item,
+                  key: item?.key || String.fromCharCode(65 + i),
+                  textHtml: this.sanitizeHtml(text),
+                };
+              }),
+            )
+          : [];
+        const rightColumn = q.rightColumn?.length
+          ? await Promise.all(
+              q.rightColumn.map(async (item: any, i: number) => {
+                let text = await this.replaceDownloadUrls(item?.text || '');
+                text = this.normalizeDelimiters(text);
+                return {
+                  ...item,
+                  key: item?.key || String.fromCharCode(80 + i),
+                  textHtml: this.sanitizeHtml(text),
+                };
+              }),
+            )
+          : [];
+        const matchMap = this.parseMatrixCorrectAnswer(q.correctAnswer);
         return {
           ...q,
           questionNumber: index + 1,
@@ -196,9 +224,27 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
             ...o,
             textHtml: this.sanitizeHtml(o.textHtml),
           })),
+          leftColumn,
+          rightColumn,
+          matrixMatches: leftColumn.map((l: any) => ({
+            key: l.key,
+            matches: matchMap[l.key] || [],
+          })),
         };
       }),
     );
+  }
+
+  private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, string[]> {
+    const map: Record<string, string[]> = {};
+    if (!correctAnswer) return map;
+    correctAnswer.split(';').forEach((pStr: string) => {
+      const [lK, rKs] = pStr.split(':');
+      if (lK && rKs) {
+        map[lK.trim()] = rKs.trim().split('');
+      }
+    });
+    return map;
   }
 
   private normalizeDelimiters(html: string): string {
@@ -271,6 +317,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           this.renderMathInElement(element.nativeElement);
         } catch (err) {
           console.error(`Error rendering solution ${idx}:`, err);
+        }
+      });
+      this.matrixElements?.forEach((element, idx) => {
+        try {
+          this.renderMathInElement(element.nativeElement);
+        } catch (err) {
+          console.error(`Error rendering matrix ${idx}:`, err);
         }
       });
     } catch (err) {
