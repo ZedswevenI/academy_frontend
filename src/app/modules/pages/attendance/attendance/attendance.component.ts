@@ -6,6 +6,7 @@ import { takeUntil } from 'rxjs/operators';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-attendance',
@@ -201,18 +202,19 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     this.buildTableData();
   }
 
-
   mapAOData(raw: any[]): void {
     const today = this.getTodayUtcMs();
-    const isFuture = this.selectedDate! > today && (this.auth.getRole() === 'L1' || this.auth.getRole() === 'L3');
+    const isFuture =
+      this.selectedDate! > today &&
+      (this.auth.getRole() === 'L1' || this.auth.getRole() === 'L3');
     this.originalData = raw.map((r: any) => this.enrichRow(r, !isFuture));
     this.buildActions();
     this.buildTableData();
   }
-  // 
+  //
 
   private enrichRow(r: any, showAction: boolean): any {
-    const isMarked = r.attendance?.isMarked === true ;
+    const isMarked = r.attendance?.isMarked === true;
     return {
       ...r,
       timeLabel: this.formatTimeLabel(r),
@@ -242,7 +244,8 @@ export class AttendanceComponent implements OnInit, OnDestroy {
         color: 'secondary',
         text: 'Edit Attendance',
         callback: (row: any) => this.goToMark(row),
-        hidden: (row: any) => !row._showAction || !row._isMarked || this.isTeacher,
+        hidden: (row: any) =>
+          !row._showAction || !row._isMarked || this.isTeacher,
         // hidden: (row: any) => !row._showAction || !row._isMarked,
       },
     ];
@@ -324,5 +327,42 @@ export class AttendanceComponent implements OnInit, OnDestroy {
 
   get markedCount(): number {
     return this.originalData.filter((r) => r._att?.isMarked).length;
+  }
+
+  exportToExcel(type: 'all' | 'marked' | 'pending' = 'all'): void {
+    let dataToExport = [...this.originalData];
+    if (type === 'marked') {
+      dataToExport = this.originalData.filter((r) => r._isMarked);
+    } else if (type === 'pending') {
+      dataToExport = this.originalData.filter((r) => !r._isMarked);
+    }
+    if (dataToExport.length === 0) return;
+    const worksheetData = dataToExport.map((row) => ({
+      Batch: row.batchCode,
+      Timing: row.timeLabel,
+      Subject: row.subjectName,
+      Phase: row.phaseName,
+      Faculty: row.facultyName,
+      Type: row.periodType,
+      Mode: row.mode,
+      Status: row.statusBadge,
+      Attendance: row.attendanceSummary,
+    }));
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(worksheetData);
+    const max_width = worksheetData.reduce(
+      (w, r) => Math.max(w, r.Subject.length),
+      10,
+    );
+    worksheet['!cols'] = [
+      { wch: 15 },
+      { wch: 20 },
+      { wch: max_width },
+      { wch: 15 },
+    ];
+    const workbook: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+    const timestamp = this.selectedDateLabel.replace(/ /g, '_');
+    const fileName = `Attendance_${type.toUpperCase()}_${timestamp}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   }
 }
