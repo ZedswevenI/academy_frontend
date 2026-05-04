@@ -181,9 +181,9 @@
               <thead>
                 <tr>
                   <th>#</th>
-                  <!-- <th>Section Name</th> -->
                   <th>Subject</th>
-                  <th>Questions</th>
+                  <th>Total</th>
+                  <th>By Type</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,6 +191,17 @@
                   <td class="text-muted">{{ i + 1 }}</td>
                   <td class="fw-medium">{{ s.sectionName }}</td>
                   <td>{{ s?.numberOfQuestions }}</td>
+                  <td>
+                    <ng-container *ngIf="getTypeCountsForSection(s.subjectId?._id || s.subjectId) as typeCounts">
+                      <span *ngIf="!typeCounts.length" class="text-muted small">—</span>
+                      <div class="d-flex flex-wrap gap-1">
+                        <span *ngFor="let t of typeCounts"
+                          class="badge bg-light text-dark border small">
+                          {{ formatQuestionType(t.type) }}: <strong>{{ t.count }}</strong>
+                        </span>
+                      </div>
+                    </ng-container>
+                  </td>
                 </tr>
               </tbody>
             </table>

@@ -21,6 +21,7 @@ export class TestViewComponent implements OnInit {
   loading = false;
   isDraft = false;
   tenantId = '';
+  sectionTypeCountMap: Record<string, Record<string, number>> = {};
 
   /* ================= TABS ================= */
   activeTab: 'details' | 'results' | 'question-wise' | 'participants' = 'details';
@@ -197,6 +198,7 @@ export class TestViewComponent implements OnInit {
 
     this.initGraceForm();
     this.fetchSubjects();
+    this.loadSectionQuestionTypeCounts();
 
     if (this.hasResults) {
       this.fetchBatches();
@@ -507,6 +509,52 @@ export class TestViewComponent implements OnInit {
     this.showGraceModal = false;
     this.graceRow = null;
   }
+  loadSectionQuestionTypeCounts() {
+    this.commonApi.fetchData(
+      { entiId: this.tenantId, examId: this.examData.examId },
+      'exam/questions',
+      'getallquestions'
+    ).subscribe({
+      next: (res: any) => {
+        if (res?.status) {
+          const questions: any[] = res.data?.questions || [];
+          const map: Record<string, Record<string, number>> = {};
+          questions.forEach((q: any) => {
+            const rawSubject = q.subjectId;
+            const subjectKey = (rawSubject && typeof rawSubject === 'object')
+              ? rawSubject._id
+              : rawSubject;
+            if (!subjectKey) return;
+            const type = q.questionType || 'other';
+            if (!map[subjectKey]) map[subjectKey] = {};
+            map[subjectKey][type] = (map[subjectKey][type] || 0) + 1;
+          });
+          this.sectionTypeCountMap = map;
+        }
+      },
+      error: (err) => console.error('Error loading question type counts:', err)
+    });
+  }
+
+  getTypeCountsForSection(sectionId: string): { type: string; count: number }[] {
+    const counts = this.sectionTypeCountMap[sectionId] || {};
+    return Object.entries(counts).map(([type, count]) => ({ type, count }));
+  }
+
+  formatQuestionType(type: string): string {
+    const map: Record<string, string> = {
+      mcq_single: 'MCQ (Single)',
+      mcq_multi: 'MCQ (Multi)',
+      true_false: 'True/False',
+      integer: 'Integer',
+      numeric: 'Numerical',
+      subjective: 'Subjective',
+      matrix: 'Matrix',
+      passage_qns: 'Passage',
+    };
+    return map[type] || type;
+  }
+
   loadGraceQuestions() {
     this.graceQuestionsLoading = true;
     this.commonApi.fetchData({ entiId: this.tenantId, examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
