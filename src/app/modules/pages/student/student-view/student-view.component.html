@@ -50,7 +50,7 @@
                     <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
                         <i class="fa-solid fa-file-excel"></i> Export Excel
                     </button>
-                    <button class="btn btn-outline-primary btn-sm" (click)="openEditProfile()">
+                    <button class="btn btn-outline-primary btn-sm" *appHasRole="['L1']" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen"></i> Edit Profile
                     </button>
                 </div>
@@ -107,7 +107,7 @@
                             <span>Late Entries</span>
                             <strong>{{ lateEntries.length || 0 }}</strong>
                         </div>
-                        <div class="d-flex justify-content-between mb-2">
+                        <!-- <div class="d-flex justify-content-between mb-2">
                             <span>Fees Paid</span>
                             <span class="fw-semibold text-success">
                                 ₹{{ (student.fees?.paidAmount || 0) | number:'1.0-0' }}
@@ -118,7 +118,7 @@
                             <span class="fw-semibold text-danger">
                                 ₹{{ (student.fees?.outstandingAmount || 0) | number:'1.0-0' }}
                             </span>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
