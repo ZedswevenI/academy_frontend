@@ -19,7 +19,6 @@ export class CustomTableComponent implements OnDestroy {
   @Input() showpageoptions: boolean = true;
   @Input() showsearch: boolean = true;
   @Input() searchPlaceholder: string = '';
-
   @Input() autoFitChars = false;
   @Input() wrapCells = true;
   @Input() baseCharWidth = 8;
