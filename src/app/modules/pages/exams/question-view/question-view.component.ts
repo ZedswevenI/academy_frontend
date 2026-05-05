@@ -37,9 +37,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   selectedGraceQuestion: any = null;
   graceMarksInput = 1;
   graceNoteInput = '';
+  showAnswerModal = false;
+  answerModalQuestion: any = null;
+  answerModalEntry: any = null;
+  answerModalSaving = false;
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
   @ViewChildren('solutionContent') solutionElements!: QueryList<ElementRef>;
+  @ViewChildren('matrixContent') matrixElements!: QueryList<ElementRef>;
   showBankModal = false;
   bankQuestions: any[] = [];
   bankLoading = false;
@@ -187,6 +192,33 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
               }),
             )
           : [];
+        const leftColumn = q.leftColumn?.length
+          ? await Promise.all(
+              q.leftColumn.map(async (item: any, i: number) => {
+                let text = await this.replaceDownloadUrls(item?.text || '');
+                text = this.normalizeDelimiters(text);
+                return {
+                  ...item,
+                  key: item?.key || String.fromCharCode(65 + i),
+                  textHtml: this.sanitizeHtml(text),
+                };
+              }),
+            )
+          : [];
+        const rightColumn = q.rightColumn?.length
+          ? await Promise.all(
+              q.rightColumn.map(async (item: any, i: number) => {
+                let text = await this.replaceDownloadUrls(item?.text || '');
+                text = this.normalizeDelimiters(text);
+                return {
+                  ...item,
+                  key: item?.key || String.fromCharCode(80 + i),
+                  textHtml: this.sanitizeHtml(text),
+                };
+              }),
+            )
+          : [];
+        const matchMap = this.parseMatrixCorrectAnswer(q.correctAnswer);
         return {
           ...q,
           questionNumber: index + 1,
@@ -196,9 +228,27 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
             ...o,
             textHtml: this.sanitizeHtml(o.textHtml),
           })),
+          leftColumn,
+          rightColumn,
+          matrixMatches: leftColumn.map((l: any) => ({
+            key: l.key,
+            matches: matchMap[l.key] || [],
+          })),
         };
       }),
     );
+  }
+
+  private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, string[]> {
+    const map: Record<string, string[]> = {};
+    if (!correctAnswer) return map;
+    correctAnswer.split(';').forEach((pStr: string) => {
+      const [lK, rKs] = pStr.split(':');
+      if (lK && rKs) {
+        map[lK.trim()] = rKs.trim().split('');
+      }
+    });
+    return map;
   }
 
   private normalizeDelimiters(html: string): string {
@@ -271,6 +321,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           this.renderMathInElement(element.nativeElement);
         } catch (err) {
           console.error(`Error rendering solution ${idx}:`, err);
+        }
+      });
+      this.matrixElements?.forEach((element, idx) => {
+        try {
+          this.renderMathInElement(element.nativeElement);
+        } catch (err) {
+          console.error(`Error rendering matrix ${idx}:`, err);
         }
       });
     } catch (err) {
@@ -479,6 +536,88 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       error: (err) => {
         this.graceRemovingGraceId = null;
         this.alert.error(err?.error?.message || 'Error removing grace mark');
+      },
+    });
+  }
+
+  openAnswerModal(q: any) {
+    this.answerModalQuestion = q;
+    const type = q.questionType;
+    const entry: any = {};
+    if (['mcq_single', 'mcq_multi', 'mcq-single', 'mcq-multi'].includes(type)) {
+      entry.options = (q.questionOptions || []).map((o: any) => ({
+        ...o,
+        isCorrect: o.isCorrect || false,
+      }));
+    } else if (type === 'true_false') {
+      entry.correctAnswer = q.correctAnswer || '';
+    } else {
+      entry.correctAnswer = q.correctAnswer || '';
+    }
+    this.answerModalEntry = entry;
+    this.showAnswerModal = true;
+  }
+
+  closeAnswerModal() {
+    this.showAnswerModal = false;
+    this.answerModalQuestion = null;
+    this.answerModalEntry = null;
+  }
+
+  answerModalToggle(optIndex: number) {
+    const type = this.answerModalQuestion?.questionType;
+    if (type === 'mcq_single' || type === 'mcq-single') {
+      this.answerModalEntry.options.forEach((o: any, i: number) => (o.isCorrect = i === optIndex));
+    } else {
+      this.answerModalEntry.options[optIndex].isCorrect = !this.answerModalEntry.options[optIndex].isCorrect;
+    }
+  }
+
+  submitAnswerModal() {
+    const q = this.answerModalQuestion;
+    const e = this.answerModalEntry;
+    const type = q.questionType;
+    const item: any = { questionId: q.questionId };
+
+    if (['mcq_single', 'mcq_multi', 'mcq-single', 'mcq-multi'].includes(type)) {
+      item.questionOptions = e.options.map((o: any) => ({
+        key: o.key,
+        isCorrect: o.isCorrect,
+        partialMark: o.partialMark || 0,
+      }));
+      item.correctAnswer = e.options.filter((o: any) => o.isCorrect).map((o: any) => o.key).join(',');
+    } else {
+      item.correctAnswer = e.correctAnswer;
+    }
+
+    const payload = {
+      entiId: this.entiId,
+      userId: localStorage.getItem('userId'),
+      examId: this.testId,
+      questions: [item],
+    };
+
+    this.answerModalSaving = true;
+    this.commonApi.fetchData(payload, 'exam/questions', 'bulk-upload-answers').subscribe({
+      next: (res: any) => {
+        this.answerModalSaving = false;
+        if (res?.status) {
+          this.alert.success('Answer updated successfully');
+          q.correctAnswer = item.correctAnswer;
+          if (item.questionOptions?.length) {
+            item.questionOptions.forEach((updated: any) => {
+              const existing = q.questionOptions?.find((o: any) => o.key === updated.key);
+              if (existing) existing.isCorrect = updated.isCorrect;
+            });
+          }
+          this.closeAnswerModal();
+        } else {
+          this.alert.error(res?.message || 'Failed to update answer');
+        }
+      },
+      error: (err: any) => {
+        this.answerModalSaving = false;
+        this.alert.error(err?.error?.message || 'Error updating answer');
       },
     });
   }

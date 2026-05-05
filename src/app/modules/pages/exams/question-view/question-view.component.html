@@ -91,31 +91,33 @@
         <span class="badge bg-success ms-2"> +{{ q.positiveMarks }} </span>
         <span class="badge bg-danger ms-2"> -{{ q.negativeMarks }} </span>
       </div>
-      <div *ngIf="isDraft">
-        <button class="btn btn-sm btn-outline-primary me-2" (click)="editQuestion(q)">
-          Edit
+      <div class="d-flex align-items-center gap-2">
+        <!-- Draft actions -->
+        <ng-container *ngIf="isDraft">
+          <button class="btn btn-sm btn-outline-primary" (click)="editQuestion(q)">Edit</button>
+          <button class="btn btn-sm btn-outline-danger" (click)="deleteQuestion(q)">Delete</button>
+        </ng-container>
+        <!-- Update Answer -->
+        <button class="btn btn-sm btn-outline-success" (click)="openAnswerModal(q)">
+          <i class="fa-solid fa-pen-to-square me-1"></i> Update Answer
         </button>
-        <button class="btn btn-sm btn-outline-danger" (click)="deleteQuestion(q)">
-          Delete
-        </button>
-      </div>
-      <!-- Grace Marks UI for Published/Completed Exams -->
-      <div *ngIf="!isDraft" class="d-flex align-items-center gap-2">
-        <ng-container *ngFor="let grace of [getGraceForQuestion(q.questionId)]">
-          <span *ngIf="grace" class="badge bg-warning text-dark py-2 px-3 border border-dark rounded-pill">
-            <i class="fa-solid fa-gift me-1"></i>
-            +{{ grace.graceMarks }} Grace
-          </span>
-          <button *ngIf="grace" class="btn btn-sm btn-outline-danger rounded-circle p-1"
-            style="width: 24px; height: 24px; line-height: 1" (click)="removeGraceFromQuestion(grace.graceId)"
-            [disabled]="graceRemovingGraceId === grace.graceId" title="Remove Grace">
-            <i class="fa-solid fa-times" *ngIf="graceRemovingGraceId !== grace.graceId"></i>
-            <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === grace.graceId"></span>
-          </button>
-          <button *ngIf="!grace" class="btn btn-sm btn-outline-warning" (click)="openGraceModal(q)"
-            [disabled]="graceApplying">
-            <i class="fa-solid fa-gift me-1"></i> Apply Grace
-          </button>
+        <!-- Grace Marks (published exams) -->
+        <ng-container *ngIf="!isDraft">
+          <ng-container *ngFor="let grace of [getGraceForQuestion(q.questionId)]">
+            <span *ngIf="grace" class="badge bg-warning text-dark py-2 px-3 border border-dark rounded-pill">
+              <i class="fa-solid fa-gift me-1"></i> +{{ grace.graceMarks }} Grace
+            </span>
+            <button *ngIf="grace" class="btn btn-sm btn-outline-danger rounded-circle p-1"
+              style="width: 24px; height: 24px; line-height: 1" (click)="removeGraceFromQuestion(grace.graceId)"
+              [disabled]="graceRemovingGraceId === grace.graceId" title="Remove Grace">
+              <i class="fa-solid fa-times" *ngIf="graceRemovingGraceId !== grace.graceId"></i>
+              <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === grace.graceId"></span>
+            </button>
+            <button *ngIf="!grace" class="btn btn-sm btn-outline-warning" (click)="openGraceModal(q)"
+              [disabled]="graceApplying">
+              <i class="fa-solid fa-gift me-1"></i> Apply Grace
+            </button>
+          </ng-container>
         </ng-container>
       </div>
     </div>
@@ -133,8 +135,44 @@
           </div>
         </div>
       </div>
+      <!-- Matrix Match Display -->
+      <div *ngIf="q.questionType === 'matrix' && q.leftColumn?.length" class="matrix-section mt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="fw-bold mb-2 text-primary">Left Column</div>
+            <div *ngFor="let l of q.leftColumn" class="matrix-item d-flex align-items-start p-2 mb-2 border rounded">
+              <span class="badge bg-primary me-2">{{ l.key }}</span>
+              <div class="flex-grow-1" #matrixContent [innerHTML]="l.textHtml"></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-bold mb-2 text-success">Right Column</div>
+            <div *ngFor="let r of q.rightColumn" class="matrix-item d-flex align-items-start p-2 mb-2 border rounded">
+              <span class="badge bg-success me-2">{{ r.key }}</span>
+              <div class="flex-grow-1" #matrixContent [innerHTML]="r.textHtml"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <strong class="text-primary">
+            <i class="fas fa-check-circle me-1"></i> Correct Matches:
+          </strong>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <span *ngFor="let m of q.matrixMatches" class="badge bg-light text-dark border px-3 py-2">
+              <span class="fw-bold text-primary">{{ m.key }}</span>
+              <i class="fas fa-arrow-right mx-2 text-muted"></i>
+              <span *ngIf="m.matches?.length; else noMatch" class="fw-bold text-success">
+                {{ m.matches.join(', ') }}
+              </span>
+              <ng-template #noMatch>
+                <span class="text-muted fst-italic">—</span>
+              </ng-template>
+            </span>
+          </div>
+        </div>
+      </div>
       <!-- Correct Answer Display -->
-      <div class="mt-3 border-top pt-3">
+      <div *ngIf="q.questionType !== 'matrix'" class="mt-3 border-top pt-3">
         <strong>Correct Answer:</strong>
         <span class="ms-2">
           {{ q.correctAnswer }}
@@ -144,6 +182,96 @@
       <div *ngIf="q.solutionHtml" class="mt-3 border-top pt-3 solution-section">
         <strong>Solution:</strong>
         <div class="mt-2 solution-content" #solutionContent [innerHTML]="q.solutionHtml"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= UPDATE ANSWER MODAL ================= -->
+<div class="app-modal-backdrop" *ngIf="showAnswerModal" (click)="closeAnswerModal()">
+  <div class="app-modal" style="max-width: 520px" (click)="$event.stopPropagation()">
+    <div class="app-modal-header d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 fw-bold">
+        <i class="fa-solid fa-pen-to-square me-2 text-success"></i>Update Answer
+      </h6>
+      <button type="button" class="btn-close" (click)="closeAnswerModal()"></button>
+    </div>
+    <div class="app-modal-body" *ngIf="answerModalQuestion">
+      <p class="text-muted small mb-3">
+        Q{{ questions.indexOf(answerModalQuestion) + 1 }} —
+        <span class="badge bg-info text-dark">{{ formatQuestionType(answerModalQuestion.questionType) }}</span>
+      </p>
+
+      <!-- MCQ Single -->
+      <div *ngIf="answerModalQuestion.questionType === 'mcq_single' || answerModalQuestion.questionType === 'mcq-single'">
+        <label class="form-label fw-bold small text-primary">Select Correct Option:</label>
+        <div *ngFor="let opt of answerModalEntry?.options; let j = index"
+          class="d-flex align-items-center p-2 mb-2 border rounded"
+          [class.border-success]="opt.isCorrect" [class.bg-light]="!opt.isCorrect"
+          style="cursor:pointer" (click)="answerModalToggle(j)">
+          <input type="radio" class="form-check-input me-2" [checked]="opt.isCorrect" readonly>
+          <span class="badge me-2" [class.bg-success]="opt.isCorrect" [class.bg-secondary]="!opt.isCorrect">{{ opt.key }}</span>
+          <span [innerHTML]="opt.textHtml || opt.text || opt.key"></span>
+        </div>
+      </div>
+
+      <!-- MCQ Multi -->
+      <div *ngIf="answerModalQuestion.questionType === 'mcq_multi' || answerModalQuestion.questionType === 'mcq-multi'">
+        <label class="form-label fw-bold small text-primary">Select Correct Options:</label>
+        <div *ngFor="let opt of answerModalEntry?.options; let j = index"
+          class="d-flex align-items-center p-2 mb-2 border rounded"
+          [class.border-success]="opt.isCorrect" [class.bg-light]="!opt.isCorrect"
+          style="cursor:pointer" (click)="answerModalToggle(j)">
+          <input type="checkbox" class="form-check-input me-2" [checked]="opt.isCorrect" readonly>
+          <span class="badge me-2" [class.bg-success]="opt.isCorrect" [class.bg-secondary]="!opt.isCorrect">{{ opt.key }}</span>
+          <span [innerHTML]="opt.textHtml || opt.text || opt.key"></span>
+        </div>
+      </div>
+
+      <!-- True / False -->
+      <div *ngIf="answerModalQuestion.questionType === 'true_false'">
+        <label class="form-label fw-bold small text-primary">Select Answer:</label>
+        <div class="d-flex gap-3 mt-1">
+          <div *ngFor="let val of ['true', 'false']"
+            class="d-flex align-items-center p-2 px-4 border rounded"
+            [class.border-success]="answerModalEntry?.correctAnswer === val"
+            [class.bg-success]="answerModalEntry?.correctAnswer === val"
+            [class.bg-light]="answerModalEntry?.correctAnswer !== val"
+            style="cursor:pointer" (click)="answerModalEntry.correctAnswer = val">
+            <input type="radio" class="form-check-input me-2" [checked]="answerModalEntry?.correctAnswer === val" readonly>
+            <span class="fw-medium" [class.text-white]="answerModalEntry?.correctAnswer === val">
+              {{ val === 'true' ? 'True' : 'False' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Integer / Numeric -->
+      <div *ngIf="answerModalQuestion.questionType === 'integer' || answerModalQuestion.questionType === 'numeric'">
+        <label class="form-label fw-bold small text-primary">Correct Answer:</label>
+        <input type="number" class="form-control" [(ngModel)]="answerModalEntry.correctAnswer" placeholder="Enter value">
+      </div>
+
+      <!-- Matrix -->
+      <div *ngIf="answerModalQuestion.questionType === 'matrix'">
+        <label class="form-label fw-bold small text-primary">
+          Correct Matches <span class="text-muted fw-normal">(e.g. A:PQ;B:R)</span>
+        </label>
+        <input type="text" class="form-control" [(ngModel)]="answerModalEntry.correctAnswer" placeholder="A:PQ;B:R">
+      </div>
+
+      <!-- Subjective / Others -->
+      <div *ngIf="answerModalQuestion.questionType === 'subjective' || answerModalQuestion.questionType === 'text-based'">
+        <label class="form-label fw-bold small text-primary">Correct Answer:</label>
+        <input type="text" class="form-control" [(ngModel)]="answerModalEntry.correctAnswer" placeholder="Enter answer">
+      </div>
+
+      <div class="d-flex gap-2 justify-content-end mt-4">
+        <button class="btn btn-outline-secondary btn-sm" (click)="closeAnswerModal()">Cancel</button>
+        <button class="btn btn-success btn-sm" (click)="submitAnswerModal()" [disabled]="answerModalSaving">
+          <span class="spinner-border spinner-border-sm me-1" *ngIf="answerModalSaving"></span>
+          {{ answerModalSaving ? 'Saving...' : 'Save Answer' }}
+        </button>
       </div>
     </div>
   </div>

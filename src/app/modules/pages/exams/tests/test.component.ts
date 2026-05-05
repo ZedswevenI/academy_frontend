@@ -6,6 +6,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { DomSanitizer } from '@angular/platform-browser';
 import katex from 'katex';
 
 @Component({
@@ -143,7 +144,8 @@ export class TestComponent implements OnInit, OnDestroy {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private fb: FormBuilder,
-    public authService: AuthService
+    public authService: AuthService,
+    private sanitizer: DomSanitizer
   ) {
     if (this.authService.assignmentRole()) {
       this.actions.pop();
@@ -903,13 +905,69 @@ export class TestComponent implements OnInit, OnDestroy {
   loadGraceQuestions() {
     this.graceQuestionsLoading = true;
     this.commonApi.fetchData({ entiId: localStorage.getItem('tenantId'), examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
-      next: (res: any) => {
+      next: async (res: any) => {
         if (res?.status) {
           const loadedQuestions = res.data?.questions || [];
-          this.graceQuestions = loadedQuestions.map((q: any) => ({
-            ...q,
-            questionHtml: this.renderLatexInHtml(q.questionHtml || q.question || '')
-          }));
+          this.graceQuestions = await Promise.all(
+            loadedQuestions.map(async (q: any) => {
+              const rawHtml = q.questionHtml || q.question || '';
+              const withImages = await this.replaceDownloadUrls(rawHtml);
+              const rendered = this.renderLatexInHtml(withImages);
+
+              const options = q.questionOptions?.length
+                ? await Promise.all(
+                    q.questionOptions.map(async (opt: any) => {
+                      const text = await this.replaceDownloadUrls(opt.textHtml || '');
+                      return {
+                        ...opt,
+                        textHtml: this.sanitizer.bypassSecurityTrustHtml(
+                          this.renderLatexInHtml(text),
+                        ),
+                      };
+                    }),
+                  )
+                : [];
+
+              const leftColumn = q.leftColumn?.length
+                ? await Promise.all(
+                    q.leftColumn.map(async (item: any, i: number) => {
+                      const text = await this.replaceDownloadUrls(item?.text || '');
+                      return {
+                        ...item,
+                        key: item?.key || String.fromCharCode(65 + i),
+                        textHtml: this.sanitizer.bypassSecurityTrustHtml(
+                          this.renderLatexInHtml(text),
+                        ),
+                      };
+                    }),
+                  )
+                : [];
+
+              const rightColumn = q.rightColumn?.length
+                ? await Promise.all(
+                    q.rightColumn.map(async (item: any, i: number) => {
+                      const text = await this.replaceDownloadUrls(item?.text || '');
+                      return {
+                        ...item,
+                        key: item?.key || String.fromCharCode(80 + i),
+                        textHtml: this.sanitizer.bypassSecurityTrustHtml(
+                          this.renderLatexInHtml(text),
+                        ),
+                      };
+                    }),
+                  )
+                : [];
+
+              return {
+                ...q,
+                questionHtml: this.sanitizer.bypassSecurityTrustHtml(rendered),
+                questionOptions: options,
+                leftColumn,
+                rightColumn,
+                showOptions: false,
+              };
+            }),
+          );
         }
         this.graceQuestionsLoading = false;
       },
@@ -919,6 +977,7 @@ export class TestComponent implements OnInit, OnDestroy {
       }
     });
   }
+
 
   getFilteredGraceQuestions() {
     const selected = this.graceForm.get('subjectId')?.value;

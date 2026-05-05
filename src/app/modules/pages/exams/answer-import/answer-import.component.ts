@@ -414,6 +414,31 @@ export class AnswerImportComponent implements OnInit {
   existingQuestions: any[] = [];
   fetchingQuestions = true;
 
+  /* ── Manual entry mode ── */
+  mode: 'docx' | 'manual' = 'docx';
+  manualEntries: any[] = [];
+  manualSubmitting = false;
+
+  formatType(type: string): string {
+    const map: Record<string, string> = {
+      mcq_single: 'MCQ (Single)',
+      mcq_multi: 'MCQ (Multiple)',
+      'mcq-single': 'MCQ (Single)',
+      'mcq-multi': 'MCQ (Multiple)',
+      true_false: 'True / False',
+      integer: 'Integer',
+      numeric: 'Numerical',
+      subjective: 'Subjective',
+      matrix: 'Matrix Match',
+      passage_qns: 'Passage Based',
+    };
+    return map[type] || type;
+  }
+
+  get dirtyCount(): number {
+    return this.manualEntries.filter((e) => e.dirty).length;
+  }
+
   constructor(
     private commonApi: CommonapiService,
     private alert: AlertService,
@@ -811,6 +836,122 @@ export class AnswerImportComponent implements OnInit {
     } catch (err) {
       this.submitting = false;
       this.alert.error('Error uploading solution images. Please try again.');
+    }
+  }
+
+  switchMode(m: 'docx' | 'manual') {
+    this.mode = m;
+    if (m === 'manual' && !this.manualEntries.length && this.existingQuestions.length) {
+      this.buildManualEntries();
+    }
+  }
+
+  buildManualEntries() {
+    this.manualEntries = this.existingQuestions.map((q: any) => {
+      const entry: any = { question: q, dirty: false };
+      const type = q.questionType;
+      if (['mcq_single', 'mcq_multi', 'mcq-single', 'mcq-multi'].includes(type)) {
+        entry.options = (q.questionOptions || []).map((o: any) => ({
+          ...o,
+          isCorrect: o.isCorrect || false,
+        }));
+      } else if (type === 'true_false') {
+        entry.correctAnswer = q.correctAnswer || '';
+      } else if (type === 'matrix') {
+        entry.correctAnswer = q.correctAnswer || '';
+      } else {
+        entry.correctAnswer = q.correctAnswer || '';
+      }
+      return entry;
+    });
+  }
+
+  toggleMcqOption(entry: any, optIndex: number) {
+    const type = entry.question.questionType;
+    if (type === 'mcq_single' || type === 'mcq-single') {
+      entry.options.forEach((o: any, i: number) => (o.isCorrect = i === optIndex));
+    } else {
+      entry.options[optIndex].isCorrect = !entry.options[optIndex].isCorrect;
+    }
+    entry.dirty = true;
+  }
+
+  setTfAnswer(entry: any, val: string) {
+    entry.correctAnswer = val;
+    entry.dirty = true;
+  }
+
+  onAnswerInput(entry: any) {
+    entry.dirty = true;
+  }
+
+  async submitManual() {
+    const toSubmit = this.manualEntries.filter((e) => e.dirty);
+    if (!toSubmit.length) {
+      this.alert.error('No answers have been entered.');
+      return;
+    }
+
+    this.manualSubmitting = true;
+    try {
+      const questions = await Promise.all(
+        toSubmit.map(async (e) => {
+          const q = e.question;
+          const type = q.questionType;
+          const item: any = { questionId: q.questionId };
+
+          if (['mcq_single', 'mcq_multi', 'mcq-single', 'mcq-multi'].includes(type)) {
+            item.questionOptions = e.options.map((o: any) => ({
+              key: o.key,
+              isCorrect: o.isCorrect,
+              partialMark: o.partialMark || 0,
+            }));
+            item.correctAnswer = e.options
+              .filter((o: any) => o.isCorrect)
+              .map((o: any) => o.key)
+              .join(',');
+          } else if (type === 'true_false') {
+            item.correctAnswer = e.correctAnswer;
+          } else {
+            item.correctAnswer = e.correctAnswer;
+          }
+
+          if (e.solutionHtml) {
+            item.solutionHtml = await this.replaceImagesWithUrls(e.solutionHtml);
+          }
+
+          return item;
+        }),
+      );
+
+      const payload = {
+        entiId: this.tenantId,
+        userId: localStorage.getItem('userId'),
+        examId: this.examData.examId,
+        questions,
+      };
+
+      this.commonApi.fetchData(payload, 'exam/questions', 'bulk-upload-answers').subscribe({
+        next: (res: any) => {
+          this.manualSubmitting = false;
+          if (res?.status) {
+            const dt = res.data || {};
+            this.alert.success(
+              res.message || `${dt.updatedCount || toSubmit.length} answers saved successfully.`,
+            );
+            this.router.navigate(['/app/exams/exams/view'], { state: { exam: this.examData } });
+          } else {
+            this.alert.error(res?.message || 'Failed to save answers.');
+          }
+        },
+        error: (err: any) => {
+          this.manualSubmitting = false;
+          this.alert.error(err?.error?.message || 'Error saving answers.');
+        },
+      });
+    } catch {
+      this.manualSubmitting = false;
+      this.alert.error('Error preparing answers. Please try again.');
     }
   }
 
