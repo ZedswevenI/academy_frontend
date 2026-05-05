@@ -31,6 +31,7 @@ export class ExamQuestionsComponent implements OnInit {
 
   /* ================= TABLE COLUMNS ================= */
   columnsArray = [
+    { key: 'questionNo', label: 'Question No', sortable: false },
     { key: 'questionPreview', label: 'Question', sortable: false },
     { key: 'questionType', label: 'Type', sortable: true },
     { key: 'difficulty', label: 'Difficulty', sortable: true },

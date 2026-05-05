@@ -8,8 +8,8 @@
 // ============================================================
 
 import { Directive, Input, OnInit, TemplateRef, ViewContainerRef } from '@angular/core';
-import { AuthService } from '../../service/auth/auth.service'; // adjust path
-import { RoleLevel } from '../role.config'; // adjust path
+import { AuthService } from '../../service/auth/auth.service';
+import { RoleLevel } from '../role.config';
 
 @Directive({
   selector: '[appHasRole]'
