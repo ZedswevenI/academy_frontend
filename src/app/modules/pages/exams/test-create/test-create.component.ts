@@ -85,7 +85,12 @@ export class TestCreateComponent implements OnInit {
     this.examForm = this.fb.group({
       examCode: ['', Validators.required],
       examName: ['', Validators.required],
-      password: ['', Validators.required],
+      password: [
+        '',
+        this.isEditMode
+          ? [Validators.minLength(6), Validators.maxLength(10)]
+          : [Validators.required, Validators.minLength(6), Validators.maxLength(10)]
+      ],
       description: [''],
       testType: ['practice', Validators.required],
       medium: ['en', Validators.required],

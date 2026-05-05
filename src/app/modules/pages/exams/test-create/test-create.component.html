@@ -23,8 +23,19 @@
 
     <!-- Password -->
     <div class="col-md-4">
-      <label class="form-label">Password <span class="text-danger">*</span></label>
-      <input class="form-control" formControlName="password" placeholder="Enter exam password" />
+      <label class="form-label">
+        Password
+        <span *ngIf="!isEditMode" class="text-danger">*</span>
+        <span *ngIf="isEditMode" class="text-muted fw-normal small ms-1">(optional — leave blank to keep current)</span>
+      </label>
+      <input class="form-control" formControlName="password" placeholder="6–10 characters"
+        [class.is-invalid]="examForm.get('password')?.invalid && examForm.get('password')?.touched" />
+      <div class="invalid-feedback">
+        <span *ngIf="examForm.get('password')?.errors?.['required']">Password is required.</span>
+        <span *ngIf="examForm.get('password')?.errors?.['minlength']">Minimum 6 characters required.</span>
+        <span *ngIf="examForm.get('password')?.errors?.['maxlength']">Maximum 10 characters allowed.</span>
+      </div>
+      <small class="text-muted">6 to 10 characters</small>
     </div>
 
     <!-- Test Type -->

@@ -392,6 +392,7 @@
 
 import { Component, OnInit } from '@angular/core';
 import JSZip from 'jszip';
+import * as XLSX from 'xlsx';
 import { firstValueFrom } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
@@ -415,7 +416,7 @@ export class AnswerImportComponent implements OnInit {
   fetchingQuestions = true;
 
   /* ── Manual entry mode ── */
-  mode: 'docx' | 'manual' = 'docx';
+  mode: 'docx' | 'excel' | 'manual' = 'docx';
   manualEntries: any[] = [];
   manualSubmitting = false;
 
@@ -839,8 +840,80 @@ export class AnswerImportComponent implements OnInit {
     }
   }
 
-  switchMode(m: 'docx' | 'manual') {
+  /* ── Excel state ── */
+  excelFile: File | null = null;
+  excelParsing = false;
+
+  onExcelSelected(event: any) {
+    const file = event.target.files[0];
+    if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+      this.excelFile = file;
+      this.parsedAnswers = [];
+    } else {
+      this.alert.error('Please select a valid .xlsx or .xls file');
+      this.excelFile = null;
+    }
+  }
+
+  removeExcelFile() {
+    this.excelFile = null;
+    this.parsedAnswers = [];
+  }
+
+  async parseExcel() {
+    if (!this.excelFile) return;
+    if (!this.existingQuestions.length) {
+      this.alert.error('No existing questions loaded for this exam.');
+      return;
+    }
+
+    this.excelParsing = true;
+    try {
+      const buffer = await this.excelFile.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      const parsed: any[] = rows
+        .filter((r: any) => r['Question No'] || r['question_no'] || r['QuestionNo'])
+        .map((r: any) => ({
+          questionId: String(r['Question No'] ?? r['question_no'] ?? r['QuestionNo'] ?? '').trim(),
+          ansStr: String(r['Answer'] ?? r['answer'] ?? r['ANS'] ?? '').trim(),
+          solutionHtml: String(r['Solution'] ?? r['solution'] ?? r['SOL'] ?? '').trim(),
+        }));
+
+      if (!parsed.length) {
+        this.alert.error('No data rows found. Ensure columns: Question No, Answer, Solution');
+        this.excelParsing = false;
+        return;
+      }
+
+      this.mapParsedToQuestions(parsed);
+    } catch (err) {
+      console.error(err);
+      this.alert.error('Failed to parse Excel file.');
+    }
+    this.excelParsing = false;
+  }
+
+  async downloadExcelSample() {
+    const data = [
+      { 'Question No': 1, 'Answer': 'A', 'Solution': 'Option A is correct because...' },
+      { 'Question No': 2, 'Answer': 'B, C', 'Solution': 'Both B and C satisfy the condition.' },
+      { 'Question No': 3, 'Answer': 'true', 'Solution': 'This aligns with Newton\'s First Law.' },
+      { 'Question No': 4, 'Answer': '42.5', 'Solution': 'V = l * w * h = 5 * 8.5 * 1 = 42.5' },
+      { 'Question No': 5, 'Answer': 'A:PQ;B:R', 'Solution': 'A matches P and Q, B matches R.' },
+    ];
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{ wch: 14 }, { wch: 20 }, { wch: 50 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Answers');
+    XLSX.writeFile(wb, 'sample_answers.xlsx');
+  }
+
+  switchMode(m: 'docx' | 'excel' | 'manual') {
     this.mode = m;
+    this.parsedAnswers = [];
     if (m === 'manual' && !this.manualEntries.length && this.existingQuestions.length) {
       this.buildManualEntries();
     }
