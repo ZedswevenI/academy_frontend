@@ -20,7 +20,10 @@
   background-color: var(--btn-bg, #1d90ff) !important;
   border-color: var(--btn-bg, #1d90ff) !important;
   color: var(--btn-text, #ffffff) !important;
-  box-shadow: var(--btn-shadow, 0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
+  box-shadow: var(
+    --btn-shadow,
+    0px 8px 16px rgba(0, 102, 255, 0.25)
+  ) !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 8px;
@@ -44,7 +47,10 @@
   background-color: var(--btn-bg, #1d90ff) !important;
   border-color: var(--btn-bg, #1d90ff) !important;
   color: var(--btn-text, #ffffff) !important;
-  box-shadow: var(--btn-shadow, 0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
+  box-shadow: var(
+    --btn-shadow,
+    0px 8px 16px rgba(0, 102, 255, 0.25)
+  ) !important;
   border-radius: 42px !important;
 }
 
@@ -89,7 +95,8 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18),
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.18),
     0 0 0 1px rgba(148, 163, 184, 0.25);
 }
 
@@ -119,4 +126,8 @@
   .app-modal-body {
     padding-inline: 1rem;
   }
+}
+
+.cursor-pointer {
+  cursor: pointer !important;
 }

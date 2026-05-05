@@ -2073,21 +2073,49 @@ export class TimetableComponent implements OnInit, OnDestroy {
   //   return subId ? this.subjectById.get(subId) || null : null;
   // }
 
-  private getSubjectFromStaff(staff: any): any {
-    const subjects = Array.isArray(staff?.subject)
-      ? staff.subject
-      : staff?.subject
-        ? [staff.subject]
-        : [];
-    for (const s of subjects) {
-      const id = safeTrim(s?._id || s);
-      if (id) {
-        const found = this.subjectById.get(id);
-        if (found) return found;
-      }
+  // private getSubjectFromStaff(staff: any): any {
+  //   const subjects = Array.isArray(staff?.subject)
+  //     ? staff.subject
+  //     : staff?.subject
+  //       ? [staff.subject]
+  //       : [];
+  //   for (const s of subjects) {
+  //     const id = safeTrim(s?._id || s);
+  //     if (id) {
+  //       const found = this.subjectById.get(id);
+  //       if (found) return found;
+  //     }
+  //   }
+  //   return null;
+  // }
+
+  private getSubjectFromStaff(staff: any, batchCode?: string): any {
+  if (batchCode) {
+    const batch = this.batchesFull.find(
+      (b: any) => safeTrim(b?.batchCode) === safeTrim(batchCode)
+    );
+    const staffMap = Array.isArray(batch?.staffMap) ? batch.staffMap : [];
+    const staffId = safeTrim(staff?.staffId || staff?._id);
+    const mapEntry = staffMap.find(
+      (m: any) => safeTrim(m?.staffId) === staffId
+    );
+    if (mapEntry?.subjectId) {
+      const subId = safeTrim(mapEntry.subjectId);
+      const found = this.subjectById.get(subId);
+      if (found) return found;
     }
-    return null;
   }
+  const subjects = Array.isArray(staff?.subject) ? staff.subject :
+                   staff?.subject ? [staff.subject] : [];
+  for (const s of subjects) {
+    const id = safeTrim(s?._id || s);
+    if (id) {
+      const found = this.subjectById.get(id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
   private buildWeekPayloadFromRows(
     rows: any[],
@@ -2134,7 +2162,8 @@ export class TimetableComponent implements OnInit, OnDestroy {
         return null;
       }
 
-      const subj = this.getSubjectFromStaff(staff);
+      // const subj = this.getSubjectFromStaff(staff);
+      const subj = this.getSubjectFromStaff(staff, batchCode);
       const periodType = (() => {
         const t = safeTrim(row['PeriodType']).toUpperCase() || 'LECTURE';
         return VALID_PERIOD_TYPES.includes(t) ? t : 'LECTURE';

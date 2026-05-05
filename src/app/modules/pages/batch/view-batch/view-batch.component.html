@@ -34,14 +34,14 @@
         <button class="btn btn-outline-success btn-sm rounded-pill" (click)="openSpecialClass()">
             <i class="fa-solid fa-calendar-plus"></i> Special Class
         </button>
-        <button class="btn btn-outline-primary btn-sm rounded-pill" (click)="openPromoteModal()"
+        <button class="btn btn-outline-primary btn-sm rounded-pill" *appHasRole="['L1']" (click)="openPromoteModal()"
             [disabled]="batch?.status !== 'ACTIVE'">
             <i class="fa-solid fa-arrow-up-right-dots"></i> Promote
         </button>
         <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm rounded-pill" (click)="exportBatch()">
             <i class="fa-solid fa-file-export"></i> Export
         </button>
-        <button class="btn btn-outline-danger btn-sm rounded-pill" (click)="openCloseBatch()"
+        <button class="btn btn-outline-danger btn-sm rounded-pill" *appHasRole="['L1']" (click)="openCloseBatch()"
             [disabled]="batch?.status === 'CLOSED'">
             <i class="fa-solid fa-lock"></i> Close Batch
         </button>
@@ -49,7 +49,7 @@
             class="btn btn-sm btn-outline-success rounded-pill" (click)="exportReport()">
             <i class="fa-solid fa-file-excel me-1"></i> Export Report
         </button>
-        <button class="btn btn-primary btn-sm rounded-pill" (click)="openOffcanvas('edit')">
+        <button class="btn btn-primary btn-sm rounded-pill" *appHasRole="['L1']" (click)="openOffcanvas('edit')">
             <i class="fa-solid fa-pen-to-square"></i> Edit
         </button>
     </div>
@@ -121,10 +121,16 @@
                 (click)="openOffcanvas('assign')">
                 <i class="fa-solid fa-user-plus me-1"></i> Assign Students
             </button>
-            <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-success rounded-pill"
-                (click)="openOffcanvas('import')">
+            <!-- <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-success rounded-pill"
+                (click)="openOffcanvas('import')" *appHasRole="['L1']">
                 <i class="fa-solid fa-file-import me-1"></i> Import from Excel
-            </button>
+            </button> -->
+            <ng-container *appHasRole="['L1']">
+                <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-success rounded-pill"
+                    (click)="openOffcanvas('import')">
+                    <i class="fa-solid fa-file-import me-1"></i> Import from Excel
+                </button>
+            </ng-container>
             <button *ngIf="activeTab === 'faculty'" class="btn btn-sm btn-outline-primary rounded-pill"
                 (click)="openOffcanvas('staff')">
                 <i class="fa-solid fa-users-gear me-1"></i> Manage Faculty
