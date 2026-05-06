@@ -38,9 +38,8 @@
     </div>
 
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
-      [success]="'Delivered'" [primary]="'Sent'" [warn]="'Queued'" [danger]="'Failed'"
-      [totalRecords]="totalRecords" [loading]="loading"
-      [searchPlaceholder]="'Search recipient, admission no...'">
+      [success]="'Delivered'" [primary]="'Sent'" [warn]="'Queued'" [danger]="'Failed'" [totalRecords]="totalRecords"
+      [loading]="loading" [searchPlaceholder]="'Search recipient, admission no...'">
     </custom-table>
 
   </div>
@@ -81,18 +80,24 @@
           </div>
           <div class="col-6">
             <small class="text-muted d-block">Status</small>
-            <span class="badge rounded-pill"
-              [class.bg-success]="selectedLog.status === 'delivered'"
-              [class.bg-primary]="selectedLog.status === 'sent'"
-              [class.bg-warning]="selectedLog.status === 'queued'"
-              [class.text-dark]="selectedLog.status === 'queued'"
-              [class.bg-danger]="selectedLog.status === 'failed'">
+            <span class="badge rounded-pill" [class.bg-success]="selectedLog.status === 'delivered'"
+              [class.bg-primary]="selectedLog.status === 'sent'" [class.bg-warning]="selectedLog.status === 'queued'"
+              [class.text-dark]="selectedLog.status === 'queued'" [class.bg-danger]="selectedLog.status === 'failed'">
               {{ formatStatus(selectedLog.status) }}
             </span>
           </div>
           <div class="col-12">
             <small class="text-muted d-block">Sent At</small>
             <div class="fw-semibold">{{ formatDate(selectedLog.sentAt) }}</div>
+          </div>
+          <div class="col-12" *ngIf="selectedLog.providerMessageId">
+            <small class="text-muted d-block">Provider Message ID</small>
+            <div class="fw-semibold">{{ selectedLog.providerMessageId }}</div>
+          </div>
+
+          <div class="col-12">
+            <small class="text-muted d-block">Retry Count</small>
+            <div class="fw-semibold">{{ selectedLog.retries || 0 }}</div>
           </div>
           <div class="col-12" *ngIf="selectedLog.error">
             <div class="alert alert-danger mb-0 small">

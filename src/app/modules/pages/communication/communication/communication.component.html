@@ -1,7 +1,6 @@
-<div class="ms-3 me-3 pt-1 pb-1">
+<!-- <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
         <div class="d-flex flex-column gap-4">
-            <!-- Header Section -->
             <div class="d-flex flex-column gap-4">
                 <div class="d-flex align-items-center justify-content-between">
                     <h1 class="fw-bold mb-0" style="font-size: 30px;">
@@ -10,7 +9,6 @@
                 </div>
             </div>
         </div>
-
         <div class="mt-3">
             <form [formGroup]="communicationForm">
                 <filter label1="Class" label2="Batch" label3="Student" [required]="true" [options1]="class_options"
@@ -26,8 +24,6 @@
                         </selectbox>
                     </div>
                 </div>
-
-                <!-- Template preview -->
                 <div *ngIf="selectedTemplate" class="send-preview mt-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div>
@@ -40,14 +36,12 @@
                         </div>
                         <small class="text-muted">Keys shown with example values</small>
                     </div>
-
                     <div *ngIf="selectedTemplate.channel === 'email' && previewSubject" class="preview-subject mb-2">
                         <small class="text-muted d-block">Subject</small>
                         <div class="fw-medium" [innerHTML]="previewSubject"></div>
                     </div>
                     <div class="preview-body" [innerHTML]="previewBody"></div>
                 </div>
-
                 <div class="row mt-4 ms-3">
                     <label class="form-label fw-black fs-9 ms-n3">Delivery Channel<span class="requierdstar"
                             style="color: red">*</span></label>
@@ -72,7 +66,6 @@
                     </div>
                 </div>
 
-
                 <div class="row mt-2">
                     <div class="d-flex justify-content-end px-2">
                         <button class="btn closebutton" routerLink="/app/communication">Back</button>
@@ -81,7 +74,128 @@
                 </div>
             </form>
         </div>
-
-
+    </div>
+</div> -->
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-comments"></i> Communication
+                    </h1>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <form [formGroup]="communicationForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label fs-13 fw-medium">
+                            Campaign Title <span class="text-danger">*</span>
+                        </label>
+                        <input class="form-control form-control-sm" formControlName="title"
+                            placeholder="e.g. Fee Reminder - May 2026" />
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <filter label1="Batch" label2="Student" [required]="true" [options1]="batch_options"
+                        [options2]="student_options" [placeholder]="'Select'" formControlName="filter"
+                        [control]="communicationForm.get('filter')">
+                    </filter>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <selectbox label="Select Template" placeholder="Choose a template" formControlName="templateId"
+                            [options]="templateOptions" optionLabel="label" optionValue="value"
+                            [control]="communicationForm.get('templateId')" [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-3">
+                        <selectbox label="Send Type" formControlName="sendType" [options]="sendTypeOptions"
+                            optionLabel="label" optionValue="value" [control]="communicationForm.get('sendType')"
+                            [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-3" *ngIf="communicationForm.get('sendType')?.value === 'SCHEDULED'">
+                        <label class="form-label fs-13 fw-medium">
+                            Schedule Date & Time <span class="text-danger">*</span>
+                        </label>
+                        <input type="datetime-local" class="form-control form-control-sm"
+                            formControlName="scheduledAtInput" />
+                    </div>
+                </div>
+                <div class="row mt-3" *ngIf="recipientPreview">
+                    <div class="col-md-12">
+                        <div class="alert alert-light border rounded-3 mb-0">
+                            <div class="d-flex flex-wrap gap-3 align-items-center">
+                                <span><strong>Total:</strong> {{ recipientPreview.totalRecipients }}</span>
+                                <span class="text-success"><strong>Valid Email:</strong> {{
+                                    recipientPreview.validEmailCount }}</span>
+                                <span class="text-danger"><strong>Missing/Invalid:</strong> {{
+                                    recipientPreview.missingEmailCount }}</span>
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-auto"
+                                    (click)="previewRecipients()">
+                                    Refresh Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="selectedTemplate" class="send-preview mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="fw-semibold fs-14">
+                                <i class="fa-regular fa-eye me-1 text-primary"></i> Template Preview
+                            </span>
+                            <span class="badge rounded-pill ms-2"
+                                [ngClass]="channelBadgeClass(selectedTemplate.channel)">
+                                {{ selectedTemplate.channel | titlecase }}
+                            </span>
+                        </div>
+                        <small class="text-muted">Keys shown with example values</small>
+                    </div>
+                    <div *ngIf="selectedTemplate.channel === 'email' && previewSubject" class="preview-subject mb-2">
+                        <small class="text-muted d-block">Subject</small>
+                        <div class="fw-medium" [innerHTML]="previewSubject"></div>
+                    </div>
+                    <div class="preview-body" [innerHTML]="previewBody"></div>
+                </div>
+                <div class="row mt-4 ms-3">
+                    <label class="form-label fw-black fs-9 ms-n3">
+                        Delivery Channel <span class="requierdstar" style="color: red">*</span>
+                    </label>
+                </div>
+                <div class="col-md-12 ms-5">
+                    <div class="row">
+                        <checkbox label="Whats App" class="mt-2" [required]="false"
+                            [control]="communicationForm.get('whatsapp')" formControlName="whatsapp">
+                        </checkbox>
+                    </div>
+                    <div class="row">
+                        <checkbox label="EMail" class="mt-2" [required]="false"
+                            [control]="communicationForm.get('mail')" formControlName="mail">
+                        </checkbox>
+                    </div>
+                    <div class="row">
+                        <checkbox label="SMS" class="mt-2" [required]="false" [control]="communicationForm.get('sms')"
+                            formControlName="sms">
+                        </checkbox>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="d-flex justify-content-end px-2">
+                        <button type="button" class="btn closebutton" routerLink="/app/communication">Back</button>
+                        <button type="button" class="btn btn-outline-primary me-2" (click)="previewRecipients()"
+                            [disabled]="loading">
+                            Preview Recipients
+                        </button>
+                        <button type="button" class="btn submitbutton" (click)="onSubmit()" [disabled]="loading">
+                            {{ loading ? 'Processing...' : 'Submit' }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
