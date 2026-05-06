@@ -15,6 +15,7 @@ import { ResultBatchComponent } from './result-batch/result-batch.component';
 import { ResultViewComponent } from './result-view/result-view.component';
 import { AnswerImportComponent } from './answer-import/answer-import.component';
 import { StudentResultComponent } from './student-result/student-result.component';
+import { MarksImportComponent } from './marks-import/marks-import.component';
 
 const routes: Routes = [
   { path: 'instructions', component: ExamInstructionsComponent, title: 'Exam-Instructions' },
@@ -31,7 +32,8 @@ const routes: Routes = [
   { path: 'exams/view', component: TestViewComponent, title: 'Exam-View' },
   { path: 'exams/result-batch', component: ResultBatchComponent, title: 'Exam-Result-Batches' },
   { path: 'exams/result-view', component: ResultViewComponent, title: 'Exam-Result-View' },
-  { path: 'exams/student-result', component: StudentResultComponent, title: 'Exam-Student-Result' }
+  { path: 'exams/student-result', component: StudentResultComponent, title: 'Exam-Student-Result' },
+  { path: 'exams/marks-import', component: MarksImportComponent, title: 'Exam-Marks-Import' }
 ];
 
 @NgModule({

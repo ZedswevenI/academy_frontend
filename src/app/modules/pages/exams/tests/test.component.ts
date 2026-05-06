@@ -451,6 +451,7 @@ export class TestComponent implements OnInit, OnDestroy {
   }
   importQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-import'], { state: { questions: row } }); }
   importAnswers(row: any) { this.router.navigate(['/app/exams/exams/answer-import'], { state: { exam: row } }); }
+  importMarks() { this.router.navigate(['/app/exams/exams/marks-import']); }
   addQuestions(row: any) { this.router.navigate(['/app/exams/exams/question-create'], { state: { question: row } }); }
   viewResult(row: any) { this.router.navigate(['/app/exams/exams/result-batch'], { state: { exam: row } }); }
 

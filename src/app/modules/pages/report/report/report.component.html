@@ -85,14 +85,107 @@
     <div class="filter-panel">
       <div class="row g-3 align-items-end">
 
-        <!-- Batch selector -->
-        <div class="col-md-3" *ngIf="needsBatchFilter()">
-          <label class="form-label fw-medium">Batch <span class="text-danger">*</span></label>
-          <select class="form-select form-select-sm" [(ngModel)]="selectedBatchId"
-            (ngModelChange)="onBatchChange($event)">
-            <option value="">Select Batch</option>
-            <option *ngFor="let b of batchOptions" [value]="b.value">{{ b.label }}</option>
-          </select>
+        <!-- Multi-select batch (batch reports) -->
+        <div class="col-md-3 batch-multiselect-wrapper" *ngIf="needsBatchFilter()" style="position:relative">
+          <label class="form-label fw-medium">
+            Batch <span class="text-muted fw-normal small">(optional)</span>
+          </label>
+          <button type="button"
+            class="form-select form-select-sm text-start d-flex justify-content-between align-items-center"
+            (click)="toggleBatchDropdown()">
+            <span class="text-truncate">{{ batchSelectionLabel }}</span>
+            <i class="fa-solid fa-chevron-down ms-2 small"></i>
+          </button>
+          <div *ngIf="batchDropdownOpen" class="border rounded shadow bg-white py-1"
+            style="position:absolute;z-index:1050;width:100%;max-height:240px;overflow-y:auto;top:100%;left:0">
+            <!-- Select All -->
+            <div class="d-flex align-items-center px-3 py-2 border-bottom" style="cursor:pointer"
+              (click)="toggleSelectAllBatches()">
+              <input type="checkbox" class="form-check-input me-2" [checked]="allBatchesSelected"
+                [indeterminate]="selectedBatchIds.length > 0 && !allBatchesSelected" readonly>
+              <span class="fw-medium">Select All</span>
+            </div>
+            <!-- Individual options -->
+            <div *ngFor="let b of batchOptions" class="d-flex align-items-center px-3 py-2 batch-option"
+              style="cursor:pointer" (click)="toggleBatchSelection(b.value)">
+              <input type="checkbox" class="form-check-input me-2" [checked]="isBatchSelected(b.value)" readonly>
+              <span>{{ b.label }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-select batch (student reports) -->
+        <div class="col-md-3 student-batch-multiselect-wrapper" *ngIf="needsBatchFilterForStudent()"
+          style="position:relative">
+          <label class="form-label fw-medium">
+            Batch <span class="text-muted fw-normal small">(optional)</span>
+          </label>
+          <button type="button"
+            class="form-select form-select-sm text-start d-flex justify-content-between align-items-center"
+            (click)="toggleStudentBatchDropdown()">
+            <span class="text-truncate">{{ studentBatchSelectionLabel }}</span>
+            <i class="fa-solid fa-chevron-down ms-2 small"></i>
+          </button>
+          <div *ngIf="studentBatchDropdownOpen" class="border rounded shadow bg-white"
+            style="position:absolute;z-index:1050;width:100%;top:100%;left:0">
+            <!-- Search -->
+            <div class="px-2 pt-2 pb-1 border-bottom">
+              <input class="form-control form-control-sm" placeholder="Search batch..." [(ngModel)]="studentBatchSearch"
+                (click)="$event.stopPropagation()">
+            </div>
+            <div style="max-height:200px;overflow-y:auto">
+              <div class="d-flex align-items-center px-3 py-2 border-bottom" style="cursor:pointer"
+                (click)="toggleSelectAllStudentBatches()">
+                <input type="checkbox" class="form-check-input me-2" [checked]="allStudentBatchesSelected"
+                  [indeterminate]="selectedBatchIds.length > 0 && !allStudentBatchesSelected" readonly>
+                <span class="fw-medium">Select All</span>
+              </div>
+              <div *ngFor="let b of filteredStudentBatchOptions"
+                class="d-flex align-items-center px-3 py-2 batch-option" style="cursor:pointer"
+                (click)="toggleStudentBatchSelection(b.value)">
+                <input type="checkbox" class="form-check-input me-2" [checked]="isBatchSelected(b.value)" readonly>
+                <span>{{ b.label }}</span>
+              </div>
+              <div *ngIf="!filteredStudentBatchOptions.length" class="px-3 py-2 text-muted small">No results</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-select batch (teacher reports) -->
+        <div class="col-md-3 teacher-batch-multiselect-wrapper" *ngIf="needsBatchFilterForTeacher()"
+          style="position:relative">
+          <label class="form-label fw-medium">
+            Batch <span class="text-muted fw-normal small">(optional)</span>
+          </label>
+          <button type="button"
+            class="form-select form-select-sm text-start d-flex justify-content-between align-items-center"
+            (click)="toggleTeacherBatchDropdown()">
+            <span class="text-truncate">{{ teacherBatchSelectionLabel }}</span>
+            <i class="fa-solid fa-chevron-down ms-2 small"></i>
+          </button>
+          <div *ngIf="teacherBatchDropdownOpen" class="border rounded shadow bg-white"
+            style="position:absolute;z-index:1050;width:100%;top:100%;left:0">
+            <!-- Search -->
+            <div class="px-2 pt-2 pb-1 border-bottom">
+              <input class="form-control form-control-sm" placeholder="Search batch..." [(ngModel)]="teacherBatchSearch"
+                (click)="$event.stopPropagation()">
+            </div>
+            <div style="max-height:200px;overflow-y:auto">
+              <div class="d-flex align-items-center px-3 py-2 border-bottom" style="cursor:pointer"
+                (click)="toggleSelectAllTeacherBatches()">
+                <input type="checkbox" class="form-check-input me-2" [checked]="allTeacherBatchesSelected"
+                  [indeterminate]="selectedBatchIds.length > 0 && !allTeacherBatchesSelected" readonly>
+                <span class="fw-medium">Select All</span>
+              </div>
+              <div *ngFor="let b of filteredTeacherBatchOptions"
+                class="d-flex align-items-center px-3 py-2 batch-option" style="cursor:pointer"
+                (click)="toggleBatchSelection(b.value)">
+                <input type="checkbox" class="form-check-input me-2" [checked]="isBatchSelected(b.value)" readonly>
+                <span>{{ b.label }}</span>
+              </div>
+              <div *ngIf="!filteredTeacherBatchOptions.length" class="px-3 py-2 text-muted small">No results</div>
+            </div>
+          </div>
         </div>
 
         <!-- Batch Info filters -->
@@ -116,16 +209,25 @@
 
         <!-- Student selector -->
         <div class="col-md-3" *ngIf="needsStudentFilter()">
-          <label class="form-label fw-medium">Admission No <span class="text-danger">*</span></label>
-          <input class="form-control form-control-sm" placeholder="Enter admission no..."
-            [(ngModel)]="selectedAdmissionNo" />
+          <label class="form-label fw-medium">Student <span class="text-danger">*</span></label>
+          <ng-container *ngIf="selectedBatchIds.length; else admissionInput">
+            <select class="form-select form-select-sm" [(ngModel)]="selectedStudentId"
+              (ngModelChange)="onStudentChange($event)">
+              <option value="">Select Student</option>
+              <option *ngFor="let s of studentOptions" [value]="s.value">{{ s.label }}</option>
+            </select>
+          </ng-container>
+          <ng-template #admissionInput>
+            <input class="form-control form-control-sm" placeholder="Enter admission no..."
+              [(ngModel)]="selectedAdmissionNo" />
+          </ng-template>
         </div>
 
         <!-- Staff selector with search -->
         <div class="col-md-3" *ngIf="needsStaffFilter()">
           <label class="form-label fw-medium">Staff <span class="text-danger">*</span></label>
-          <input class="form-control form-control-sm mb-1" placeholder="Search staff..."
-            [(ngModel)]="staffSearch" (input)="filterStaffOptions()" />
+          <input class="form-control form-control-sm mb-1" placeholder="Search staff..." [(ngModel)]="staffSearch"
+            (input)="filterStaffOptions()" />
           <select class="form-select form-select-sm" [(ngModel)]="selectedStaffId">
             <option value="">Select Staff</option>
             <option *ngFor="let s of filteredStaffOptions" [value]="s.value">{{ s.label }}</option>

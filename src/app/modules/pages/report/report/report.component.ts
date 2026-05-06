@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
@@ -68,6 +68,14 @@ export class ReportComponent implements OnInit {
   batchOptions: any[] = [];
   selectedBatchId = '';
   selectedBatchCode = '';
+  // Multi-select for all tabs
+  selectedBatchIds: string[] = [];
+  selectedBatchCodes: string[] = [];
+  batchDropdownOpen = false;
+  studentBatchDropdownOpen = false;
+  teacherBatchDropdownOpen = false;
+  studentBatchSearch = '';
+  teacherBatchSearch = '';
 
   // Student filters
   studentSearch = '';
@@ -157,6 +165,11 @@ export class ReportComponent implements OnInit {
     this.filterEntryType = '';
     this.selectedBatchId = '';
     this.selectedBatchCode = '';
+    this.selectedBatchIds = [];
+    this.selectedBatchCodes = [];
+    this.batchDropdownOpen = false;
+    this.studentBatchDropdownOpen = false;
+    this.teacherBatchDropdownOpen = false;
     this.selectedStudentId = '';
     this.selectedAdmissionNo = '';
     this.selectedStaffId = '';
@@ -238,19 +251,153 @@ export class ReportComponent implements OnInit {
     const batch = this.batchOptions.find((b: any) => b.value === val);
     this.selectedBatchCode = batch?.batchCode || '';
     this.selectedBatchId = val;
+    this.selectedStudentId = '';
+    this.selectedAdmissionNo = '';
+    this.studentOptions = [];
+  }
+
+  /* ── Multi-select batch (batch reports only) ── */
+  get allBatchesSelected(): boolean {
+    return this.batchOptions.length > 0 && this.selectedBatchIds.length === this.batchOptions.length;
+  }
+
+  get batchSelectionLabel(): string {
+    if (!this.selectedBatchIds.length) return 'All Batches';
+    if (this.allBatchesSelected) return 'All Batches';
+    if (this.selectedBatchIds.length === 1) {
+      return this.batchOptions.find((b: any) => b.value === this.selectedBatchIds[0])?.label || '1 selected';
+    }
+    return `${this.selectedBatchIds.length} batches selected`;
+  }
+
+  toggleBatchDropdown() {
+    this.batchDropdownOpen = !this.batchDropdownOpen;
+  }
+
+  closeBatchDropdown() {
+    this.batchDropdownOpen = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.batch-multiselect-wrapper')) this.batchDropdownOpen = false;
+    if (!target.closest('.student-batch-multiselect-wrapper')) { this.studentBatchDropdownOpen = false; this.studentBatchSearch = ''; }
+    if (!target.closest('.teacher-batch-multiselect-wrapper')) { this.teacherBatchDropdownOpen = false; this.teacherBatchSearch = ''; }
+  }
+
+  /* ── Multi-select batch (student reports) ── */
+  get allStudentBatchesSelected(): boolean {
+    return this.batchOptions.length > 0 && this.selectedBatchIds.length === this.batchOptions.length;
+  }
+
+  get studentBatchSelectionLabel(): string {
+    if (!this.selectedBatchIds.length) return 'All Batches';
+    if (this.allStudentBatchesSelected) return 'All Batches';
+    if (this.selectedBatchIds.length === 1)
+      return this.batchOptions.find((b: any) => b.value === this.selectedBatchIds[0])?.label || '1 selected';
+    return `${this.selectedBatchIds.length} batches selected`;
+  }
+
+  get filteredStudentBatchOptions(): any[] {
+    const q = this.studentBatchSearch.toLowerCase().trim();
+    return q ? this.batchOptions.filter((b: any) => b.label.toLowerCase().includes(q)) : this.batchOptions;
+  }
+
+  get filteredTeacherBatchOptions(): any[] {
+    const q = this.teacherBatchSearch.toLowerCase().trim();
+    return q ? this.batchOptions.filter((b: any) => b.label.toLowerCase().includes(q)) : this.batchOptions;
+  }
+
+  toggleStudentBatchDropdown() {
+    this.studentBatchDropdownOpen = !this.studentBatchDropdownOpen;
+    if (!this.studentBatchDropdownOpen) this.studentBatchSearch = '';
+  }
+
+  toggleStudentBatchSelection(value: string) {
+    this.toggleBatchSelection(value);
+    this.selectedStudentId = '';
+    this.selectedAdmissionNo = '';
+    this.loadStudentsByBatches(this.selectedBatchIds);
+  }
+
+  toggleSelectAllStudentBatches() {
+    this.toggleSelectAllBatches();
+    this.selectedStudentId = '';
+    this.selectedAdmissionNo = '';
+    this.loadStudentsByBatches(this.selectedBatchIds);
+  }
+
+  /* ── Multi-select batch (teacher reports) ── */
+  get allTeacherBatchesSelected(): boolean {
+    return this.batchOptions.length > 0 && this.selectedBatchIds.length === this.batchOptions.length;
+  }
+
+  get teacherBatchSelectionLabel(): string {
+    if (!this.selectedBatchIds.length) return 'All Batches';
+    if (this.allTeacherBatchesSelected) return 'All Batches';
+    if (this.selectedBatchIds.length === 1)
+      return this.batchOptions.find((b: any) => b.value === this.selectedBatchIds[0])?.label || '1 selected';
+    return `${this.selectedBatchIds.length} batches selected`;
+  }
+
+  toggleTeacherBatchDropdown() {
+    this.teacherBatchDropdownOpen = !this.teacherBatchDropdownOpen;
+    if (!this.teacherBatchDropdownOpen) this.teacherBatchSearch = '';
+  }
+
+  toggleSelectAllTeacherBatches() { this.toggleSelectAllBatches(); }
+
+  isBatchSelected(value: string): boolean {
+    return this.selectedBatchIds.includes(value);
+  }
+
+  toggleBatchSelection(value: string) {
+    const batch = this.batchOptions.find((b: any) => b.value === value);
+    if (this.isBatchSelected(value)) {
+      this.selectedBatchIds = this.selectedBatchIds.filter((id) => id !== value);
+      this.selectedBatchCodes = this.selectedBatchCodes.filter((c) => c !== batch?.batchCode);
+    } else {
+      this.selectedBatchIds = [...this.selectedBatchIds, value];
+      if (batch?.batchCode) this.selectedBatchCodes = [...this.selectedBatchCodes, batch.batchCode];
+    }
+  }
+
+  toggleSelectAllBatches() {
+    if (this.allBatchesSelected) {
+      this.selectedBatchIds = [];
+      this.selectedBatchCodes = [];
+    } else {
+      this.selectedBatchIds = this.batchOptions.map((b: any) => b.value);
+      this.selectedBatchCodes = this.batchOptions.map((b: any) => b.batchCode);
+    }
+  }
+
+  private loadStudentsByBatches(batchIds: string[]) {
+    if (!batchIds.length) { this.studentOptions = []; return; }
+    const endpoint = `list?list=full&batchIds=${batchIds.join(',')}`;
+    this.commonApi.fetchData({ entiId: this.tenantId }, 'student', endpoint).subscribe({
+      next: (res: any) => {
+        this.studentOptions = (res?.data || []).map((s: any) => ({
+          value: s.studentId || s._id,
+          label: (s.admissionNo || '') + ' - ' + (s.student?.name || s.name || s.studentName || ''),
+          admissionNo: s.admissionNo,
+          studentId: s.studentId || s._id
+        }));
+      }
+    });
   }
 
   searchStudents() {
     if (!this.studentSearch || this.studentSearch.length < 2) return;
-    this.commonApi.fetchData(
-      { entiId: this.tenantId },
-      'student',
-      `list?search=${this.studentSearch}&list=full`
-    ).subscribe({
+    const query: any = { entiId: this.tenantId };
+    let endpoint = `list?search=${this.studentSearch}&list=full`;
+    if (this.selectedBatchIds.length) endpoint += `&batchIds=${this.selectedBatchIds.join(',')}`;
+    this.commonApi.fetchData(query, 'student', endpoint).subscribe({
       next: (res: any) => {
         this.studentOptions = (res?.data || []).map((s: any) => ({
           value: s.studentId || s._id,
-          label: (s.admissionNo || '') + ' - ' + (s.name || s.studentName || ''),
+          label: (s.admissionNo || '') + ' - ' + (s.student?.name || s.name || s.studentName || ''),
           admissionNo: s.admissionNo,
           studentId: s.studentId || s._id
         }));
@@ -285,22 +432,22 @@ export class ReportComponent implements OnInit {
         break;
       case 'batch-students':
         module = 'reports/batch'; endpoint = 'students';
-        payload.batchId = this.selectedBatchId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         if (this.filterStatus) payload.status = this.filterStatus;
         break;
       case 'batch-staff':
         module = 'reports/batch'; endpoint = 'staff';
-        payload.batchId = this.selectedBatchId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         break;
       case 'batch-timetable':
         module = 'reports/batch'; endpoint = 'timetable';
-        payload.batchCode = this.selectedBatchCode;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'batch-late-entries':
         module = 'reports/batch'; endpoint = 'late-entries';
-        payload.batchCode = this.selectedBatchCode;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         if (this.filterType) payload.type = this.filterType;
@@ -308,31 +455,31 @@ export class ReportComponent implements OnInit {
         break;
       case 'batch-phase-allotment':
         module = 'reports/batch'; endpoint = 'phase-allotment';
-        payload.batchId = this.selectedBatchId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
         break;
       case 'batch-subject-hours':
         module = 'reports/batch'; endpoint = 'subject-hours';
-        payload.batchId = this.selectedBatchId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         break;
       case 'batch-assignments':
         module = 'reports/batch'; endpoint = 'assignments';
-        payload.batchId = this.selectedBatchId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
         break;
       case 'batch-exams':
         module = 'reports/batch'; endpoint = 'exams';
-        payload.batchId = this.selectedBatchId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         break;
       case 'batch-feedback':
         module = 'reports/batch'; endpoint = 'feedback';
-        payload.batchCode = this.selectedBatchCode;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'batch-ptm':
         module = 'reports/batch'; endpoint = 'ptm';
-        payload.batchCode = this.selectedBatchCode;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         if (this.filterStatus) payload.status = this.filterStatus;
@@ -377,36 +524,42 @@ export class ReportComponent implements OnInit {
       case 'teacher-late-entries':
         module = 'reports/teacher'; endpoint = 'late-entries';
         payload.staffId = this.selectedStaffId;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'teacher-early-leaving':
         module = 'reports/teacher'; endpoint = 'early-leaving';
         payload.staffId = this.selectedStaffId;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'teacher-assignments':
         module = 'reports/teacher'; endpoint = 'assignments';
         payload.staffId = this.selectedStaffId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'teacher-attendance':
         module = 'reports/teacher'; endpoint = 'attendance';
         payload.staffId = this.selectedStaffId;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'teacher-feedback':
         module = 'reports/teacher'; endpoint = 'feedback';
         payload.staffId = this.selectedStaffId;
+        if (this.selectedBatchCodes.length) payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'teacher-exams':
         module = 'reports/teacher'; endpoint = 'exams';
         payload.staffId = this.selectedStaffId;
+        if (this.selectedBatchIds.length) payload.batchIds = this.selectedBatchIds;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
@@ -458,7 +611,9 @@ export class ReportComponent implements OnInit {
 
       case 'batch-students':
         this.reportColumns = [
-          { key: 'slNo', label: '#' }, { key: 'admissionNo', label: 'Admission No' },
+          { key: 'slNo', label: '#' },
+          ...(!this.selectedBatchIds.length || this.allBatchesSelected ? [{ key: 'batchCode', label: 'Batch' }] : []),
+          { key: 'admissionNo', label: 'Admission No' },
           { key: 'name', label: 'Name' }, { key: 'phone', label: 'Phone' },
           { key: 'email', label: 'Email' }, { key: 'parentName', label: 'Parent' },
           { key: 'parentPhone', label: 'Parent Phone' }, { key: 'gender', label: 'Gender' },
@@ -469,7 +624,9 @@ export class ReportComponent implements OnInit {
 
       case 'batch-staff':
         this.reportColumns = [
-          { key: 'slNo', label: '#' }, { key: 'staffName', label: 'Name' },
+          { key: 'slNo', label: '#' },
+          ...(!this.selectedBatchIds.length || this.allBatchesSelected ? [{ key: 'batchCode', label: 'Batch' }] : []),
+          { key: 'staffName', label: 'Name' },
           { key: 'staffCode', label: 'Code' }, { key: 'subjectName', label: 'Subject' },
           { key: 'facultyType', label: 'Type' }, { key: 'phone', label: 'Phone' },
           { key: 'email', label: 'Email' }, { key: 'role', label: 'Role' },
@@ -737,6 +894,15 @@ export class ReportComponent implements OnInit {
     return key.startsWith('batch-') && key !== 'batch-info';
   }
 
+  showBatchDropdown(): boolean {
+    if (!this.selectedReport) return false;
+    return this.needsBatchFilter() || this.needsBatchFilterForStudent() || this.needsBatchFilterForTeacher();
+  }
+
+  isBatchRequired(): boolean {
+    return false;
+  }
+
   needsDateFilter(): boolean {
     if (!this.selectedReport) return false;
     return ['batch-timetable', 'batch-late-entries', 'batch-feedback', 'batch-ptm',
@@ -751,14 +917,24 @@ export class ReportComponent implements OnInit {
     return this.selectedReport.key.startsWith('student-');
   }
 
+  needsBatchFilterForStudent(): boolean {
+    if (!this.selectedReport) return false;
+    return this.selectedReport.key.startsWith('student-');
+  }
+
   needsStaffFilter(): boolean {
     if (!this.selectedReport) return false;
     return this.selectedReport.key.startsWith('teacher-');
   }
 
+  needsBatchFilterForTeacher(): boolean {
+    if (!this.selectedReport) return false;
+    const batchRelevant = ['teacher-late-entries', 'teacher-early-leaving', 'teacher-assignments', 'teacher-attendance', 'teacher-feedback', 'teacher-exams'];
+    return batchRelevant.includes(this.selectedReport.key);
+  }
+
   canGenerate(): boolean {
     if (!this.selectedReport) return false;
-    if (this.needsBatchFilter() && !this.selectedBatchId) return false;
     if (this.needsStudentFilter() && !this.selectedAdmissionNo) return false;
     if (this.needsStaffFilter() && !this.selectedStaffId) return false;
     return true;
