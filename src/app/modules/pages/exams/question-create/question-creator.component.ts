@@ -34,6 +34,11 @@ export class QuestionCreatorComponent implements OnInit {
 
   isEditMode = false;
   isBankMode = false;
+
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
+  ];
   recId: string = '';
   entiId: string;
   private imageUrlMap = new Map<string, string>();
@@ -95,9 +100,9 @@ export class QuestionCreatorComponent implements OnInit {
       if (state.question.recId) {
         this.isEditMode = true;
         this.recId = state.question.recId;
-        this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Edit Question' }]);
+        this.breadcrump.set([{ label: 'Questions', link: '' }, { label: 'Edit Question' }]);
       } else {
-        this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Add Question' }]);
+        this.breadcrump.set([{ label: 'Questions', link: '' }, { label: 'Add Question' }]);
       }
     }
 
@@ -108,6 +113,7 @@ export class QuestionCreatorComponent implements OnInit {
       questionId: [''],
       sortOrder: [1, [Validators.required, Validators.min(1)]],
       bankSubjectId: [''],
+      classNo: [null, this.isBankMode ? Validators.required : null],
       topicId: [''],
       subTopicId: [''],
       enablePassage: [false],
@@ -333,7 +339,8 @@ export class QuestionCreatorComponent implements OnInit {
           subjectiveAnswer: q.subjectiveAnswer || q.correctAnswer || '',
           bankSubjectId: q.subjectId || '',
           topicId: q.topicId || '',
-          subTopicId: q.subTopicId || ''
+          subTopicId: q.subTopicId || '',
+          classNo: q.classNo || null
         });
 
         // Set selectedSubjectId from patched sectionId
@@ -594,7 +601,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question updated successfully');
-              this.router.navigate(['/app/exams/exams']);
+              this.goBackToQuestions();
             }
           },
           error: (err) => {
@@ -612,7 +619,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question created successfully');
-              this.router.navigate(['/app/exams/exams']);
+              this.goBackToQuestions();
             }
           },
           error: (err) => {
@@ -621,6 +628,19 @@ export class QuestionCreatorComponent implements OnInit {
         });
       }
     });
+  }
+
+  private goBackToQuestions(): void {
+    if (this.examId) {
+      this.router.navigate(['/app/exams/exams/question-view'], {
+        state: {
+          questions: { examId: this.examId, testId: this.testId },
+          source: (history.state as any)?.source
+        }
+      });
+    } else {
+      this.router.navigate(['/app/exams/exams']);
+    }
   }
 
   private submitBankQuestion(): void {
@@ -632,6 +652,7 @@ export class QuestionCreatorComponent implements OnInit {
         subjectId: formValue.bankSubjectId || undefined,
         topicId: formValue.topicId || undefined,
         subTopicId: formValue.subTopicId || undefined,
+        classNo: formValue.classNo || undefined,
         sortOrder: formValue.sortOrder,
         status: 'active',
         ...payload

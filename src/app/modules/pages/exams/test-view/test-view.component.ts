@@ -182,14 +182,16 @@ export class TestViewComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const listRoute = this.examData?.isImported ? '/app/exams/imported-exams' : '/app/exams/exams';
+    const listLabel = this.examData?.isImported ? 'Imported Exams' : 'Exams';
     this.breadcrumb.set([
-      { label: 'Exams', link: '/app/exams/exams' },
+      { label: listLabel, link: listRoute },
       { label: 'View' }
     ]);
 
     if (!this.examData?.examId) {
       this.alert.error('Exam data not found');
-      this.router.navigate(['/app/exams/exams']);
+      this.router.navigate([listRoute]);
       return;
     }
 
@@ -1188,7 +1190,7 @@ export class TestViewComponent implements OnInit {
   /* ================= NAVIGATION ================= */
 
   viewQuestions() {
-    this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: this.examData } });
+    this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: this.examData, source: 'exam-view' } });
   }
 
   editExam() {

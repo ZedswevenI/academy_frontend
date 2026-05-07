@@ -62,6 +62,12 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   bankFilterSubTopicId = '';
   bankFilterDifficulty = '';
   bankFilterQuestionType = '';
+  bankFilterClassNo: number | null = null;
+
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
+  ];
   bankSearch = '';
   bankPage = 1;
   bankPageSize = 10;
@@ -96,6 +102,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     ]);
   }
 
+  backRoute = '/app/exams/exams';
+  backState: any = null;
+
   ngOnInit(): void {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
@@ -103,6 +112,22 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.testId = state.questions?.examId || state.questions?.testId;
     this.questionData = state.questions || {};
     this.isDraft = (state.questions?.status || '').toLowerCase() === 'draft';
+
+    if (state.source === 'exam-view') {
+      this.backRoute = '/app/exams/exams/view';
+      this.backState = { exam: this.questionData };
+      this.breadcrump.set([
+        { label: 'Exam View', link: '' },
+        { label: 'Questions' }
+      ]);
+    } else {
+      this.backRoute = '/app/exams/exams';
+      this.backState = null;
+      this.breadcrump.set([
+        { label: 'Exams', link: '/app/exams/exams' },
+        { label: 'Questions' }
+      ]);
+    }
 
     if (this.testId) {
       this.loadExamDetails();
@@ -131,6 +156,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         console.error('Error loading exam details:', err);
       },
     });
+  }
+
+  goBack() {
+    if (this.backState) {
+      this.router.navigate([this.backRoute], { state: this.backState });
+    } else {
+      this.router.navigate([this.backRoute]);
+    }
   }
 
   addNewQuestion() {
@@ -929,6 +962,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.bankSectionId = '';
     this.bankPage = 1;
     this.resetBankFilters();
+    if (this.questionData?.classNo) {
+      this.bankFilterClassNo = this.questionData.classNo;
+    }
     this.loadBankMasters();
     this.fetchBankQuestions();
   }
@@ -981,6 +1017,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.bankFilterSubTopicId = '';
     this.bankFilterDifficulty = '';
     this.bankFilterQuestionType = '';
+    this.bankFilterClassNo = null;
     this.bankSearch = '';
     this.bankTopicOptions = [];
     this.bankSubTopicOptions = [];
@@ -992,7 +1029,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   clearBankFilters(): void {
+    const savedClassNo = this.bankFilterClassNo;
     this.resetBankFilters();
+    this.bankFilterClassNo = savedClassNo;
     this.bankPage = 1;
     this.fetchBankQuestions();
   }
@@ -1007,8 +1046,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     if (this.bankFilterSubTopicId?.trim())
       query.subTopicId = this.bankFilterSubTopicId.trim();
     if (this.bankFilterDifficulty) query.difficulty = this.bankFilterDifficulty;
-    if (this.bankFilterQuestionType)
-      query.questionType = this.bankFilterQuestionType;
+    if (this.bankFilterQuestionType) query.questionType = this.bankFilterQuestionType;
+    if (this.bankFilterClassNo) query.classNo = this.bankFilterClassNo;
     const queryString = Object.keys(query)
       .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
       .join('&');

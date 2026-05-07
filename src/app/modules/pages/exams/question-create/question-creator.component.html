@@ -65,10 +65,16 @@
                 <label class="form-label fw-bold">Sub Topic<span class="text-danger">*</span></label>
                 <input class="form-control" formControlName="subTopicId"
                   placeholder="e.g. REFLECTION OF LIGHT AND PLANE MIRROR" />
-                <!-- <select class="form-select" formControlName="subTopicId">
-                  <option value="">Select Sub Topic</option>
-                  <option *ngFor="let st of subTopicOptions" [value]="st.value">{{ st.label }}</option>
-                </select> -->
+              </div>
+
+              <div class="col-md-3 mt-3 mt-md-0">
+                <label class="form-label fw-bold">Class <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="classNo"
+                  [class.is-invalid]="questionForm.get('classNo')?.invalid && questionForm.get('classNo')?.touched">
+                  <option [ngValue]="null">Select Class</option>
+                  <option *ngFor="let c of classOptions" [ngValue]="c.value">{{ c.label }}</option>
+                </select>
+                <div class="invalid-feedback">Class is required.</div>
               </div>
             </div>
 

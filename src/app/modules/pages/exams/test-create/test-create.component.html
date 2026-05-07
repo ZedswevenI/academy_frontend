@@ -62,6 +62,17 @@
       </select>
     </div>
 
+    <!-- Class -->
+    <div class="col-md-2">
+      <label class="form-label">Class <span class="text-danger">*</span></label>
+      <select class="form-select" formControlName="classNo"
+        [class.is-invalid]="examForm.get('classNo')?.invalid && examForm.get('classNo')?.touched">
+        <option [ngValue]="null">Select Class</option>
+        <option *ngFor="let c of classOptions" [ngValue]="c.value">{{ c.label }}</option>
+      </select>
+      <div class="invalid-feedback">Class is required.</div>
+    </div>
+
     <!-- Instruction -->
     <div class="col-md-3">
       <label class="form-label">Instruction</label>

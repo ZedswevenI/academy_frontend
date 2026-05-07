@@ -211,7 +211,7 @@ export class TestComponent implements OnInit, OnDestroy {
       sortParam = params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
     }
 
-    const query: any = { page: params.page, limit: params.pageSize };
+    const query: any = { page: params.page, limit: params.pageSize, isImported: false };
     if (sortParam) query.sort = sortParam;
 
     const filters = this.filterForm.value;
@@ -918,46 +918,46 @@ export class TestComponent implements OnInit, OnDestroy {
 
               const options = q.questionOptions?.length
                 ? await Promise.all(
-                    q.questionOptions.map(async (opt: any) => {
-                      const text = await this.replaceDownloadUrls(opt.textHtml || '');
-                      return {
-                        ...opt,
-                        textHtml: this.sanitizer.bypassSecurityTrustHtml(
-                          this.renderLatexInHtml(text),
-                        ),
-                      };
-                    }),
-                  )
+                  q.questionOptions.map(async (opt: any) => {
+                    const text = await this.replaceDownloadUrls(opt.textHtml || '');
+                    return {
+                      ...opt,
+                      textHtml: this.sanitizer.bypassSecurityTrustHtml(
+                        this.renderLatexInHtml(text),
+                      ),
+                    };
+                  }),
+                )
                 : [];
 
               const leftColumn = q.leftColumn?.length
                 ? await Promise.all(
-                    q.leftColumn.map(async (item: any, i: number) => {
-                      const text = await this.replaceDownloadUrls(item?.text || '');
-                      return {
-                        ...item,
-                        key: item?.key || String.fromCharCode(65 + i),
-                        textHtml: this.sanitizer.bypassSecurityTrustHtml(
-                          this.renderLatexInHtml(text),
-                        ),
-                      };
-                    }),
-                  )
+                  q.leftColumn.map(async (item: any, i: number) => {
+                    const text = await this.replaceDownloadUrls(item?.text || '');
+                    return {
+                      ...item,
+                      key: item?.key || String.fromCharCode(65 + i),
+                      textHtml: this.sanitizer.bypassSecurityTrustHtml(
+                        this.renderLatexInHtml(text),
+                      ),
+                    };
+                  }),
+                )
                 : [];
 
               const rightColumn = q.rightColumn?.length
                 ? await Promise.all(
-                    q.rightColumn.map(async (item: any, i: number) => {
-                      const text = await this.replaceDownloadUrls(item?.text || '');
-                      return {
-                        ...item,
-                        key: item?.key || String.fromCharCode(80 + i),
-                        textHtml: this.sanitizer.bypassSecurityTrustHtml(
-                          this.renderLatexInHtml(text),
-                        ),
-                      };
-                    }),
-                  )
+                  q.rightColumn.map(async (item: any, i: number) => {
+                    const text = await this.replaceDownloadUrls(item?.text || '');
+                    return {
+                      ...item,
+                      key: item?.key || String.fromCharCode(80 + i),
+                      textHtml: this.sanitizer.bypassSecurityTrustHtml(
+                        this.renderLatexInHtml(text),
+                      ),
+                    };
+                  }),
+                )
                 : [];
 
               return {

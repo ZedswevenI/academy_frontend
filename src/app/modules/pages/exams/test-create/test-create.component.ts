@@ -44,6 +44,11 @@ export class TestCreateComponent implements OnInit {
     { label: 'Scientific', value: 'scientific' }
   ];
 
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
+  ];
+
   constructor(
     private breadcrumb: BredcrumpService,
     private router: Router,
@@ -102,6 +107,7 @@ export class TestCreateComponent implements OnInit {
       autoPublishAt: [''],
       instructionId: [''],
       calculatorType: ['none'],
+      classNo: [null, Validators.required],
       sections: this.fb.array([])
     }, { validators: this.dateValidators.bind(this) });
   }
@@ -275,7 +281,8 @@ export class TestCreateComponent implements OnInit {
       endTime: this.toDatetimeLocal(d.endTime),
       autoPublishAt: d.autoPublishAt ? this.toDatetimeLocal(d.autoPublishAt) : '',
       instructionId: d.instructionId || '',
-      calculatorType: d.calculatorType || 'none'
+      calculatorType: d.calculatorType || 'none',
+      classNo: d.classNo || null
     });
 
     this.sections.clear();
@@ -358,6 +365,7 @@ export class TestCreateComponent implements OnInit {
       autoPublishAt: this.toTimestamp(f.autoPublishAt) || null,
       instructionId: f.instructionId || undefined,
       calculatorType: f.calculatorType,
+      classNo: f.classNo || null,
       sections: f.sections
     };
 

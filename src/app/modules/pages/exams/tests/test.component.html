@@ -18,11 +18,11 @@
                             routerLink="/app/exams/exams/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Add Exam</button>
-                        <button *ngIf="!authService.assignmentRole()"
+                        <!-- <button *ngIf="!authService.assignmentRole()"
                             class="btn btn-outline-success rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
                             (click)="importMarks()">
                             <i class="fas fa-file-import me-2"></i>Import Marks
-                        </button>
+                        </button> -->
                         <!-- <button *ngIf="!authService.assignmentRole()"
                             class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
                             routerLink="/app/exams/exams/import">
@@ -327,13 +327,11 @@
                                 <button type="button" class="btn btn-sm btn-outline-secondary"
                                     *ngIf="q.questionOptions?.length || q.leftColumn?.length"
                                     (click)="q.showOptions = !q.showOptions">
-                                    <i class="fa-solid"
-                                        [class.fa-eye]="!q.showOptions"
+                                    <i class="fa-solid" [class.fa-eye]="!q.showOptions"
                                         [class.fa-eye-slash]="q.showOptions"></i>
                                     {{ q.showOptions ? 'Hide' : 'Show' }} Options
                                 </button>
-                                <button type="button" class="btn btn-sm btn-primary"
-                                    (click)="selectGraceQuestion(q)">
+                                <button type="button" class="btn btn-sm btn-primary" (click)="selectGraceQuestion(q)">
                                     Select
                                 </button>
                             </div>

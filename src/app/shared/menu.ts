@@ -214,6 +214,12 @@ export const MENU_ITEMS: MenuItem[] = [
         icon: 'fa-solid fa-file-pen',
         route: '/app/exams/exams',
         roles: ['L1', 'L5']
+      },
+      {
+        label: 'Imported Exams',
+        icon: 'fa-solid fa-file-import',
+        route: '/app/exams/imported-exams',
+        roles: ['L1', 'L5']
       }
     ]
   },

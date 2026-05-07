@@ -58,7 +58,8 @@
         </ul>
       </div>
 
-      <button class="btn closebutton btn-sm rounded-pill px-3" routerLink="/app/exams/exams">
+      <button class="btn closebutton btn-sm rounded-pill px-3"
+        [routerLink]="examData.isImported ? '/app/exams/imported-exams' : '/app/exams/exams'">
         <i class="fa-solid fa-arrow-left me-1"></i> Back
       </button>
     </div>
@@ -150,10 +151,10 @@
         <div class="info-card">
           <h6 class="info-card-title"><i class="fa-solid fa-calendar-days me-2"></i>Schedule</h6>
           <div class="info-row">
-            <span class="info-label">Start Time</span>
+            <span class="info-label">{{ examData.isImported ? 'Exam Date' : 'Start Time' }}</span>
             <span class="info-value">{{ formatDate(examData.startTime) }}</span>
           </div>
-          <div class="info-row">
+          <div class="info-row" *ngIf="!examData.isImported">
             <span class="info-label">End Time</span>
             <span class="info-value">{{ formatDate(examData.endTime) }}</span>
           </div>

@@ -33,12 +33,13 @@ export class ExamQuestionsComponent implements OnInit {
   columnsArray = [
     { key: 'questionNo', label: 'Question No', sortable: false },
     { key: 'questionPreview', label: 'Question', sortable: false },
+    { key: 'classLabel', label: 'Class', sortable: false },
     { key: 'questionType', label: 'Type', sortable: true },
     { key: 'difficulty', label: 'Difficulty', sortable: true },
     { key: 'positiveMarks', label: '+Marks', sortable: true },
     { key: 'negativeMarks', label: '-Marks', sortable: true },
     { key: 'status', label: 'Status', sortable: true },
-    { key: 'createdAt', label: 'Created At', sortable: true }
+    // { key: 'createdAt', label: 'Created At', sortable: true }
   ];
 
   dataArray: any[] = [];
@@ -47,6 +48,11 @@ export class ExamQuestionsComponent implements OnInit {
   statusOptions = [
     { label: 'Active', value: 'active' },
     { label: 'Inactive', value: 'inactive' }
+  ];
+
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
   ];
 
   questionTypeOptions = [
@@ -135,39 +141,7 @@ export class ExamQuestionsComponent implements OnInit {
       questionType: [''],
       difficulty: [''],
       subjectId: [''],
-      topicId: [''],
-      subTopicId: ['']
-    });
-
-    // Cascading: subject -> topic
-    this.filterForm.get('subjectId')?.valueChanges.subscribe(subjectId => {
-      this.filterForm.patchValue({ topicId: '', subTopicId: '' }, { emitEvent: false });
-      this.subTopicOptions = [];
-      if (subjectId) {
-        this.topicOptions = this.allTopics
-          .filter((t: any) => {
-            const tSubId = t.subjectId?._id || t.subjectId;
-            return tSubId === subjectId;
-          })
-          .map((t: any) => ({ label: t.topicName, value: t.topicId }));
-      } else {
-        this.topicOptions = [];
-      }
-    });
-
-    // Cascading: topic -> subtopic
-    this.filterForm.get('topicId')?.valueChanges.subscribe(topicId => {
-      this.filterForm.patchValue({ subTopicId: '' }, { emitEvent: false });
-      if (topicId) {
-        this.subTopicOptions = this.allSubTopics
-          .filter((st: any) => {
-            const stTopicId = st.topicId?.topicId || st.topicId;
-            return stTopicId === topicId;
-          })
-          .map((st: any) => ({ label: st.subTopicName, value: st.subTopicId }));
-      } else {
-        this.subTopicOptions = [];
-      }
+      classNo: [null]
     });
   }
 
@@ -221,8 +195,8 @@ export class ExamQuestionsComponent implements OnInit {
     if (filters.status) query.status = filters.status;
     if (filters.questionType) query.questionType = filters.questionType;
     if (filters.difficulty) query.difficulty = filters.difficulty;
-    if (filters.topicId) query.topicId = filters.topicId;
-    if (filters.subTopicId) query.subTopicId = filters.subTopicId;
+    if (filters.subjectId) query.subjectId = filters.subjectId;
+    if (filters.classNo) query.classNo = filters.classNo;
 
     const queryString = Object.keys(query)
       .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
@@ -237,6 +211,7 @@ export class ExamQuestionsComponent implements OnInit {
               id: item._id,
               questionPreview: this.stripHtml(item.questionHtml).substring(0, 80) + (this.stripHtml(item.questionHtml).length > 80 ? '...' : ''),
               questionType: this.formatQuestionType(item.questionType),
+              classLabel: this.formatClassNo(item.classNo),
               createdAt: new Date(item.createdAt).toLocaleDateString()
             }));
             this.totalRecords = res.count || 0;
@@ -257,6 +232,11 @@ export class ExamQuestionsComponent implements OnInit {
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
     return tmp.textContent || tmp.innerText || '';
+  }
+
+  private formatClassNo(classNo: number | null | undefined): string {
+    if (!classNo) return '-';
+    return classNo === 13 ? '12th Pass' : `Class ${classNo}`;
   }
 
   private formatQuestionType(type: string): string {

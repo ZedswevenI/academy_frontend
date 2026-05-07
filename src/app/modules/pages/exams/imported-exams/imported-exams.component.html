@@ -1,0 +1,46 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+    <div class="d-flex flex-column gap-4 py-4">
+      <div class="d-flex flex-column gap-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <h1 class="fw-bold mb-0" style="font-size: 30px;">
+            <i class="fa-solid fa-file-import me-2"></i>Imported Exams
+          </h1>
+          <div class="d-flex">
+            <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium me-2" type="button"
+              (click)="toggleFilters()">
+              <i class="fa-solid fa-filter"></i>
+              {{ showFilters ? 'Hide Filters' : 'Filters' }}
+            </button>
+            <button *ngIf="!authService.assignmentRole()"
+              class="btn btn-outline-success rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+              (click)="importMarks()">
+              <i class="fas fa-file-import me-2"></i>Import Marks
+            </button>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+          <div class="card-header bg-white border-0">
+            <form [formGroup]="filterForm" class="row g-3 align-items-end">
+              <div class="col-6 col-md-3">
+                <selectbox label="Class" formControlName="classNo" [control]="filterForm.get('classNo')"
+                  [options]="classOptions" optionLabel="label" optionValue="value">
+                </selectbox>
+              </div>
+              <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">Clear</button>
+                <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">Search</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+      [success]="'Published'" [primary]="'Result Published'" [warn]="'Draft'" [totalRecords]="totalRecords"
+      [loading]="loading" (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search Exam Name, Code...'">
+    </custom-table>
+  </div>
+</div>
