@@ -23,19 +23,9 @@
         <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
           <div class="card-header bg-white border-0">
             <form [formGroup]="filterForm" class="row g-3 align-items-end">
-              <div class="col-6 col-md-2">
-                <selectbox label="Test Type" formControlName="testType" [control]="filterForm.get('testType')"
-                  [options]="testTypeOptions" optionLabel="label" optionValue="value">
-                </selectbox>
-              </div>
-              <div class="col-6 col-md-2">
-                <selectbox label="Status" formControlName="status" [control]="filterForm.get('status')"
-                  [options]="statusOptions" optionLabel="label" optionValue="value">
-                </selectbox>
-              </div>
-              <div class="col-6 col-md-2">
-                <selectbox label="Medium" formControlName="medium" [control]="filterForm.get('medium')"
-                  [options]="mediumOptions" optionLabel="label" optionValue="value">
+              <div class="col-6 col-md-3">
+                <selectbox label="Class" formControlName="classNo" [control]="filterForm.get('classNo')"
+                  [options]="classOptions" optionLabel="label" optionValue="value">
                 </selectbox>
               </div>
               <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">

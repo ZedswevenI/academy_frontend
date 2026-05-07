@@ -42,22 +42,9 @@ export class ImportedExamsComponent implements OnInit {
     }
   ];
 
-  testTypeOptions = [
-    { label: 'Practice', value: 'practice' },
-    { label: 'Mock',     value: 'mock' },
-    { label: 'Live',     value: 'live' }
-  ];
-
-  statusOptions = [
-    { label: 'Draft',            value: 'draft' },
-    { label: 'Published',        value: 'published' },
-    { label: 'Result Published', value: 'result_published' },
-    { label: 'Completed',        value: 'completed' }
-  ];
-
-  mediumOptions = [
-    { label: 'English', value: 'en' },
-    { label: 'Tamil',   value: 'ta' }
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
   ];
 
   constructor(
@@ -72,9 +59,7 @@ export class ImportedExamsComponent implements OnInit {
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Imported Exams' }]);
     this.filterForm = this.fb.group({
-      testType: [''],
-      status:   [''],
-      medium:   ['']
+      classNo: [null]
     });
   }
 
@@ -100,10 +85,8 @@ export class ImportedExamsComponent implements OnInit {
     }
 
     const filters = this.filterForm.value;
-    if (params.search)    query.search   = params.search;
-    if (filters.testType) query.testType = filters.testType;
-    if (filters.status)   query.status   = filters.status;
-    if (filters.medium)   query.medium   = filters.medium;
+    if (params.search)   query.search  = params.search;
+    if (filters.classNo) query.classNo = filters.classNo;
 
     const queryString = Object.keys(query)
       .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)

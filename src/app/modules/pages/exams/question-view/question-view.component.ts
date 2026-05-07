@@ -102,6 +102,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     ]);
   }
 
+  backRoute = '/app/exams/exams';
+  backState: any = null;
+
   ngOnInit(): void {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
@@ -109,6 +112,22 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.testId = state.questions?.examId || state.questions?.testId;
     this.questionData = state.questions || {};
     this.isDraft = (state.questions?.status || '').toLowerCase() === 'draft';
+
+    if (state.source === 'exam-view') {
+      this.backRoute = '/app/exams/exams/view';
+      this.backState = { exam: this.questionData };
+      this.breadcrump.set([
+        { label: 'Exam View', link: '' },
+        { label: 'Questions' }
+      ]);
+    } else {
+      this.backRoute = '/app/exams/exams';
+      this.backState = null;
+      this.breadcrump.set([
+        { label: 'Exams', link: '/app/exams/exams' },
+        { label: 'Questions' }
+      ]);
+    }
 
     if (this.testId) {
       this.loadExamDetails();
@@ -137,6 +156,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         console.error('Error loading exam details:', err);
       },
     });
+  }
+
+  goBack() {
+    if (this.backState) {
+      this.router.navigate([this.backRoute], { state: this.backState });
+    } else {
+      this.router.navigate([this.backRoute]);
+    }
   }
 
   addNewQuestion() {

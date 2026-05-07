@@ -100,9 +100,9 @@ export class QuestionCreatorComponent implements OnInit {
       if (state.question.recId) {
         this.isEditMode = true;
         this.recId = state.question.recId;
-        this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Edit Question' }]);
+        this.breadcrump.set([{ label: 'Questions', link: '' }, { label: 'Edit Question' }]);
       } else {
-        this.breadcrump.set([{ label: 'Exam', link: '/app/exams/exams' }, { label: 'Add Question' }]);
+        this.breadcrump.set([{ label: 'Questions', link: '' }, { label: 'Add Question' }]);
       }
     }
 
@@ -339,7 +339,8 @@ export class QuestionCreatorComponent implements OnInit {
           subjectiveAnswer: q.subjectiveAnswer || q.correctAnswer || '',
           bankSubjectId: q.subjectId || '',
           topicId: q.topicId || '',
-          subTopicId: q.subTopicId || ''
+          subTopicId: q.subTopicId || '',
+          classNo: q.classNo || null
         });
 
         // Set selectedSubjectId from patched sectionId
@@ -600,7 +601,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question updated successfully');
-              this.router.navigate(['/app/exams/exams']);
+              this.goBackToQuestions();
             }
           },
           error: (err) => {
@@ -618,7 +619,7 @@ export class QuestionCreatorComponent implements OnInit {
           next: (res: any) => {
             if (res?.status) {
               this.alert.success('Question created successfully');
-              this.router.navigate(['/app/exams/exams']);
+              this.goBackToQuestions();
             }
           },
           error: (err) => {
@@ -627,6 +628,19 @@ export class QuestionCreatorComponent implements OnInit {
         });
       }
     });
+  }
+
+  private goBackToQuestions(): void {
+    if (this.examId) {
+      this.router.navigate(['/app/exams/exams/question-view'], {
+        state: {
+          questions: { examId: this.examId, testId: this.testId },
+          source: (history.state as any)?.source
+        }
+      });
+    } else {
+      this.router.navigate(['/app/exams/exams']);
+    }
   }
 
   private submitBankQuestion(): void {

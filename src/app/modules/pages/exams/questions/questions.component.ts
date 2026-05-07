@@ -33,12 +33,13 @@ export class ExamQuestionsComponent implements OnInit {
   columnsArray = [
     { key: 'questionNo', label: 'Question No', sortable: false },
     { key: 'questionPreview', label: 'Question', sortable: false },
+    { key: 'classLabel', label: 'Class', sortable: false },
     { key: 'questionType', label: 'Type', sortable: true },
     { key: 'difficulty', label: 'Difficulty', sortable: true },
     { key: 'positiveMarks', label: '+Marks', sortable: true },
     { key: 'negativeMarks', label: '-Marks', sortable: true },
     { key: 'status', label: 'Status', sortable: true },
-    { key: 'createdAt', label: 'Created At', sortable: true }
+    // { key: 'createdAt', label: 'Created At', sortable: true }
   ];
 
   dataArray: any[] = [];
@@ -210,6 +211,7 @@ export class ExamQuestionsComponent implements OnInit {
               id: item._id,
               questionPreview: this.stripHtml(item.questionHtml).substring(0, 80) + (this.stripHtml(item.questionHtml).length > 80 ? '...' : ''),
               questionType: this.formatQuestionType(item.questionType),
+              classLabel: this.formatClassNo(item.classNo),
               createdAt: new Date(item.createdAt).toLocaleDateString()
             }));
             this.totalRecords = res.count || 0;
@@ -230,6 +232,11 @@ export class ExamQuestionsComponent implements OnInit {
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
     return tmp.textContent || tmp.innerText || '';
+  }
+
+  private formatClassNo(classNo: number | null | undefined): string {
+    if (!classNo) return '-';
+    return classNo === 13 ? '12th Pass' : `Class ${classNo}`;
   }
 
   private formatQuestionType(type: string): string {

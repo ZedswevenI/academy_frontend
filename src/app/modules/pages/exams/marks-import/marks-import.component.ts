@@ -20,6 +20,11 @@ export class MarksImportComponent implements OnInit {
   examForm!: FormGroup;
   subjects: any[] = [];
 
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
+  ];
+
   // Excel state
   excelFile: File | null = null;
   parsedStudents: any[] = [];
@@ -48,11 +53,11 @@ export class MarksImportComponent implements OnInit {
     this.examForm = this.fb.group({
       examCode: ['', Validators.required],
       examName: ['', Validators.required],
-      totalMarks: [null, [Validators.required, Validators.min(1)]],
+      classNo: [null, Validators.required],
+      totalMarks: [{ value: null, disabled: true }],
       totalQuestions: [null],
       duration: [null],
-      startTime: [''],
-      endTime: [''],
+      examDate: [''],
       description: [''],
       sections: this.fb.array([this.newSection(0)])
     });
@@ -63,18 +68,23 @@ export class MarksImportComponent implements OnInit {
   }
 
   newSection(index = 0): FormGroup {
-    return this.fb.group({
-      sectionId: [this.generateId()],
+    const fg = this.fb.group({
       sectionCode: ['', Validators.required],
       sectionName: ['', Validators.required],
       subjectId: ['', Validators.required],
       numberOfQuestions: [0, [Validators.required, Validators.min(1)]],
+      sectionTotalMarks: [null, [Validators.required, Validators.min(1)]],
       sortOrder: [index]
     });
+    fg.get('sectionTotalMarks')?.valueChanges.subscribe(() => this.recalcTotalMarks());
+    return fg;
   }
 
-  private generateId(): string {
-    return 'sec_' + Math.random().toString(36).substring(2, 10);
+  recalcTotalMarks() {
+    const total = this.sections.controls.reduce(
+      (sum, c) => sum + (Number(c.get('sectionTotalMarks')?.value) || 0), 0
+    );
+    this.examForm.get('totalMarks')?.setValue(total || null, { emitEvent: false });
   }
 
   addSection() {
@@ -121,6 +131,12 @@ export class MarksImportComponent implements OnInit {
   get sectionQuestionsTotal(): number {
     return this.sections.controls.reduce(
       (sum, c) => sum + (Number(c.get('numberOfQuestions')?.value) || 0), 0
+    );
+  }
+
+  get sectionTotalMarksSum(): number {
+    return this.sections.controls.reduce(
+      (sum, c) => sum + (Number(c.get('sectionTotalMarks')?.value) || 0), 0
     );
   }
 
@@ -242,9 +258,11 @@ export class MarksImportComponent implements OnInit {
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   canSubmit(): boolean {
-    if (!this.examForm.valid || !this.parsedStudents.length || this.hasDuplicateSubjects()) return false;
-    const totalQ = this.examForm.get('totalQuestions')?.value;
-    if (totalQ && this.sectionQuestionsTotal !== Number(totalQ)) return false;
+    const f = this.examForm.getRawValue();
+    if (!this.examForm.valid || !f.examCode || !f.examName || !f.classNo) return false;
+    if (!this.parsedStudents.length || this.hasDuplicateSubjects()) return false;
+    if (this.sectionTotalMarksSum === 0) return false;
+    if (f.totalQuestions && this.sectionQuestionsTotal !== Number(f.totalQuestions)) return false;
     return true;
   }
 
@@ -256,19 +274,28 @@ export class MarksImportComponent implements OnInit {
     }
 
     const f = this.examForm.getRawValue();
-    const sections = f.sections.map((s: any, i: number) => ({
-      sectionId: s.subjectId,
-      sectionCode: s.sectionCode,
-      sectionName: s.sectionName,
-      subjectId: s.subjectId,
-      numberOfQuestions: s.numberOfQuestions || 0,
-      sortOrder: s.sortOrder ?? i
-    }));
+    const sectionTotalMap: Record<string, number> = {};
+    const sections = f.sections.map((s: any, i: number) => {
+      sectionTotalMap[s.subjectId] = Number(s.sectionTotalMarks) || 0;
+      return {
+        sectionId: s.subjectId,
+        sectionCode: s.sectionCode,
+        sectionName: s.sectionName,
+        subjectId: s.subjectId,
+        numberOfQuestions: s.numberOfQuestions || 0,
+        totalMarks: Number(s.sectionTotalMarks) || 0,
+        sortOrder: s.sortOrder ?? i
+      };
+    });
 
     const students = this.parsedStudents.map((s: any) => ({
       admissionNo: s.admissionNo,
       obtainedMarks: s.obtainedMarks,
-      sectionResults: s.sectionResults || []
+      classNo: f.classNo,
+      sectionResults: (s.sectionResults || []).map((sr: any) => ({
+        ...sr,
+        totalMarks: sectionTotalMap[sr.sectionId] || 0
+      }))
     }));
 
     const payload: any = {
@@ -276,15 +303,15 @@ export class MarksImportComponent implements OnInit {
       userId: localStorage.getItem('userId'),
       examCode: f.examCode,
       examName: f.examName,
-      totalMarks: f.totalMarks,
+      classNo: f.classNo,
+      totalMarks: this.sectionTotalMarksSum,
       sections,
       students
     };
 
     if (f.totalQuestions) payload.totalQuestions = f.totalQuestions;
     if (f.duration) payload.duration = f.duration;
-    if (f.startTime) payload.startTime = new Date(f.startTime).getTime();
-    if (f.endTime) payload.endTime = new Date(f.endTime).getTime();
+    if (f.examDate) payload.startTime = new Date(f.examDate).getTime();
     if (f.description) payload.description = f.description;
 
     this.submitting = true;

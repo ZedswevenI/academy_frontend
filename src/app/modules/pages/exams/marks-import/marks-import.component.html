@@ -32,11 +32,21 @@
             <div class="invalid-feedback">Exam name is required.</div>
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label fw-medium">Total Marks <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" formControlName="totalMarks" placeholder="e.g. 100"
-              [class.is-invalid]="examForm.get('totalMarks')?.invalid && examForm.get('totalMarks')?.touched">
-            <div class="invalid-feedback">Total marks is required.</div>
+          <div class="col-md-2">
+            <label class="form-label fw-medium">Class <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="classNo"
+              [class.is-invalid]="examForm.get('classNo')?.invalid && examForm.get('classNo')?.touched">
+              <option [ngValue]="null">Select Class</option>
+              <option *ngFor="let c of classOptions" [ngValue]="c.value">{{ c.label }}</option>
+            </select>
+            <div class="invalid-feedback">Class is required.</div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label fw-medium">Total Marks</label>
+            <input type="number" class="form-control bg-light" formControlName="totalMarks" readonly
+              placeholder="Auto from sections">
+            <small class="text-muted">Sum of section marks</small>
           </div>
 
           <div class="col-md-3">
@@ -50,13 +60,8 @@
           </div>
 
           <div class="col-md-3">
-            <label class="form-label fw-medium">Start Time</label>
-            <input type="datetime-local" class="form-control" formControlName="startTime">
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-medium">End Time</label>
-            <input type="datetime-local" class="form-control" formControlName="endTime">
+            <label class="form-label fw-medium">Exam Date</label>
+            <input type="date" class="form-control" formControlName="examDate">
           </div>
 
           <div class="col-md-12">
@@ -70,71 +75,67 @@
 
         <!-- ── Sections ── -->
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold text-primary mb-0"><i class="fas fa-layer-group me-2"></i>Sections <span class="text-danger">*</span></h6>
+          <h6 class="fw-bold text-primary mb-0">
+            <i class="fas fa-layer-group me-2"></i>Sections <span class="text-danger">*</span>
+          </h6>
           <button type="button" class="btn btn-sm btn-outline-primary" (click)="addSection()">
             <i class="fas fa-plus me-1"></i> Add Section
           </button>
         </div>
 
         <ng-container formArrayName="sections">
-          <div *ngFor="let sec of sections.controls; let i = index" [formGroupName]="i"
-            class="card border mb-3 p-3">
+          <div *ngFor="let sec of sections.controls; let i = index" [formGroupName]="i" class="card border mb-3 p-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="badge bg-primary">Section {{ i + 1 }}</span>
-              <button type="button" class="btn btn-sm btn-outline-danger"
-                (click)="removeSection(i)" [disabled]="sections.length <= 1">
+              <span class="badge bg-primary">Section {{ i + 1 }}
+                <span *ngIf="sec.get('sectionName')?.value" class="ms-1">— {{ sec.get('sectionName')?.value }}</span>
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeSection(i)"
+                [disabled]="sections.length <= 1">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
             <div class="row g-3">
-              <!-- Subject first — auto-fills code & name -->
-              <div class="col-md-4">
+              <div class="col-md-5">
                 <label class="form-label fw-medium">Subject <span class="text-danger">*</span></label>
-                <select class="form-select" formControlName="subjectId"
-                  (change)="onSectionSubjectChange(i)"
+                <select class="form-select" formControlName="subjectId" (change)="onSectionSubjectChange(i)"
                   [class.is-invalid]="sec.get('subjectId')?.invalid && sec.get('subjectId')?.touched">
                   <option value="">Select Subject</option>
                   <option *ngFor="let s of subjects" [value]="s._id">{{ s.subjectName }}</option>
                 </select>
               </div>
-              <!-- Auto-filled readonly -->
-              <div class="col-md-2">
-                <label class="form-label fw-medium">Code</label>
-                <input type="text" class="form-control" formControlName="sectionCode" readonly placeholder="Auto-filled">
+              <div class="col-md-4">
+                <label class="form-label fw-medium">Total Marks <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" formControlName="sectionTotalMarks" min="1"
+                  placeholder="e.g. 180"
+                  [class.is-invalid]="sec.get('sectionTotalMarks')?.invalid && sec.get('sectionTotalMarks')?.touched">
+                <div class="invalid-feedback">Total marks required (min 1).</div>
               </div>
-              <div class="col-md-3">
-                <label class="form-label fw-medium">Name</label>
-                <input type="text" class="form-control" formControlName="sectionName" readonly placeholder="Auto-filled">
-              </div>
-              <!-- Questions required -->
               <div class="col-md-3">
                 <label class="form-label fw-medium">Questions <span class="text-danger">*</span></label>
                 <input type="number" class="form-control" formControlName="numberOfQuestions" min="1"
                   [class.is-invalid]="sec.get('numberOfQuestions')?.invalid && sec.get('numberOfQuestions')?.touched">
-                <div class="invalid-feedback">Min 1 question required.</div>
+                <div class="invalid-feedback">Min 1 required.</div>
               </div>
             </div>
           </div>
         </ng-container>
 
-        <!-- Section questions total -->
-        <div class="d-flex justify-content-end mt-2">
-          <span class="badge fs-6"
+        <!-- Totals summary -->
+        <div class="d-flex justify-content-end gap-3 mt-2">
+          <span class="badge fs-6 bg-primary">Total Marks: {{ sectionTotalMarksSum }}</span>
+          <span *ngIf="examForm.get('totalQuestions')?.value" class="badge fs-6"
             [class.bg-success]="sectionQuestionsTotal === examForm.get('totalQuestions')?.value"
             [class.bg-danger]="sectionQuestionsTotal !== examForm.get('totalQuestions')?.value">
-            Section Total: {{ sectionQuestionsTotal }} / {{ examForm.get('totalQuestions')?.value || 0 }}
+            Questions: {{ sectionQuestionsTotal }} / {{ examForm.get('totalQuestions')?.value }}
           </span>
-        </div>
-        <div *ngIf="examForm.get('totalQuestions')?.value && sectionQuestionsTotal !== examForm.get('totalQuestions')?.value"
-          class="text-danger small text-end mt-1">
-          Section questions must add up to Total Questions ({{ examForm.get('totalQuestions')?.value }})
         </div>
 
         <hr>
 
         <!-- ── Student Marks Excel ── -->
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold text-primary mb-0"><i class="fas fa-file-excel me-2"></i>Student Marks <span class="text-danger">*</span></h6>
+          <h6 class="fw-bold text-primary mb-0"><i class="fas fa-file-excel me-2"></i>Student Marks <span
+              class="text-danger">*</span></h6>
           <button class="btn btn-sm btn-outline-success" (click)="downloadSample()">
             <i class="fas fa-download me-1"></i> Sample Excel
           </button>
@@ -156,7 +157,7 @@
           </div>
           <button class="btn btn-sm btn-outline-primary" (click)="parseExcel()" [disabled]="excelParsing">
             <span *ngIf="excelParsing" class="spinner-border spinner-border-sm me-1"></span>
-            {{ excelParsing ? 'Parsing...' : 'Parse' }}
+            {{ excelParsing ? 'Validating...' : 'Validate' }}
           </button>
           <button class="btn btn-sm btn-outline-danger" (click)="removeExcel()">Remove</button>
         </div>
