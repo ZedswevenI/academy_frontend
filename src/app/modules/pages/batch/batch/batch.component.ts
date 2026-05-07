@@ -4,6 +4,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { Router } from '@angular/router';
+import { AuthService } from '../../../../service/auth/auth.service';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -19,16 +20,10 @@ export class BatchComponent implements OnInit {
   entiId: any;
   private moduleName = 'batch';
   private ayInfoEndpoint = 'ayinfo';
-
-  // ── forms ──────────────────────────────────────────────────────────────────
   filterForm!: FormGroup;
   editorForm!: FormGroup;
-
-  // ── table ──────────────────────────────────────────────────────────────────
   totalRecords = 0;
   batchRows: any[] = [];
-
-  // ── options ────────────────────────────────────────────────────────────────
   statusOptions = [
     { label: 'ALL', value: 'ALL' },
     { label: 'DRAFT', value: 'DRAFT' },
@@ -51,8 +46,6 @@ export class BatchComponent implements OnInit {
   centerOptionsForEditor: any[] = [{ label: 'Select', value: '' }];
   courseStartYearOptions: any[] = [{ label: 'Select', value: '' }];
   ayInfoDoc: any | null = null;
-
-  // ── table columns / actions ────────────────────────────────────────────────
   columns = [
     { key: 'batchName', label: 'Batch Name', sortable: false },
     { key: 'batchCode', label: 'Code', sortable: false },
@@ -73,73 +66,65 @@ export class BatchComponent implements OnInit {
     },
     { key: 'studentCount', label: 'Students', sortable: false },
   ];
-
-  actions = [
-    {
-      type: 'icon',
-      icon: 'fa-regular fa-eye',
-      tooltip: 'View',
-      color: '#6B7280',
-      hoverColor: '#0066FF',
-      callback: (row: any) => this.openView(row),
-    },
-    {
-      type: 'dropdown',
-      text: 'Actions',
-      icon: 'fa-solid fa-ellipsis-vertical',
-      color: 'secondary',
-      dropdown: [
-        {
-          text: 'Edit Batch',
-          icon: 'fa-regular fa-pen-to-square',
-          callback: (row: any) => this.openEdit(row),
-        },
-        {
-          text: 'Assign Students',
-          icon: 'fa-solid fa-user-plus',
-          callback: (row: any) => this.openAssignStudents(row),
-        },
-        {
-          text: 'Assign Staff',
-          icon: 'fa-solid fa-users-gear',
-          callback: (row: any) => this.openStaffMap(row),
-        },
-        {
-          text: 'Promote Batch',
-          icon: 'fa-solid fa-arrow-up-right-dots',
-          callback: (row: any) => this.openPromote(row),
-        },
-        {
-          text: 'Log Late Entry',
-          icon: 'fa-solid fa-clock-rotate-left',
-          callback: (row: any) => this.openLateEntry(row),
-        },
-        {
-          text: 'Add Special Class',
-          icon: 'fa-solid fa-calendar-plus',
-          callback: (row: any) => this.openSpecialClass(row),
-        },
-      ],
-    },
-  ];
-
-  // ── filters ─────────────────────────────────────────────────────────────────
+  // actions = [
+  //   {
+  //     type: 'icon',
+  //     icon: 'fa-regular fa-eye',
+  //     tooltip: 'View',
+  //     color: '#6B7280',
+  //     hoverColor: '#0066FF',
+  //     callback: (row: any) => this.openView(row),
+  //   },
+  //   {
+  //     type: 'dropdown',
+  //     text: 'Actions',
+  //     icon: 'fa-solid fa-ellipsis-vertical',
+  //     color: 'secondary',
+  //     dropdown: [
+  //       {
+  //         text: 'Edit Batch',
+  //         icon: 'fa-regular fa-pen-to-square',
+  //         callback: (row: any) => this.openEdit(row),
+  //       },
+  //       {
+  //         text: 'Assign Students',
+  //         icon: 'fa-solid fa-user-plus',
+  //         callback: (row: any) => this.openAssignStudents(row),
+  //       },
+  //       {
+  //         text: 'Assign Staff',
+  //         icon: 'fa-solid fa-users-gear',
+  //         callback: (row: any) => this.openStaffMap(row),
+  //       },
+  //       {
+  //         text: 'Promote Batch',
+  //         icon: 'fa-solid fa-arrow-up-right-dots',
+  //         callback: (row: any) => this.openPromote(row),
+  //       },
+  //       {
+  //         text: 'Log Late Entry',
+  //         icon: 'fa-solid fa-clock-rotate-left',
+  //         callback: (row: any) => this.openLateEntry(row),
+  //       },
+  //       {
+  //         text: 'Add Special Class',
+  //         icon: 'fa-solid fa-calendar-plus',
+  //         callback: (row: any) => this.openSpecialClass(row),
+  //       },
+  //     ],
+  //   },
+  // ];
+  actions : any = [];
   showFilters = false;
-
-  // ── create/edit modal ──────────────────────────────────────────────────────
   showEditorModal = false;
-  isEditMode = false; // ✅ FIX: track create vs edit
-  editingBatchId = ''; // ✅ FIX: keep batchId for update call
-
-  // ── assign students modal ──────────────────────────────────────────────────
+  isEditMode = false;
+  editingBatchId = '';
   showAssignModal = false;
   activeBatch: any = null;
   eligibleStudents: any[] = [];
   eligibleStudentsFiltered: any[] = [];
   eligibleSearch = '';
   selectedStudentIds = new Set<string>();
-
-  // ── staff map modal ────────────────────────────────────────────────────────
   showStaffModal = false;
   activeBatchForStaff: any | null = null;
   staffListFull: any[] = [];
@@ -149,12 +134,8 @@ export class BatchComponent implements OnInit {
   batchSubjectOptions: any[] = [{ label: 'Select', value: '' }];
   staffDraft: any = { subjectId: '', staffId: '' };
   staffMapRows: any[] = [];
-
-  // ── promote modal ──────────────────────────────────────────────────────────
   showPromoteModal = false;
   promoteBatch: any = null;
-
-  // ── late entry modal ───────────────────────────────────────────────────────
   showLateModal = false;
   lateEntryBatch: any = null;
   lateForm!: FormGroup;
@@ -162,12 +143,8 @@ export class BatchComponent implements OnInit {
     { label: 'Staff', value: 'STAFF' },
     { label: 'Student', value: 'STUDENT' },
   ];
-  // For student late entry — load batch students
   batchStudents: any[] = [];
   batchStudentsLoading = false;
-  // For staff late entry — reuse staffListFull (loaded on init)
-
-  // ── special class modal ────────────────────────────────────────────────────
   showSpecialClassModal = false;
   specialClassBatch: any = null;
   specialClassForm!: FormGroup;
@@ -185,7 +162,6 @@ export class BatchComponent implements OnInit {
     { label: 'Offline', value: 'OFFLINE' },
     { label: 'Online', value: 'ONLINE' },
   ];
-
   promoteNewProgramId = '';
   promoteProgramOptions: any[] = [];
   promoteResult: any = null;
@@ -196,6 +172,7 @@ export class BatchComponent implements OnInit {
     private alert: AlertService,
     private commonApi: CommonapiService,
     private router: Router,
+    private auth: AuthService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -206,6 +183,60 @@ export class BatchComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.actions = [
+      {
+        type: 'icon',
+        icon: 'fa-regular fa-eye',
+        tooltip: 'View',
+        color: '#6B7280',
+        hoverColor: '#0066FF',
+        callback: (row: any) => this.openView(row),
+      },
+      {
+        type: 'dropdown',
+        text: 'Actions',
+        icon: 'fa-solid fa-ellipsis-vertical',
+        color: 'secondary',
+        dropdown: [
+          {
+            text: 'Edit Batch',
+            icon: 'fa-regular fa-pen-to-square',
+            show: () => !this.hasRole(['L1']),
+            callback: (row: any) => this.openEdit(row),
+          },
+          {
+            text: 'Assign Students',
+            icon: 'fa-solid fa-user-plus',
+            show: () => !this.hasRole(['L1']),
+            callback: (row: any) => this.openAssignStudents(row),
+          },
+          {
+            text: 'Assign Staff',
+            icon: 'fa-solid fa-users-gear',
+            show: () => !this.hasRole(['L1']),
+            callback: (row: any) => this.openStaffMap(row),
+          },
+          {
+            text: 'Promote Batch',
+            icon: 'fa-solid fa-arrow-up-right-dots',
+            show: () => !this.hasRole(['L1']),
+            callback: (row: any) => this.openPromote(row),
+          },
+          {
+            text: 'Log Late Entry',
+            icon: 'fa-solid fa-clock-rotate-left',
+            show: () => !this.hasRole(['L1', 'L2', 'L3']),
+            callback: (row: any) => this.openLateEntry(row),
+          },
+          {
+            text: 'Add Special Class',
+            icon: 'fa-solid fa-calendar-plus',
+            show: () => !this.hasRole(['L1', 'L2', 'L3']),
+            callback: (row: any) => this.openSpecialClass(row),
+          },
+        ],
+      },
+    ];
     this.initForms();
     this.buildCourseStartYearOptions();
     this.loadProgramsFull();
@@ -213,8 +244,6 @@ export class BatchComponent implements OnInit {
     this.loadAcademicYearConfigsForFilter();
     this.loadBatches({ page: 1, pageSize: 20 });
     this.loadStaffFull();
-
-    // ✅ FIX: only react to valueChanges when modal is in CREATE mode
     this.editorForm.get('courseStartYear')?.valueChanges.subscribe(() => {
       if (!this.isEditMode) this.onCreateInputsChanged();
     });
@@ -225,14 +254,11 @@ export class BatchComponent implements OnInit {
     this.editorForm.get('centerId')?.valueChanges.subscribe((v: any) => {
       this.onCenterChanged(v);
     });
-
-    // Late entry: reload person list when type changes
     this.lateForm?.get('type')?.valueChanges.subscribe(() => {
       this.onLateTypeChanged();
     });
   }
 
-  // ── form init ───────────────────────────────────────────────────────────────
   initForms() {
     this.filterForm = this.fb.group({
       search: [''],
@@ -241,7 +267,6 @@ export class BatchComponent implements OnInit {
       programId: [''],
       centerId: [''],
     });
-
     this.editorForm = this.fb.group({
       batchName: ['', [Validators.required]],
       batchCode: ['', [Validators.required]],
@@ -259,7 +284,6 @@ export class BatchComponent implements OnInit {
       status: ['ACTIVE', [Validators.required]],
       remarks: [''],
     });
-
     this.lateForm = this.fb.group({
       type: ['STAFF', [Validators.required]],
       personId: ['', [Validators.required]],
@@ -269,7 +293,6 @@ export class BatchComponent implements OnInit {
       delayMinutes: [0, [Validators.required, Validators.min(0)]],
       reason: [''],
     });
-
     this.specialClassForm = this.fb.group({
       date: ['', [Validators.required]],
       periodNo: [1, [Validators.required, Validators.min(1)]],
@@ -285,7 +308,6 @@ export class BatchComponent implements OnInit {
     });
   }
 
-  // ── filters ─────────────────────────────────────────────────────────────────
   toggleFilters() {
     this.showFilters = !this.showFilters;
   }
@@ -305,7 +327,6 @@ export class BatchComponent implements OnInit {
     this.loadBatches({ page: 1, pageSize: 20 });
   }
 
-  // ── query builder ───────────────────────────────────────────────────────────
   private buildQueryParams(params: Record<string, any>) {
     const keys = Object.keys(params || {}).filter(
       (k) => params[k] !== undefined && params[k] !== null && params[k] !== '',
@@ -354,13 +375,11 @@ export class BatchComponent implements OnInit {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  /** Convert "HH:MM" string → minutes from midnight */
   private timeStrToMin(t: string): number {
     const [h, m] = safeTrim(t).split(':').map(Number);
     return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 0;
   }
 
-  /** Convert minutes from midnight → "HH:MM" */
   private minToTimeStr(min: number): string {
     const h = Math.floor(min / 60),
       m = min % 60;
@@ -375,7 +394,6 @@ export class BatchComponent implements OnInit {
     this.courseStartYearOptions = opts;
   }
 
-  // ── data loaders ─────────────────────────────────────────────────────────────
   loadProgramsFull() {
     this.commonApi
       .fetchData({ entiId: this.entiId }, 'ims', 'program/list?list=full')
@@ -467,7 +485,6 @@ export class BatchComponent implements OnInit {
           this.staffOptions = opts;
           this.staffOptionsAll = [...opts];
           this.staffOptionsFiltered = [...opts];
-          // Also populate special class staff options
           this.specialClassStaffOptions = [...opts];
         },
         error: () => {
@@ -516,7 +533,6 @@ export class BatchComponent implements OnInit {
       });
   }
 
-  // ── CREATE BATCH ─────────────────────────────────────────────────────────────
   openCreate() {
     this.isEditMode = false;
     this.editingBatchId = '';
@@ -538,7 +554,6 @@ export class BatchComponent implements OnInit {
       status: 'ACTIVE',
       remarks: '',
     });
-    // Re-enable all fields for create
     ['programId', 'centerId', 'courseStartYear'].forEach((f) =>
       this.editorForm.get(f)?.enable(),
     );
@@ -549,14 +564,11 @@ export class BatchComponent implements OnInit {
     this.showEditorModal = false;
   }
 
-  // ── EDIT BATCH ───────────────────────────────────────────────────────────────
-  // ✅ FIX: set isEditMode=true, store batchId, prevent AY overwrite
   openEdit(row: any) {
     const b = row?._raw || row;
     this.isEditMode = true;
     this.editingBatchId = safeTrim(b?.batchId);
     this.ayInfoDoc = null;
-
     this.editorForm.patchValue({
       batchName: b.batchName,
       batchCode: b.batchCode,
@@ -574,15 +586,12 @@ export class BatchComponent implements OnInit {
       endDate: this.epochMsToDateInput(b.endDate),
       status: b.status,
     });
-
-    // Disable core fields if students assigned (backend also enforces this)
     const hasStudents = (b.studentCount || 0) > 0;
     ['programId', 'centerId', 'courseStartYear'].forEach((f) => {
       hasStudents
         ? this.editorForm.get(f)?.disable()
         : this.editorForm.get(f)?.enable();
     });
-
     this.showEditorModal = true;
   }
 
@@ -714,8 +723,6 @@ export class BatchComponent implements OnInit {
       this.editorForm.patchValue(patch, { emitEvent: false });
   }
 
-  // ── SAVE BATCH (create OR update) ────────────────────────────────────────────
-  // ✅ FIX: routes to create or update depending on isEditMode
   saveBatch() {
     if (this.loading) return;
     if (!this.isEditMode) this.onCreateInputsChanged();
@@ -724,13 +731,10 @@ export class BatchComponent implements OnInit {
       this.alert.error('Please fill all required fields');
       return;
     }
-
     const v = this.editorForm.getRawValue() || {};
     const programId = safeTrim(v.programId);
     const centerId = safeTrim(v.centerId);
-
     if (this.isEditMode) {
-      // ── UPDATE ──
       const startMs = this.dateToEpochMs(v.startDate);
       const endMs = this.dateToEpochMs(v.endDate);
       if (!startMs) {
@@ -745,7 +749,6 @@ export class BatchComponent implements OnInit {
         this.alert.error('End Date must be after Start Date');
         return;
       }
-
       const payload: any = {
         entiId: this.entiId,
         batchId: this.editingBatchId,
@@ -776,7 +779,6 @@ export class BatchComponent implements OnInit {
         },
       });
     } else {
-      // ── CREATE ──
       const courseStartYear = Number(v.courseStartYear);
       if (
         !programId ||
@@ -812,7 +814,6 @@ export class BatchComponent implements OnInit {
         this.alert.error('End Date must be after Start Date');
         return;
       }
-
       const payload: any = {
         entiId: this.entiId,
         batchName: safeTrim(v.batchName),
@@ -848,7 +849,6 @@ export class BatchComponent implements OnInit {
     }
   }
 
-  // ── ASSIGN STUDENTS ──────────────────────────────────────────────────────────
   openAssignStudents(row: any) {
     const b = row?._raw || row;
     if (!safeTrim(b?.batchId)) return;
@@ -948,7 +948,6 @@ export class BatchComponent implements OnInit {
       });
   }
 
-  // ── STAFF MAP ────────────────────────────────────────────────────────────────
   openStaffMap(row: any) {
     const b = row?._raw || row;
     const batchId = safeTrim(b?.batchId);
@@ -987,7 +986,6 @@ export class BatchComponent implements OnInit {
               value: safeTrim(s?.subjectId || s?._id),
             })),
           ];
-          // Also update special class subject options with the same list
           this.specialClassSubjectOptions = [...this.batchSubjectOptions];
         },
         error: () => {
@@ -1056,10 +1054,6 @@ export class BatchComponent implements OnInit {
   }
 
   onStaffDraftSubjectChanged(subjectId: any) {
-    // const sid = safeTrim(subjectId);
-    // const filtered = sid
-    //   ? this.staffListFull.filter((st: any) => safeTrim(st?.subject) === sid)
-    //   : this.staffListFull;
     const sid = safeTrim(subjectId);
     const filtered = sid
       ? this.staffListFull.filter((st: any) => {
@@ -1081,7 +1075,6 @@ export class BatchComponent implements OnInit {
         value: safeTrim(s?.staffId || s?._id),
       })),
     ];
-    // Clear staff selection if current selection no longer valid
     if (this.staffDraft?.staffId) {
       const ok = this.staffOptionsFiltered.some(
         (o: any) => safeTrim(o?.value) === safeTrim(this.staffDraft.staffId),
@@ -1089,17 +1082,6 @@ export class BatchComponent implements OnInit {
       if (!ok) this.staffDraft.staffId = '';
     }
   }
-
-  // ── PROMOTE BATCH ─────────────────────────────────────────────────────────────
-  // openPromote(row: any) {
-  //   const b = row?._raw || row;
-  //   if (safeTrim(b?.status) !== 'ACTIVE') {
-  //     this.alert.error('Only ACTIVE batches can be promoted.');
-  //     return;
-  //   }
-  //   this.promoteBatch = b;
-  //   this.showPromoteModal = true;
-  // }
 
   openPromote(row: any) {
     const b = row?._raw || row;
@@ -1110,8 +1092,6 @@ export class BatchComponent implements OnInit {
     this.promoteBatch = b;
     this.promoteNewProgramId = '';
     this.promoteResult = null;
-
-    // Build program options — exclude current program
     this.promoteProgramOptions = [
       { label: '— Keep current program —', value: '' },
       ...this.programsFull
@@ -1125,7 +1105,6 @@ export class BatchComponent implements OnInit {
     this.showPromoteModal = true;
   }
 
-  // closePromoteModal() { this.showPromoteModal = false; this.promoteBatch = null; }
   closePromoteModal() {
     this.showPromoteModal = false;
     this.promoteBatch = null;
@@ -1133,24 +1112,8 @@ export class BatchComponent implements OnInit {
     this.promoteResult = null;
   }
 
-  // confirmPromote() {
-  //   if (this.loading || !this.promoteBatch) return;
-  //   const payload = { entiId: this.entiId, batchId: this.promoteBatch.batchId };
-  //   this.loading = true;
-  //   this.commonApi.fetchData(payload, this.moduleName, 'promote').subscribe({
-  //     next: (res: any) => {
-  //       this.loading = false;
-  //       this.alert.success(res?.message || 'Batch promoted successfully');
-  //       this.closePromoteModal();
-  //       this.refresh();
-  //     },
-  //     error: (err: any) => { this.loading = false; this.alert.error(err?.error?.message || 'Promote failed'); },
-  //   });
-  // }
-
   confirmPromote() {
     if (this.loading || !this.promoteBatch) return;
-
     const payload: any = {
       entiId: this.entiId,
       batchId: this.promoteBatch.batchId,
@@ -1158,7 +1121,6 @@ export class BatchComponent implements OnInit {
     if (this.promoteNewProgramId) {
       payload.newProgramId = this.promoteNewProgramId;
     }
-
     this.loading = true;
     this.commonApi.fetchData(payload, this.moduleName, 'promote').subscribe({
       next: (res: any) => {
@@ -1174,7 +1136,6 @@ export class BatchComponent implements OnInit {
     });
   }
 
-  // ── LATE ENTRY ────────────────────────────────────────────────────────────────
   openLateEntry(row: any) {
     const b = row?._raw || row;
     this.lateEntryBatch = b;
@@ -1189,7 +1150,6 @@ export class BatchComponent implements OnInit {
     });
     this.batchStudents = [];
     this.showLateModal = true;
-    // Preload timetable for this batch (latest active)
     this.loadLatestTimetableForBatch(b.batchCode);
   }
 
@@ -1211,7 +1171,6 @@ export class BatchComponent implements OnInit {
         next: (res: any) => {
           const rows = res?.data || [];
           if (rows.length) {
-            // pick most recent active
             const latest = rows[0];
             this.lateForm.patchValue(
               { timetableId: safeTrim(latest?._id) },
@@ -1255,7 +1214,6 @@ export class BatchComponent implements OnInit {
       });
   }
 
-  // Computed options for person dropdown depending on type
   get latePersonOptions(): any[] {
     const type = safeTrim(this.lateForm.get('type')?.value).toUpperCase();
     if (type === 'STUDENT') {
@@ -1267,7 +1225,7 @@ export class BatchComponent implements OnInit {
         })),
       ];
     }
-    return this.staffOptionsAll; // STAFF — reuse loaded staff list
+    return this.staffOptionsAll;
   }
 
   submitLateEntry() {
@@ -1280,7 +1238,6 @@ export class BatchComponent implements OnInit {
     const v = this.lateForm.value;
     const type = safeTrim(v.type).toUpperCase();
     const personId = safeTrim(v.personId);
-    // Resolve person name
     let personName = '';
     if (type === 'STAFF') {
       const s = this.staffListFull.find(
@@ -1300,7 +1257,7 @@ export class BatchComponent implements OnInit {
       personName,
       timetableId: safeTrim(v.timetableId),
       batchCode: safeTrim(this.lateEntryBatch?.batchCode),
-      date: Date.now(), // today — or make it a date picker field
+      date: Date.now(),
       periodNo: Number(v.periodNo),
       scheduledStartMin: Number(v.scheduledStartMin),
       delayMinutes: Number(v.delayMinutes),
@@ -1320,7 +1277,6 @@ export class BatchComponent implements OnInit {
     });
   }
 
-  // ── SPECIAL CLASS ─────────────────────────────────────────────────────────────
   openSpecialClass(row: any) {
     const b = row?._raw || row;
     this.specialClassBatch = b;
@@ -1338,9 +1294,7 @@ export class BatchComponent implements OnInit {
       zoomUrl: '',
     });
     this.showSpecialClassModal = true;
-    // Load subjects for this batch
     if (b?.batchId) this.loadBatchSubjects(safeTrim(b.batchId));
-    // Staff already loaded in loadStaffFull()
     this.specialClassStaffOptions = [
       ...(this.staffOptionsAll?.length
         ? this.staffOptionsAll
@@ -1367,12 +1321,10 @@ export class BatchComponent implements OnInit {
       this.alert.error('Please fill all required fields');
       return;
     }
-
     const v = this.specialClassForm.value;
     const dateMs = this.dateToEpochMs(v.date);
     const startMin = this.timeStrToMin(v.startTime);
     const endMin = this.timeStrToMin(v.endTime);
-
     if (!dateMs) {
       this.alert.error('Date is required');
       return;
@@ -1381,15 +1333,12 @@ export class BatchComponent implements OnInit {
       this.alert.error('End time must be after start time');
       return;
     }
-
     const subjectOpt = this.specialClassSubjectOptions.find(
       (x: any) => safeTrim(x?.value) === safeTrim(v.subjectId),
     );
     const staffOpt = this.specialClassStaffOptions.find(
       (x: any) => safeTrim(x?.value) === safeTrim(v.staffId),
     );
-
-    // We use timetable/period/add endpoint to add a special period to the batch timetable
     const payload = {
       entiId: this.entiId,
       batchCode: safeTrim(this.specialClassBatch?.batchCode),
@@ -1414,8 +1363,6 @@ export class BatchComponent implements OnInit {
         zoomUrl: safeTrim(v.zoomUrl) || null,
       },
     };
-
-    // First get the timetableId for this batch/date, then add period
     this.loading = true;
     this.commonApi
       .fetchData(
@@ -1486,9 +1433,12 @@ export class BatchComponent implements OnInit {
     return d.getTime();
   }
 
-  // ── VIEW ──────────────────────────────────────────────────────────────────────
   openView(row: any) {
     const b = row?._raw || row;
     this.router.navigate(['/app/batch/view', b?.batchId]);
+  }
+
+  hasRole(roles: string[]): boolean {
+    return roles.includes(this.auth.getRole());
   }
 }
