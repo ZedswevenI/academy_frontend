@@ -121,10 +121,6 @@
                 (click)="openOffcanvas('assign')">
                 <i class="fa-solid fa-user-plus me-1"></i> Assign Students
             </button>
-            <!-- <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-success rounded-pill"
-                (click)="openOffcanvas('import')" *appHasRole="['L1']">
-                <i class="fa-solid fa-file-import me-1"></i> Import from Excel
-            </button> -->
             <ng-container *appHasRole="['L1']">
                 <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-success rounded-pill"
                     (click)="openOffcanvas('import')">
@@ -217,7 +213,6 @@
 
         <!-- ── REPORT TAB ──────────────────────────────────────────────────────────── -->
         <div *ngIf="activeTab === 'report'">
-
             <!-- Subject filter -->
             <div class="d-flex align-items-end gap-3 mb-4 flex-wrap">
                 <div style="min-width:260px">
@@ -234,7 +229,6 @@
                     <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading...
                 </div>
             </div>
-
             <!-- ── Subject Hours Section ─────────────────────────────────────────────── -->
             <div class="mb-4" *ngIf="subjectHours.length">
                 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -245,7 +239,6 @@
                         Total: {{ subjectHoursTotal }}h
                     </span>
                 </div>
-
                 <div class="row g-3">
                     <div class="col-12 col-sm-6 col-lg-4" *ngFor="let s of subjectHours"
                         [class.border-start]="reportSubjectId && s.subjectId === reportSubjectId"
@@ -267,15 +260,13 @@
                             <!-- simple bar -->
                             <div class="mt-2" style="height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden">
                                 <div style="height:100%;background:#3b82f6;border-radius:4px;transition:width 0.4s"
-                                    [style.width.%]="getProgressPct(s.allottedHours,
-                subjectHours[0]?.allottedHours ? subjectHoursMax : 1)">
+                                    [style.width.%]="getProgressPct(s.allottedHours, subjectHoursMax || 1)">>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
             <!-- ── Phase Report Section ───────────────────────────────────────────────── -->
             <div *ngIf="phaseReport && reportSubjectId">
                 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -285,7 +276,6 @@
                         <span class="text-muted fw-normal small ms-1">— {{ reportSubjectName }}</span>
                     </h6>
                 </div>
-
                 <!-- Summary strip -->
                 <div class="row g-2 mb-4">
                     <div class="col-4">
@@ -315,20 +305,16 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Phase rows -->
                 <div *ngFor="let ph of phaseReport.phases" class="border rounded-3 mb-3 overflow-hidden">
-
                     <!-- Phase header -->
                     <div class="px-3 py-3 d-flex align-items-center gap-3 cursor-pointer" style="background:#f8fafc"
                         (click)="togglePhase(ph.phaseId)">
-
                         <!-- Expand icon -->
                         <i class="fa-solid fa-chevron-right text-muted"
                             style="font-size:0.75rem;transition:transform 0.2s"
                             [style.transform]="isPhaseExpanded(ph.phaseId) ? 'rotate(90deg)' : 'none'">
                         </i>
-
                         <!-- Phase name -->
                         <div class="flex-grow-1">
                             <div class="fw-semibold small">{{ ph.phaseName }}</div>
@@ -336,7 +322,6 @@
                                 {{ ph.topics?.length || 0 }} topic(s)
                             </div>
                         </div>
-
                         <!-- Hours chips -->
                         <div class="d-flex gap-2 align-items-center flex-shrink-0">
                             <span class="badge bg-success-subtle text-success" style="font-size:0.72rem">
@@ -352,7 +337,6 @@
                                 Left: {{ ph.remainingHours ?? '-' }}h
                             </span>
                         </div>
-
                         <!-- Progress bar -->
                         <div style="width:80px">
                             <div style="height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden">
@@ -366,18 +350,14 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- Topic rows (expanded) -->
                     <div *ngIf="isPhaseExpanded(ph.phaseId)">
                         <div *ngFor="let t of ph.topics; let last = last"
                             class="px-4 py-2 d-flex align-items-center gap-3" [class.border-bottom]="!last"
                             style="background:#fff">
-
                             <i class="fa-solid fa-circle-dot text-muted" style="font-size:0.55rem;flex-shrink:0"></i>
-
                             <div class="flex-grow-1 small">{{ t.topicName }}</div>
-
-                            <div class="d-flex gap-2 align-items-center flex-shrink-0">
+                            <!-- <div class="d-flex gap-2 align-items-center flex-shrink-0">
                                 <span class="text-muted" style="font-size:0.72rem">
                                     Est: {{ t.estHours ?? '-' }}h
                                 </span>
@@ -388,17 +368,16 @@
                                     [style.color]="(t.remainingHours ?? 0) < 0 ? '#ef4444' : '#94a3b8'">
                                     Left: {{ t.remainingHours ?? '-' }}h
                                 </span>
-                            </div>
-
+                            </div> -->
                             <!-- Mini progress -->
-                            <div style="width:60px">
+                            <!-- <div style="width:60px">
                                 <div style="height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden">
                                     <div style="height:100%;border-radius:4px"
                                         [style.width.%]="getProgressPct(t.allottedHours, t.estHours)"
                                         [style.background]="getProgressColor(getProgressPct(t.allottedHours, t.estHours))">
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
                         <div *ngIf="!ph.topics?.length" class="px-4 py-2 text-muted small">
                             No topics defined for this phase.

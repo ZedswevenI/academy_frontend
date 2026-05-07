@@ -1822,6 +1822,32 @@ export class ViewBatchComponent implements OnInit {
       });
   }
 
+  // loadPhaseReport() {
+  //   if (!this.reportSubjectId || !this.batch?.classNo) return;
+  //   this.reportLoading = true;
+  //   this.commonApi
+  //     .fetchData(
+  //       {
+  //         entiId: this.entiId,
+  //         batchCode: safeTrim(this.batch?.batchCode),
+  //         subjectId: this.reportSubjectId,
+  //         classNo: this.batch.classNo,
+  //       },
+  //       'institue/phase',
+  //       'allotment/report',
+  //     )
+  //     .subscribe({
+  //       next: (res: any) => {
+  //         this.reportLoading = false;
+  //         this.phaseReport = res?.data || null;
+  //       },
+  //       error: () => {
+  //         this.reportLoading = false;
+  //         this.phaseReport = null;
+  //       },
+  //     });
+  // }
+
   loadPhaseReport() {
     if (!this.reportSubjectId || !this.batch?.classNo) return;
     this.reportLoading = true;
@@ -1833,13 +1859,13 @@ export class ViewBatchComponent implements OnInit {
           subjectId: this.reportSubjectId,
           classNo: this.batch.classNo,
         },
-        'institue/phase',
-        'allotment/report',
+        'institue',
+        'phase/allotment/report',
       )
       .subscribe({
         next: (res: any) => {
           this.reportLoading = false;
-          this.phaseReport = res?.data || null;
+          this.phaseReport = res?.data || (res?.phases ? res : null);
         },
         error: () => {
           this.reportLoading = false;

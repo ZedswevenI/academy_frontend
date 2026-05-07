@@ -219,6 +219,8 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     zoomUrl: '',
     __timeError: '',
   };
+  showCloneConfirm = false;
+  cloneResult: any = null;
 
   constructor(
     private router: Router,
@@ -231,7 +233,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // this.timetableId = safeTrim(this.route.snapshot.paramMap.get('id'));
     this.batchCode = safeTrim(this.route.snapshot.paramMap.get('id'));
     this.currentWkStartOn = this.getMondayOfCurrentWeek();
     if (!this.batchCode) {
@@ -405,17 +406,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // private buildSubjectStaffMap() {
-  //   this.subjectIdToStaff = new Map<string, any[]>();
-  //   this.staffFull.forEach((s: any) => {
-  //     const subId = safeTrim(s?.subject);
-  //     if (!subId) return;
-  //     if (!this.subjectIdToStaff.has(subId))
-  //       this.subjectIdToStaff.set(subId, []);
-  //     this.subjectIdToStaff.get(subId)!.push(s);
-  //   });
-  // }
-
   private buildSubjectStaffMap() {
     this.subjectIdToStaff = new Map<string, any[]>();
     this.staffFull.forEach((s: any) => {
@@ -496,11 +486,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         const batchSubjectIds = new Set(
           this.batchSubjects.map((s: any) => safeTrim(s?._id)).filter(Boolean),
         );
-        // this.batchStaffFull = batchSubjectIds.size
-        //   ? this.staffFull.filter((s: any) =>
-        //       batchSubjectIds.has(safeTrim(s?.subject)),
-        //     )
-        //   : this.staffFull;
         this.batchStaffFull = batchSubjectIds.size
           ? this.staffFull.filter((s: any) => {
               const subjects = Array.isArray(s?.subject)
@@ -597,7 +582,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
           }
         },
         error: (err: any) => {
-          // this.alert.error(err?.error?.message || 'Failed to load timetable');
           this.loading = false;
           this.timetable = null;
           if (err?.status !== 404) {
@@ -761,67 +745,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     }
   }
 
-  // getRenderedPeriod(dayRow: any, pNum: number): any {
-  //   const day = String(dayRow?.day || '').toUpperCase();
-  //   if (!day) return null;
-  //   if (this.viewMode === 'range') {
-  //     if (dayRow?.__isHoliday)
-  //       return { __dayCancelled: true, isCancelled: true, time: {} };
-  //     const list = Array.isArray(dayRow?.periods) ? dayRow.periods : [];
-  //     return list.find((p: any) => toInt(p?.periodNo) === toInt(pNum)) || null;
-  //   }
-  //   if (this.isDraft) {
-  //     if (this.isDayCancelled(toInt(dayRow?.dateMs), day))
-  //       return { __dayCancelled: true, isCancelled: true, time: {} };
-  //     const dayData = (this.timetable?.week || []).find(
-  //       (d: any) => String(d?.day || '').toUpperCase() === day,
-  //     );
-  //     if (!dayData) return null;
-  //     const period = (dayData.periods || []).find(
-  //       (p: any) => toInt(p?.periodNo) === toInt(pNum),
-  //     );
-  //     return period || null;
-  //   }
-  //   const dateMs = toInt(dayRow?.dateMs);
-  //   if (this.isDayCancelled(dateMs, day))
-  //     return { __dayCancelled: true, isCancelled: true, time: {} };
-  //   const replacedPeriods = this.getDayReplacementPeriods(dateMs, day);
-  //   const basePeriods =
-  //     replacedPeriods ?? (Array.isArray(dayRow?.periods) ? dayRow.periods : []);
-  //   const baseMap = new Map<number, any>();
-  //   basePeriods.forEach((p: any) => {
-  //     const pn = toInt(p?.periodNo);
-  //     if (pn) baseMap.set(pn, p);
-  //   });
-  //   this.applyMoveOverrides(dateMs, day, baseMap);
-  //   const cancelOv = this.findPeriodOverride(
-  //     dateMs,
-  //     day,
-  //     pNum,
-  //     'CANCEL_PERIOD',
-  //   );
-  //   const replaceOv = this.findPeriodOverride(
-  //     dateMs,
-  //     day,
-  //     pNum,
-  //     'REPLACE_PERIOD',
-  //   );
-  //   let result = baseMap.get(pNum) || null;
-  //   if (cancelOv)
-  //     return { ...result, isCancelled: true, cancelReason: cancelOv.reason };
-  //   if (replaceOv) {
-  //     const modifiedFields = (CONTENT_FIELDS as string[]).filter(
-  //       (f) => replaceOv.period?.[f] !== result?.[f],
-  //     );
-  //     return {
-  //       ...replaceOv.period,
-  //       __modified: true,
-  //       __modifiedFields: modifiedFields,
-  //     };
-  //   }
-  //   return result;
-  // }
-
   getRenderedPeriod(dayRow: any, pNum: number): any {
     const day = String(dayRow?.day || '').toUpperCase();
     if (!day) return null;
@@ -972,15 +895,6 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // private updateWeekNavFlags() {
-  //   const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
-  //   const idx = this.weekIndex.findIndex(
-  //     (w) => toInt(w.wkStartOn) === toInt(cur),
-  //   );
-  //   this.hasPrevWeek = idx > 0;
-  //   this.hasNextWeek = idx >= 0 && idx < this.weekIndex.length - 1;
-  // }
-
   private updateWeekNavFlags() {
     if (!this.weekIndex.length) {
       this.hasPrevWeek = false;
@@ -1017,65 +931,20 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return `Week ${idx + 1} of ${this.weekIndex.length}`;
   }
 
-  // navigateWeek(direction: 'prev' | 'next') {
-  //   const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
-  //   const idx = this.weekIndex.findIndex(
-  //     (w) => toInt(w.wkStartOn) === toInt(cur),
-  //   );
-  //   const target =
-  //     direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
-  //   if (!target) return;
-  //   this.weekNavLoading = true;
-  //   this.commonApi
-  //     .fetchData(
-  //       {
-  //         tenantId: this.tenantId,
-  //         batchCode: this.batchCode,
-  //         wkStartOn: target.wkStartOn,
-  //       },
-  //       this.moduleName,
-  //       'view',
-  //     )
-  //     .pipe(
-  //       takeUntil(this.destroy$),
-  //       finalize(() => (this.weekNavLoading = false)),
-  //     )
-  //     .subscribe({
-  //       next: (res: any) => {
-  //         this.timetable = res?.data || null;
-  //         this.timetableId = this.timetable?._id || '';
-  //         this.currentWkStartOn = toInt(target.wkStartOn);
-  //         this.lastWeeklyTimetable = this.timetable;
-  //         this.viewMode = 'week';
-  //         this.processSchedule();
-  //         this.updateWeekNavFlags();
-  //       },
-  //       error: (err: any) => {
-  //         this.alert.error(err?.error?.message || 'Failed to load week');
-  //       },
-  //     });
-  // }
-
   navigateWeek(direction: 'prev' | 'next') {
     const cur = toInt(this.timetable?.wkStartOn, 0) || this.currentWkStartOn;
     let idx = this.weekIndex.findIndex(
       (w) => toInt(w.wkStartOn) === toInt(cur),
     );
-
-    // No timetable this week — find virtual insertion point
     if (idx < 0) {
       const beforeCount = this.weekIndex.filter(
         (w) => toInt(w.wkStartOn) < toInt(cur),
       ).length;
-      // prev → last week before cur, next → first week after cur
       idx = direction === 'prev' ? beforeCount : beforeCount - 1;
     }
-
     const target =
       direction === 'prev' ? this.weekIndex[idx - 1] : this.weekIndex[idx + 1];
-
     if (!target) return;
-
     this.weekNavLoading = true;
     this.commonApi
       .fetchData(
@@ -1146,12 +1015,15 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   confirmPublish() {
     this.showPublishConfirm = true;
   }
+
   cancelPublish() {
     this.showPublishConfirm = false;
   }
+
   confirmUnpublish() {
     this.showUnpublishConfirm = true;
   }
+
   cancelUnpublish() {
     this.showUnpublishConfirm = false;
   }
@@ -1291,7 +1163,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         endMin,
         periodType: p.periodType || 'LECTURE',
         mode: p.mode || 'OFFLINE',
-        facultyId: staff ? safeTrim(staff.staffCode) : rawId,
+        facultyId: staff ? safeTrim(staff.staffId) : rawId,
         facultyName: staff
           ? safeTrim(staff.staffName)
           : safeTrim(p.facultyName) || '',
@@ -1480,7 +1352,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   onEditDayFacultyChange(ep: any) {
-    const s = this.staffByCode[safeTrim(ep.facultyId)];
+    const s = this.staffById[safeTrim(ep.facultyId)];
     ep.facultyName = s?.staffName || '';
     this.editDayConflicts = [];
   }
@@ -1521,7 +1393,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  getRpStaffList(): { code: string; name: string }[] {
+  getRpStaffList(): { code: string; name: string; id: string }[] {
     if (!this.rp?.subjectId) return [];
     return this.batchStaffMap
       .filter(
@@ -1533,7 +1405,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
         const name = rec
           ? safeTrim(rec.staffName)
           : safeTrim(sm.staffName) || code;
-        return { code, name };
+        return { code, name, id: safeTrim(rec?.staffId || sm.staffId) };
       });
   }
 
@@ -1781,7 +1653,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   onNewFacultySelected() {
-    const s = this.staffByCode[safeTrim(this.newFacultyId)];
+    const s = this.staffById[safeTrim(this.newFacultyId)];
     this.newFacultyName = s?.staffName || '';
   }
 
@@ -1891,7 +1763,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     const rawId = safeTrim(p.facultyId) || '';
     const staff = this.staffByCode[rawId] || this.staffById[rawId] || null;
     this.rp = {
-      facultyId: staff ? safeTrim(staff.staffCode) : rawId,
+      facultyId: staff ? safeTrim(staff.staffId) : rawId,
       facultyName: staff
         ? safeTrim(staff.staffName)
         : safeTrim(p.facultyName) || '',
@@ -1940,7 +1812,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   onReplaceFacultySelected() {
-    const s = this.staffByCode[safeTrim(this.rp?.facultyId)];
+    const s = this.staffById[safeTrim(this.rp?.facultyId)];
     this.rp.facultyName = s?.staffName || '';
   }
 
@@ -1960,8 +1832,11 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       );
       if (mapped) {
         const staffRec = this.staffById[safeTrim(mapped.staffId)] || null;
+        // this.rp.facultyId = staffRec
+        //   ? safeTrim(staffRec.staffCode)
+        //   : safeTrim(mapped.staffId);
         this.rp.facultyId = staffRec
-          ? safeTrim(staffRec.staffCode)
+          ? safeTrim(staffRec.staffId)
           : safeTrim(mapped.staffId);
         this.rp.facultyName = staffRec
           ? safeTrim(staffRec.staffName)
@@ -2434,7 +2309,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
       if (mapped) {
         const staffRec = this.staffById[safeTrim(mapped.staffId)] || null;
         this.sc.facultyId = staffRec
-          ? safeTrim(staffRec.staffCode)
+          ? safeTrim(staffRec.staffId)
           : safeTrim(mapped.staffId);
         this.sc.facultyName = staffRec
           ? safeTrim(staffRec.staffName)
@@ -2445,7 +2320,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   onSpecialClassFacultyChange() {
-    const s = this.staffByCode[safeTrim(this.sc.facultyId)];
+    const s = this.staffById[safeTrim(this.sc.facultyId)];
     this.sc.facultyName = s?.staffName || '';
   }
 
@@ -2546,6 +2421,51 @@ export class ViewTableComponent implements OnInit, OnDestroy {
           this.alert.error(
             err?.error?.message || 'Failed to add special class',
           );
+        },
+      });
+  }
+
+  confirmCloneWeek() {
+    this.showCloneConfirm = true;
+  }
+
+  cancelCloneWeek() {
+    this.showCloneConfirm = false;
+    this.cloneResult = null;
+  }
+
+  submitCloneWeek() {
+    this.showCloneConfirm = false;
+    this.loading = true;
+    this.commonApi
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.timetableId,
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'clone-week',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.loading = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.cloneResult = res?.data || null;
+          this.alert.success(res?.message || 'Week cloned successfully');
+          this.loadWeekIndex(this.batchCode);
+        },
+        error: (err: any) => {
+          const conflicts = err?.error?.conflicts;
+          if (Array.isArray(conflicts) && conflicts.length) {
+            this.alert.error(
+              `Clone blocked: ${conflicts.length} issue(s) — ${conflicts[0]?.message}`,
+            );
+          } else {
+            this.alert.error(err?.error?.message || 'Clone failed');
+          }
         },
       });
   }
