@@ -7,14 +7,14 @@
       </span>
     </div>
     <div class="d-flex gap-2">
-      <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="viewQuestions()">
+      <button *ngIf="!examData.isImported" class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="viewQuestions()">
         <i class="fa-solid fa-list me-1"></i> Questions
       </button>
       <button *ngIf="!authService.assignmentRole() && examData.status !== 'result_published'"
         class="btn btn-outline-success btn-sm rounded-pill px-3" (click)="editExam()">
         <i class="fa-regular fa-pen-to-square me-1"></i> Edit
       </button>
-      <div class="dropdown" *ngIf="!authService.assignmentRole()">
+      <div class="dropdown" *ngIf="!authService.assignmentRole() && !examData.isImported">
         <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 dropdown-toggle" type="button"
           data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fa-solid fa-ellipsis-vertical me-1"></i> More
@@ -71,7 +71,7 @@
     <!-- <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'results'" (click)="switchTab('results')">
       <i class="fa-solid fa-chart-bar me-1"></i> Results
     </button> -->
-    <button *ngIf="hasResults" class="tab-btn" [class.active]="activeTab === 'question-wise'"
+    <button *ngIf="hasResults && !examData.isImported" class="tab-btn" [class.active]="activeTab === 'question-wise'"
       (click)="switchTab('question-wise')">
       <i class="fa-solid fa-list-ol me-1"></i> Question Wise
     </button>
@@ -639,7 +639,7 @@
   <div *ngIf="activeTab === 'participants' && hasResults" class="tab-content-area">
     <div class="d-flex align-items-center justify-content-between mb-4">
       <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-users me-2"></i>Student Ranking</h5>
-      <div class="d-flex align-items-center gap-2">
+      <div *ngIf="!examData.isImported" class="d-flex align-items-center gap-2">
         <label class="text-muted small mb-0">Filter by batch:</label>
         <select class="form-select form-select-sm" style="width: 180px;" [(ngModel)]="selectedBatchId"
           (ngModelChange)="fetchParticipantsReport()">
@@ -667,8 +667,8 @@
               <th>Max Score</th>
               <th>Score</th>
               <th>Per %</th>
-              <th>Time</th>
-              <th>Action</th>
+              <th *ngIf="!examData.isImported">Time</th>
+              <th *ngIf="!examData.isImported">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -698,8 +698,8 @@
                   {{ p.percentage }}%
                 </span>
               </td>
-              <td>{{ p.timeTakenMins }}m</td>
-              <td>
+              <td *ngIf="!examData.isImported">{{ p.timeTakenMins }}m</td>
+              <td *ngIf="!examData.isImported">
                 <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
                   (click)="viewStudentResult(p)" title="View Result">
                   <i class="fa-regular fa-eye"></i>
