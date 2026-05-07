@@ -14,6 +14,11 @@ export class CustomTableComponent implements OnDestroy {
   @Input() showaction: boolean = true;
   @Input() showfilter: boolean = false;
   @Input() pageSizeOptions = [5, 10, 20, 50];
+  @Input() storageKey: string = '';
+
+  private get _storageKey(): string {
+    return this.storageKey || `tbl_ps_${window.location.pathname}`;
+  }
   @Input() totalRecords: number = 0;
   @Input() loading: boolean = false;
   @Input() showpageoptions: boolean = true;
@@ -148,7 +153,11 @@ export class CustomTableComponent implements OnDestroy {
   }
 
   ngOnInit(): void {
-    this.pageSize = this.pageSizeOptions[0];
+    const saved = localStorage.getItem(this._storageKey);
+    const savedSize = saved ? +saved : null;
+    this.pageSize = (savedSize && this.pageSizeOptions.includes(savedSize))
+      ? savedSize
+      : this.pageSizeOptions[0];
     if (this.columns) {
       this.columns = this.columns.map((col) => ({
         ...col,
@@ -220,6 +229,7 @@ export class CustomTableComponent implements OnDestroy {
 
   onPageSizeChange(size: number) {
     this.pageSize = +size;
+    localStorage.setItem(this._storageKey, String(this.pageSize));
     this.currentPage = 1;
     this.emitRequest();
     this.updatePagination();
