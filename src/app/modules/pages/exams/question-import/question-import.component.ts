@@ -45,6 +45,12 @@ export class QuestionImportComponent implements OnInit {
   selectedSubjectId = '';
   selectedTopicId = '';
   selectedSubTopicId = '';
+  selectedClassNo: number | null = null;
+
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
+  ];
 
   ngOnInit(): void {
     if (this.isBankMode) {
@@ -504,6 +510,7 @@ export class QuestionImportComponent implements OnInit {
           subjectId: this.selectedSubjectId || undefined,
           topicId: this.selectedTopicId.trim() || undefined,
           subTopicId: this.selectedSubTopicId.trim() || undefined,
+          classNo: this.selectedClassNo || undefined,
         }));
       }
       const bankPayload: any = { entiId, ...payload };

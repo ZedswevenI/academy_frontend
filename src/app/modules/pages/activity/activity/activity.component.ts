@@ -82,10 +82,10 @@ export class ActivityComponent implements OnInit {
     'BatchCode': 'BatchCode', 'Activity': 'Activity',
     'StartDate': 'StartDate', 'EndDate': 'EndDate',
     'Remarks': 'Remarks', 'CentCode': 'CentCode',
-    'sno': 'sno', 'ActualDate': 'ActualDate'
+    'ActualDate': 'ActualDate'
   };
 
-  requiredColumns = ['BatchCode', 'Activity', 'StartDate', 'EndDate', 'CentCode', 'sno'];
+  requiredColumns = ['BatchCode', 'Activity', 'StartDate', 'EndDate', 'CentCode'];
 
   previewColumns = [
     { field: 'BatchCode', header: 'Batch' },
@@ -93,8 +93,7 @@ export class ActivityComponent implements OnInit {
     { field: 'StartDate', header: 'Start' },
     { field: 'EndDate', header: 'End' },
     { field: 'CentCode', header: 'Center' },
-    { field: 'Remarks', header: 'Remarks' },
-    { field: 'sno', header: 'S.No' }
+    { field: 'Remarks', header: 'Remarks' }
   ];
 
   columnMapDisplay = Object.keys(this.columnMap).map(k => ({ excel: k, api: this.columnMap[k] }));
@@ -306,10 +305,16 @@ export class ActivityComponent implements OnInit {
           this.fileName = ''; return;
         }
 
+        const dateFields = ['StartDate', 'EndDate'];
         this.parsedRows = rawRows.map((row: any) => {
           const mapped: any = {};
           Object.keys(this.columnMap).forEach(col => {
-            mapped[this.columnMap[col]] = row[col]?.toString().trim() || '';
+            const apiKey = this.columnMap[col];
+            if (dateFields.includes(apiKey)) {
+              mapped[apiKey] = this.formatDateForPreview(row[col]);
+            } else {
+              mapped[apiKey] = row[col]?.toString().trim() || '';
+            }
           });
           return mapped;
         });
@@ -339,7 +344,14 @@ export class ActivityComponent implements OnInit {
     if (!this.parsedRows.length || this.errorRows.length > 0) return;
     this.importLoading = true;
 
-    this.commonApi.fetchData({ tenantId: this.tenantId, rows: this.parsedRows }, 'institue/activity', 'bulkupload')
+    const rows = this.parsedRows.map(row => ({
+      ...row,
+      StartDate: this.parseDDMMMYYYY(row.StartDate),
+      EndDate:   this.parseDDMMMYYYY(row.EndDate),
+      sno: Math.random().toString(36).substring(2, 10).toUpperCase(),
+    }));
+
+    this.commonApi.fetchData({ tenantId: this.tenantId, rows }, 'institue/activity', 'bulkupload')
       .subscribe({
         next: (res: any) => {
           this.importLoading = false;
@@ -361,7 +373,6 @@ export class ActivityComponent implements OnInit {
       'BatchCode': '1154A3', 'Activity': 'Phase 4 Orientation',
       'StartDate': '12-Mar-2026', 'EndDate': '12-Mar-2026',
       'Remarks': 'Mandatory for all new joins', 'CentCode': '64',
-      'sno': '1',
     }];
     const ws = XLSX.utils.json_to_sheet(sample);
     const wb = XLSX.utils.book_new();
@@ -386,5 +397,54 @@ export class ActivityComponent implements OnInit {
   private formatDate(ts: number): string {
     if (!ts) return '-';
     return new Date(ts).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  private formatDateForPreview(raw: any): string {
+    const ms = this.parseDDMMMYYYY(raw);
+    if (!ms) return raw?.toString().trim() || '';
+    const d = new Date(ms);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d.getUTCDate().toString().padStart(2,'0')}-${months[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+  }
+
+  private parseDDMMMYYYY(dateStr: any): number | null {
+    if (dateStr instanceof Date && !isNaN(dateStr.getTime()))
+      return Date.UTC(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate());
+    if (typeof dateStr === 'number' && Number.isFinite(dateStr) && dateStr > 59 && dateStr < 2958466) {
+      const ms = (Math.round(dateStr) - 25569) * 86400 * 1000;
+      const d = new Date(ms);
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    }
+    const raw = dateStr === undefined || dateStr === null ? '' : String(dateStr).trim();
+    if (!raw) return null;
+    if (/^\d{5,6}(\.\d+)?$/.test(raw)) {
+      const n = Number(raw);
+      if (Number.isFinite(n) && n > 59 && n < 2958466) {
+        const ms = (Math.round(n) - 25569) * 86400 * 1000;
+        const d = new Date(ms);
+        return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      }
+    }
+    const s = raw.split(/[\sT]/)[0].trim();
+    const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (iso) {
+      const [, y, mo, dd] = iso.map(Number);
+      if (mo < 1 || mo > 12 || dd < 1 || dd > 31) return null;
+      return Date.UTC(y, mo - 1, dd);
+    }
+    const named = s.match(/^(\d{1,2})[-\/\s]([A-Za-z]{3,9})[-\/\s](\d{2}|\d{4})$/);
+    if (named) {
+      const months: Record<string, number> = {
+        jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+        jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+      };
+      const dd = Number(named[1]);
+      const mo = months[named[2].slice(0, 3).toLowerCase()];
+      let yyyy = Number(named[3]);
+      if (yyyy < 100) yyyy += yyyy < 50 ? 2000 : 1900;
+      if (mo === undefined || dd < 1 || dd > 31 || yyyy < 1900) return null;
+      return Date.UTC(yyyy, mo, dd);
+    }
+    return null;
   }
 }

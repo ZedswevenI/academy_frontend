@@ -34,6 +34,11 @@ export class QuestionCreatorComponent implements OnInit {
 
   isEditMode = false;
   isBankMode = false;
+
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
+  ];
   recId: string = '';
   entiId: string;
   private imageUrlMap = new Map<string, string>();
@@ -108,6 +113,7 @@ export class QuestionCreatorComponent implements OnInit {
       questionId: [''],
       sortOrder: [1, [Validators.required, Validators.min(1)]],
       bankSubjectId: [''],
+      classNo: [null, this.isBankMode ? Validators.required : null],
       topicId: [''],
       subTopicId: [''],
       enablePassage: [false],
@@ -632,6 +638,7 @@ export class QuestionCreatorComponent implements OnInit {
         subjectId: formValue.bankSubjectId || undefined,
         topicId: formValue.topicId || undefined,
         subTopicId: formValue.subTopicId || undefined,
+        classNo: formValue.classNo || undefined,
         sortOrder: formValue.sortOrder,
         status: 'active',
         ...payload

@@ -49,6 +49,11 @@ export class ExamQuestionsComponent implements OnInit {
     { label: 'Inactive', value: 'inactive' }
   ];
 
+  classOptions = [
+    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
+    { label: '12th Pass', value: 13 }
+  ];
+
   questionTypeOptions = [
     { label: 'MCQ (Single)', value: 'mcq_single' },
     { label: 'MCQ (Multiple)', value: 'mcq_multiple' },
@@ -135,39 +140,7 @@ export class ExamQuestionsComponent implements OnInit {
       questionType: [''],
       difficulty: [''],
       subjectId: [''],
-      topicId: [''],
-      subTopicId: ['']
-    });
-
-    // Cascading: subject -> topic
-    this.filterForm.get('subjectId')?.valueChanges.subscribe(subjectId => {
-      this.filterForm.patchValue({ topicId: '', subTopicId: '' }, { emitEvent: false });
-      this.subTopicOptions = [];
-      if (subjectId) {
-        this.topicOptions = this.allTopics
-          .filter((t: any) => {
-            const tSubId = t.subjectId?._id || t.subjectId;
-            return tSubId === subjectId;
-          })
-          .map((t: any) => ({ label: t.topicName, value: t.topicId }));
-      } else {
-        this.topicOptions = [];
-      }
-    });
-
-    // Cascading: topic -> subtopic
-    this.filterForm.get('topicId')?.valueChanges.subscribe(topicId => {
-      this.filterForm.patchValue({ subTopicId: '' }, { emitEvent: false });
-      if (topicId) {
-        this.subTopicOptions = this.allSubTopics
-          .filter((st: any) => {
-            const stTopicId = st.topicId?.topicId || st.topicId;
-            return stTopicId === topicId;
-          })
-          .map((st: any) => ({ label: st.subTopicName, value: st.subTopicId }));
-      } else {
-        this.subTopicOptions = [];
-      }
+      classNo: [null]
     });
   }
 
@@ -221,8 +194,8 @@ export class ExamQuestionsComponent implements OnInit {
     if (filters.status) query.status = filters.status;
     if (filters.questionType) query.questionType = filters.questionType;
     if (filters.difficulty) query.difficulty = filters.difficulty;
-    if (filters.topicId) query.topicId = filters.topicId;
-    if (filters.subTopicId) query.subTopicId = filters.subTopicId;
+    if (filters.subjectId) query.subjectId = filters.subjectId;
+    if (filters.classNo) query.classNo = filters.classNo;
 
     const queryString = Object.keys(query)
       .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
