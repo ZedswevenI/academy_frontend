@@ -175,10 +175,6 @@
                   <th>#</th>
                   <th>Admission No</th>
                   <th>Obtained Marks</th>
-                  <th *ngFor="let sec of getSectionMeta()">
-                    {{ sec.sectionName }}
-                    <small class="text-muted d-block fw-normal">Marks / Correct / Wrong / Skipped</small>
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -186,9 +182,6 @@
                   <td class="text-muted">{{ i + 1 }}</td>
                   <td class="fw-medium">{{ s.admissionNo }}</td>
                   <td>{{ s.obtainedMarks }}</td>
-                  <td *ngFor="let sr of s.sectionResults" class="small">
-                    {{ sr.obtainedMarks }} / {{ sr.correctCount }} / {{ sr.wrongCount }} / {{ sr.skippedCount }}
-                  </td>
                 </tr>
               </tbody>
             </table>

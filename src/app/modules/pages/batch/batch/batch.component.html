@@ -27,7 +27,7 @@
 
             <!-- FILTERS -->
             <div class="card-header bg-white border-0" *ngIf="showFilters">
-                <form [formGroup]="filterForm" class="row g-2 align-items-end">
+                <form [formGroup]="filterForm" class="row g-2 align-items-end" (keydown.enter)="refresh()">
                     <div class="col-12 col-md-4">
                         <formfield label="Search" formControlName="search" [control]="filterForm.get('search')"
                             placeholder="Batch name / code / program / center"></formfield>

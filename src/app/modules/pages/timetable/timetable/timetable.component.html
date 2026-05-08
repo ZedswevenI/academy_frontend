@@ -126,14 +126,14 @@
                 <span class="text-muted small" *ngIf="showConfirm">We will validate schedule conflicts before
                     saving.</span>
             </div>
-            <button class="btn-close" (click)="showConfirm ? closeConfirm() : closeUpload()"
+            <!-- <button class="btn-close" (click)="showConfirm ? closeConfirm() : closeUpload()"
                 [disabled]="validateLoading || parsing || (loading && showUpload)" [title]="
           validateLoading
             ? 'Validation in progress...'
             : parsing
               ? 'Parsing file...'
               : ''
-        "></button>
+        "></button> -->
         </div>
 
         <div class="app-modal-body position-relative flex-grow-1" style="overflow-y: auto">
