@@ -199,11 +199,11 @@ export class MarksImportComponent implements OnInit {
               .filter(s => s.sectionName)
               .map(s => ({
                 sectionId: s.sectionId,
-                obtainedMarks: Number(r[`${s.sectionName} Marks`] ?? 0),
-                totalQuestions: Number(r[`${s.sectionName} Questions`] ?? 0),
-                correctCount: Number(r[`${s.sectionName} Correct`] ?? 0),
-                wrongCount: Number(r[`${s.sectionName} Wrong`] ?? 0),
-                skippedCount: Number(r[`${s.sectionName} Skipped`] ?? 0),
+                obtainedMarks: null,
+                totalQuestions: null,
+                correctCount: null,
+                wrongCount: null,
+                skippedCount: null,
               }));
 
             return { admissionNo, obtainedMarks, sectionResults };
@@ -228,23 +228,10 @@ export class MarksImportComponent implements OnInit {
       return;
     }
 
-    const buildRow = (admNo: string, total: number, secMarks: number[]) => {
-      const row: any = { 'Admission No': admNo, 'Obtained Marks': total };
-      secMeta.forEach((s, i) => {
-        const m = secMarks[i] ?? 0;
-        row[`${s.sectionName} Marks`] = m;
-        row[`${s.sectionName} Questions`] = 10;
-        row[`${s.sectionName} Correct`] = Math.floor(m * 0.8);
-        row[`${s.sectionName} Wrong`] = Math.floor(m * 0.1);
-        row[`${s.sectionName} Skipped`] = 2;
-      });
-      return row;
-    };
-
     const data = [
-      buildRow('ADM001', 85, [45, 40]),
-      buildRow('ADM002', 72, [38, 34]),
-      buildRow('ADM003', 90, [48, 42]),
+      { 'Admission No': 'ADM001', 'Obtained Marks': 85 },
+      { 'Admission No': 'ADM002', 'Obtained Marks': 72 },
+      { 'Admission No': 'ADM003', 'Obtained Marks': 90 },
     ];
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -320,7 +307,7 @@ export class MarksImportComponent implements OnInit {
         this.submitting = false;
         if (res?.status) {
           this.alert.success(res.message || `Marks imported successfully. ${res.data?.insertedCount || ''} results saved.`);
-          this.router.navigate(['/app/exams/exams']);
+          this.router.navigate(['/app/exams/imported-exams']);
         } else {
           this.alert.error(res?.message || 'Failed to import marks.');
         }
