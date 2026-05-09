@@ -173,6 +173,18 @@ export const MENU_ITEMS: MenuItem[] = [
         roles: ['L1', 'L2', 'L3']
       },
       {
+        label: 'Event Mapping',
+        icon: 'fa-solid fa-file-lines',
+        route: '/app/communication/event-mapping',
+        roles: ['L1', 'L2', 'L3']
+      },
+      {
+        label: 'Send Bulk Email',
+        icon: 'fa-solid fa-file-lines',
+        route: '/app/communication/send-bulk',
+        roles: ['L1', 'L2', 'L3']
+      },
+      {
         label: 'Sent Logs',
         icon: 'fa-solid fa-clock-rotate-left',
         route: '/app/communication/sent-logs',
