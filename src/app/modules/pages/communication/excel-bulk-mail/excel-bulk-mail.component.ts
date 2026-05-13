@@ -24,6 +24,12 @@ export class ExcelBulkMailComponent implements OnInit {
   previewIndex = 0;
   previewSubject = '';
   previewBody = '';
+  imageUploading = false;
+  lastUploadedImageUrl = '';
+  tableRows = 2;
+  tableCols = 2;
+  private previewTimer: any;
+
   constructor(
     private fb: FormBuilder,
     private breadcrumb: BredcrumpService,
@@ -43,9 +49,12 @@ export class ExcelBulkMailComponent implements OnInit {
       subject: ['', Validators.required],
       body: ['', Validators.required],
     });
-
+    // this.bulkMailForm.valueChanges.subscribe(() => {
+    //   this.refreshPreview();
+    // });
     this.bulkMailForm.valueChanges.subscribe(() => {
-      this.refreshPreview();
+      clearTimeout(this.previewTimer);
+      this.previewTimer = setTimeout(() => this.refreshPreview(), 300);
     });
   }
 
@@ -147,16 +156,6 @@ export class ExcelBulkMailComponent implements OnInit {
     );
   }
 
-  private renderTemplate(content: string, row: any): string {
-    let output = content || '';
-    this.headers.forEach((h) => {
-      const value = safeTrim(row[h]) || '-';
-      const reg = new RegExp(`{{\\s*${this.escapeRegExp(h)}\\s*}}`, 'g');
-      output = output.replace(reg, `<mark>${value}</mark>`);
-    });
-    return output;
-  }
-
   private renderPlainTemplate(content: string, row: any): string {
     let output = content || '';
     this.headers.forEach((h) => {
@@ -244,6 +243,13 @@ export class ExcelBulkMailComponent implements OnInit {
       return;
     }
     const v = this.bulkMailForm.value;
+    const bodyHtml = v.body || '';
+    if (this.hasUnsafeEditorImages(bodyHtml)) {
+      this.alert.error(
+        'Please remove images added directly inside editor. Use Insert Image button only.',
+      );
+      return;
+    }
     const payload = {
       entiId: this.entiId,
       userId: localStorage.getItem('userId'),
@@ -268,5 +274,154 @@ export class ExcelBulkMailComponent implements OnInit {
           this.alert.error(err?.error?.message || 'Failed to send bulk mail');
         },
       });
+  }
+
+  onEmailImageSelected(event: any): void {
+    const file: File = event?.target?.files?.[0];
+    if (!file) return;
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      this.alert.error('Only PNG, JPG, JPEG, WEBP images are allowed');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.alert.error('Image size should not exceed 2MB');
+      event.target.value = '';
+      return;
+    }
+    const formData = new FormData();
+    formData.append('files', file);
+    formData.append('entiId', this.entiId || '');
+    this.imageUploading = true;
+    this.commonApi
+      .uploadImage(formData, 'communication/email-asset', 'upload')
+      .subscribe({
+        next: (res: any) => {
+          this.imageUploading = false;
+          const url = safeTrim(res?.data?.url);
+          if (!url) {
+            this.alert.error('Image uploaded but URL missing');
+            return;
+          }
+          this.lastUploadedImageUrl = url;
+          this.insertImageToBody(url);
+          this.alert.success('Image inserted successfully');
+          event.target.value = '';
+        },
+        error: (err: any) => {
+          this.imageUploading = false;
+          this.alert.error(err?.error?.message || 'Image upload failed');
+          event.target.value = '';
+        },
+      });
+  }
+
+  private insertImageToBody(imageUrl: string): void {
+    const control = this.bulkMailForm.get('body');
+    const currentBody = control?.value || '';
+    const imageHtml = `
+    <p style="margin: 10px 0;">
+      <img src="${imageUrl}" alt="Email Image" style="max-width: 220px; height: auto; display: block;" />
+    </p>
+  `;
+    control?.setValue(`${currentBody}${imageHtml}`);
+    control?.markAsDirty();
+    this.refreshPreview();
+  }
+
+  // insertEmailTable(): void {
+  //   const rows = 3;
+  //   const cols = 2;
+  //   const width = Math.floor(100 / cols);
+  //   const headerRow = `
+  //   <tr>
+  //     ${Array.from(
+  //       { length: cols },
+  //       (_, i) => `
+  //       <td style="border:1px solid #000;padding:4px;width:${width}%;font-weight:600;background:#f7f7f7;">
+  //         Header ${i + 1}
+  //       </td>
+  //     `,
+  //     ).join('')}
+  //   </tr>
+  // `;
+  //   const bodyRows = Array.from(
+  //     { length: rows - 1 },
+  //     () => `
+  //   <tr>
+  //     ${Array.from(
+  //       { length: cols },
+  //       () => `
+  //       <td style="border:1px solid #000;padding:4px;width:${width}%;">&nbsp;</td>
+  //     `,
+  //     ).join('')}
+  //   </tr>
+  // `,
+  //   ).join('');
+  //   const tableHtml = `
+  //   <table cellpadding="0" cellspacing="0" border="0"
+  //     style="border-collapse:collapse;width:100%;table-layout:fixed;margin:8px 0;">
+  //     ${headerRow}
+  //     ${bodyRows}
+  //   </table>
+  //   <p></p>
+  // `;
+  //   this.appendToBody(tableHtml);
+  // }
+
+  insertEmailTable(): void {
+    const rows = Math.min(Math.max(Number(this.tableRows) || 1, 1), 20);
+    const cols = Math.min(Math.max(Number(this.tableCols) || 1, 1), 8);
+    const width = Math.floor(100 / cols);
+    const tableRowsHtml = Array.from({ length: rows }, (_, rowIndex) => {
+      const cells = Array.from({ length: cols }, (_, colIndex) => {
+        const isHeader = rowIndex === 0;
+        return `
+        <td width="${width}%"
+          style="border:1px solid #000;padding:4px;width:${width}%;${isHeader ? 'font-weight:600;background:#f7f7f7;' : ''}">
+          ${isHeader ? `Header ${colIndex + 1}` : '&nbsp;'}
+        </td>
+      `;
+      }).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    const tableHtml = `
+    <table cellpadding="0" cellspacing="0" border="0"
+      style="border-collapse:collapse;width:100%;table-layout:fixed;margin:8px 0;">
+      ${tableRowsHtml}
+    </table>
+    <p></p>
+  `;
+
+    this.appendToBody(tableHtml);
+  }
+
+  private appendToBody(html: string): void {
+    const control = this.bulkMailForm.get('body');
+    const currentBody = control?.value || '';
+    control?.setValue(`${currentBody}${html}`);
+    control?.markAsDirty();
+    this.refreshPreview();
+  }
+
+  private hasUnsafeEditorImages(html: string): boolean {
+    const body = html || '';
+    return (
+      body.includes('src="data:image') ||
+      body.includes("src='data:image") ||
+      body.includes('src="blob:') ||
+      body.includes("src='blob:")
+    );
+  }
+
+  private renderTemplate(content: string, row: any): string {
+    let output = (content || '').slice(0, 20000);
+    this.headers.forEach((h) => {
+      const value = safeTrim(row[h]) || '-';
+      const reg = new RegExp(`{{\\s*${this.escapeRegExp(h)}\\s*}}`, 'g');
+      output = output.replace(reg, `<mark>${value}</mark>`);
+    });
+    return output;
   }
 }

@@ -81,3 +81,17 @@
   margin-bottom: 10px;
   background: #fff;
 }
+
+.preview-body table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.preview-body th,
+.preview-body td {
+  border: 1px solid #333;
+  padding: 8px;
+  vertical-align: top;
+  word-break: break-word;
+}

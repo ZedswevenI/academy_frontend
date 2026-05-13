@@ -1,4 +1,4 @@
-<div class="ms-3 me-3 pt-1 pb-1">
+<!-- <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div>
@@ -15,7 +15,6 @@
         </div>
         <form [formGroup]="bulkMailForm">
             <div class="row g-3">
-                <!-- LEFT -->
                 <div class="col-lg-3">
                     <div class="bulk-card">
                         <div class="bulk-card-header">
@@ -64,7 +63,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- CENTER -->
                 <div class="col-lg-6">
                     <div class="bulk-card">
                         <div class="bulk-card-header d-flex justify-content-between align-items-center">
@@ -97,6 +95,222 @@
                                     <label class="form-label fs-13 fw-medium">
                                         Email Body <span class="text-danger">*</span>
                                     </label>
+                                    <doceditor [control]="bulkMailForm.get('body')" formControlName="body"
+                                        id="bulkMailBody" height="300px" width="100%"
+                                        placeholder="Write email body here. Example: Dear {{ '{' }}{{ '{' }}name{{ '}' }}{{ '}' }}">
+                                    </doceditor>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bulk-card mt-3">
+                        <div class="bulk-card-header d-flex justify-content-between">
+                            <span class="fw-semibold">
+                                <i class="fa-regular fa-eye me-1 text-primary"></i>Preview
+                            </span>
+                            <select class="form-select form-select-sm preview-select" [(ngModel)]="previewIndex"
+                                [ngModelOptions]="{ standalone: true }" (change)="refreshPreview()"
+                                *ngIf="excelRows.length">
+                                <option *ngFor="let r of excelRows; let i = index" [value]="i">
+                                    Row {{ i + 1 }} - {{ r.email || '-' }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="bulk-card-body">
+                            <div *ngIf="!excelRows.length" class="text-muted small">
+                                Upload Excel to see preview.
+                            </div>
+                            <div *ngIf="excelRows.length">
+                                <div class="preview-subject mb-2">
+                                    <small class="text-muted d-block">Subject</small>
+                                    <div class="fw-semibold" [innerHTML]="previewSubject"></div>
+                                </div>
+                                <div class="preview-body" [innerHTML]="previewBody"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="bulk-card">
+                        <div class="bulk-card-header">
+                            <span class="fw-semibold">Data Preview</span>
+                        </div>
+                        <div class="bulk-card-body data-preview">
+                            <div *ngIf="!excelRows.length" class="text-muted small text-center py-4">
+                                No Excel data uploaded
+                            </div>
+                            <div *ngFor="let row of excelRows.slice(0, 10); let i = index" class="data-row">
+                                <div class="d-flex justify-content-between">
+                                    <strong>Row {{ i + 1 }}</strong>
+                                    <span class="badge rounded-pill" [class.bg-success]="isValidEmail(row.email)"
+                                        [class.bg-danger]="!isValidEmail(row.email)">
+                                        {{ isValidEmail(row.email) ? 'Valid' : 'Invalid' }}
+                                    </span>
+                                </div>
+                                <div class="small text-muted text-truncate mt-1">
+                                    {{ row.email || '-' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bulk-card mt-3">
+                        <div class="bulk-card-header">
+                            <span class="fw-semibold">Action</span>
+                        </div>
+                        <div class="bulk-card-body">
+                            <button type="button" class="btn btn-primary w-100 rounded-pill" [disabled]="loading"
+                                (click)="sendBulkMail()">
+                                <i class="fa-solid fa-envelope-circle-check me-1"></i>
+                                {{ loading ? 'Sending...' : 'Send Bulk Mail' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div> -->
+
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="fw-bold mb-0" style="font-size: 28px;">
+                    <i class="fa-solid fa-file-excel me-2 text-success"></i>Bulk Excel Mail
+                </h1>
+                <p class="text-muted small mb-0 mt-1">
+                    Upload Excel, create template using column variables and prepare bulk email
+                </p>
+            </div>
+            <button class="btn btn-outline-secondary rounded-pill" type="button" (click)="resetAll()">
+                <i class="fa-solid fa-rotate-left me-1"></i>Reset
+            </button>
+        </div>
+        <form [formGroup]="bulkMailForm">
+            <div class="row g-3">
+                <!-- LEFT -->
+                <div class="col-lg-3">
+                    <div class="bulk-card">
+                        <div class="bulk-card-header">
+                            <span class="fw-semibold">Excel Upload</span>
+                        </div>
+
+                        <div class="bulk-card-body">
+                            <input type="file" class="form-control form-control-sm" accept=".xlsx,.xls,.csv"
+                                (change)="onFileSelected($event)" />
+
+                            <div class="alert alert-info small mt-3 mb-0">
+                                Required column: <strong>email</strong><br />
+                                Optional columns can be used as template variables.
+                            </div>
+
+                            <div class="mt-3" *ngIf="fileName">
+                                <small class="text-muted d-block">Selected File</small>
+                                <div class="fw-semibold text-truncate">{{ fileName }}</div>
+                            </div>
+
+                            <div class="mt-3" *ngIf="excelRows.length">
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Total Rows</span>
+                                    <strong>{{ excelRows.length }}</strong>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Valid Emails</span>
+                                    <strong class="text-success">{{ validEmailCount }}</strong>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Invalid Emails</span>
+                                    <strong class="text-danger">{{ invalidEmailCount }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bulk-card mt-3" *ngIf="headers.length">
+                        <div class="bulk-card-header">
+                            <span class="fw-semibold">
+                                <i class="fa-solid fa-key me-1 text-warning"></i>Variables
+                            </span>
+                        </div>
+                        <div class="bulk-card-body variable-list">
+                            <div class="variable-item" *ngFor="let h of headers" (click)="insertKey(h, 'body')">
+                                <code>{{ '{{' + h + '}}' }}</code>
+                                <button type="button" class="btn btn-sm btn-link p-0" (click)="copyKey(h, $event)">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- CENTER -->
+                <div class="col-lg-6">
+                    <div class="bulk-card">
+                        <div class="bulk-card-header d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">Mail Template</span>
+                            <small class="text-muted">Use variables from left side</small>
+                        </div>
+                        <div class="bulk-card-body">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fs-13 fw-medium">
+                                        Campaign Title <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-sm" formControlName="title"
+                                        placeholder="e.g. Fee Reminder Bulk Mail" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fs-13 fw-medium">
+                                        Email Subject <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control" formControlName="subject"
+                                            placeholder="e.g. Fee reminder for {{ '{' }}{{ '{' }}name{{ '}' }}{{ '}' }}" />
+
+                                        <button class="btn btn-outline-secondary" type="button"
+                                            [disabled]="!headers.length" (click)="insertFirstKey('subject')">
+                                            <i class="fa-solid fa-hashtag"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <label class="form-label fs-13 fw-medium mb-0">
+                                            Email Body <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="d-flex gap-2">
+                                            <input type="file" #emailImageInput hidden
+                                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                                (change)="onEmailImageSelected($event)" />
+                                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill"
+                                                [disabled]="imageUploading" (click)="emailImageInput.click()">
+                                                <i class="fa-regular fa-image me-1"></i>
+                                                {{ imageUploading ? 'Uploading...' : 'Insert Image' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="small text-muted mb-2" *ngIf="lastUploadedImageUrl">
+                                        Last uploaded:
+                                        <a [href]="lastUploadedImageUrl" target="_blank">View Image</a>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <label class="form-label fs-7 mb-0">
+                                            Rows :
+                                        </label>
+                                        <input type="number" class="form-control form-control-sm" style="width: 80px;"
+                                            [(ngModel)]="tableRows" [ngModelOptions]="{ standalone: true }" min="1"
+                                            placeholder="Rows" />
+                                        <label class="form-label fs-7 mb-0">
+                                            Columns :
+                                        </label>
+                                        <input type="number" class="form-control form-control-sm" style="width: 80px;"
+                                            [(ngModel)]="tableCols" [ngModelOptions]="{ standalone: true }" min="1"
+                                            placeholder="Cols" />
+                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill"
+                                            (click)="insertEmailTable()">
+                                            <i class="fa-solid fa-table me-1"></i>Insert Table
+                                        </button>
+                                    </div>
                                     <doceditor [control]="bulkMailForm.get('body')" formControlName="body"
                                         id="bulkMailBody" height="300px" width="100%"
                                         placeholder="Write email body here. Example: Dear {{ '{' }}{{ '{' }}name{{ '}' }}{{ '}' }}">
