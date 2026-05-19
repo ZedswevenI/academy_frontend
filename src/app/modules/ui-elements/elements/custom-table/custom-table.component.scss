@@ -1,8 +1,24 @@
 .table thead th {
   background-color: #f9fafb;
   color: #000;
-  font-size: 16px;
+  font-size: 14px;
   border-bottom: 2px solid #b9babb;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+.table tbody td {
+  font-size: 14px;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+/* Alternating row colors */
+.table tbody tr:nth-child(odd) > td {
+  background-color: #ffffff;
+}
+.table tbody tr:nth-child(even) > td {
+  background-color: #f8fafc;
 }
 
 
@@ -22,8 +38,16 @@ th .fa {
   z-index: 2;
 }
 
+.icon-12 {
+  font-size: 12px;
+  line-height: 1;
+}
 .icon-14 {
   font-size: 14px;
+  line-height: 1;
+}
+.icon-16 {
+  font-size: 16px;
   line-height: 1;
 }
 .icon-18 {
@@ -156,7 +180,7 @@ th .fa {
 
 .clamp-cell {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -182,8 +206,33 @@ th .fa {
   vertical-align: middle;
 }
 
-.row-expander td {
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+/* Floating cell tooltip */
+.cell-float-tooltip {
+  position: fixed;
+  z-index: 1090;
+  background: #1f2937;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 300px;
+  min-width: 100px;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1f2937;
+  }
 }
 
 .truncate-cell {
@@ -194,10 +243,6 @@ th .fa {
   vertical-align: middle; /* keeps icon+text buttons tidy elsewhere */
 }
 
-.row-expander .text-wrap {
-  white-space: normal; /* allow wrapping in expander */
-  word-break: break-word;
-}
 
 .highlight-col {
   font-weight: 600;
@@ -218,16 +263,23 @@ th .fa {
 }
 
 .action-icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   padding: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
   background: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #374151;
+  font-size: 13px;
+}
+
+/* Compact simple/change action buttons */
+.table td .btn-sm.action-simple-btn {
+  font-size: 12px;
+  padding: 3px 10px;
 }
 
 .action-icon-btn:hover {
