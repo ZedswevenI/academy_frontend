@@ -96,7 +96,7 @@
                 </button>
               </div>
             </div>
-            <div class="col-12">
+            <!-- <div class="col-12">
               <label class="form-label fs-13 fw-medium d-flex justify-content-between">
                 <span>Body <span class="text-danger">*</span></span>
                 <small class="text-muted">Click a key on the right to insert</small>
@@ -104,9 +104,43 @@
               <doceditor [control]="templateForm.get('body')" formControlName="body" id="tplBody" height="280px"
                 width="100%" placeholder="Write your template here. Use keys like {{ '{{studentName}}' }}">
               </doceditor>
+            </div> -->
+            <div class="col-12">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fs-13 fw-medium mb-0">
+                  Body <span class="text-danger">*</span>
+                </label>
+                <div class="d-flex gap-2">
+                  <input type="file" #emailImageInput hidden accept="image/png,image/jpeg,image/jpg,image/webp"
+                    (change)="onEmailImageSelected($event)" />
+                  <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" [disabled]="imageUploading"
+                    (click)="emailImageInput.click()">
+                    <i class="fa-regular fa-image me-1"></i>
+                    {{ imageUploading ? 'Uploading...' : 'Insert Image' }}
+                  </button>
+                </div>
+              </div>
+              <div class="small text-muted mb-2" *ngIf="lastUploadedImageUrl">
+                Last uploaded:
+                <a [href]="lastUploadedImageUrl" target="_blank">View Image</a>
+              </div>
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <label class="form-label fs-7 mb-0">Rows :</label>
+                <input type="number" class="form-control form-control-sm" style="width: 80px;" [(ngModel)]="tableRows"
+                  [ngModelOptions]="{ standalone: true }" min="1" />
+                <label class="form-label fs-7 mb-0">Columns :</label>
+                <input type="number" class="form-control form-control-sm" style="width: 80px;" [(ngModel)]="tableCols"
+                  [ngModelOptions]="{ standalone: true }" min="1" />
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill"
+                  (click)="insertEmailTable()">
+                  <i class="fa-solid fa-table me-1"></i>Insert Table
+                </button>
+              </div>
+              <doceditor [control]="templateForm.get('body')" formControlName="body" id="tplBody" height="280px"
+                width="100%" placeholder="Write your template here. Use keys like {{ '{{studentName}}' }}">
+              </doceditor>
             </div>
           </div>
-
           <!-- Preview -->
           <div class="tpl-preview mt-3">
             <div class="d-flex justify-content-between align-items-center mb-2">

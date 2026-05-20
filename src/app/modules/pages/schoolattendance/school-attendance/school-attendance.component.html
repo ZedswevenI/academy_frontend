@@ -1,15 +1,16 @@
-<!-- <div class="ms-3 me-3 pt-1 pb-1">
+<div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <!-- Header -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h1 class="fw-bold mb-0" style="font-size:30px">
+            <h1 class="fw-bold mb-0" style="font-size: 30px">
                 <i class="fa-solid fa-school me-2"></i>School Attendance
             </h1>
             <span *ngIf="selectedDateLabel" class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2"
-                style="font-size:0.85rem">
+                style="font-size: 0.85rem">
                 {{ selectedDateLabel }}
             </span>
         </div>
-        <div *ngIf="isAO" class="d-flex align-items-center gap-2 mb-2">
+        <div class="d-flex align-items-center gap-2 mb-2">
             <button class="btn btn-sm btn-outline-secondary" (click)="prevWeek()">
                 <i class="fa-solid fa-chevron-left"></i> Prev week
             </button>
@@ -18,28 +19,126 @@
             </button>
         </div>
         <div class="row g-2 mb-4">
-            <div class="col" *ngFor="let d of dates">
+            <div class="col date-popover-wrap" *ngFor="let d of dates" style="position: relative">
                 <div class="date-card text-center rounded-3 py-2 px-1"
                     [class.date-card--active]="selectedDate === d.value"
                     [class.date-card--today]="d.isToday && selectedDate !== d.value"
-                    [class.date-card--future]="d.isFuture && selectedDate !== d.value" (click)="selectDate(d)"
-                    style="cursor:pointer;border:1.5px solid #dee2e6">
-                    <div class="small fw-semibold" style="font-size:0.75rem;white-space:nowrap">
+                    [class.date-card--future]="d.isFuture && selectedDate !== d.value" (click)="selectDateOnly(d)"
+                    style="cursor: pointer; border: 1.5px solid #dee2e6">
+                    <div class="small fw-semibold" style="font-size: 0.75rem; white-space: nowrap">
                         {{ d.label }}
                     </div>
-                    <div *ngIf="d.isToday" style="width:5px;height:5px;border-radius:50%;
-                   background:#0d6efd;margin:2px auto 0">
+                    <div *ngIf="d.isToday" style="
+              width: 5px;
+              height: 5px;
+              border-radius: 50%;
+              background: #0d6efd;
+              margin: 2px auto 0;
+            "></div>
+                    <div *ngIf="isDateHoliday(d.value)" [title]="getDateHolidayName(d.value)" (click)="
+              canDeclare && !d.isFuture ? onHolidayIconClick(d, $event) : null
+            " style="
+              font-size: 0.6rem;
+              font-weight: 700;
+              color: #92400e;
+              background: #fef3c7;
+              border-radius: 4px;
+              padding: 1px 4px;
+              margin: 2px auto 0;
+              display: inline-block;
+              max-width: 90%;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              cursor: pointer;
+            ">
+                        <i class="fa-solid fa-umbrella-beach me-1"></i>{{ getDateHolidayName(d.value) }}
                     </div>
+                    <div *ngIf="canDeclare && !d.isFuture && !isDateHoliday(d.value)"
+                        (click)="onHolidayIconClick(d, $event)" style="
+              font-size: 0.6rem;
+              color: #0d6efd;
+              margin-top: 3px;
+              cursor: pointer;
+              font-weight: 600;
+              letter-spacing: 0.02em;
+            ">
+                        + Holiday
+                    </div>
+                </div>
+                <div *ngIf="popoverDate === d.value" class="shadow rounded-3 bg-white border p-3" style="
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 230px;
+            z-index: 999;
+          " (click)="$event.stopPropagation()">
+                    <ng-container *ngIf="isDateHoliday(d.value); else declareNew">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-semibold">
+                                <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday
+                            </span>
+                            <button class="btn-close btn-close-sm" style="font-size: 0.6rem"
+                                (click)="closePopover()"></button>
+                        </div>
+                        <div class="fw-semibold small mb-1">
+                            {{ getDateHolidayName(d.value) }}
+                        </div>
+                        <div class="text-muted" style="font-size: 0.75rem">
+                            {{ d.label }}
+                        </div>
+                        <hr class="my-2" />
+                        <button class="btn btn-sm btn-outline-danger w-100" (click)="removeHoliday(d.value)"
+                            [disabled]="removingHoliday">
+                            <span *ngIf="removingHoliday" class="spinner-border spinner-border-sm me-1"></span>
+                            <i class="fa-solid fa-trash-can me-1" *ngIf="!removingHoliday"></i>
+                            Remove Holiday
+                        </button>
+                    </ng-container>
+                    <ng-template #declareNew>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-semibold small">Declare Holiday</span>
+                            <button class="btn-close btn-close-sm" style="font-size: 0.6rem"
+                                (click)="closePopover()"></button>
+                        </div>
+                        <div class="text-muted mb-2" style="font-size: 0.75rem">
+                            <i class="fa-regular fa-calendar me-1"></i>{{ d.label }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small mb-1 fw-medium">Type</label>
+                            <select class="form-select form-select-sm" [(ngModel)]="declareForm.type">
+                                <option value="HOLIDAY">Holiday</option>
+                                <option value="WEEK_OFF">Week Off</option>
+                                <option value="LEAVE">Leave</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small mb-1 fw-medium">Name <span
+                                    class="text-danger">*</span></label>
+                            <input class="form-control form-control-sm" [(ngModel)]="declareForm.name"
+                                placeholder="e.g. Diwali, Sunday, Flood" (keyup.enter)="declareHoliday()" />
+                        </div>
+                        <button class="btn btn-sm btn-warning w-100 fw-semibold" (click)="declareHoliday()"
+                            [disabled]="declaringHoliday || !declareForm.name.trim()">
+                            <span *ngIf="declaringHoliday" class="spinner-border spinner-border-sm me-1"></span>
+                            <i class="fa-solid fa-umbrella-beach me-1" *ngIf="!declaringHoliday"></i>
+                            Declare for All Batches
+                        </button>
+                    </ng-template>
                 </div>
             </div>
         </div>
         <div *ngIf="loading" class="text-center py-5 text-muted">
-            <div class="spinner-border spinner-border-sm me-2"></div> Loading batches...
+            <div class="spinner-border spinner-border-sm me-2"></div>
+            Loading batches...
         </div>
         <div *ngIf="!loading && isFutureDate" class="text-center py-5 text-muted border rounded-3">
             <i class="fa-solid fa-calendar-days fa-2x text-primary opacity-50 mb-2 d-block"></i>
             <div class="fw-semibold">Future date selected</div>
-            <div class="small mt-1">Attendance can only be marked for today or past dates</div>
+            <div class="small mt-1">
+                Attendance can only be marked for today or past dates
+            </div>
         </div>
         <div *ngIf="!loading && !isFutureDate && !batches.length" class="text-center py-5 text-muted border rounded-3">
             <i class="fa-solid fa-school fa-2x opacity-25 mb-2 d-block"></i>
@@ -50,226 +149,6 @@
         </div>
         <div *ngIf="!loading && !isFutureDate && batches.length" class="row g-3">
             <div class="col-12 col-sm-6 col-lg-4" *ngFor="let b of batches">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body p-3">
-                        <div class="d-flex align-items-start justify-content-between mb-2">
-                            <div>
-                                <div class="fw-semibold">{{ b.batchName }}</div>
-                                <div class="text-muted small">{{ b.batchCode }}</div>
-                            </div>
-                            <div class="d-flex flex-column align-items-end gap-1">
-                                <span *ngIf="b.section"
-                                    class="badge bg-info-subtle text-info border border-info-subtle">
-                                    {{ b.section }}
-                                </span>
-                                <span *ngIf="isMarked(b.batchCode)"
-                                    class="badge bg-success-subtle text-success border border-success-subtle"
-                                    style="font-size:0.65rem">
-                                    <i class="fa-solid fa-circle-check me-1"></i>Marked
-                                </span>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-wrap gap-1 mb-2">
-                            <span class="badge bg-secondary-subtle text-secondary small">
-                                Class {{ b.classNo }}
-                            </span>
-                            <span class="badge bg-secondary-subtle text-secondary small">
-                                {{ b.academicYear }}
-                            </span>
-                            <span class="badge bg-secondary-subtle text-secondary small" *ngIf="b.centerName">
-                                {{ b.centerName }}
-                            </span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="text-muted small">
-                                <i class="fa-solid fa-users me-1"></i>{{ b.studentCount || 0 }} students
-                            </div>
-                            <div class="text-muted small" *ngIf="b.classTeacherName">
-                                <i class="fa-solid fa-user-tie me-1"></i>{{ b.classTeacherName }}
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm flex-grow-1" [ngClass]="{
-                  'btn-success':         canMarkBatch(b) && !isMarked(b.batchCode),
-                  'btn-outline-primary': canMarkBatch(b) &&  isMarked(b.batchCode),
-                  'btn-outline-secondary': !canMarkBatch(b)
-                }" (click)="goToMark(b)">
-                                <i class="fa-solid me-1" [ngClass]="{
-                  'fa-clipboard-check': canMarkBatch(b) && !isMarked(b.batchCode),
-                  'fa-pen-to-square':   canMarkBatch(b) &&  isMarked(b.batchCode),
-                  'fa-eye':             !canMarkBatch(b)
-                }"></i>
-                                <span *ngIf="canMarkBatch(b) && !isMarked(b.batchCode)">Mark</span>
-                                <span *ngIf="canMarkBatch(b) &&  isMarked(b.batchCode)">Edit</span>
-                                <span *ngIf="!canMarkBatch(b)">View</span>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" title="Download Monthly Report"
-                                (click)="openPrintModal(b)">
-                                <i class="fa-solid fa-file-pdf text-danger"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-<div class="modal-backdrop fade show" *ngIf="showPrintModal"></div>
-<div class="modal fade show d-block" tabindex="-1" *ngIf="showPrintModal">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h6 class="modal-title fw-semibold">
-                    <i class="fa-solid fa-file-pdf me-1 text-danger"></i>
-                    Download Monthly Report
-                </h6>
-                <button class="btn-close" (click)="closePrintModal()"></button>
-            </div>
-            <div class="modal-body">
-                <div class="border rounded-3 p-3 bg-light mb-3 small">
-                    <div><span class="text-muted">Batch:</span>
-                        <strong class="ms-1">{{ printBatch?.batchName }}</strong>
-                    </div>
-                    <div *ngIf="printBatch?.section">
-                        <span class="text-muted">Section:</span>
-                        <strong class="ms-1">{{ printBatch?.section }}</strong>
-                    </div>
-                </div>
-                <label class="form-label small fw-medium">
-                    Select Month <span class="text-danger">*</span>
-                </label>
-                <select class="form-select form-select-sm" [(ngModel)]="printMonth">
-                    <option *ngFor="let m of monthOptions" [value]="m.value">{{ m.label }}</option>
-                </select>
-            </div>
-            <div class="modal-footer border-0">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closePrintModal()">Cancel</button>
-                <button class="btn btn-sm btn-danger" (click)="downloadPdf()" [disabled]="printLoading || !printMonth">
-                    <span *ngIf="printLoading" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="fa-solid fa-file-pdf me-1" *ngIf="!printLoading"></i>
-                    Download PDF
-                </button>
-            </div>
-        </div>
-    </div>
-</div> -->
-
-<!-- new one -->
-<!-- <div class="ms-3 me-3 pt-1 pb-1">
-    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h1 class="fw-bold mb-0" style="font-size:30px">
-                <i class="fa-solid fa-school me-2"></i>School Attendance
-            </h1>
-            <span *ngIf="selectedDateLabel" class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2"
-                style="font-size:0.85rem">
-                {{ selectedDateLabel }}
-            </span>
-        </div>
-        <div class="d-flex align-items-center gap-2 mb-2">
-            <button class="btn btn-sm btn-outline-secondary" (click)="prevWeek()">
-                <i class="fa-solid fa-chevron-left"></i> Prev week
-            </button>
-            <button class="btn btn-sm btn-outline-secondary ms-auto" (click)="nextWeek()">
-                Next week <i class="fa-solid fa-chevron-right"></i>
-            </button>
-        </div>
-        <div class="row g-2 mb-4">
-            <div class="col date-popover-wrap" *ngFor="let d of dates" style="position:relative">
-                <div class="date-card text-center rounded-3 py-2 px-1"
-                    [class.date-card--active]="selectedDate === d.value"
-                    [class.date-card--today]="d.isToday && selectedDate !== d.value"
-                    [class.date-card--future]="d.isFuture && selectedDate !== d.value"
-                    [class.date-card--holiday]="isDateHoliday(d.value) && selectedDate !== d.value"
-                    (click)="canDeclare && !d.isFuture ? onDateClick(d, $event) : selectDate(d)"
-                    style="cursor:pointer;border:1.5px solid #dee2e6">
-
-                    <div class="small fw-semibold" style="font-size:0.75rem;white-space:nowrap">
-                        {{ d.label }}
-                    </div>
-                    <div *ngIf="d.isToday && !isDateHoliday(d.value)"
-                        style="width:5px;height:5px;border-radius:50%;background:#0d6efd;margin:2px auto 0">
-                    </div>
-                    <div *ngIf="isDateHoliday(d.value)" style="font-size:0.6rem;font-weight:700;color:#92400E;background:#FEF3C7;
-                   border-radius:4px;padding:1px 4px;margin:2px auto 0;display:inline-block;
-                   max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-                        [title]="getDateHolidayName(d.value)">
-                        H · {{ getDateHolidayName(d.value) }}
-                    </div>
-                    <div *ngIf="canDeclare && !d.isFuture && !isDateHoliday(d.value)"
-                        style="font-size:0.55rem;color:#adb5bd;margin-top:2px">
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                </div>
-                <div *ngIf="popoverDate === d.value" class="shadow rounded-3 bg-white border p-3" style="position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
-                 width:230px;z-index:999" (click)="$event.stopPropagation()">
-                    <ng-container *ngIf="isDateHoliday(d.value); else declareNew">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-semibold">
-                                <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday
-                            </span>
-                            <button class="btn-close btn-close-sm" style="font-size:0.6rem"
-                                (click)="closePopover()"></button>
-                        </div>
-                        <div class="fw-semibold small mb-1">{{ getDateHolidayName(d.value) }}</div>
-                        <div class="text-muted" style="font-size:0.75rem">{{ d.label }}</div>
-                        <hr class="my-2">
-                        <button class="btn btn-sm btn-outline-danger w-100" (click)="removeHoliday(d.value)"
-                            [disabled]="removingHoliday">
-                            <span *ngIf="removingHoliday" class="spinner-border spinner-border-sm me-1"></span>
-                            <i class="fa-solid fa-trash-can me-1" *ngIf="!removingHoliday"></i>
-                            Remove Holiday
-                        </button>
-                    </ng-container>
-                    <ng-template #declareNew>
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="fw-semibold small">Declare Holiday</span>
-                            <button class="btn-close btn-close-sm" style="font-size:0.6rem"
-                                (click)="closePopover()"></button>
-                        </div>
-                        <div class="text-muted mb-2" style="font-size:0.75rem">
-                            <i class="fa-regular fa-calendar me-1"></i>{{ d.label }}
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small mb-1 fw-medium">Type</label>
-                            <select class="form-select form-select-sm" [(ngModel)]="declareForm.type">
-                                <option value="HOLIDAY">Holiday</option>
-                                <option value="WEEK_OFF">Week Off</option>
-                                <option value="LEAVE">Leave</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small mb-1 fw-medium">Name <span
-                                    class="text-danger">*</span></label>
-                            <input class="form-control form-control-sm" [(ngModel)]="declareForm.name"
-                                placeholder="e.g. Diwali, Sunday, Flood" (keyup.enter)="declareHoliday()" />
-                        </div>
-                        <button class="btn btn-sm btn-warning w-100 fw-semibold" (click)="declareHoliday()"
-                            [disabled]="declaringHoliday || !declareForm.name.trim()">
-                            <span *ngIf="declaringHoliday" class="spinner-border spinner-border-sm me-1"></span>
-                            <i class="fa-solid fa-umbrella-beach me-1" *ngIf="!declaringHoliday"></i>
-                            Declare for All Batches
-                        </button>
-                    </ng-template>
-                </div>
-            </div>
-        </div>
-        <div *ngIf="loading" class="text-center py-5 text-muted">
-            <div class="spinner-border spinner-border-sm me-2"></div> Loading batches...
-        </div>
-        <div *ngIf="!loading && isFutureDate" class="text-center py-5 text-muted border rounded-3">
-            <i class="fa-solid fa-calendar-days fa-2x text-primary opacity-50 mb-2 d-block"></i>
-            <div class="fw-semibold">Future date selected</div>
-            <div class="small mt-1">Attendance can only be marked for today or past dates</div>
-        </div>
-        <div *ngIf="!loading && !isFutureDate && !batches.length" class="text-center py-5 text-muted border rounded-3">
-            <i class="fa-solid fa-school fa-2x opacity-25 mb-2 d-block"></i>
-            <div class="fw-semibold">No batches found</div>
-            <div class="small mt-1" *ngIf="isTeacher">You are not assigned as class teacher for any batch</div>
-        </div>
-        <div *ngIf="!loading && !isFutureDate && batches.length" class="row g-3">
-            <div class="col-12 col-sm-6 col-lg-4" *ngFor="let b of batches">
                 <div class="card border-0 shadow-sm h-100" [class.border-warning]="isHoliday(b.batchCode)"
                     [style.border-width]="isHoliday(b.batchCode) ? '1.5px' : null"
                     [style.border-style]="isHoliday(b.batchCode) ? 'solid' : null">
@@ -286,19 +165,21 @@
                                 </span>
                                 <span *ngIf="isHoliday(b.batchCode)"
                                     class="badge bg-warning-subtle text-warning border border-warning-subtle"
-                                    style="font-size:0.65rem">
+                                    style="font-size: 0.65rem">
                                     <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday
                                 </span>
                                 <span *ngIf="isMarked(b.batchCode) && !isHoliday(b.batchCode)"
                                     class="badge bg-success-subtle text-success border border-success-subtle"
-                                    style="font-size:0.65rem">
+                                    style="font-size: 0.65rem">
                                     <i class="fa-solid fa-circle-check me-1"></i>Marked
                                 </span>
                             </div>
                         </div>
                         <div class="d-flex flex-wrap gap-1 mb-2">
                             <span class="badge bg-secondary-subtle text-secondary small">Class {{ b.classNo }}</span>
-                            <span class="badge bg-secondary-subtle text-secondary small">{{ b.academicYear }}</span>
+                            <span class="badge bg-secondary-subtle text-secondary small">{{
+                                b.academicYear
+                                }}</span>
                             <span class="badge bg-secondary-subtle text-secondary small" *ngIf="b.centerName">{{
                                 b.centerName }}</span>
                         </div>
@@ -310,7 +191,8 @@
                                 <i class="fa-solid fa-user-tie me-1"></i>{{ b.classTeacherName }}
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
+                        <!-- Action buttons -->
+                        <!-- <div class="d-flex gap-2">
                             <div *ngIf="isHoliday(b.batchCode)"
                                 class="flex-grow-1 text-center py-1 rounded-2 small fw-semibold"
                                 style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A">
@@ -334,301 +216,83 @@
                                 (click)="openPrintModal(b)">
                                 <i class="fa-solid fa-file-pdf text-danger"></i>
                             </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-<div class="modal-backdrop fade show" *ngIf="showPrintModal"></div>
-<div class="modal fade show d-block" tabindex="-1" *ngIf="showPrintModal">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0">
-                <h6 class="modal-title fw-semibold">
-                    <i class="fa-solid fa-file-pdf me-1 text-danger"></i>Download Monthly Report
-                </h6>
-                <button class="btn-close" (click)="closePrintModal()"></button>
-            </div>
-            <div class="modal-body">
-                <div class="border rounded-3 p-3 bg-light mb-3 small">
-                    <div><span class="text-muted">Batch:</span>
-                        <strong class="ms-1">{{ printBatch?.batchName }}</strong>
-                    </div>
-                    <div *ngIf="printBatch?.section">
-                        <span class="text-muted">Section:</span>
-                        <strong class="ms-1">{{ printBatch?.section }}</strong>
-                    </div>
-                </div>
-                <label class="form-label small fw-medium">Select Month <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" [(ngModel)]="printMonth">
-                    <option *ngFor="let m of monthOptions" [value]="m.value">{{ m.label }}</option>
-                </select>
-            </div>
-            <div class="modal-footer border-0">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closePrintModal()">Cancel</button>
-                <button class="btn btn-sm btn-danger" (click)="downloadPdf()" [disabled]="printLoading || !printMonth">
-                    <span *ngIf="printLoading" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="fa-solid fa-file-pdf me-1" *ngIf="!printLoading"></i>
-                    Download PDF
-                </button>
-            </div>
-        </div>
-    </div>
-</div> -->
-
-<div class="ms-3 me-3 pt-1 pb-1">
-    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
-        <!-- Header -->
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h1 class="fw-bold mb-0" style="font-size:30px">
-                <i class="fa-solid fa-school me-2"></i>School Attendance
-            </h1>
-            <span *ngIf="selectedDateLabel" class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2"
-                style="font-size:0.85rem">
-                {{ selectedDateLabel }}
-            </span>
-        </div>
-
-        <!-- Week nav -->
-        <div class="d-flex align-items-center gap-2 mb-2">
-            <button class="btn btn-sm btn-outline-secondary" (click)="prevWeek()">
-                <i class="fa-solid fa-chevron-left"></i> Prev week
-            </button>
-            <button class="btn btn-sm btn-outline-secondary ms-auto" (click)="nextWeek()">
-                Next week <i class="fa-solid fa-chevron-right"></i>
-            </button>
-        </div>
-
-        <!-- Week date strip -->
-        <div class="row g-2 mb-4">
-            <div class="col date-popover-wrap" *ngFor="let d of dates" style="position:relative">
-
-                <!-- Date card — clicking always selects the date -->
-                <div class="date-card text-center rounded-3 py-2 px-1"
-                    [class.date-card--active]="selectedDate === d.value"
-                    [class.date-card--today]="d.isToday && selectedDate !== d.value"
-                    [class.date-card--future]="d.isFuture && selectedDate !== d.value" (click)="selectDateOnly(d)"
-                    style="cursor:pointer;border:1.5px solid #dee2e6">
-
-                    <div class="small fw-semibold" style="font-size:0.75rem;white-space:nowrap">
-                        {{ d.label }}
-                    </div>
-
-                    <!-- Today dot -->
-                    <div *ngIf="d.isToday"
-                        style="width:5px;height:5px;border-radius:50%;background:#0d6efd;margin:2px auto 0">
-                    </div>
-
-                    <!-- Holiday badge — clicking this opens the popover for canDeclare -->
-                    <div *ngIf="isDateHoliday(d.value)" [title]="getDateHolidayName(d.value)"
-                        (click)="canDeclare && !d.isFuture ? onHolidayIconClick(d, $event) : null" style="font-size:0.6rem;font-weight:700;color:#92400E;background:#FEF3C7;
-                   border-radius:4px;padding:1px 4px;margin:2px auto 0;display:inline-block;
-                   max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-                   cursor:pointer">
-                        <i class="fa-solid fa-umbrella-beach me-1"></i>{{ getDateHolidayName(d.value) }}
-                    </div>
-
-                    <!-- Holiday declare icon — only for canDeclare, non-future, non-holiday dates -->
-                    <div *ngIf="canDeclare && !d.isFuture && !isDateHoliday(d.value)"
-                        (click)="onHolidayIconClick(d, $event)" style="font-size:0.6rem;color:#0d6efd;margin-top:3px;cursor:pointer;
-         font-weight:600;letter-spacing:0.02em">
-                        + Holiday
-                    </div>
-                </div>
-
-                <!-- Holiday popover -->
-                <div *ngIf="popoverDate === d.value" class="shadow rounded-3 bg-white border p-3" style="position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
-                 width:230px;z-index:999" (click)="$event.stopPropagation()">
-
-                    <!-- If holiday already exists — show info + remove -->
-                    <ng-container *ngIf="isDateHoliday(d.value); else declareNew">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle fw-semibold">
-                                <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday
-                            </span>
-                            <button class="btn-close btn-close-sm" style="font-size:0.6rem"
-                                (click)="closePopover()"></button>
-                        </div>
-                        <div class="fw-semibold small mb-1">{{ getDateHolidayName(d.value) }}</div>
-                        <div class="text-muted" style="font-size:0.75rem">{{ d.label }}</div>
-                        <hr class="my-2">
-                        <button class="btn btn-sm btn-outline-danger w-100" (click)="removeHoliday(d.value)"
-                            [disabled]="removingHoliday">
-                            <span *ngIf="removingHoliday" class="spinner-border spinner-border-sm me-1"></span>
-                            <i class="fa-solid fa-trash-can me-1" *ngIf="!removingHoliday"></i>
-                            Remove Holiday
-                        </button>
-                    </ng-container>
-
-                    <!-- Declare new holiday -->
-                    <ng-template #declareNew>
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="fw-semibold small">Declare Holiday</span>
-                            <button class="btn-close btn-close-sm" style="font-size:0.6rem"
-                                (click)="closePopover()"></button>
-                        </div>
-                        <div class="text-muted mb-2" style="font-size:0.75rem">
-                            <i class="fa-regular fa-calendar me-1"></i>{{ d.label }}
-                        </div>
-
-                        <!-- Type -->
-                        <div class="mb-2">
-                            <label class="form-label small mb-1 fw-medium">Type</label>
-                            <select class="form-select form-select-sm" [(ngModel)]="declareForm.type">
-                                <option value="HOLIDAY">Holiday</option>
-                                <option value="WEEK_OFF">Week Off</option>
-                                <option value="LEAVE">Leave</option>
-                            </select>
-                        </div>
-
-                        <!-- Name -->
-                        <div class="mb-3">
-                            <label class="form-label small mb-1 fw-medium">Name <span
-                                    class="text-danger">*</span></label>
-                            <input class="form-control form-control-sm" [(ngModel)]="declareForm.name"
-                                placeholder="e.g. Diwali, Sunday, Flood" (keyup.enter)="declareHoliday()" />
-                        </div>
-
-                        <button class="btn btn-sm btn-warning w-100 fw-semibold" (click)="declareHoliday()"
-                            [disabled]="declaringHoliday || !declareForm.name.trim()">
-                            <span *ngIf="declaringHoliday" class="spinner-border spinner-border-sm me-1"></span>
-                            <i class="fa-solid fa-umbrella-beach me-1" *ngIf="!declaringHoliday"></i>
-                            Declare for All Batches
-                        </button>
-                    </ng-template>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- Loading -->
-        <div *ngIf="loading" class="text-center py-5 text-muted">
-            <div class="spinner-border spinner-border-sm me-2"></div> Loading batches...
-        </div>
-
-        <!-- Future date -->
-        <div *ngIf="!loading && isFutureDate" class="text-center py-5 text-muted border rounded-3">
-            <i class="fa-solid fa-calendar-days fa-2x text-primary opacity-50 mb-2 d-block"></i>
-            <div class="fw-semibold">Future date selected</div>
-            <div class="small mt-1">Attendance can only be marked for today or past dates</div>
-        </div>
-
-        <!-- No batches -->
-        <div *ngIf="!loading && !isFutureDate && !batches.length" class="text-center py-5 text-muted border rounded-3">
-            <i class="fa-solid fa-school fa-2x opacity-25 mb-2 d-block"></i>
-            <div class="fw-semibold">No batches found</div>
-            <div class="small mt-1" *ngIf="isTeacher">You are not assigned as class teacher for any batch</div>
-        </div>
-
-        <!-- Batch cards -->
-        <div *ngIf="!loading && !isFutureDate && batches.length" class="row g-3">
-            <div class="col-12 col-sm-6 col-lg-4" *ngFor="let b of batches">
-                <div class="card border-0 shadow-sm h-100" [class.border-warning]="isHoliday(b.batchCode)"
-                    [style.border-width]="isHoliday(b.batchCode) ? '1.5px' : null"
-                    [style.border-style]="isHoliday(b.batchCode) ? 'solid' : null">
-                    <div class="card-body p-3">
-
-                        <!-- Name + badges -->
-                        <div class="d-flex align-items-start justify-content-between mb-2">
-                            <div>
-                                <div class="fw-semibold">{{ b.batchName }}</div>
-                                <div class="text-muted small">{{ b.batchCode }}</div>
-                            </div>
-                            <div class="d-flex flex-column align-items-end gap-1">
-                                <span *ngIf="b.section"
-                                    class="badge bg-info-subtle text-info border border-info-subtle">
-                                    {{ b.section }}
-                                </span>
-                                <!-- Holiday chip -->
-                                <span *ngIf="isHoliday(b.batchCode)"
-                                    class="badge bg-warning-subtle text-warning border border-warning-subtle"
-                                    style="font-size:0.65rem">
-                                    <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday
-                                </span>
-                                <!-- Marked chip -->
-                                <span *ngIf="isMarked(b.batchCode) && !isHoliday(b.batchCode)"
-                                    class="badge bg-success-subtle text-success border border-success-subtle"
-                                    style="font-size:0.65rem">
-                                    <i class="fa-solid fa-circle-check me-1"></i>Marked
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="d-flex flex-wrap gap-1 mb-2">
-                            <span class="badge bg-secondary-subtle text-secondary small">Class {{ b.classNo }}</span>
-                            <span class="badge bg-secondary-subtle text-secondary small">{{ b.academicYear }}</span>
-                            <span class="badge bg-secondary-subtle text-secondary small" *ngIf="b.centerName">{{
-                                b.centerName }}</span>
-                        </div>
-
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="text-muted small">
-                                <i class="fa-solid fa-users me-1"></i>{{ b.studentCount || 0 }} students
-                            </div>
-                            <div class="text-muted small" *ngIf="b.classTeacherName">
-                                <i class="fa-solid fa-user-tie me-1"></i>{{ b.classTeacherName }}
-                            </div>
-                        </div>
-
+                        </div> -->
                         <!-- Action buttons -->
                         <div class="d-flex gap-2">
-
-                            <!-- Holiday state — no action button -->
                             <div *ngIf="isHoliday(b.batchCode)"
-                                class="flex-grow-1 text-center py-1 rounded-2 small fw-semibold"
-                                style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A">
-                                <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday — No Attendance
+                                class="flex-grow-1 text-center py-1 rounded-2 small fw-semibold" style="
+                  background: #fef3c7;
+                  color: #92400e;
+                  border: 1px solid #fde68a;
+                ">
+                                <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday — No
+                                Attendance
                             </div>
-
-                            <!-- Normal Mark / Edit / View -->
-                            <button *ngIf="!isHoliday(b.batchCode)" class="btn btn-sm flex-grow-1" [ngClass]="{
-                'btn-success':           canMarkBatch(b) && !isMarked(b.batchCode),
-                'btn-outline-primary':   canMarkBatch(b) &&  isMarked(b.batchCode),
-                'btn-outline-secondary': !canMarkBatch(b)
-              }" (click)="goToMark(b)">
+                            <div *ngIf="!isHoliday(b.batchCode) && isFinalised(b.batchCode)"
+                                class="flex-grow-1 text-center py-1 rounded-2 small fw-semibold" style="
+                  background: #d1e7dd;
+                  color: #0a3622;
+                  border: 1px solid #a3cfbb;
+                ">
+                                <i class="fa-solid fa-lock me-1"></i>Finalised
+                            </div>
+                            <button *ngIf="!isHoliday(b.batchCode) && !isFinalised(b.batchCode)"
+                                class="btn btn-sm flex-grow-1" [ngClass]="{
+                  'btn-success': canMarkBatch(b) && !isMarked(b.batchCode),
+                  'btn-outline-primary':
+                    canMarkBatch(b) && isMarked(b.batchCode),
+                  'btn-outline-secondary': !canMarkBatch(b),
+                }" (click)="goToMark(b)">
                                 <i class="fa-solid me-1" [ngClass]="{
-                  'fa-clipboard-check': canMarkBatch(b) && !isMarked(b.batchCode),
-                  'fa-pen-to-square':   canMarkBatch(b) &&  isMarked(b.batchCode),
-                  'fa-eye':             !canMarkBatch(b)
-                }"></i>
+                    'fa-clipboard-check':
+                      canMarkBatch(b) && !isMarked(b.batchCode),
+                    'fa-pen-to-square':
+                      canMarkBatch(b) && isMarked(b.batchCode),
+                    'fa-eye': !canMarkBatch(b),
+                  }"></i>
                                 <span *ngIf="canMarkBatch(b) && !isMarked(b.batchCode)">Mark</span>
-                                <span *ngIf="canMarkBatch(b) &&  isMarked(b.batchCode)">Edit</span>
+                                <span *ngIf="canMarkBatch(b) && isMarked(b.batchCode)">Edit</span>
                                 <span *ngIf="!canMarkBatch(b)">View</span>
                             </button>
-
-                            <!-- Print -->
+                            <button *ngIf="
+                  !isHoliday(b.batchCode) &&
+                  isMarked(b.batchCode) &&
+                  !isFinalised(b.batchCode) &&
+                  canMarkBatch(b)
+                " class="btn btn-sm btn-warning fw-semibold" title="Finalise Attendance"
+                                [disabled]="finalisingBatch === b.batchCode" (click)="finaliseAttendance(b)">
+                                <span *ngIf="finalisingBatch === b.batchCode"
+                                    class="spinner-border spinner-border-sm"></span>
+                                <i class="fa-solid fa-check-double" *ngIf="finalisingBatch !== b.batchCode"></i>
+                            </button>
                             <button class="btn btn-sm btn-outline-secondary" title="Download Monthly Report"
                                 (click)="openPrintModal(b)">
                                 <i class="fa-solid fa-file-pdf text-danger"></i>
                             </button>
-
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
 <!-- ═══ PRINT MODAL ══════════════════════════════════════════════════════════ -->
 <div class="modal-backdrop fade show" *ngIf="showPrintModal"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showPrintModal">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-0">
                 <h6 class="modal-title fw-semibold">
-                    <i class="fa-solid fa-file-pdf me-1 text-danger"></i>Download Monthly Report
+                    <i class="fa-solid fa-file-pdf me-1 text-danger"></i>Download Monthly
+                    Report
                 </h6>
                 <button class="btn-close" (click)="closePrintModal()"></button>
             </div>
             <div class="modal-body">
                 <div class="border rounded-3 p-3 bg-light mb-3 small">
-                    <div><span class="text-muted">Batch:</span>
+                    <div>
+                        <span class="text-muted">Batch:</span>
                         <strong class="ms-1">{{ printBatch?.batchName }}</strong>
                     </div>
                     <div *ngIf="printBatch?.section">
@@ -638,11 +302,15 @@
                 </div>
                 <label class="form-label small fw-medium">Select Month <span class="text-danger">*</span></label>
                 <select class="form-select form-select-sm" [(ngModel)]="printMonth">
-                    <option *ngFor="let m of monthOptions" [value]="m.value">{{ m.label }}</option>
+                    <option *ngFor="let m of monthOptions" [value]="m.value">
+                        {{ m.label }}
+                    </option>
                 </select>
             </div>
             <div class="modal-footer border-0">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closePrintModal()">Cancel</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="closePrintModal()">
+                    Cancel
+                </button>
                 <button class="btn btn-sm btn-danger" (click)="downloadPdf()" [disabled]="printLoading || !printMonth">
                     <span *ngIf="printLoading" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-file-pdf me-1" *ngIf="!printLoading"></i>
