@@ -365,4 +365,5 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     const fileName = `Attendance_${type.toUpperCase()}_${timestamp}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
+
 }

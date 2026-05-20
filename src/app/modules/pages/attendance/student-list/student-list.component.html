@@ -2,15 +2,24 @@
     <h1 class=" fw-bold mb-0" style="font-size: 30px;">
         <i class="fa-solid fa-clipboard-check"></i> Student Attendance
     </h1>
-    <div class="d-flex flex-wrap gap-2 mt-2 mb-3">
-        <span class="badge bg-primary-subtle text-primary border fw-semibold">{{ batchCode }}</span>
-        <span class="badge bg-secondary-subtle text-secondary border" *ngIf="dateLabel">{{ dateLabel }}</span>
-        <span class="badge bg-secondary-subtle text-secondary border" *ngIf="timeLabel">{{ timeLabel }}</span>
-        <span class="badge bg-info-subtle text-info border" *ngIf="subjectName">{{ subjectName }}</span>
-        <span class="badge bg-warning-subtle text-warning border" *ngIf="isEditMode">
-            <i class="fa-solid fa-pen-to-square me-1"></i>Edit Mode
-        </span>
+    <div class="d-flex justify-content-between flex-wrap gap-2 mt-2 mb-3">
+        <div>
+            <span class="badge bg-primary-subtle text-primary border fw-semibold me-2">{{ batchCode }}</span>
+            <span class="badge bg-secondary-subtle text-secondary border me-2" *ngIf="dateLabel">{{ dateLabel }}</span>
+            <span class="badge bg-secondary-subtle text-secondary border me-2" *ngIf="timeLabel">{{ timeLabel }}</span>
+            <span class="badge bg-info-subtle text-info border me-2" *ngIf="subjectName">{{ subjectName }}</span>
+            <span class="badge bg-warning-subtle text-warning border me-2" *ngIf="isEditMode">
+                <i class="fa-solid fa-pen-to-square me-1"></i>Edit Mode
+            </span>
+
+        </div>
+        <div class="justify-content-end">
+            <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+                <i class="fa-solid fa-arrow-left btn-icon"></i>Back
+            </button>
+        </div>
     </div>
+
     <div *ngIf="loading" class="text-center py-5 text-muted">
         <div class="spinner-border spinner-border-sm me-2"></div> Loading students...
     </div>
@@ -72,8 +81,9 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-4" *ngIf="students.length">
-            <button class="btn btn-outline-secondary" (click)="router.navigate(['/app/attendance'])">Cancel</button>
-            <button class="btn btn-primary px-4" (click)="submitAttendance()" [disabled]="submitting">
+            <button class="btn btn-close-custom fs-16 fw-medium"
+                (click)="router.navigate(['/app/attendance'])">Cancel</button>
+            <button class="btn btn-create fs-16 fw-medium" (click)="submitAttendance()" [disabled]="submitting">
                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
                 {{ isEditMode ? 'Update Attendance' : 'Submit Attendance' }}
             </button>
@@ -145,8 +155,8 @@
             </div>
         </div>
         <div class="text-end mt-3">
-            <button class="btn closebutton me-2" (click)="showSummary = false">Back to Edit</button>
-            <button class="btn submitbutton" (click)="onConfirm()" [disabled]="submitting">
+            <button class="btn btn-back fs-16 fw-medium" (click)="showSummary = false">Back to Edit</button>
+            <button class="btn btn-create fs-16 fw-medium" (click)="onConfirm()" [disabled]="submitting">
                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                 Confirm
             </button>

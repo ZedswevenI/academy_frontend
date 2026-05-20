@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { QuestionTransformService } from './transform.service';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -49,8 +50,14 @@ export class QuestionArrangementComponent implements OnInit {
     private router: Router,
     private sanitizer: DomSanitizer,
     private transformService: QuestionTransformService,
-    private cdr: ChangeDetectorRef
-  ) { }
+    private cdr: ChangeDetectorRef,
+    private breadcrumb: BredcrumpService
+  ) {
+    this.breadcrumb.set([
+      { label: 'Assignment', link: '/app/assignment' },
+      { label: 'Re-Arrange Questions'},
+    ]);
+  }
 
 
   ngOnInit(): void {

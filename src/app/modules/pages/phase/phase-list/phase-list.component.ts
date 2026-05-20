@@ -609,7 +609,7 @@ export class PhaseListComponent implements OnInit {
   subject_options: any[] = [];
   dataArray: any[] = [];
   totalRecords = 0;
-  
+
   // Changed mapping from Name to Code
   private programCodeToId = new Map<string, string>();
 
@@ -643,7 +643,7 @@ export class PhaseListComponent implements OnInit {
       icon: 'fa-solid fa-trash',
       tooltip: 'Delete',
       color: '#6B7280',
-      hoverColor: '#0066FF',
+      hoverColor: '#DC2626',
       callback: (row: any) => this.onDelte(row),
     },
   ];
@@ -819,7 +819,7 @@ export class PhaseListComponent implements OnInit {
               ...p,
               proname: `${p.programCode || p.programCodes} - ${p.programName}`,
             }));
-            
+
           this.programCodeToId.clear();
           this.programs.forEach((p) => {
             const code = String(p.programCode || p.programCodes || '').trim().toLowerCase();
@@ -1195,12 +1195,12 @@ export class PhaseListComponent implements OnInit {
       return i === undefined ? '' : row[i];
     };
     return rows.map(r => ({
-      programRaw:  String(get(r, 'Program Code') || '').trim(), 
-      classNoRaw:  String(get(r, 'Class')      || '').trim(),
-      subjectRaw:  String(get(r, 'Subject')    || '').trim(),
-      phaseName:   String(get(r, 'Phase')      || '').trim(),
-      topicName:   String(get(r, 'Topics')     || '').trim(),
-      estHoursRaw: String(get(r, 'No of Hrs')  || '').trim(),
+      programRaw: String(get(r, 'Program Code') || '').trim(),
+      classNoRaw: String(get(r, 'Class') || '').trim(),
+      subjectRaw: String(get(r, 'Subject') || '').trim(),
+      phaseName: String(get(r, 'Phase') || '').trim(),
+      topicName: String(get(r, 'Topics') || '').trim(),
+      estHoursRaw: String(get(r, 'No of Hrs') || '').trim(),
     }));
   }
 
@@ -1219,9 +1219,9 @@ export class PhaseListComponent implements OnInit {
     this.excelMappedRows.forEach((r, idx) => {
       const rowNo = idx + 1;
       const basePreview = {
-        rowNo, 
+        rowNo,
         programRaw: r.programRaw,
-        classNoRaw: r.classNoRaw, 
+        classNoRaw: r.classNoRaw,
         subjectRaw: r.subjectRaw,
         phaseName: String(r.phaseName || '').trim(),
         topicName: String(r.topicName || '').trim(),
@@ -1230,7 +1230,7 @@ export class PhaseListComponent implements OnInit {
 
       const codeLookup = String(r.programRaw || '').toLowerCase();
       const programId = this.programCodeToId.get(codeLookup);
-      
+
       if (!programId) {
         const reason = `Program Code not found "${r.programRaw}"`;
         errors.push(`Row ${rowNo}: ${reason}`);
@@ -1280,10 +1280,10 @@ export class PhaseListComponent implements OnInit {
         classNo,
         subjectId,
         phaseName,
-        phaseSortOrder: 1, 
+        phaseSortOrder: 1,
         topicName,
         estHours,
-        topicSortOrder: currentSortOrder 
+        topicSortOrder: currentSortOrder
       });
 
       this.importPreviewRows.push({ ...basePreview, status: 'valid' });
@@ -1295,7 +1295,7 @@ export class PhaseListComponent implements OnInit {
     this.importPreview.clientErrors = errors;
     this.importPreview.validRows = validCount;
     this.importPreview.invalidRows = this.excelMappedRows.length - validCount;
-    
+
     this.parsing = false;
 
     if (!this.importRows.length) {
@@ -1363,5 +1363,14 @@ export class PhaseListComponent implements OnInit {
 
   get hasPreviewInvalidReasons(): boolean {
     return this.invalidPreviewReasons.length > 0;
+  }
+
+  onRowSelected(row: any) {
+    this.selectedPhase = {
+      ...row,
+      topics: [...(row.topics || [])].sort((a, b) => a.sortOrder - b.sortOrder),
+    };
+    const modalEl = document.getElementById('phaseViewModal');
+    if (modalEl) new (window as any).bootstrap.Modal(modalEl).show();
   }
 }

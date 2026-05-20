@@ -33,6 +33,8 @@ export class TeacherComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-eye',
       tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.viewTeacher(row),
     },
   ];
@@ -96,6 +98,12 @@ export class TeacherComponent implements OnInit {
   }
 
   viewTeacher(row: any) {
+    this.router.navigate(['/app/teacher/view'], {
+      queryParams: { staffId: row.staffId },
+    });
+  }
+
+  onRowSelected(row: any) {
     this.router.navigate(['/app/teacher/view'], {
       queryParams: { staffId: row.staffId },
     });

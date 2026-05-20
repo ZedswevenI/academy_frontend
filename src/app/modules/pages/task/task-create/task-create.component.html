@@ -5,6 +5,9 @@
                 <i class="fa-solid fa-list-check me-2"></i>
                 {{ isEditMode ? 'Edit Task' : 'Create Task' }}
             </h1>
+            <!-- <button type="button" class="btn btn-back fs-16 fw-medium" routerLink="/app/task">
+                Back
+            </button> -->
         </div>
         <form [formGroup]="taskForm">
             <div class="row g-3">
@@ -41,11 +44,11 @@
                 </div>
             </div>
             <div class="col-12 text-end mt-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn closebutton px-4" style="border-radius: 30px;" routerLink="/app/task">
+                <button type="button" class="btn btn-back fs-16 fw-medium" routerLink="/app/task">
                     Back
                 </button>
-                <button *ngIf="editData?.status !== 'Completed'" type="button" class="btn submitbutton px-4"
-                    [disabled]="taskForm.invalid || isUploading" (click)="submitTask()" style="border-radius: 30px;">
+                <button *ngIf="editData?.status !== 'Completed'" type="button" class="btn btn-create fs-16 fw-medium"
+                    [disabled]="taskForm.invalid || isUploading" (click)="submitTask()">
                     <span *ngIf="isUploading">
                         <span class="spinner-border spinner-border-sm me-1"></span>
                         Uploading...

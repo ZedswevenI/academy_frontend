@@ -244,10 +244,10 @@
                 <i class="fa-solid fa-people-group me-2"></i>PTM
             </h1>
             <div *ngIf="showimport()" class="d-flex gap-2">
-                <button class="btn btn-outline-primary rounded-pill fs-16 fw-medium" (click)="openImportModal()">
-                    <i class="fa-solid fa-file-import me-2"></i>Bulk Import
+                <button class="btn btn-import fs-16 fw-medium" (click)="openImportModal()">
+                    <i class="fa-solid fa-file-import btn-icon"></i>Bulk Import
                 </button>
-                <button *appHasRole="['L3','L1']" class="btn btn-newbutton rounded-pill fs-16 fw-medium" routerLink="/app/ptm/create">
+                <button *appHasRole="['L3','L1']" class="btn btn-create fs-16 fw-medium" routerLink="/app/ptm/create">
                     <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">Add PTM
                 </button>
             </div>
@@ -267,8 +267,7 @@
                     </selectbox>
                 </div>
                 <div class="col-md-4 col-sm-12">
-                    <button class="btn submitbutton px-4" [disabled]="loading" (click)="onProceed()"
-                        style="border-radius: 30px; min-width:140px;">
+                    <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="onProceed()">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
                         {{ loading ? 'Loading...' : 'Search' }}
                     </button>
@@ -281,7 +280,7 @@
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="true"
                 success="COMPLETED" primary="SCHEDULED" [totalRecords]="totalRecords"
                 (requestData)="loadTableData($event)" [actions]="actions"
-                [searchPlaceholder]="'Search Batch, Venue...'">
+                [searchPlaceholder]="'Search Batch, Venue...'" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>
 
@@ -307,9 +306,9 @@
                     students. Cannot be undone.</p>
             </div>
             <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium" data-bs-dismiss="modal"
                     (click)="ptmToDelete = null">Cancel</button>
-                <button type="button" class="btn btn-danger rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-create fs-16 fw-medium" data-bs-dismiss="modal"
                     (click)="confirmDelete()">
                     <i class="fa-solid fa-trash-can me-2"></i>Yes, Delete
                 </button>

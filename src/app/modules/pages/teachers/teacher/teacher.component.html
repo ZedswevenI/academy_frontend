@@ -12,7 +12,8 @@
     <div class="mt-3">
       <custom-table [autoFitChars]="true" [columns]="columns" [data]="dataArray" [actions]="actions" [loading]="loading"
         [totalRecords]="totalRecords" [pageSizeOptions]="[10, 20, 50]"
-        [searchPlaceholder]="'Search name, staff code, phone...'" (requestData)="fetchTableData($event)">
+        [searchPlaceholder]="'Search name, staff code, phone...'" (requestData)="fetchTableData($event)"
+        (rowClick)="onRowSelected($event)">
       </custom-table>
     </div>
 

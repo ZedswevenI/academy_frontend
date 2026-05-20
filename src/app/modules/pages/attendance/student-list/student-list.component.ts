@@ -210,4 +210,8 @@ export class StudentListComponent implements OnInit, OnDestroy {
         },
       });
   }
+
+ goBack() {
+    this.router.navigate(['/app/attendance']);
+  }
 }

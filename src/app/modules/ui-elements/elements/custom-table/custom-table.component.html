@@ -70,7 +70,7 @@
 
       <tbody>
         <ng-container *ngFor="let row of data; let i = index">
-          <tr>
+          <tr (click)="onRowClicked(row)">
             <td class="px-3 py-2 text-center fw-normal">
               {{ (currentPage - 1) * pageSize + i + 1 }}
             </td>
@@ -116,13 +116,13 @@
                   <!-- ICON BUTTON -->
                   <button *ngIf="action.type === 'icon' && (!action.show || !action.show(row))" type="button"
                     class="btn btn-sm btn-outline-secondary border-0 p-1" [title]="action.tooltip"
-                    (click)="action.callback(row)" [style.--hover-color]="action.hoverColor || null">
+                    (click)="$event.stopPropagation(); action.callback(row)" [style.--hover-color]="action.hoverColor || null">
                     <i [class]="action.icon" [style.color]="action.color || ''" class="icon-16"></i>
                   </button>
                   <!-- SIMPLE BUTTON -->
                   <button *ngIf="action.type === 'simple' && (!action.show || !action.show(row))" type="button"
                     class="btn btn-sm action-simple-btn me-2" style="border-radius: 25px; font-weight: bold;"
-                    [ngClass]="action.color ? 'btn-' + action.color : 'btn-secondary'" (click)="action.callback(row)">
+                    [ngClass]="action.color ? 'btn-' + action.color : 'btn-secondary'" (click)="$event.stopPropagation(); action.callback(row)">
                     <i *ngIf="action.icon" [class]="action.icon" class="me-1 icon-12"></i>
                     {{ action.text }}
                   </button>

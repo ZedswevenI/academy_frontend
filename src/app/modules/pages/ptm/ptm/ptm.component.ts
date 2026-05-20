@@ -882,4 +882,26 @@ export class PtmComponent implements OnInit {
     const el = document.getElementById(id);
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
+
+  onRowSelected(row: any) {
+    const sessionKey = btoa(JSON.stringify({
+      batchCode: row.batchCode,
+      centerCode: row.centerCode,
+      ptmDate: row.ptmDate,
+      startTime: row.startTime,
+      endFormatted: row.endFormatted,
+      durationMins: row.durationMins,
+      meetingMode: row.meetingMode,
+      venue: row.venue,
+      totalStudents: row.totalStudents,
+      completedCount: row.completedCount,
+      noShowCount: row.noShowCount,
+      cancelledCount: row.cancelledCount,
+      ptmDateFormatted: row.ptmDateFormatted,
+      startFormatted: row.startFormatted,
+      status: row.status,
+    }))
+    console.log('sessionKey ', sessionKey);
+    this.router.navigate(['/app/ptm/view', sessionKey]);
+  }
 }

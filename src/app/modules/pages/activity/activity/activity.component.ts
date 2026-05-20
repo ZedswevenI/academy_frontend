@@ -54,7 +54,7 @@ export class ActivityComponent implements OnInit {
     },
     {
       type: 'icon', icon: 'fa-regular fa-pen-to-square',
-      tooltip: 'Edit', color: '#6B7280', hoverColor: '#16A34A',
+      tooltip: 'Edit', color: '#6B7280', hoverColor: '#0066FF',
       callback: (row: any) => this.router.navigate(['/app/activity/create'], { state: { activity: row } }),
       hidden: (row: any) => row.status.toUpperCase() === 'COMPLETED'
     },
@@ -347,7 +347,7 @@ export class ActivityComponent implements OnInit {
     const rows = this.parsedRows.map(row => ({
       ...row,
       StartDate: this.parseDDMMMYYYY(row.StartDate),
-      EndDate:   this.parseDDMMMYYYY(row.EndDate),
+      EndDate: this.parseDDMMMYYYY(row.EndDate),
       sno: Math.random().toString(36).substring(2, 10).toUpperCase(),
     }));
 
@@ -403,8 +403,8 @@ export class ActivityComponent implements OnInit {
     const ms = this.parseDDMMMYYYY(raw);
     if (!ms) return raw?.toString().trim() || '';
     const d = new Date(ms);
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${d.getUTCDate().toString().padStart(2,'0')}-${months[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${d.getUTCDate().toString().padStart(2, '0')}-${months[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
   }
 
   private parseDDMMMYYYY(dateStr: any): number | null {
@@ -446,5 +446,10 @@ export class ActivityComponent implements OnInit {
       return Date.UTC(yyyy, mo, dd);
     }
     return null;
+  }
+
+  onRowSelected(row: any) {
+    this.selectedActivity = row;
+    this.openModal('activityViewModal');
   }
 }
