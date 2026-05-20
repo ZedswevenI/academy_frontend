@@ -2,7 +2,7 @@
   <label class="form-label fw-black fs-9 ms-n3" *ngIf="label">{{ label }}<span *ngIf="required"
       class="requierdstar" style="color: red">*</span></label>
 
-  <select class="form-select custom-dropdown" autofocus [required]="required" [disabled]="disabled" [(ngModel)]="value"
+  <select class="form-select form-select-sm custom-dropdown" autofocus [required]="required" [disabled]="disabled" [(ngModel)]="value"
     (ngModelChange)="onChange($event); selectionChange.emit($event)" (blur)="onTouched()">
     <option [value]="null" default disabled selected>{{ placeholder }}</option>
     <option *ngFor="let opt of options" [value]="opt[optionValue]">{{ getLabel(opt) }}</option>

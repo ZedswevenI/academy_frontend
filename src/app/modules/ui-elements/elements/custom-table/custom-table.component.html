@@ -3,11 +3,12 @@
     'justify-content-between': showsearch,
     'justify-content-end': !showsearch
   }"> <!-- Search -->
-  <div class="position-relative" style="width: 368px; max-width: 100%;" *ngIf="showsearch">
-    <img src="assets/icons/searchicon.svg" alt="search" width="24" height="24" class="position-absolute"
-      style="left: 16px; top: 50%; transform: translateY(-50%)" />
-    <input [(ngModel)]="searchText" [placeholder]="searchPlaceholder" class="form-control search-table-input shadow-sm"
-      style="height: 48px; padding-left: 48px; border-radius: 25px;" [disabled]="loading" (keyup.enter)="onSearch()" />
+  <div class="position-relative" style="width: 280px; max-width: 100%;" *ngIf="showsearch">
+    <img src="assets/icons/searchicon.svg" alt="search" width="16" height="16" class="position-absolute"
+      style="left: 10px; top: 50%; transform: translateY(-50%)" />
+    <input [(ngModel)]="searchText" [placeholder]="searchPlaceholder"
+      class="form-control form-control-sm search-table-input" style="padding-left: 34px; font-size: 14px;"
+      [disabled]="loading" (keyup.enter)="onSearch()" />
 
     <button *ngIf="searchText" type="button" class="btn btn-link position-absolute text-muted px-0"
       style="right: 12px; top: 50%; transform: translateY(-50%)" (click)="searchText = ''; onSearch()"
@@ -18,21 +19,18 @@
   <!-- Rows per page + Filters -->
   <div class="d-flex align-items-center gap-3">
     <!-- Rows per page -->
-    <div class="position-relative px-3" *ngIf="showpageoptions">
-      <select [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)"
-        class="form-select filternew fs-16 fw-normal shadow-sm"
-        style="height: 48px; padding-right: 40px; border-radius: 25px;" aria-label="Rows per page">
-        <option value="5">5 Rows</option>
-        <option value="10">10 Rows</option>
-        <option value="20">20 Rows</option>
-      </select>
-    </div>
+    <select *ngIf="showpageoptions" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)"
+      class="form-select form-select-sm" style="width: auto; font-size: 14px;" aria-label="Rows per page">
+      <option value="5">5 Rows</option>
+      <option value="10">10 Rows</option>
+      <option value="20">20 Rows</option>
+    </select>
 
     <!-- Filters button -->
-    <button *ngIf="showfilter" class="btn filter-btn d-flex align-items-center gap-2 fs-16" style="height: 48px"
-      type="button" (click)="onOpenFilters()">
-      <img src="assets/icons/filtericon.svg" alt="filter" width="24" height="24" />
-      <span class="fs-16 fw-normal">Filters</span>
+    <button *ngIf="showfilter" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" type="button"
+      (click)="onOpenFilters()">
+      <img src="assets/icons/filtericon.svg" alt="filter" width="14" height="14" />
+      <span>Filters</span>
     </button>
   </div>
 </div>
@@ -48,12 +46,12 @@
     <table class="table mb-0 align-middle" #tableWrap [class.table-wrap]="wrapCells">
       <thead>
         <tr class="table-header">
-          <th class="px-4 py-3 fw-bold" style="width: 78px;">
+          <th class="px-3 py-2 fw-bold" style="width: 78px;">
             S.No
           </th>
 
           <!-- Dynamic columns with sorting -->
-          <th class="px-4 py-3 fw-bold" *ngFor="let col of columns"
+          <th class="px-3 py-2 fw-bold" *ngFor="let col of columns"
             (click)="col.sortable !== false ? onSort(col.key) : null"
             [style.cursor]="col.sortable !== false ? 'pointer' : 'default'">
             <span class="me-1 fw-bold">{{ col.label }}</span>
@@ -64,7 +62,7 @@
               }"></i>
           </th>
 
-          <th class="px-4 py-3 fw-bold text-center" *ngIf="showaction" style="width: 126px">
+          <th class="px-3 py-2 fw-bold text-center" *ngIf="showaction" style="width: 126px">
             Action
           </th>
         </tr>
@@ -73,14 +71,11 @@
       <tbody>
         <ng-container *ngFor="let row of data; let i = index">
           <tr>
-            <td class="px-4 py-3 text-center fw-normal">
+            <td class="px-3 py-2 text-center fw-normal">
               {{ (currentPage - 1) * pageSize + i + 1 }}
             </td>
 
-            <td class="px-4 py-3 fw-normal" *ngFor="let col of columns" [class.wrap-cell]="wrapCells"
-              (mouseenter)="wrapCells ? maybeExpand(i, col.key, getCellValue(row, col.key), col, $event) : null"
-              (mouseleave)="wrapCells ? scheduleCollapse() : null"
-              (click)="wrapCells ? maybeExpand(i, col.key, getCellValue(row, col.key), col, $event) : null">
+            <td class="px-3 py-2 fw-normal" *ngFor="let col of columns" [class.wrap-cell]="wrapCells">
               <!-- Wrap mode: 2-line clamp, expand on hover -->
               <ng-container *ngIf="wrapCells; else truncateMode">
                 <ng-container *ngIf="col.date; else wrapNormal">
@@ -90,7 +85,8 @@
                 </ng-container>
                 <ng-template #wrapNormal>
                   <span class="clamp-cell" [class.badge-cell]="hasBadgeStyle(getCellValue(row, col.key), col.key)"
-                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
+                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)"
+                    (mouseenter)="showTooltip($event, getCellValue(row, col.key))" (mouseleave)="hideTooltip()">
                     {{ getCellValue(row, col.key) }}
                   </span>
                 </ng-template>
@@ -106,39 +102,37 @@
                 </ng-container>
                 <ng-template #normal>
                   <span class="truncate-cell" [style.maxWidth.px]="col.maxWidthPx || 240"
-                    [attr.title]="needsTooltip(getCellValue(row, col.key), col) ? getCellValue(row, col.key) : null"
-                    (mouseenter)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                    (mouseleave)="scheduleCollapse()" (click)="maybeExpand(i, col.key, getCellValue(row, col.key), col)"
-                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)">
+                    [ngStyle]="getNetStyle(getCellValue(row, col.key), col.key)"
+                    (mouseenter)="showTooltip($event, getCellValue(row, col.key))" (mouseleave)="hideTooltip()">
                     {{ truncate(getCellValue(row, col.key), col) }}
                   </span>
                 </ng-template>
               </ng-template>
             </td>
 
-            <td class="px-4 py-3 text-center" *ngIf="showaction">
+            <td class="px-3 py-2 text-center" *ngIf="showaction">
               <div class="d-flex align-items-center justify-content-end gap-3">
                 <ng-container *ngFor="let action of actions">
                   <!-- ICON BUTTON -->
                   <button *ngIf="action.type === 'icon' && (!action.show || !action.show(row))" type="button"
                     class="btn btn-sm btn-outline-secondary border-0 p-1" [title]="action.tooltip"
                     (click)="action.callback(row)" [style.--hover-color]="action.hoverColor || null">
-                    <i [class]="action.icon" [style.color]="action.color || ''" class="icon-20"></i>
+                    <i [class]="action.icon" [style.color]="action.color || ''" class="icon-16"></i>
                   </button>
                   <!-- SIMPLE BUTTON -->
                   <button *ngIf="action.type === 'simple' && (!action.show || !action.show(row))" type="button"
-                    class="btn btn-sm me-2" style="border-radius: 25px; font-weight: bold;"
+                    class="btn btn-sm action-simple-btn me-2" style="border-radius: 25px; font-weight: bold;"
                     [ngClass]="action.color ? 'btn-' + action.color : 'btn-secondary'" (click)="action.callback(row)">
-                    <i *ngIf="action.icon" [class]="action.icon" class="me-1 icon-14"></i>
+                    <i *ngIf="action.icon" [class]="action.icon" class="me-1 icon-12"></i>
                     {{ action.text }}
                   </button>
                   <!-- CHANGE BUTTON (Assign / Unassign) -->
                   <button *ngIf="action.type === 'change' &&
                         (
                           (row.status === 'assigned' && action.value === 'assign') ||
-                          (row.status === 'unassigned' && action.value === 'unassign') 
+                          (row.status === 'unassigned' && action.value === 'unassign')
                         )
-                      && (!action.show || !action.show(row))" type="button" class="btn btn-sm me-2"
+                      && (!action.show || !action.show(row))" type="button" class="btn btn-sm action-simple-btn me-2"
                     style="border-radius: 25px; font-weight: bold;"
                     [ngClass]="action.value === 'assign' ? 'btn-success' : 'btn-danger'" (click)="action.callback(row)">
                     {{ action.text }}
@@ -169,18 +163,6 @@
                     </ul>
                   </div>
                 </ng-container>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="expanded && expanded.rowIndex === i" class="row-expander" (mouseenter)="onExpanderEnter()"
-            (mouseleave)="onExpanderLeave()">
-            <td [attr.colspan]="fullColSpan" class="bg-light p-3">
-              <div class="d-flex align-items-start gap-2">
-                <div class="w-100">
-                  <div class="fw-normal text-wrap">
-                    {{ expanded.value }}
-                  </div>
-                </div>
               </div>
             </td>
           </tr>
@@ -227,4 +209,9 @@
     Next
     <img src="assets/icons/pageiright.svg" alt="pageright" width="20" height="20" style="color: #6b7280 !important" />
   </button>
+</div>
+
+<!-- Floating cell tooltip -->
+<div *ngIf="tooltipVisible" class="cell-float-tooltip" [style.left.px]="tooltipX" [style.top.px]="tooltipY">
+  {{ tooltipText }}
 </div>

@@ -76,6 +76,7 @@ export class CustomTableComponent implements OnDestroy {
     host.removeEventListener('shown.bs.dropdown', this.showListener);
     host.removeEventListener('hidden.bs.dropdown', this.hideListener);
     this.cleanupDropdown();
+    if (this.tooltipHideTimer) clearTimeout(this.tooltipHideTimer);
   }
 
   private onDropdownShow(event: Event) {
@@ -333,62 +334,42 @@ export class CustomTableComponent implements OnDestroy {
     return Math.max(this.minChars, Math.min(this.hardMaxChars, approxChars));
   }
 
-  // --- New state for the inline expander ---
-  expanded: { rowIndex: number; colKey: string; value: string } | null = null;
-  private collapseTimer: any = null;
+  // --- Floating tooltip state ---
+  tooltipText = '';
+  tooltipVisible = false;
+  tooltipX = 0;
+  tooltipY = 0;
+  private tooltipHideTimer: any = null;
 
-  // How many columns to span in the expander row
-  get fullColSpan(): number {
-    // S.NO (1) + data columns + ACTION (optional 1)
-    return 1 + (this.columns?.length || 0) + (this.showaction ? 1 : 0);
-  }
-
-  // Resolve a column label by key (for the little “label:” above content)
-  columnLabel(key: string): string {
-    const c = (this.columns || []).find((col) => col.key === key);
-    return c?.label || key;
-  }
-
-  // Only expand when content is actually clipped
-  maybeExpand(rowIndex: number, colKey: string, value: any, col?: any, event?: any) {
+  showTooltip(event: MouseEvent, value: any) {
     const text = this.stringify(value);
+    if (!text || text === '--') return;
 
-    if (this.wrapCells) {
-      // Check if the clamp-cell span inside the td is actually overflowing
-      const td = event?.target?.closest?.('td') || event?.target;
-      if (td) {
-        const clampEl = td.querySelector('.clamp-cell');
-        if (clampEl && clampEl.scrollHeight <= clampEl.clientHeight + 2) return; // not clipped
-      }
-    } else {
-      if (!this.needsTooltip(text, col)) return;
-    }
-    // Cancel any pending collapse so we don't flicker
-    if (this.collapseTimer) {
-      clearTimeout(this.collapseTimer);
-      this.collapseTimer = null;
-    }
-    this.expanded = { rowIndex, colKey, value: text };
+    const el = event.currentTarget as HTMLElement;
+    if (!el) return;
+
+    // Use DOM measurement: vertical overflow for clamp mode, horizontal for truncate mode
+    const isOverflowing = this.wrapCells
+      ? el.scrollHeight > el.clientHeight + 1
+      : el.scrollWidth > el.clientWidth + 1;
+
+    if (!isOverflowing) return;
+
+    if (this.tooltipHideTimer) { clearTimeout(this.tooltipHideTimer); this.tooltipHideTimer = null; }
+    const rect = el.getBoundingClientRect();
+    this.tooltipX = rect.left + rect.width / 2;
+    this.tooltipY = rect.top - 8;
+    this.tooltipText = text;
+    this.tooltipVisible = true;
   }
 
-  // Gentle close to allow moving mouse into expander area
-  scheduleCollapse(delayMs: number = 180) {
-    if (this.collapseTimer) clearTimeout(this.collapseTimer);
-    this.collapseTimer = setTimeout(() => {
-      this.expanded = null;
-      this.collapseTimer = null;
-    }, delayMs);
-  }
-
-  // If you want the expander to stay open while hovering over it:
-  onExpanderEnter() {
-    if (this.collapseTimer) {
-      clearTimeout(this.collapseTimer);
-      this.collapseTimer = null;
-    }
-  }
-  onExpanderLeave() {
-    this.scheduleCollapse(120);
+  hideTooltip() {
+    if (this.tooltipHideTimer) clearTimeout(this.tooltipHideTimer);
+    this.tooltipHideTimer = setTimeout(() => {
+      this.tooltipVisible = false;
+      this.tooltipText = '';
+      this.tooltipHideTimer = null;
+    }, 80);
   }
 
   @Input() value: number | string | null = null;
@@ -412,7 +393,8 @@ export class CustomTableComponent implements OnDestroy {
           backgroundColor: '#ddfcea',
           color: '#198754',
           fontWeight: 'bold',
-          padding: '6px',
+          fontSize: '12px',
+          padding: '4px 8px',
           borderRadius: '30px'
         }
       } else if (value === this.warn) {
@@ -420,15 +402,17 @@ export class CustomTableComponent implements OnDestroy {
           backgroundColor: '#fff5d6',
           color: '#ffc107',
           fontWeight: 'bold',
-          padding: '6px',
+          fontSize: '12px',
+          padding: '4px 8px',
           borderRadius: '30px'
         };
-      }else if (value === this.warn1) {
+      } else if (value === this.warn1) {
         return {
           backgroundColor: '#fff5d6',
           color: '#ffc107',
           fontWeight: 'bold',
-          padding: '6px',
+          fontSize: '12px',
+          padding: '4px 8px',
           borderRadius: '30px'
         };
       } else if (value === this.danger) {
@@ -436,7 +420,8 @@ export class CustomTableComponent implements OnDestroy {
           backgroundColor: '#fde3e3',
           color: '#dc3545',
           fontWeight: 'bold',
-          padding: '6px',
+          fontSize: '12px',
+          padding: '4px 8px',
           borderRadius: '30px'
         };
       } else if (value === this.primary) {
@@ -444,7 +429,8 @@ export class CustomTableComponent implements OnDestroy {
           backgroundColor: '#c8dcfa',
           color: '#0d6efd',
           fontWeight: 'bold',
-          padding: '6px',
+          fontSize: '12px',
+          padding: '4px 8px',
           borderRadius: '30px',
         };
       }
@@ -457,7 +443,8 @@ export class CustomTableComponent implements OnDestroy {
           backgroundColor: '#dc3545',
           color: '#fff',
           fontWeight: 'bold',
-          padding: '6px',
+          fontSize: '12px',
+          padding: '4px 8px',
           borderRadius: '6px'
         };
       }
@@ -465,7 +452,8 @@ export class CustomTableComponent implements OnDestroy {
         backgroundColor: '#ffc107',
         color: '#000',
         fontWeight: 'bold',
-        padding: '6px',
+        fontSize: '12px',
+        padding: '4px 8px',
         borderRadius: '6px'
       };
     }
