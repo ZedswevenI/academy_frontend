@@ -472,9 +472,6 @@
                     [style.box-shadow]="editDayDragOverIndex === i && editDayDragIndex !== i ? '0 0 0 2px #0d6efd' : (editDayDragIndex === i ? '0 0 0 2px #6ea8fe' : null)"
                     (dragover)="onDragOver($event, i)" (dragleave)="onDragLeave($event, i)" (drop)="onDrop($event, i)"
                     (dragend)="onDragEnd()">
-                    <div style="font-size:10px;color:red">
-                        subjectId: {{ep.subjectId}} | phaseId: {{ep.phaseId}} | phases: {{ep.__phases?.length}}
-                    </div>
                     <div class="d-flex justify-content-between align-items-center px-3 py-2 rounded-top-3 border-bottom"
                         [style.background]="editDayDragIndex === i ? '#e7f1ff' : (editDayDragOverIndex === i ? '#f0f4ff' : '#f8f9fa')">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
