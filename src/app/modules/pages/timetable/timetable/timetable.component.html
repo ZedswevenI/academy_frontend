@@ -329,7 +329,7 @@
             </ng-container>
 
             <!-- STEP 2: VALIDATE + CONFIRM -->
-            <ng-container *ngIf="showConfirm">
+            <!-- <ng-container *ngIf="showConfirm">
                 <div class="alert alert-warning small" *ngIf="!validateLoading && validateConflicts.length">
                     <div class="fw-semibold mb-1">
                         Conflicts detected — fix these and re-upload.
@@ -378,6 +378,69 @@
                     <b>{{ parseStats.totalDays }}</b> &bull; Periods:
                     <b>{{ parseStats.totalPeriods }}</b>
                 </div>
+            </ng-container> -->
+            <ng-container *ngIf="showConfirm">
+
+                <!-- Ready to validate -->
+                <div class="alert alert-info small"
+                    *ngIf="!validateLoading && !validateOk && !validateConflicts.length && !saveError">
+                    <i class="fa-solid fa-shield-halved me-1"></i>
+                    Click <strong>Validate</strong> to check for conflicts before saving.
+                </div>
+
+                <!-- Validate passed -->
+                <div class="alert alert-success small"
+                    *ngIf="!validateLoading && validateOk && !validateConflicts.length">
+                    <i class="fa-solid fa-circle-check me-1"></i>
+                    <strong>Validation passed.</strong> Ready to
+                    {{ confirmMode === "single" ? "save" : "import" }}.
+                </div>
+                <!-- Validate conflicts (yellow) -->
+                <div class="alert alert-warning small"
+                    *ngIf="!validateLoading && validateConflicts.length && !saveError">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    <strong>{{ validateConflicts.length }} conflict(s) detected.</strong>
+                    Fix these in your file and re-upload.
+                </div>
+                <!-- Save/Import errors (red) -->
+                <div class="alert alert-danger small" *ngIf="!validateLoading && validateConflicts.length && saveError">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    <strong>Save failed — {{ validateConflicts.length }} issue(s) found.</strong>
+                    Fix these in your file and re-upload.
+                </div>
+                <!-- Conflicts table — same for both -->
+                <div class="table-responsive border rounded-3 mb-3"
+                    *ngIf="!validateLoading && validateConflicts.length">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th style="width: 40px">#</th>
+                                <th>Batch</th>
+                                <th>Day</th>
+                                <th class="text-center" style="width: 80px">Period</th>
+                                <th>Faculty</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let c of validateConflicts; let i = index">
+                                <td class="text-muted">{{ i + 1 }}</td>
+                                <td class="fw-semibold">{{ c.batchCode || "-" }}</td>
+                                <td>{{ c.day || "-" }}</td>
+                                <td class="text-center">{{ c.periodNo || "-" }}</td>
+                                <td class="text-truncate" style="max-width: 200px" [title]="c.facultyName || ''">
+                                    {{ c.facultyName || "-" }}
+                                </td>
+                                <td class="small">{{ c.message || "-" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="small text-muted">
+                    Groups: <b>{{ parseStats.totalGroups }}</b> &bull; Days:
+                    <b>{{ parseStats.totalDays }}</b> &bull; Periods:
+                    <b>{{ parseStats.totalPeriods }}</b>
+                </div>
             </ng-container>
         </div>
 
@@ -415,7 +478,7 @@
                     }}
                 </button>
                 <button class="btn btn-saffron" (click)="confirmProceed()" [disabled]="
-            validateLoading || !validateOk || validateConflicts.length
+            validateLoading || !validateOk || validateConflicts.length|| saveError
           ">
                     <i class="fa-solid fa-circle-check me-1"></i>
                     Confirm &amp; {{ confirmMode === "single" ? "Save" : "Import" }}

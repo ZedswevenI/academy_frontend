@@ -1443,6 +1443,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
   ];
   showPublishConfirmRow = false;
   publishTargetRow: any = null;
+  saveError = false;
 
   constructor(
     private alert: AlertService,
@@ -1701,6 +1702,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
     this.validateOk = false;
     this.validateConflicts = [];
     this.showConfirm = false;
+    this.saveError = false;
   }
 
   onFileChange(e: any): void {
@@ -2239,7 +2241,26 @@ export class TimetableComponent implements OnInit, OnDestroy {
           ]);
         },
         error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Create failed');
+          // this.alert.error(err?.error?.message || 'Create failed');
+          const errBody = err?.error || {};
+          const conflicts = Array.isArray(errBody?.conflicts)
+            ? errBody.conflicts
+            : errBody?.message
+              ? [
+                  {
+                    batchCode: safeTrim(this.parsedPayload?.batchCode) || '-',
+                    message: errBody.message,
+                  },
+                ]
+              : [];
+          if (conflicts.length) {
+            this.validateConflicts = conflicts;
+            this.validateOk = false;
+            this.saveError = true;
+            this.showConfirm = true;
+          } else {
+            this.alert.error(errBody?.message || 'Create failed');
+          }
         },
       });
   }
@@ -2275,7 +2296,21 @@ export class TimetableComponent implements OnInit, OnDestroy {
           this.applyFilters();
         },
         error: (err: any) => {
-          this.alert.error(err?.error?.message || 'Import failed');
+          // this.alert.error(err?.error?.message || 'Import failed');
+          const errBody = err?.error || {};
+          const conflicts = Array.isArray(errBody?.conflicts)
+            ? errBody.conflicts
+            : errBody?.message
+              ? [{ batchCode: '-', message: errBody.message }]
+              : [];
+          if (conflicts.length) {
+            this.validateConflicts = conflicts;
+            this.validateOk = false;
+            this.saveError = true;
+            this.showConfirm = true;
+          } else {
+            this.alert.error(errBody?.message || 'Import failed');
+          }
         },
       });
   }
@@ -2295,6 +2330,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
     this.validateLoading = false;
     this.validateOk = false;
     this.validateConflicts = [];
+    this.saveError = false;
   }
 
   private buildValidationGroups(): any[] {
@@ -2320,6 +2356,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
 
   runValidateAndProceed() {
     if (this.validateLoading) return;
+    this.saveError = false;
     const groups = this.buildValidationGroups();
     if (!groups.length) {
       this.alert.error('No valid data to validate');

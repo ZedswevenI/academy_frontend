@@ -86,10 +86,10 @@
                         <i class="fa-solid fa-calendar-days me-1"></i>
                         {{ viewMode === 'range' ? 'Weekly View' : 'Date Range' }}
                     </button>
-                    <button *ngIf="isPublished" class="btn btn-sm btn-outline-info" (click)="confirmCloneWeek()"
+                    <!-- <button *ngIf="isPublished" class="btn btn-sm btn-outline-info" (click)="confirmCloneWeek()"
                         [disabled]="loading">
                         <i class="fa-solid fa-clone me-1"></i>Clone Timetable
-                    </button>
+                    </button> -->
                     <button class="btn btn-sm btn-outline-secondary" (click)="back()">
                         <i class="fa-solid fa-arrow-left me-1"></i>Back
                     </button>
@@ -144,13 +144,11 @@
                 </div>
                 <div class="col text-muted small" *ngIf="rangeMetaLabel">{{ rangeMetaLabel }}</div>
             </div>
-            <!-- DRAFT banner -->
             <div class="alert alert-warning py-2 small d-flex align-items-start gap-2 mb-3" *ngIf="isDraft">
                 <i class="fa-solid fa-triangle-exclamation mt-1 flex-shrink-0"></i>
                 <span><strong>Draft mode:</strong> Cancel, Edit, and Replace actions update the weekly template
                     directly. Publish when ready — after publishing, edits create date-specific overrides only.</span>
             </div>
-            <!-- Legend -->
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <span class="badge bg-success-subtle text-success border border-success-subtle small"><i
                         class="fa-solid fa-building me-1"></i>Offline</span>
@@ -165,7 +163,6 @@
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle small"
                     *ngIf="isPublished"><i class="fa-solid fa-wrench me-1"></i>Modified</span>
             </div>
-            <!-- ═══ GRID ════════════════════════════════════════════════════════ -->
             <div class="table-responsive border rounded-3">
                 <table class="table table-bordered mb-0 timetable-grid">
                     <thead class="bg-light">
@@ -178,13 +175,11 @@
                     <tbody>
                         <tr *ngFor="let row of sortedSchedule" [class.table-info]="isToday(row.day)"
                             [class.opacity-75]="isPastDate(row.dateMs) && viewMode === 'week'">
-                            <!-- Day header cell -->
                             <td class="day-col text-center align-middle bg-light">
                                 <div class="fw-semibold small">{{ row.day }}</div>
                                 <div class="text-muted" style="font-size:0.72rem">{{ row.dateLabel }}</div>
                                 <span class="badge bg-info-subtle text-info border small mt-1" *ngIf="isToday(row.day)"
                                     style="font-size:0.6rem">Today</span>
-                                <!-- Day actions — shown for both DRAFT and Published -->
                                 <div class="d-flex justify-content-center gap-1 mt-2 flex-wrap"
                                     *ngIf="viewMode !== 'range' && !row.__isHoliday">
                                     <button class="btn btn-outline-danger" style="font-size:0.68rem;padding:2px 7px"
@@ -202,15 +197,23 @@
                                         <i class="fa-solid fa-plus me-1"></i>Special class
                                     </button>
                                 </div>
-                                <div class="mt-2" *ngIf="row.__isHoliday">
+                                <!-- <div class="mt-2" *ngIf="row.__isHoliday">
                                     <span class="badge bg-danger"><i
                                             class="fa-solid fa-calendar-xmark me-1"></i>Holiday</span>
+                                </div> -->
+                                <div class="mt-2 d-flex flex-column align-items-center gap-1" *ngIf="row.__isHoliday">
+                                    <span class="badge bg-danger">
+                                        <i class="fa-solid fa-calendar-xmark me-1"></i>Holiday
+                                    </span>
+                                    <button class="btn btn-outline-secondary" style="font-size:0.68rem;padding:2px 7px"
+                                        (click)="submitUncancelDay(row)" [disabled]="loading"
+                                        title="Remove holiday and restore periods">
+                                        <i class="fa-solid fa-rotate-left me-1"></i>Remove Holiday
+                                    </button>
                                 </div>
                             </td>
-                            <!-- Period cells -->
                             <td *ngFor="let pNum of periodHeaders" class="p-0 tt-cell">
                                 <ng-container *ngIf="getRenderedPeriod(row, pNum) as p; else freeCell">
-                                    <!-- Whole day cancelled -->
                                     <div *ngIf="p.__dayCancelled"
                                         class="h-100 d-flex align-items-center justify-content-center bg-secondary-subtle p-2">
                                         <div class="text-center">
@@ -218,12 +221,10 @@
                                                     class="fa-solid fa-calendar-xmark me-1"></i>Holiday</div>
                                         </div>
                                     </div>
-                                    <!-- Period cancelled (not whole-day) -->
                                     <div *ngIf="!p.__dayCancelled && p.isCancelled"
                                         class="h-100 d-flex flex-column align-items-center justify-content-center bg-danger-subtle p-2 text-center">
                                         <div class="badge bg-danger mb-1"><i class="fa-solid fa-ban me-1"></i>Cancelled
                                         </div>
-                                        <!-- FIX RL-6: Show what was cancelled in muted text -->
                                         <div class="text-muted small" style="font-size:0.72rem"
                                             *ngIf="resolveSubjectLabel(p)">{{ resolveSubjectLabel(p) }}</div>
                                         <div class="text-muted" style="font-size:0.65rem" *ngIf="p.cancelReason">{{
@@ -231,7 +232,6 @@
                                         <div class="text-muted" style="font-size:0.65rem">{{ resolveFacultyLabel(p) }}
                                         </div>
                                     </div>
-                                    <!-- Active period -->
                                     <div *ngIf="!p.__dayCancelled && !p.isCancelled"
                                         class="h-100 d-flex flex-column align-items-center justify-content-center p-2 gap-1 text-center"
                                         [class.bg-warning-subtle]="p.__modified">
@@ -571,10 +571,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small text-muted mb-1">Phase</label>
-                                <select class="form-select form-select-sm" [(ngModel)]="ep.phaseId"
+                                <!-- <select class="form-select form-select-sm" [(ngModel)]="ep.phaseId"
                                     (change)="onEditDayPhaseChange(ep)">
                                     <option value="">— No phase —</option>
                                     <option *ngFor="let ph of getEditDayPhasesForPeriod(ep)" [value]="ph.phaseId">
+                                        {{ ph.phaseName }}
+                                    </option>
+                                </select> -->
+                                <select class="form-select form-select-sm" [(ngModel)]="ep.phaseId"
+                                    (change)="onEditDayPhaseChange(ep)">
+                                    <option value="">— No phase —</option>
+                                    <option *ngFor="let ph of ep.__phases || []" [value]="ph.phaseId">
                                         {{ ph.phaseName }}
                                     </option>
                                 </select>
@@ -609,12 +616,11 @@
                 </button>
                 <div class="d-flex gap-2">
                     <button class="btn btn-outline-secondary" (click)="closeEditDay()"
-                        [disabled]="loading || editDayValidating">Cancel</button>
-                    <button class="btn btn-primary" (click)="submitEditDay()" [disabled]="loading || editDayValidating">
-                        <span *ngIf="editDayValidating" class="spinner-border spinner-border-sm me-1"></span>
+                        [disabled]="loading">Cancel</button>
+                    <button class="btn btn-primary" (click)="submitEditDay()" [disabled]="loading">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
-                        <i class="fa-solid fa-check me-1" *ngIf="!editDayValidating && !loading"></i>
-                        {{ editDayValidating ? 'Checking conflicts…' : 'Save Changes' }}
+                        <i class="fa-solid fa-check me-1" *ngIf="!loading"></i>
+                        Save Changes
                     </button>
                 </div>
             </div>
@@ -1032,8 +1038,6 @@
         </button>
     </div>
 </div>
-
-<!-- ═══ PERIOD ACTION MENU — rendered OUTSIDE the table so it is never clipped ═══ -->
 <div *ngIf="openActionKey" class="tt-action-menu" [style.top.px]="actionMenuTop" [style.left.px]="actionMenuLeft"
     (click)="$event.stopPropagation()">
     <ng-container *ngFor="let row of sortedSchedule">
@@ -1085,7 +1089,6 @@
             <button class="btn-close" (click)="closeStaffLateModal()"></button>
         </div>
         <div class="app-modal-body">
-            <!-- Entry type -->
             <div class="mb-3">
                 <label class="form-label small fw-medium">Entry Type <span class="text-danger">*</span></label>
                 <div class="d-flex gap-3">
@@ -1101,7 +1104,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Delay minutes -->
             <div class="mb-3">
                 <label class="form-label small fw-medium">
                     {{ staffLateEntry.entryType === 'EARLY_LEAVE' ? 'Left Early By (minutes)' : 'Arrived Late By
