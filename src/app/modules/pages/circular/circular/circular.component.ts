@@ -14,39 +14,39 @@ import { AlertService } from '../../../../service/alert/alert.service';
 export class CircularComponent implements OnInit {
 
   tenantId: any;
-  loading    = false;
-  isProceed  = false;
+  loading = false;
+  isProceed = false;
 
   filterForm!: FormGroup;
 
-  dataArray:    any[] = [];
-  totalRecords  = 0;
+  dataArray: any[] = [];
+  totalRecords = 0;
 
   // Last used filter — stored in memory only, used to re-fetch after modal actions
   private lastFilter: { filterType: string; filterValue: string; status: string; page: number; pageSize: number } = {
     filterType: 'batchCode', filterValue: '', status: '', page: 1, pageSize: 5
   };
 
-  batch_options:  any[] = [];
+  batch_options: any[] = [];
   center_options: any[] = [];
 
   status_options = [
-    { label: 'Draft',     value: 'DRAFT'     },
+    { label: 'Draft', value: 'DRAFT' },
     { label: 'Published', value: 'PUBLISHED' }
   ];
 
   filterTypeList = [
-    { label: 'Batch',       value: 'batchCode'  },
-    { label: 'Center',      value: 'centerCode' },
-    { label: 'Institution', value: 'institution'}
+    { label: 'Batch', value: 'batchCode' },
+    { label: 'Center', value: 'centerCode' },
+    { label: 'Institution', value: 'institution' }
   ];
 
   columnsArray = [
-    { key: 'category',            label: 'Category',  sortable: false },
-    { key: 'scope',               label: 'Scope',     sortable: false },
-    { key: 'subject',             label: 'Subject',   sortable: true  },
-    { key: 'status',              label: 'Status',    sortable: false },
-    { key: 'publishedAtFormatted',label: 'Published', sortable: false }
+    { key: 'category', label: 'Category', sortable: false },
+    { key: 'scope', label: 'Scope', sortable: false },
+    { key: 'subject', label: 'Subject', sortable: true },
+    { key: 'status', label: 'Status', sortable: false },
+    { key: 'publishedAtFormatted', label: 'Published', sortable: false }
   ];
 
   actions = [
@@ -62,13 +62,13 @@ export class CircularComponent implements OnInit {
       callback: (row: any) => {
         this.router.navigate(['/app/circular/create'], { state: { circular: row } });
       },
-       hidden : (row: any) => row.status.toUpperCase() === 'PUBLISHED'
+      hidden: (row: any) => row.status.toUpperCase() === 'PUBLISHED'
     },
     {
       type: 'icon', icon: 'fa-solid fa-paper-plane',
       tooltip: 'Publish', color: '#6B7280', hoverColor: '#7C3AED',
       callback: (row: any) => row.status === 'DRAFT' ? this.openPublishModal(row) : null,
-      hidden : (row: any) => row.status.toUpperCase() === 'PUBLISHED'
+      hidden: (row: any) => row.status.toUpperCase() === 'PUBLISHED'
     },
     {
       type: 'icon', icon: 'fa-regular fa-trash-can',
@@ -78,17 +78,17 @@ export class CircularComponent implements OnInit {
   ];
 
   // Modals
-  selectedCircular:   any = null;
-  circularToDelete:   any = null;
-  circularToPublish:  any = null;
-  publishLoading      = false;
+  selectedCircular: any = null;
+  circularToDelete: any = null;
+  circularToPublish: any = null;
+  publishLoading = false;
 
   constructor(
-    private breadcrump:   BredcrumpService,
-    private fb:           FormBuilder,
-    private router:       Router,
-    private commonApi:    CommonapiService,
-    private alert:        AlertService,
+    private breadcrump: BredcrumpService,
+    private fb: FormBuilder,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Circulars' }]);
@@ -96,9 +96,9 @@ export class CircularComponent implements OnInit {
 
   ngOnInit(): void {
     this.filterForm = this.fb.group({
-      filterType:  ['batchCode'],
+      filterType: ['batchCode'],
       filterValue: [''],
-      status:      ['']
+      status: ['']
     });
     Promise.all([this.loadBatches(), this.loadCenters()]);
   }
@@ -174,8 +174,8 @@ export class CircularComponent implements OnInit {
 
     let query = `list?page=${page}&limit=${limit}`;
     if (filterValue) query += `&${filterType}=${filterValue}`;
-    if (status)      query += `&status=${status}`;
-    if (search)      query += `&search=${search}`;
+    if (status) query += `&status=${status}`;
+    if (search) query += `&search=${search}`;
 
     this.commonApi.fetchData({ tenantId: this.tenantId }, 'institue/circular', query)
       .subscribe({
@@ -196,7 +196,7 @@ export class CircularComponent implements OnInit {
 
   // Called by the table component on page / pageSize / search changes
   loadTableData(req: { page: number; pageSize: number; search?: string }): void {
-    this.lastFilter.page     = req.page;
+    this.lastFilter.page = req.page;
     this.lastFilter.pageSize = req.pageSize;
     this.fetchList(req.page, req.pageSize, req.search);
   }
@@ -204,17 +204,17 @@ export class CircularComponent implements OnInit {
   downloadFile(url: string): void {
     this.commonApi.downloadByUrl({ url }, 'ims', 'download').subscribe({
       next: (res: any) => {
-        const fileName  = url.split('/').pop() || 'download';
-        const a         = document.createElement('a');
+        const fileName = url.split('/').pop() || 'download';
+        const a = document.createElement('a');
         const objectUrl = URL.createObjectURL(res);
-        a.href     = objectUrl;
+        a.href = objectUrl;
         a.download = fileName;
         a.click();
       },
       error: () => this.alert.error('Error downloading file')
     });
   }
- 
+
   onView(row: any): void {
     this.selectedCircular = row;
     this.openModal('circularViewModal');
@@ -244,10 +244,10 @@ export class CircularComponent implements OnInit {
           this.fetchList(this.lastFilter.page, this.lastFilter.pageSize);
         }
       },
-        error: (err: any) => {
-          this.loading = false;
-          this.alert.error(err?.error?.message);
-         }
+      error: (err: any) => {
+        this.loading = false;
+        this.alert.error(err?.error?.message);
+      }
     });
   }
 
@@ -269,7 +269,7 @@ export class CircularComponent implements OnInit {
       next: (res: any) => {
         if (res?.status) {
           this.alert.success('Circular deleted successfully');
-          this.dataArray    = this.dataArray.filter(d => d.circularId !== this.circularToDelete.circularId);
+          this.dataArray = this.dataArray.filter(d => d.circularId !== this.circularToDelete.circularId);
           this.loadTableData(this.lastFilter);
 
           this.circularToDelete = null;
@@ -286,8 +286,8 @@ export class CircularComponent implements OnInit {
   getScopeClass(scope: string): string {
     const map: any = {
       INSTITUTE: 'bg-primary',
-      CENTER:    'bg-info text-dark',
-      BATCH:     'bg-warning text-dark'
+      CENTER: 'bg-info text-dark',
+      BATCH: 'bg-warning text-dark'
     };
     return map[scope] || 'bg-secondary';
   }
@@ -307,5 +307,9 @@ export class CircularComponent implements OnInit {
   private closeModal(id: string): void {
     const el = document.getElementById(id);
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
+  }
+
+  onRowSelected(row: any) {
+    this.router.navigate(['/app/circular/view'], { state: { circular: row } })
   }
 }

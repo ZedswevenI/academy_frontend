@@ -7,8 +7,8 @@
                 <h5 class="mb-1 fw-semibold">Center Details</h5>
                 <p class="mb-0 text-muted small">View center and manage venues</p>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" (click)="back()">
-                <i class="fa-solid fa-arrow-left me-1"></i> Back
+            <button class="btn btn-back fs-16 fw-medium" (click)="back()">
+                <i class="fa-solid fa-arrow-left btn-icon"></i> Back
             </button>
         </div>
 
@@ -65,8 +65,8 @@
                 <div class="text-muted small">Add multiple venues under this center</div>
             </div>
 
-            <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="addVenue()">
-                <i class="fa-solid fa-plus"></i>
+            <button class="btn btn-create fs-16 fw-medium" (click)="addVenue()">
+                <i class="fa-solid fa-plus btn-icon"></i>
                 <span>Add Venue</span>
             </button>
         </div>
@@ -74,7 +74,7 @@
         <div class="card-body pt-0">
             <custom-table [autoFitChars]="true" [columns]="venueColumns" [data]="venues" [actions]="venueActions"
                 [loading]="venueLoading" [totalRecords]="venueTotalRecords" [pageSizeOptions]="[10,20,50]"
-                (requestData)="fetchVenues($event)">
+                (requestData)="fetchVenues($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>
     </div>
@@ -157,11 +157,11 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="closeVenueModal()"
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeVenueModal()"
                             [disabled]="venueSaving">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-primary" [disabled]="venueForm.invalid || venueSaving">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="venueForm.invalid || venueSaving">
                             <span *ngIf="venueSaving" class="spinner-border spinner-border-sm me-2" role="status"
                                 aria-hidden="true"></span>
                             {{ venueFormMode === 'create' ? 'Save Venue' : 'Update Venue' }}
@@ -260,7 +260,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end mt-4">
-                    <button type="button" class="btn btn-outline-secondary" (click)="closeViewVenue()">Close</button>
+                    <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeViewVenue()">Close</button>
                 </div>
             </div>
         </div>

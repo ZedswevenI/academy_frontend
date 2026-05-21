@@ -421,4 +421,12 @@ export class ExamInstructionsComponent implements OnInit {
     this.viewContentHtml = '';
   }
 
+  async onRowSelected(row: any) {
+    this.viewData = row;
+    this.showViewModal = true;
+
+    let html = row.contentHtml || '';
+    html = await this.replaceDownloadUrls(html);
+    this.viewContentHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+  }
 }

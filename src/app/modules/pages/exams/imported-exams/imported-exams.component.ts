@@ -23,12 +23,12 @@ export class ImportedExamsComponent implements OnInit {
   filterForm!: FormGroup;
 
   columnsArray = [
-    { key: 'examCode',       label: 'Exam Code',   sortable: true },
-    { key: 'examName',       label: 'Exam Name',   sortable: true },
-    { key: 'totalQuestions', label: 'Questions',   sortable: true },
-    { key: 'totalMarks',     label: 'Marks',       sortable: true },
-    { key: 'duration',       label: 'Duration (min)', sortable: true },
-    { key: 'statusDisplay',  label: 'Status',      sortable: false }
+    { key: 'examCode', label: 'Exam Code', sortable: true },
+    { key: 'examName', label: 'Exam Name', sortable: true },
+    { key: 'totalQuestions', label: 'Questions', sortable: true },
+    { key: 'totalMarks', label: 'Marks', sortable: true },
+    { key: 'duration', label: 'Duration (min)', sortable: true },
+    { key: 'statusDisplay', label: 'Status', sortable: false }
   ];
 
   actions = [
@@ -54,7 +54,7 @@ export class ImportedExamsComponent implements OnInit {
     private router: Router,
     private breadcrumb: BredcrumpService,
     public authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Imported Exams' }]);
@@ -85,7 +85,7 @@ export class ImportedExamsComponent implements OnInit {
     }
 
     const filters = this.filterForm.value;
-    if (params.search)   query.search  = params.search;
+    if (params.search) query.search = params.search;
     if (filters.classNo) query.classNo = filters.classNo;
 
     const queryString = Object.keys(query)
@@ -111,10 +111,10 @@ export class ImportedExamsComponent implements OnInit {
 
   private formatStatus(status: string): string {
     const map: Record<string, string> = {
-      draft:            'Draft',
-      published:        'Published',
+      draft: 'Draft',
+      published: 'Published',
       result_published: 'Result Published',
-      completed:        'Completed'
+      completed: 'Completed'
     };
     return map[status] || status;
   }
@@ -124,6 +124,10 @@ export class ImportedExamsComponent implements OnInit {
   }
 
   viewExam(row: any) {
+    this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
+  }
+
+  onRowSelected(row: any) {
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
 }

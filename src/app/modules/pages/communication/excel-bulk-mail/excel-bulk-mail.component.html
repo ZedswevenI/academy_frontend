@@ -182,8 +182,8 @@
                     Upload Excel, create template using column variables and prepare bulk email
                 </p>
             </div>
-            <button class="btn btn-outline-secondary rounded-pill" type="button" (click)="resetAll()">
-                <i class="fa-solid fa-rotate-left me-1"></i>Reset
+            <button class="btn btn-back fs-16 fw-medium" type="button" (click)="resetAll()">
+                <i class="fa-solid fa-rotate-left btn-icon"></i>Reset
             </button>
         </div>
         <form [formGroup]="bulkMailForm">
@@ -282,7 +282,7 @@
                                             <input type="file" #emailImageInput hidden
                                                 accept="image/png,image/jpeg,image/jpg,image/webp"
                                                 (change)="onEmailImageSelected($event)" />
-                                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill"
+                                            <button type="button" class="btn btn-shuffle fs-16 fw-medium"
                                                 [disabled]="imageUploading" (click)="emailImageInput.click()">
                                                 <i class="fa-regular fa-image me-1"></i>
                                                 {{ imageUploading ? 'Uploading...' : 'Insert Image' }}
@@ -306,7 +306,7 @@
                                         <input type="number" class="form-control form-control-sm" style="width: 80px;"
                                             [(ngModel)]="tableCols" [ngModelOptions]="{ standalone: true }" min="1"
                                             placeholder="Cols" />
-                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill"
+                                        <button type="button" class="btn btn-edit fs-16 fw-medium"
                                             (click)="insertEmailTable()">
                                             <i class="fa-solid fa-table me-1"></i>Insert Table
                                         </button>
@@ -375,9 +375,9 @@
                             <span class="fw-semibold">Action</span>
                         </div>
                         <div class="bulk-card-body">
-                            <button type="button" class="btn btn-primary w-100 rounded-pill" [disabled]="loading"
+                            <button type="button" class="btn btn-create fs-16 fw-medium w-100" [disabled]="loading"
                                 (click)="sendBulkMail()">
-                                <i class="fa-solid fa-envelope-circle-check me-1"></i>
+                                <i class="fa-solid fa-envelope-circle-check btn-icon"></i>
                                 {{ loading ? 'Sending...' : 'Send Bulk Mail' }}
                             </button>
                         </div>

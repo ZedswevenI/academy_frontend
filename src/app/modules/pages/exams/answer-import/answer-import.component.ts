@@ -398,6 +398,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-answer-import',
@@ -445,6 +446,7 @@ export class AnswerImportComponent implements OnInit {
     private alert: AlertService,
     private router: Router,
     private breadcrumb: BredcrumpService,
+    private location: Location
   ) {
     const state: any = history.state;
     if (state?.exam) this.examData = state.exam;
@@ -454,6 +456,7 @@ export class AnswerImportComponent implements OnInit {
   ngOnInit(): void {
     this.breadcrumb.set([
       { label: 'Exams', link: '/app/exams/exams' },
+      { label: 'View'},
       { label: 'Import Answers' },
     ]);
 
@@ -1028,9 +1031,10 @@ export class AnswerImportComponent implements OnInit {
     }
   }
 
-  goBack() {
-    this.router.navigate(['/app/exams/exams']);
+ goBack() {
+    this.location.back();
   }
+
 
   // ── Download sample DOCX ──────────────────────────────────────────────────
   async downloadSample() {
@@ -1097,4 +1101,5 @@ export class AnswerImportComponent implements OnInit {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   }
+  
 }

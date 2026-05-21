@@ -7,9 +7,8 @@
           <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Sent Logs
         </h1>
         <div class="d-flex">
-          <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium me-2" type="button"
-            (click)="toggleFilters()">
-            <i class="fa-solid fa-filter me-1"></i>
+          <button class="btn btn-back fs-16 fw-medium me-2" type="button" (click)="toggleFilters()">
+            <i class="fa-solid fa-filter btn-icon"></i>
             {{ showFilters ? 'Hide Filters' : 'Filters' }}
           </button>
         </div>
@@ -29,8 +28,9 @@
               </selectbox>
             </div>
             <div class="col-md-6 d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">Clear</button>
-              <button type="button" class="btn btn-sm btn-primary" (click)="applyFilters()">Search</button>
+              <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
+                (click)="clearFilters()">Clear</button>
+              <button type="button" class="btn btn-create fs-16 fw-medium" (click)="applyFilters()">Search</button>
             </div>
           </form>
         </div>
@@ -39,7 +39,7 @@
 
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
       [success]="'Delivered'" [primary]="'Sent'" [warn]="'Queued'" [danger]="'Failed'" [totalRecords]="totalRecords"
-      [loading]="loading" [searchPlaceholder]="'Search recipient, admission no...'">
+      [loading]="loading" [searchPlaceholder]="'Search recipient, admission no...'" (rowClick)="onRowSelected($event)">
     </custom-table>
 
   </div>
@@ -107,7 +107,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary rounded-pill px-4" (click)="closeDetailModal()">Close</button>
+        <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeDetailModal()">Close</button>
       </div>
     </div>
   </div>

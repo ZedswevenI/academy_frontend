@@ -230,4 +230,8 @@ export class FeedbackComponent implements OnInit {
     const el = document.getElementById(id);
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
+
+  onRowSelected(row: any) {
+    this.router.navigate(['/app/feedback/results', row._id]);
+  }
 }

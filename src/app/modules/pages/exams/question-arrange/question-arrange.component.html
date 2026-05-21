@@ -10,13 +10,13 @@
           </p>
         </div>
         <div class="col-md-6 text-end">
-          <button class="btn closebutton" routerLink="/app/exams/exams">Back</button>
-          <button class="btn btn-warning btn-sm me-2" (click)="resetOrder()" title="Reset to original order">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          <button class="btn btn-export fs-16 fw-medium me-2" (click)="resetOrder()" title="Reset to original order">
+            <i class="bi bi-arrow-counterclockwise btn-icon"></i> Reset
           </button>
-          <button class="btn btn-primary btn-sm" (click)="saveNewOrder()" title="Save the new order">
-            <i class="bi bi-check-circle"></i> Save Order
+          <button class="btn btn-create fs-16 fw-medium me-2" (click)="saveNewOrder()" title="Save the new order">
+            <i class="bi bi-check-circle btn-icon"></i> Save Order
           </button>
+          <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">Back</button>
         </div>
       </div>
     </div>
@@ -124,8 +124,7 @@
                 <div class="row g-3">
                   <div class="col-md-6">
                     <div class="fw-bold mb-2 text-primary">Left Column</div>
-                    <div *ngFor="let l of question.leftColumn"
-                      class="d-flex align-items-start p-2 mb-2 border rounded">
+                    <div *ngFor="let l of question.leftColumn" class="d-flex align-items-start p-2 mb-2 border rounded">
                       <span class="badge bg-primary me-2">{{ l.key }}</span>
                       <div class="flex-grow-1" #optionContent [innerHTML]="l.textHtml"></div>
                     </div>
@@ -144,8 +143,7 @@
                     <i class="fas fa-check-circle me-1"></i> Correct Matches:
                   </strong>
                   <div class="d-flex flex-wrap gap-2 mt-2">
-                    <span *ngFor="let m of question.matrixMatches"
-                      class="badge bg-light text-dark border px-3 py-2">
+                    <span *ngFor="let m of question.matrixMatches" class="badge bg-light text-dark border px-3 py-2">
                       <span class="fw-bold text-primary">{{ m.key }}</span>
                       <i class="fas fa-arrow-right mx-2 text-muted"></i>
                       <span *ngIf="m.matches?.length; else noMatch" class="fw-bold text-success">

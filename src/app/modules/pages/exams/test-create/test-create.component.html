@@ -210,10 +210,10 @@
 
   <!-- ================= BUTTONS ================= -->
   <div class="text-end mt-4">
-    <button type="button" class="btn btn-outline-secondary me-2" (click)="goBack()">
+    <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="goBack()">
       Cancel
     </button>
-    <button type="button" class="btn btn-primary" [disabled]="examForm.invalid" (click)="submitExam()">
+    <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="examForm.invalid" (click)="submitExam()">
       {{ isEditMode ? 'Update Exam' : 'Create Exam' }}
     </button>
   </div>

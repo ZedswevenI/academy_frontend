@@ -130,7 +130,6 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId') || '';
     this.breadcrumb.set([
-      { label: 'Control Panel' },
       { label: 'School Exams' },
     ]);
   }

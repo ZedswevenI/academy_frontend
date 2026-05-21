@@ -50,16 +50,22 @@ export class KnowledgeListComponent implements OnInit {
     {
       type: 'icon', icon: 'fa-regular fa-eye',
       tooltip: 'View',
+       color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.view(row)
     },
     {
       type: 'icon', icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.edit(row)
     },
     {
       type: 'icon', icon: 'fa-regular fa-trash-can',
-      tooltip: 'Delete', color: '#dc3545', hoverColor: '#a71d2a',
+      tooltip: 'Delete', 
+      color: '#6B7280',
+      hoverColor: '#ee384a',
       callback: (row: any) => this.openDelete(row)
     }
   ];
@@ -225,4 +231,9 @@ export class KnowledgeListComponent implements OnInit {
   edit(row: any): void {
     this.router.navigate(['/app/knowledge/create'], { state: { material: row } });
   }
+  
+  onRowSelected(row: any) {
+   this.router.navigate(['/app/knowledge/view'], { state: { material: row } });
+  }
+
 }

@@ -1447,3 +1447,4 @@ export class BatchComponent implements OnInit {
     this.router.navigate(['/app/batch/view', b?.batchId]);
   }
 }
+        

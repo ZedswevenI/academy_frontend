@@ -1137,4 +1137,8 @@ export class TestComponent implements OnInit, OnDestroy {
     document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]')
       .forEach(toggle => toggle.setAttribute('aria-expanded', 'false'));
   }
+
+  onRowSelected(row: any) {
+    this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
+  }
 }

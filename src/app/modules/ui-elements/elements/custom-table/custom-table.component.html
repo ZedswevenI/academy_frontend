@@ -147,14 +147,14 @@
                   <div *ngIf="action.type === 'dropdown' && (!action.show || !action.show(row))"
                     class="btn-group action-btn-group">
                     <button type="button" class="btn btn-sm action-icon-btn" data-bs-toggle="dropdown"
-                      aria-expanded="false" #dropdownBtn>
+                      aria-expanded="false" #dropdownBtn  (click)="$event.stopPropagation()">
                       <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                       <ng-container *ngFor="let sub of action.dropdown">
                         <li *ngIf="!sub.show || !sub.show(row)">
                           <a class="dropdown-item d-flex align-items-center gap-2" data-bs-dismiss="dropdown"
-                            (click)="sub.callback(row)">
+                            (click)="$event.stopPropagation(); sub.callback(row)">
                             <i *ngIf="sub.icon" [class]="sub.icon" class="icon-14"></i>
                             {{ sub.text }}
                           </a>

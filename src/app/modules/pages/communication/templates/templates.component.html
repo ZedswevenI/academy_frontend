@@ -6,7 +6,7 @@
       <h1 class="fw-bold mb-0" style="font-size: 28px;">
         <i class="fa-solid fa-file-lines me-2 text-primary"></i>Templates
       </h1>
-      <button class="btn btn-newbutton rounded-pill fs-16 fw-medium" type="button" (click)="newTemplate()">
+      <button class="btn btn-create fs-16 fw-medium" type="button" (click)="newTemplate()">
         <i class="fa-solid fa-plus me-2"></i>New Template
       </button>
     </div>
@@ -64,10 +64,10 @@
               {{ mode === 'create' ? 'Create Template' : 'Edit Template' }}
             </h6>
             <div class="d-flex gap-2">
-              <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" (click)="cancelEdit()">
+              <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancelEdit()">
                 Cancel
               </button>
-              <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" (click)="saveTemplate()">
+              <button type="button" class="btn btn-create fs-16 fw-medium" (click)="saveTemplate()">
                 <i class="fa-solid fa-floppy-disk me-1"></i>Save
               </button>
             </div>
@@ -113,7 +113,7 @@
                 <div class="d-flex gap-2">
                   <input type="file" #emailImageInput hidden accept="image/png,image/jpeg,image/jpg,image/webp"
                     (change)="onEmailImageSelected($event)" />
-                  <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" [disabled]="imageUploading"
+                  <button type="button" class="btn btn-shuffle fs-16 fw-medium" [disabled]="imageUploading"
                     (click)="emailImageInput.click()">
                     <i class="fa-regular fa-image me-1"></i>
                     {{ imageUploading ? 'Uploading...' : 'Insert Image' }}
@@ -131,7 +131,7 @@
                 <label class="form-label fs-7 mb-0">Columns :</label>
                 <input type="number" class="form-control form-control-sm" style="width: 80px;" [(ngModel)]="tableCols"
                   [ngModelOptions]="{ standalone: true }" min="1" />
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill"
+                <button type="button" class="btn btn-edit fs-16 fw-medium"
                   (click)="insertEmailTable()">
                   <i class="fa-solid fa-table me-1"></i>Insert Table
                 </button>

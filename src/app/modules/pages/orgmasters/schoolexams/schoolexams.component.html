@@ -309,7 +309,7 @@
                 </h1>
                 <p class="mb-0 text-muted small">Upload and manage term exam marks for all batches</p>
             </div>
-            <button class="btn btn-primary px-4 py-2 fw-semibold" style="border-radius:10px" (click)="openUpload()">
+            <button class="btn btn-import fs-16 fw-medium" (click)="openUpload()">
                 <i class="fa-solid fa-cloud-arrow-up me-2"></i>Import Marks
             </button>
         </div>
@@ -330,10 +330,10 @@
                 </select>
             </div>
             <div class="col-md-3 d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary flex-fill" (click)="resetFilters()">
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="resetFilters()">
                     <i class="fa-solid fa-rotate-left me-1"></i>Reset
                 </button>
-                <button class="btn btn-sm btn-primary flex-fill" [disabled]="loading" (click)="applyFilters()">
+                <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="applyFilters()">
                     <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-magnifying-glass me-1" *ngIf="!loading"></i>Search
                 </button>
@@ -360,8 +360,8 @@
         <div class="empty-icon"><i class="fa-solid fa-folder-open"></i></div>
         <div class="empty-title">No Exams Found</div>
         <div class="empty-sub">No exam records match your filters. Try importing marks first.</div>
-        <button class="btn btn-primary mt-3 px-4" (click)="openUpload()">
-            <i class="fa-solid fa-cloud-arrow-up me-2"></i>Import Marks
+        <button class="btn btn-import fs-16 fw-medium" (click)="openUpload()">
+            <i class="fa-solid fa-cloud-arrow-up btn-icon"></i>Import Marks
         </button>
     </div>
 
@@ -421,11 +421,11 @@
                     </div>
                     <!-- Replace card-actions div: -->
                     <div class="card-actions">
-                        <button class="btn-card-view" (click)="openView(exam)">
-                            <i class="fa-regular fa-eye me-1"></i>View Results
+                        <button class="btn btn-create fs-16 fw-medium me-2" (click)="openView(exam)">
+                            <i class="fa-regular fa-eye btn-icon"></i>View Results
                         </button>
-                        <button *appHasRole="['L1']" class="btn-card-view"
-                            style="color:#16a34a;border-color:#bbf7d0;background:#f0fdf4" (click)="exportExam(exam)"
+                        <button *appHasRole="['L1']" class="btn btn-export fs-16 fw-medium"
+                             (click)="exportExam(exam)"
                             title="Export to Excel">
                             <i class="fa-solid fa-file-excel me-1"></i>Export
                         </button>
@@ -610,8 +610,8 @@
                 Re-uploading same exam+date+batch will <strong>overwrite</strong> previous marks
             </div>
             <div class="d-flex gap-2 ms-auto">
-                <button class="btn btn-outline-secondary" (click)="closeUpload()" [disabled]="uploading">Cancel</button>
-                <button class="btn btn-primary px-4 fw-semibold" (click)="submitUpload()"
+                <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeUpload()" [disabled]="uploading">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium" (click)="submitUpload()"
                     [disabled]="!canSubmit || uploading || parsing">
                     <span *ngIf="uploading" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!uploading"></i>
@@ -718,13 +718,13 @@
             </button> -->
             <!-- <button class="btn btn-outline-secondary ms-auto" (click)="closeView()">Close</button> -->
             <ng-container *ngIf="viewExam">
-                <button class="btn btn-outline-success fw-semibold" (click)="exportExam(viewExam)"
+                <button class="btn btn-export fs-16 fw-medium" (click)="exportExam(viewExam)"
                     [disabled]="viewLoading" *appHasRole="['L3','L1']">
 
                     <i class="fa-solid fa-file-excel me-1"></i>
                     Export Excel
                 </button>
-                <button class="btn btn-outline-secondary ms-auto" (click)="closeView()">Close</button>
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeView()">Close</button>
             </ng-container>
         </div>
     </div>
@@ -748,8 +748,8 @@
                 and all student marks. This cannot be undone.
             </div>
             <div class="d-flex justify-content-end gap-2 mt-3">
-                <button class="btn btn-outline-secondary" (click)="closeDelete()" [disabled]="deleting">Cancel</button>
-                <button class="btn btn-danger fw-semibold" (click)="confirmDelete()" [disabled]="deleting">
+                <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeDelete()" [disabled]="deleting">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium" (click)="confirmDelete()" [disabled]="deleting">
                     <span *ngIf="deleting" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-trash me-1" *ngIf="!deleting"></i>
                     {{ deleting ? 'Deleting…' : 'Yes, Delete' }}

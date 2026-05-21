@@ -33,18 +33,23 @@ export class CenterviewComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-eye',
       tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.openViewVenue(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.editVenue(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
+      color: '#6B7280',
       hoverColor: '#D42B2B',
       callback: (row: any) => this.openDeleteVenue(row),
     },
@@ -269,5 +274,10 @@ export class CenterviewComponent implements OnInit {
   closeViewVenue() {
     this.showViewVenue = false;
     this.viewVenueRec = null;
+  }
+
+  onRowSelected(row: any) {
+    this.viewVenueRec = row;
+    this.showViewVenue = true;
   }
 }

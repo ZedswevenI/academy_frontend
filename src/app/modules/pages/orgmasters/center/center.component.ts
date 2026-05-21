@@ -34,25 +34,30 @@ export class CenterComponent implements OnInit {
   ];
 
   actions = [
-  {
-    type: 'icon',
-    icon: 'fa-regular fa-eye',
-    tooltip: 'View',
-    callback: (row: any) => this.view(row)
-  },
-  {
-    type: 'icon',
-    icon: 'fa-regular fa-pen-to-square',
-    tooltip: 'Edit',
-    callback: (row: any) => this.edit(row)
-  },
-  {
-    type: 'icon',
-    icon: 'fa-regular fa-trash-can',
-    tooltip: 'Delete',
-    hoverColor: '#D42B2B',
-    callback: (row: any) => this.openDelete(row)
-  }
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-eye',
+      tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.view(row)
+    },
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-pen-to-square',
+      tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      callback: (row: any) => this.edit(row)
+    },
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-trash-can',
+      tooltip: 'Delete',
+      color: '#6B7280',
+      hoverColor: '#D42B2B',
+      callback: (row: any) => this.openDelete(row)
+    }
   ];
   saving = false;
 
@@ -62,7 +67,7 @@ export class CenterComponent implements OnInit {
     private alertService: AlertService,
     private centerService: CenterService,
     private api: CommonapiService,
-    private router : Router
+    private router: Router
   ) {
     this.entiId = localStorage.getItem('tenantId')
     this.breadcrumb.set([
@@ -74,7 +79,7 @@ export class CenterComponent implements OnInit {
 
   ngOnInit(): void {
     this.centerForm = this.fb.group({
-       name: ['', Validators.required],
+      name: ['', Validators.required],
       code: ['', Validators.required],
       city: ['', Validators.required],
       state: ['', Validators.required],
@@ -253,8 +258,14 @@ export class CenterComponent implements OnInit {
   }
 
   view(row: any) {
-  const id = row?._id || row?.recId;
-  if (!id) return;
-  this.router.navigate(['/app/org-master/center/view', id]);
-}
+    const id = row?._id || row?.recId;
+    if (!id) return;
+    this.router.navigate(['/app/org-master/center/view', id]);
+  }
+
+  onRowSelected(row: any) {
+    const id = row?._id || row?.recId;
+    if (!id) return;
+    this.router.navigate(['/app/org-master/center/view', id]);
+  }
 }

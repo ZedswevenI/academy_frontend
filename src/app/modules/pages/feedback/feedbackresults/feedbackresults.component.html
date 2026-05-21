@@ -145,23 +145,26 @@
         <span class="spinner-border text-primary"></span>
     </div>
     <!-- Tab switcher -->
-    <div class="d-flex gap-2 mb-4">
-        <button class="btn btn-sm rounded-pill px-4" [class.btn-primary]="activeTab === 'results'"
-            [class.btn-outline-secondary]="activeTab !== 'results'" (click)="switchTab('results')">
+    <div class="d-flex justify-content-end gap-2 mb-4">
+        <button class="btn fs-16 fw-medium" [class.btn-edit]="activeTab === 'results'"
+            [class.btn-create]="activeTab !== 'results'" (click)="switchTab('results')">
             <i class="fa-solid fa-chart-bar me-1"></i>Results
         </button>
-        <button class="btn btn-sm rounded-pill px-4" [class.btn-dark]="activeTab === 'report'"
-            [class.btn-outline-secondary]="activeTab !== 'report'" (click)="switchTab('report')">
+        <button class="btn fs-16 fw-medium" [class.btn-edit]="activeTab === 'report'"
+            [class.btn-create]="activeTab !== 'report'" (click)="switchTab('report')">
             <i class="fa-solid fa-table-list me-1"></i>Tabular Report
+        </button>
+        <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+            <i class="fa-solid fa-arrow-left me-1"></i>Back
         </button>
     </div>
     <div *ngIf="activeTab === 'results'">
         <div *ngIf="!loading && results">
             <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
                 <div class="d-flex align-items-center gap-3 mb-4">
-                    <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
+                    <!-- <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
                         <i class="fa-solid fa-arrow-left me-1"></i>Back
-                    </button>
+                    </button> -->
                     <div class="flex-grow-1">
                         <h1 class="fw-bold mb-0" style="font-size: 22px;">
                             <i class="fa-regular fa-chart-bar me-2"></i>{{ results.title }}
@@ -387,9 +390,9 @@
         <ng-container *ngIf="!reportLoading && reportRows.length">
             <!-- Export button -->
             <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-sm btn-danger rounded-pill px-4" (click)="downloadReport()"
+                <button class="btn btn-export fs-16 fw-medium" (click)="downloadReport()"
                     [disabled]="reportLoading">
-                    <i class="fa-solid fa-file-pdf me-1"></i>Export PDF
+                    <i class="fa-solid fa-file-pdf btn-icon"></i>Export PDF
                 </button>
             </div>
             <!-- Report table -->

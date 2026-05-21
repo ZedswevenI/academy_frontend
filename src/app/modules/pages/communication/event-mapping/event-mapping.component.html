@@ -11,8 +11,8 @@
                 </p>
             </div>
 
-            <button class="btn btn-newbutton rounded-pill fs-16 fw-medium" type="button" (click)="newMapping()">
-                <i class="fa-solid fa-plus me-2"></i>New Mapping
+            <button class="btn btn-create fs-16 fw-medium" type="button" (click)="newMapping()">
+                <i class="fa-solid fa-plus btn-icon"></i>New Mapping
             </button>
         </div>
 
@@ -26,8 +26,8 @@
                             <span class="fw-semibold">Mapped Events</span>
                             <span class="badge bg-light text-dark border ms-2">{{ mappings.length }}</span>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="loadMappings()">
-                            <i class="fa-solid fa-rotate me-1"></i>Refresh
+                        <button class="btn btn-back fs-16 fw-mediu" (click)="loadMappings()">
+                            <i class="fa-solid fa-rotate btn-icon"></i>Refresh
                         </button>
                     </div>
 
@@ -127,12 +127,12 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn closebutton" (click)="newMapping()">
+                            <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="newMapping()">
                                 Clear
                             </button>
 
-                            <button type="button" class="btn submitbutton" (click)="saveMapping()" [disabled]="loading">
-                                <i class="fa-solid fa-floppy-disk me-1"></i>
+                            <button type="button" class="btn btn-create fs-16 fw-medium" (click)="saveMapping()" [disabled]="loading">
+                                <i class="fa-solid fa-floppy-disk btn-icon"></i>
                                 {{ mode === 'create' ? 'Save' : 'Update' }}
                             </button>
                         </div>
