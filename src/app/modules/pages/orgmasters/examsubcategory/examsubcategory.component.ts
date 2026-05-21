@@ -46,12 +46,16 @@ export class ExamsubcategoryComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.edit(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
+      color: '#6B7280',
+      hoverColor: '#DC2626',
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -66,8 +70,7 @@ export class ExamsubcategoryComponent implements OnInit {
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Masters' },
+      { label: 'Org-Masters' },
       { label: 'Exam Sub Category' },
     ]);
   }

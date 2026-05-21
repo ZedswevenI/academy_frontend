@@ -4,6 +4,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { forkJoin, map, Subject } from 'rxjs';
 import { takeUntil, catchError, of, finalize } from 'rxjs';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 const safeTrim = (v: any): string =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -228,9 +229,11 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private breadcrumb: BredcrumpService
   ) {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId');
+        this.breadcrumb.set([{ label: 'Timetable', link: '/app/timetable' }, {label: 'View'}]);
   }
 
   ngOnInit(): void {

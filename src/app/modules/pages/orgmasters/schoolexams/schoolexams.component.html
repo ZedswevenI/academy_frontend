@@ -325,7 +325,9 @@
                 <label class="form-label small text-muted mb-1">Batch</label>
                 <select class="form-select form-select-sm" [(ngModel)]="filterBatchCode">
                     <option value="">All Batches</option>
-                    <option *ngFor="let b of batchesFull" [value]="b.batchCode">{{ b.batchName || b.batchCode }}
+                    <!-- <option *ngFor="let b of batchesFull" [value]="b.batchCode">{{ b.batchName || b.batchCode }}
+                    </option> -->
+                    <option *ngFor="let b of batchesFull" [value]="b.batchCode">{{ b.batchName }} ({{ b.batchCode }})
                     </option>
                 </select>
             </div>

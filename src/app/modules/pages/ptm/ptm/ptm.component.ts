@@ -619,7 +619,7 @@ export class PtmComponent implements OnInit {
         .subscribe({
           next: (res: any) => {
             this.batch_options = (res.data?.batches || []).map((b: any) => ({
-              label: b.batchName,
+              label: `${b.batchName} (${b.batchCode})`,
               value: b.batchCode,
             }));
           },
@@ -630,7 +630,7 @@ export class PtmComponent implements OnInit {
         .subscribe({
           next: (res: any) => {
             this.batch_options = (res?.data || []).map((b: any) => ({
-              label: b.batchName,
+              label:`${b.batchName} (${b.batchCode})`,
               value: b.batchCode,
             }));
           },

@@ -87,9 +87,9 @@ export class QuestionCreatorComponent implements OnInit {
       if (state.question?.recId) {
         this.isEditMode = true;
         this.recId = state.question.recId;
-        this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Edit Question' }]);
+        this.breadcrump.set([{ label: 'Exams' }, { label: 'Questions', link: '/app/exams/questions' }, { label: 'Edit Question' }]);
       } else {
-        this.breadcrump.set([{ label: 'Questions', link: '/app/exams/questions' }, { label: 'Add Question' }]);
+        this.breadcrump.set([{ label: 'Exams' }, { label: 'Questions', link: '/app/exams/questions' }, { label: 'Add Question' }]);
       }
     } else if (state?.question) {
       this.testId = state.question.testId;

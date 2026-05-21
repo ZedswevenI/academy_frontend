@@ -202,8 +202,8 @@
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" [disabled]="staffForm.invalid">
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()">Cancel</button>
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="staffForm.invalid">
                             {{ formMode === "create" ? "Save Staff" : "Update Staff" }}
                         </button>
                     </div>
@@ -514,12 +514,13 @@
                                 [ngModelOptions]="{ standalone: true }" />
                         </div>
                         <div class="col-md-8 d-flex gap-2 justify-content-end">
-                            <button type="button" class="btn btn-outline-primary" (click)="updateRelievingDate()">
+                            <button type="button" class="btn btn-edit fs-16 fw-medium me-2" (click)="updateRelievingDate()">
                                 Update Relieving Date
                             </button>
-                            <button type="button" class="btn btn-danger" (click)="openRetire()"
+                            <button type="button" class="btn btn-shuffle fs-16 fw-medium me-2" (click)="openRetire()"
                                 [disabled]="viewRec.status === 'Inactive'">Retire Employee</button>
-                            <button type="button" class="btn btn-outline-secondary" (click)="closeView()">Close</button>
+
+                            <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeView()">Close</button>
                         </div>
                     </div>
                     <div class="alert alert-warning small mt-3 mb-0" *ngIf="viewRec.status === 'Inactive'">

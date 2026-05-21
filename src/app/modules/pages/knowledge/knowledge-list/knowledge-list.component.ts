@@ -118,7 +118,7 @@ export class KnowledgeListComponent implements OnInit {
 
           // Batches
           this.batch_options = (data.batches || []).map((b: any) => ({
-            label: b.batchName,
+            label: `${b.batchName} (${b.batchCode})`,
             value: b.batchCode
           }));
         }
@@ -142,7 +142,7 @@ export class KnowledgeListComponent implements OnInit {
     this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full')
       .subscribe((res: any) => {
         this.batch_options = (res?.data || []).map((b: any) => ({
-          label: b.batchName,
+          label: `${b.batchName} (${b.batchCode})`,
           value: b.batchCode
         }));
       });

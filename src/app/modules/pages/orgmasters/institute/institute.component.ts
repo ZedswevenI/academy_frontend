@@ -24,8 +24,7 @@ export class InstituteComponent implements OnInit {
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Masters' },
+      { label: 'Org-Masters' },
       { label: 'Institute Information' },
     ]);
   }
@@ -88,7 +87,7 @@ export class InstituteComponent implements OnInit {
       tenantCode: f.code,
       email: f.email,
       phone: f.phone,
-      contactName: f.email, 
+      contactName: f.email,
       Address1: f.addressLine1,
       Address2: f.addressLine2,
       City: f.city,

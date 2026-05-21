@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 
 @Component({
   selector: 'app-subtopic',
@@ -57,12 +58,16 @@ export class SubtopicComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (r: any) => this.edit(r),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
+      color: '#6B7280',
+      hoverColor: '#DC2626',
       callback: (r: any) => this.openDelete(r),
     },
   ];
@@ -71,7 +76,13 @@ export class SubtopicComponent implements OnInit {
     private fb: FormBuilder,
     private alert: AlertService,
     private api: CommonapiService,
-  ) {}
+    private breadcrumb: BredcrumpService
+  ) {
+    this.breadcrumb.set([
+      { label: 'Org-Masters' },
+      { label: 'Sub-Topics' },
+    ]);
+  }
 
   ngOnInit(): void {
     this.initForm();
