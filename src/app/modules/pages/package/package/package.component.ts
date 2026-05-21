@@ -485,4 +485,24 @@ export class PackageComponent implements OnInit {
     const el = document.getElementById(id);
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
+
+  onRowSelected(row: any) {
+     this.selectedPackage = row;
+    this.viewEnablements = [];
+    this.viewEnablementsLoading = true;
+    this.commonApi.fetchData(
+      { tenantId: this.tenantId, packageId: row.packageId },
+      'ims/package',
+      'list/enadisa'
+    ).subscribe({
+      next: (res: any) => {
+        this.viewEnablements = res?.data || [];
+        this.viewEnablementsLoading = false;
+      },
+      error: () => {
+        this.viewEnablementsLoading = false;
+      }
+    });
+    this.openModal('packageViewModal');
+  }
 }

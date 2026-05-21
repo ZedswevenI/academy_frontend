@@ -3,25 +3,33 @@
         <i class="fa-solid fa-clipboard-check"></i> School Attendance
     </h1>
 
-    <div class="d-flex flex-wrap gap-2 mt-2 mb-3">
-        <span class="badge bg-primary-subtle text-primary border fw-semibold">
-            {{ batchName }} ({{ batchCode }})
-        </span>
-        <span class="badge bg-info-subtle text-info border" *ngIf="section">
-            Section {{ section }}
-        </span>
-        <span class="badge bg-secondary-subtle text-secondary border" *ngIf="classNo">
-            Class {{ classNo }}
-        </span>
-        <span class="badge bg-secondary-subtle text-secondary border" *ngIf="dateLabel">
-            {{ dateLabel }}
-        </span>
-        <span class="badge bg-warning-subtle text-warning border" *ngIf="isEditMode">
-            <i class="fa-solid fa-pen-to-square me-1"></i>Edit Mode
-        </span>
-        <span class="badge bg-danger-subtle text-danger border" *ngIf="isReadOnly">
-            <i class="fa-solid fa-lock me-1"></i>View Only
-        </span>
+    <div class="d-flex flex-wrap gap-2 mt-2 mb-3 justify-content-between">
+        <div>
+            <span class="badge bg-primary-subtle text-primary border fw-semibold me-2">
+                {{ batchName }} ({{ batchCode }})
+            </span>
+            <span class="badge bg-info-subtle text-info border me-2" *ngIf="section">
+                Section {{ section }}
+            </span>
+            <span class="badge bg-secondary-subtle text-secondary border me-2" *ngIf="classNo">
+                Class {{ classNo }}
+            </span>
+            <span class="badge bg-secondary-subtle text-secondary border me-2" *ngIf="dateLabel">
+                {{ dateLabel }}
+            </span>
+            <span class="badge bg-warning-subtle text-warning border me-2" *ngIf="isEditMode">
+                <i class="fa-solid fa-pen-to-square me-1"></i>Edit Mode
+            </span>
+            <span class="badge bg-danger-subtle text-danger border me-2" *ngIf="isReadOnly">
+                <i class="fa-solid fa-lock me-1"></i>View Only
+            </span>
+        </div>
+
+        <div class="justify-content-end">
+            <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+                <i class="fa-solid fa-arrow-left btn-icon"></i>Back
+            </button>
+        </div>
     </div>
 
     <!-- Loading -->
@@ -98,10 +106,10 @@
 
         <!-- Actions -->
         <div class="d-flex justify-content-end gap-2 mt-4" *ngIf="students.length">
-            <button class="btn btn-outline-secondary" (click)="router.navigate(['/app/school-attendance'])">
+            <button class="btn btn-back fs-16 fw-medium" (click)="router.navigate(['/app/school-attendance'])">
                 {{ isReadOnly ? 'Back' : 'Cancel' }}
             </button>
-            <button *ngIf="!isReadOnly" class="btn btn-primary px-4" (click)="submitAttendance()"
+            <button *ngIf="!isReadOnly" class="btn btn-create fs-16 fw-medium" (click)="submitAttendance()"
                 [disabled]="submitting">
                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
                 {{ isEditMode ? 'Update Attendance' : 'Submit Attendance' }}
@@ -180,8 +188,8 @@
         </div>
 
         <div class="text-end mt-3">
-            <button class="btn closebutton me-2" (click)="showSummary = false">Back to Edit</button>
-            <button class="btn submitbutton" (click)="onConfirm()" [disabled]="submitting">
+            <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="showSummary = false">Back to Edit</button>
+            <button class="btn btn-create fs-16 fw-medium" (click)="onConfirm()" [disabled]="submitting">
                 <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
                 Confirm
             </button>

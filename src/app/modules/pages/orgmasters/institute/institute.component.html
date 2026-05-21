@@ -12,8 +12,8 @@
                     View and update your institute’s core profile, contact and address details.
                 </p>
             </div>
-            <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="openEdit()">
-                <i class="fa-regular fa-pen-to-square"></i>
+            <button class="btn btn-edit fs-16 fw-medium" (click)="openEdit()">
+                <i class="fa-regular fa-pen-to-square btn-icon"></i>
                 <span>Edit Details</span>
             </button>
         </div>
@@ -150,8 +150,8 @@
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Cancel</button>
-                        <button type="button" class="btn btn-primary" [disabled]="instituteForm.invalid"
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()">Cancel</button>
+                        <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="instituteForm.invalid"
                             (click)="save()">
                             Save Changes
                         </button>

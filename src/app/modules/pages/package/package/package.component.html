@@ -6,8 +6,7 @@
             <h1 class="fw-bold mb-0" style="font-size: 30px;">
                 <i class="fa-solid fa-box-open me-2"></i>Study Materials
             </h1>
-            <button class="btn btn-newbutton rounded-pill fs-16 fw-medium" type="button"
-                routerLink="/app/package/create">
+            <button class="btn btn-create fs-16 fw-medium" type="button" routerLink="/app/package/create">
                 <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
                 Add Study Material
             </button>
@@ -16,7 +15,8 @@
         <!-- Table -->
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
             success="ACTIVE" danger="INACTIVE" [totalRecords]="totalRecords"
-            [searchPlaceholder]="'Search Study Material Code, Title...'" (requestData)="loadTableData($event)">
+            [searchPlaceholder]="'Search Study Material Code, Title...'" (requestData)="loadTableData($event)"
+            (rowClick)="onRowSelected($event)">
         </custom-table>
 
     </div>
@@ -64,7 +64,7 @@
                     <div class="col-12" *ngIf="selectedPackage.attachmentUrl">
                         <div class="text-muted small mb-1">Attachment</div>
                         <a (click)="downloadFile(selectedPackage.attachmentUrl)" target="_blank"
-                            class="btn btn-sm btn-outline-primary rounded-pill">
+                            class="btn btn-create fs-16 fw-medium">
                             <i class="fa-solid fa-download me-1"></i>Download
                         </a>
                     </div>
@@ -81,8 +81,7 @@
                             No active enablements.
                         </div>
                         <div *ngIf="!viewEnablementsLoading && viewEnablements.length">
-                            <div *ngFor="let en of viewEnablements"
-                                class="border rounded-3 p-2 mb-2 bg-light small">
+                            <div *ngFor="let en of viewEnablements" class="border rounded-3 p-2 mb-2 bg-light small">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="badge bg-primary">{{ en.scope }}</span>
                                     <span class="badge" [class.bg-success]="en.status === 'ACTIVE'"
@@ -106,13 +105,13 @@
                 </div>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                     data-bs-dismiss="modal">Close</button>
-                <button *appHasRole="['L1']" type="button" class="btn btn-outline-success rounded-pill px-4"
+                <button *appHasRole="['L1']" type="button" class="btn btn-export fs-16 fw-medium me-2"
                     (click)="exportPackage()">
                     <i class="fa-solid fa-file-export me-2"></i>Export
                 </button>
-                <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-edit fs-16 fw-medium" data-bs-dismiss="modal"
                     (click)="router.navigate(['/app/package/create'], { state: { package: selectedPackage } })">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Edit
                 </button>
@@ -137,17 +136,16 @@
                 <!-- Package info -->
                 <div class="p-3 bg-light rounded-3 mb-4">
                     <div class="fw-semibold">{{ selectedPackage.title }}</div>
-                    <div class="text-muted small">{{ selectedPackage.packageCode }} · Class {{ selectedPackage.classNo }} · {{ selectedPackage.subjectName }}</div>
+                    <div class="text-muted small">{{ selectedPackage.packageCode }} · Class {{ selectedPackage.classNo
+                        }} · {{ selectedPackage.subjectName }}</div>
                 </div>
 
                 <!-- Existing Enablements -->
                 <div class="mb-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <h6 class="fw-bold mb-0">Active Enablements</h6>
-                        <button class="btn btn-sm rounded-pill px-3"
-                            [class.btn-primary]="!showAddNew"
-                            [class.btn-outline-secondary]="showAddNew"
-                            (click)="toggleAddNew()">
+                        <button class="btn fs-16 fw-medium" [class.btn-create]="!showAddNew"
+                            [class.btn-close-custom]="showAddNew" (click)="toggleAddNew()">
                             <i class="fa-solid me-1" [class.fa-plus]="!showAddNew" [class.fa-times]="showAddNew"></i>
                             {{ showAddNew ? 'Cancel' : 'Add New' }}
                         </button>
@@ -171,13 +169,11 @@
                         <div class="d-flex align-items-start justify-content-between">
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <span class="badge rounded-pill"
-                                        [class.bg-primary]="e.scope === 'BATCH'"
+                                    <span class="badge rounded-pill" [class.bg-primary]="e.scope === 'BATCH'"
                                         [class.bg-info]="e.scope === 'STUDENT'">
                                         {{ e.scope }}
                                     </span>
-                                    <span class="badge rounded-pill"
-                                        [class.bg-success]="e.status === 'ACTIVE'"
+                                    <span class="badge rounded-pill" [class.bg-success]="e.status === 'ACTIVE'"
                                         [class.bg-secondary]="e.status !== 'ACTIVE'">
                                         {{ e.status }}
                                     </span>
@@ -196,15 +192,17 @@
 
                                 <!-- Dates -->
                                 <div class="d-flex gap-3 text-muted small">
-                                    <span><i class="fa-regular fa-calendar me-1"></i>From: {{ formatDate(e.enableDate) }}</span>
-                                    <span><i class="fa-regular fa-calendar-xmark me-1"></i>To: {{ formatDate(e.disableDate) }}</span>
+                                    <span><i class="fa-regular fa-calendar me-1"></i>From: {{ formatDate(e.enableDate)
+                                        }}</span>
+                                    <span><i class="fa-regular fa-calendar-xmark me-1"></i>To: {{
+                                        formatDate(e.disableDate) }}</span>
                                 </div>
                             </div>
 
                             <!-- Disable button -->
-                            <button *ngIf="e.status === 'ACTIVE'" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-3 flex-shrink-0"
-                                [disabled]="e._disabling"
-                                (click)="disableEnablement(e)">
+                            <button *ngIf="e.status === 'ACTIVE'"
+                                class="btn btn-close-custom fs-16 fw-medium"
+                                [disabled]="e._disabling" (click)="disableEnablement(e)">
                                 <span *ngIf="e._disabling" class="spinner-border spinner-border-sm me-1"></span>
                                 <i *ngIf="!e._disabling" class="fa-solid fa-toggle-off me-1"></i>
                                 Disable
@@ -275,7 +273,8 @@
                                 <div *ngIf="studentBatchCode">
                                     <label class="form-label fw-medium">
                                         Students <span class="text-danger">*</span>
-                                        <span class="badge bg-primary ms-2">{{ selectedStudentIds.length }} selected</span>
+                                        <span class="badge bg-primary ms-2">{{ selectedStudentIds.length }}
+                                            selected</span>
                                     </label>
                                     <div *ngIf="studentsLoading" class="text-center py-3 border rounded-3">
                                         <span class="spinner-border spinner-border-sm text-primary me-2"></span>
@@ -322,7 +321,7 @@
 
                             <!-- Submit -->
                             <div class="col-12 text-end">
-                                <button type="button" class="btn btn-success rounded-pill px-4"
+                                <button type="button" class="btn btn-import fs-16 fw-medium"
                                     [disabled]="enableLoading" (click)="submitEnable()">
                                     <span *ngIf="enableLoading" class="spinner-border spinner-border-sm me-1"></span>
                                     {{ enableLoading ? 'Enabling...' : 'Enable' }}
@@ -336,7 +335,7 @@
             </div>
 
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium"
                     data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -361,9 +360,9 @@
                 <p class="text-muted small mb-0">This action cannot be undone.</p>
             </div>
             <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" data-bs-dismiss="modal"
                     (click)="packageToDelete = null">Cancel</button>
-                <button type="button" class="btn btn-danger rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-create fs-16 fw-medium" data-bs-dismiss="modal"
                     (click)="confirmDelete()">
                     <i class="fa-solid fa-trash-can me-2"></i>Yes, Delete
                 </button>

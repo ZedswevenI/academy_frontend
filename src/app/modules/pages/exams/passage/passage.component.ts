@@ -563,4 +563,16 @@ export class ExamPassageComponent implements OnInit {
     walk(element);
   }
 
+
+  async onRowSelected(row: any) {
+    this.viewData = row;
+    this.showViewModal = true;
+
+    let html = row.passageHtml || '';
+    html = await this.replaceDownloadUrls(html);
+    html = this.normalizeDelimiters(html);
+    this.viewPassageHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+
+    setTimeout(() => this.renderMathInView(), 200);
+  }
 }

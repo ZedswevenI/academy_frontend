@@ -260,8 +260,8 @@
                         </selectbox>
                     </div>
                     <div class="col-md-4 align-content-end mt-2">
-                        <button class="btn submitbutton px-4" [disabled]="filterForm.invalid || loading"
-                            (click)="onProceed()" style="border-radius: 30px;">
+                        <button class="btn btn-create fs-16 fw-medium" [disabled]="filterForm.invalid || loading"
+                            (click)="onProceed()">
                             <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                             {{ loading ? 'Loading...' : 'Apply' }}
                         </button>
@@ -274,7 +274,7 @@
         <div class="mt-3">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
                 success="RESOLVED" primary="OPEN" warning="IN_PROGRESS" danger="URGENT" [totalRecords]="totalRecords"
-                [searchPlaceholder]="'Search Student No, Issue...'" (requestData)="loadTableData($event)">
+                [searchPlaceholder]="'Search Student No, Issue...'" (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)" >
             </custom-table>
         </div>
 
@@ -301,7 +301,7 @@
                                 {{ selectedTicket.priority | titlecase }}
                             </span>
                             <span *ngIf="selectedTicket.reopenCount > 0"
-                                class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-1"
+                                class="badge bg-warning bg-opacity-20 text-white border border-warning border-opacity-25 rounded-pill px-2 py-1"
                                 style="font-size:11px">
                                 <i class="fa-solid fa-rotate-left me-1"></i>
                                 Reopened {{ selectedTicket.reopenCount }}x
@@ -523,7 +523,7 @@
             </div>
 
             <div class="modal-footer border-top px-4 py-3">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium"
                     data-bs-dismiss="modal">Close</button>
             </div>
 
@@ -585,9 +585,9 @@
                 </div>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium"
                     data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success rounded-pill px-4"
+                <button type="button" class="btn btn-create fs-16 fw-medium"
                     [disabled]="assignForm.invalid || assignLoading" (click)="submitAssign()">
                     <span *ngIf="assignLoading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ assignLoading ? 'Assigning...' : 'Assign' }}
@@ -618,9 +618,9 @@
                 </form>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                     data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning rounded-pill px-4 text-white"
+                <button type="button" class="btn btn-create fs-16 fw-medium"
                     [disabled]="priorityForm.invalid || priorityLoading" (click)="submitPriority()">
                     <span *ngIf="priorityLoading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ priorityLoading ? 'Updating...' : 'Update Priority' }}
@@ -661,9 +661,9 @@
                 </form>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium"
                     data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4"
+                <button type="button" class="btn btn-create fs-16 fw-medium"
                     [disabled]="statusForm.invalid || statusLoading" (click)="submitStatus()">
                     <span *ngIf="statusLoading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ statusLoading ? 'Updating...' : 'Update Status' }}

@@ -374,4 +374,11 @@ export class PerformanceComponent implements OnInit {
     const el = document.getElementById(id);
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
+
+
+   onRowSelected(row: any) {
+      this.router.navigate(['/app/performance/student', row.studentId], {
+      state: { batchId: this.selectedBatchId, academicYear: this.selectedYear },
+    });
+  }
 }

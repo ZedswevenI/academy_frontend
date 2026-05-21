@@ -138,11 +138,11 @@
 
             <!-- Actions -->
             <div class="col-12 text-end mt-4">
-                <button type="button" class="btn closebutton px-4 me-2" style="border-radius: 30px;" (click)="cancel()">
+                <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="cancel()">
                     Back
                 </button>
-                <button type="button" class="btn submitbutton px-4" [disabled]="createPtm.invalid || endTimeError"
-                    (click)="addPTM()" style="border-radius: 30px;">
+                <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="createPtm.invalid || endTimeError"
+                    (click)="addPTM()">
                     {{ isEditMode ? 'Update' : 'Submit' }}
                 </button>
             </div>

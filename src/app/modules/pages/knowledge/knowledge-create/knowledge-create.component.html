@@ -138,12 +138,12 @@
             </div>
 
             <div class="col-12 text-end mt-4">
-                <button type="button" class="btn closebutton px-4 me-2"
-                    style="border-radius: 30px;" routerLink="/app/knowledge">
+                <button type="button" class="btn btn-back fs-16 fw-medium me-2"
+                   routerLink="/app/knowledge">
                     Back
                 </button>
-                <button type="submit" class="btn submitbutton px-4"
-                    [disabled]="knowledgeForm.invalid || loading" style="border-radius: 30px;">
+                <button type="submit" class="btn btn-create fs-16 fw-medium"
+                    [disabled]="knowledgeForm.invalid || loading">
                     <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ loading ? (isEditMode ? 'Updating...' : 'Submitting...') : (isEditMode ? 'Update' : 'Submit') }}
                 </button>

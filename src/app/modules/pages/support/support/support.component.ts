@@ -783,4 +783,29 @@ export class SupportComponent implements OnInit {
     const el = document.getElementById(id);
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
+
+  onRowSelected(row: any) {
+    this.commonApi
+      .fetchData(
+        { tenantId: this.tenantId, ticketId: row.ticketId },
+        'institue/support',
+        'view',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.selectedTicket = {
+              ...res.data,
+              requestedAtFormatted: this.formatDate(res.data.requestedAt),
+            };
+            this.openModal('ticketViewModal');
+          }
+        },
+        error: () => {
+          // Fallback — use the row data we already have
+          this.selectedTicket = row;
+          this.openModal('ticketViewModal');
+        },
+      });
+  }
 }

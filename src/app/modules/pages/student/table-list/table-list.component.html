@@ -2,7 +2,7 @@
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
         [success]="'ACTIVE'" [danger]="'INACTIVE'" [showsearch]="false"
         [searchPlaceholder]="'Search StudentName,Batch,...'" [loading]="loading"
-        [totalRecords]="totalRecords"></custom-table>
+        [totalRecords]="totalRecords" (rowClick)="onRowSelected($event)"></custom-table>
 </div>
 
 

@@ -88,6 +88,8 @@ export class ViewTeacherComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Update Date',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (_row: any) => { this.showRelievingModal = true; },
     },
   ];

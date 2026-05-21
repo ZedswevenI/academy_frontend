@@ -3,9 +3,9 @@
 
         <!-- Header -->
         <div class="d-flex align-items-center gap-3 mb-4">
-            <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
-                <i class="fa-solid fa-arrow-left me-1"></i>Back
-            </button>
+            <!-- <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+                <i class="fa-solid fa-arrow-left btn-icon"></i>Back
+            </button> -->
             <div class="flex-grow-1">
                 <h1 class="fw-bold mb-0" style="font-size:22px">
                     <i class="fa-solid fa-chart-bar me-2 text-primary"></i>
@@ -16,11 +16,14 @@
                     {{ formatDate(formData.startDate) }} → {{ formatDate(formData.endDate) }}
                 </div>
             </div>
-            <button class="btn btn-danger rounded-pill px-4" (click)="exportPdf()"
+            <button class="btn btn-import fs-16 fw-medium" (click)="exportPdf()"
                 [disabled]="exporting || !reportRows.length">
                 <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2"></span>
-                <i class="fa-solid fa-file-pdf me-2" *ngIf="!exporting"></i>
+                <i class="fa-solid fa-file-pdf btn-icon" *ngIf="!exporting"></i>
                 Export PDF
+            </button>
+              <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+                <i class="fa-solid fa-arrow-left btn-icon"></i>Back
             </button>
         </div>
 
@@ -37,14 +40,14 @@
 
                     <!-- Staff selection toggle chips -->
                     <div class="d-flex flex-wrap gap-2 mb-2">
-                        <button type="button" class="btn btn-sm rounded-pill"
-                            [class.btn-primary]="!selectedStaff.length"
-                            [class.btn-outline-secondary]="selectedStaff.length" (click)="selectAllStaff()">
+                        <button type="button" class="btn fs-16 fw-medium"
+                            [class.btn-create]="!selectedStaff.length"
+                            [class.btn-late-entry]="selectedStaff.length" (click)="selectAllStaff()">
                             All Staff
                         </button>
-                        <button *ngFor="let s of staffList" type="button" class="btn btn-sm rounded-pill"
-                            [class.btn-dark]="selectedStaff.includes(s.staffId)"
-                            [class.btn-outline-secondary]="!selectedStaff.includes(s.staffId)"
+                        <button *ngFor="let s of staffList" type="button" class="btn fs-16 fw-medium"
+                            [class.btn-edit]="selectedStaff.includes(s.staffId)"
+                            [class.btn-late-entry]="!selectedStaff.includes(s.staffId)"
                             (click)="toggleStaff(s.staffId)">
                             {{ s.staffCode || s.staffName }}
                             <span *ngIf="s.subjectName" class="ms-1 opacity-75" style="font-size:10px">· {{
@@ -60,7 +63,7 @@
 
                 <!-- Apply button -->
                 <div class="col-md-2">
-                    <button class="btn submitbutton w-100 rounded-pill" (click)="fetchReport()" [disabled]="loading">
+                    <button class="btn btn-create fs-16 fw-medium" (click)="fetchReport()" [disabled]="loading">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                         {{ loading ? 'Loading...' : 'Apply' }}
                     </button>

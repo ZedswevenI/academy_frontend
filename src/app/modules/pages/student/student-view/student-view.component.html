@@ -44,14 +44,23 @@
                         Attendance: <strong>{{ attendanceSummary.attendancePercentage }}%</strong>
                     </span>
 
-                    <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
+                    <!-- <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
                         <i class="fa-solid fa-arrow-left"></i> Back to Students
-                    </button>
-                    <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
+                    </button> -->
+                      <!-- <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
                         <i class="fa-solid fa-file-excel"></i> Export Excel
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm" *appHasRole="['L1']" (click)="openEditProfile()">
+                    </button> -->
+                    <!-- <button class="btn btn-outline-primary btn-sm" *appHasRole="['L1']" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen"></i> Edit Profile
+                    </button> -->
+                     <button class="btn btn-back fs-16 fw-medium" routerLink="/app/student">
+                        <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Students
+                    </button>
+                    <button class="btn btn-export fs-16 fw-medium" *appHasRole="['L1']" (click)="exportToExcel()">
+                        <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
+                    </button>
+                    <button class="btn btn-edit fs-16 fw-medium" *appHasRole="['L1']" (click)="openEditProfile()">
+                        <i class="fa-solid fa-pen btn-icon"></i> Edit Profile
                     </button>
                 </div>
 
@@ -437,10 +446,10 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closeEditModal()">
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeEditModal()">
                     Cancel
                 </button>
-                <button class="btn btn-sm btn-primary" (click)="saveProfile()"
+                <button class="btn btn-create fs-16 fw-medium" (click)="saveProfile()"
                     [disabled]="editLoading || editForm.invalid">
                     <span *ngIf="editLoading" class="spinner-border spinner-border-sm me-1"></span>
                     Save

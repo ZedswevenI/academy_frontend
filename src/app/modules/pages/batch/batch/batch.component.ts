@@ -176,8 +176,6 @@ export class BatchComponent implements OnInit {
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Masters' },
       { label: 'Batches' },
     ]);
   }
@@ -1441,4 +1439,12 @@ export class BatchComponent implements OnInit {
   hasRole(roles: string[]): boolean {
     return roles.includes(this.auth.getRole());
   }
+
+  
+  onRowSelected(row: any) {
+    // this.router.navigate(['/app/assetMaster/asset/view', row._id]);
+    const b = row?._raw || row;
+    this.router.navigate(['/app/batch/view', b?.batchId]);
+  }
 }
+        

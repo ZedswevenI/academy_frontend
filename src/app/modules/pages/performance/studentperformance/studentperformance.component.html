@@ -11,9 +11,9 @@
         <div class="bg-white rounded-4 shadow-sm p-4 mb-3">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
+                    <!-- <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
                         <i class="fa-solid fa-arrow-left me-1"></i>Back
-                    </button>
+                    </button> -->
                     <div>
                         <h1 class="fw-bold mb-0" style="font-size:22px;">
                             {{ student?.admissionNo || studentId }}
@@ -21,12 +21,17 @@
                         <div class="text-muted small">Academic Year: {{ academicYear }}</div>
                     </div>
                 </div>
-                <button *ngIf="['L1','L3','L4'].includes(roleLevel)" class="btn btn-outline-success rounded-pill px-3"
-                    [disabled]="syncing" (click)="syncStudent()">
-                    <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
-                    <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
-                    {{ syncing ? 'Syncing...' : 'Sync' }}
-                </button>
+                <div>
+                    <button *ngIf="['L1','L3','L4'].includes(roleLevel)" class="btn btn-shuffle fs-16 fw-medium me-2"
+                        [disabled]="syncing" (click)="syncStudent()">
+                        <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
+                        <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
+                        {{ syncing ? 'Syncing...' : 'Sync' }}
+                    </button>
+                    <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+                        <i class="fa-solid fa-arrow-left btn-icon"></i>Back
+                    </button>
+                </div>
             </div>
 
             <!-- KPI Cards -->
@@ -380,7 +385,7 @@
                     <label class="form-label fw-semibold small mb-2">Add Remark</label>
                     <textarea class="form-control rounded-3 mb-2" rows="3" [(ngModel)]="remarkText"
                         placeholder="Enter your remarks about this student's performance..."></textarea>
-                    <button class="btn submitbutton rounded-pill px-4" [disabled]="remarkSaving || !remarkText.trim()"
+                    <button class="btn btn-create fs-16 fw-medium" [disabled]="remarkSaving || !remarkText.trim()"
                         (click)="addRemark()">
                         <span *ngIf="remarkSaving" class="spinner-border spinner-border-sm me-1"></span>
                         {{ remarkSaving ? 'Saving...' : 'Add Remark' }}

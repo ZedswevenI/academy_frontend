@@ -204,4 +204,9 @@ export class SchoolAttendanceMarkComponent implements OnInit, OnDestroy {
     // AO/L1 — never read only
     return false;
   }
+
+  
+ goBack() {
+    this.router.navigate(['/app/school-attendance']);
+  }
 }

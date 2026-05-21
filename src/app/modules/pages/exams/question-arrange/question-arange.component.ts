@@ -7,6 +7,8 @@ import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { QuestionTransformService } from './transform.service';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { Location } from '@angular/common';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -49,8 +51,15 @@ export class QuestionArrangementComponent implements OnInit {
     private router: Router,
     private sanitizer: DomSanitizer,
     private transformService: QuestionTransformService,
-    private cdr: ChangeDetectorRef
-  ) { }
+    private cdr: ChangeDetectorRef,
+    private breacrumb: BredcrumpService,
+    private location: Location
+  ) {
+    this.breacrumb.set([
+      { label: 'Exams', link: '/app/exams/exams' },
+      { label: 'View' },
+      { label: 'Re-Arrange' },])
+  }
 
 
   ngOnInit(): void {
@@ -690,5 +699,8 @@ export class QuestionArrangementComponent implements OnInit {
     }
   }
 
+  goBack() {
+    this.location.back();
+  }
 
 }

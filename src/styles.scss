@@ -20,15 +20,14 @@
   background-color: var(--btn-bg, #1d90ff) !important;
   border-color: var(--btn-bg, #1d90ff) !important;
   color: var(--btn-text, #ffffff) !important;
-  box-shadow: var(
-    --btn-shadow,
-    0px 8px 16px rgba(0, 102, 255, 0.25)
-  ) !important;
+  box-shadow: var(--btn-shadow,
+      0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 8px;
   white-space: nowrap;
 }
+
 .btn-newbutton:hover {
   background-color: var(--btn-hover-color, #1673cb) !important;
   border-color: var(--btn-hover-color, #1673cb) !important;
@@ -47,10 +46,8 @@
   background-color: var(--btn-bg, #1d90ff) !important;
   border-color: var(--btn-bg, #1d90ff) !important;
   color: var(--btn-text, #ffffff) !important;
-  box-shadow: var(
-    --btn-shadow,
-    0px 8px 16px rgba(0, 102, 255, 0.25)
-  ) !important;
+  box-shadow: var(--btn-shadow,
+      0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
   border-radius: 42px !important;
 }
 
@@ -67,6 +64,7 @@
   color: var(--btn-bg, #1d90ff) !important;
   border: none !important;
 }
+
 .closebutton:hover {
   background-color: transparent !important;
   color: var(--btn-hover-color, #1673cb) !important;
@@ -130,4 +128,181 @@
 
 .cursor-pointer {
   cursor: pointer !important;
+}
+
+
+
+//common button styles
+.btn-icon {
+  font-size: 16px !important;
+  margin-right: 6px;
+}
+
+/* Edit */
+.btn-edit {
+  background-color: #7c3aed !important;
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(124, 58, 237, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+}
+
+.btn-edit:hover {
+  background-color: #6d28d9 !important;
+  border-color: #6d28d9 !important;
+  color: #ffffff !important;
+}
+
+/* Create */
+.btn-create {
+  background-color: #1d90ff !important;
+  border-color: #1d90ff !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(0, 102, 255, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+}
+
+.btn-create:hover {
+  background-color: #1673cb !important;
+  border-color: #1673cb !important;
+  color: #ffffff !important;
+}
+
+/* Import Button */
+.btn-import {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(16, 185, 129, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+}
+
+.btn-import:hover {
+  background-color: #0f9f6e !important;
+  border-color: #0f9f6e !important;
+  color: #ffffff !important;
+}
+
+/* Export Button */
+.btn-export {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(245, 158, 11, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+}
+
+.btn-export:hover {
+  background-color: #d97706 !important;
+  border-color: #d97706 !important;
+  color: #ffffff !important;
+}
+
+/* Close Button */
+.btn-close-custom {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(239, 68, 68, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+}
+
+.btn-close-custom:hover {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Back Button */
+.btn-back {
+  background-color: #6b7280 !important;
+  border-color: #6b7280 !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(107, 114, 128, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+  // rounded-pill
+}
+
+.btn-back:hover {
+  background-color: #4b5563 !important;
+  border-color: #4b5563 !important;
+  color: #ffffff !important;
+}
+
+/* Late Entry Button */
+.btn-late-entry {
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(249, 115, 22, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+}
+
+.btn-late-entry:hover {
+  background-color: #ea580c !important;
+  border-color: #ea580c !important;
+  color: #ffffff !important;
+}
+
+/* Shuffle Button */
+.btn-shuffle {
+  background-color: #06b6d4 !important;
+  border-color: #06b6d4 !important;
+  color: #ffffff !important;
+  // box-shadow: 0px 8px 16px rgba(6, 182, 212, 0.25) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 120px;
+  padding: 10px 18px;
+  // border-radius: 35px !important;
+}
+
+.btn-shuffle:hover {
+  background-color: #0891b2 !important;
+  border-color: #0891b2 !important;
+  color: #ffffff !important;
 }

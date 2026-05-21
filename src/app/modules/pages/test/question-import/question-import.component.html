@@ -41,12 +41,12 @@
 
           <!-- Process Button -->
           <div class="d-flex justify-content-center gap-3 mt-2">
-            <button class="btn btn-outline-secondary btn-lg" routerLink="/app/assignment">
-              <i class="fas fa-times me-2"></i>Cancel
+            <button class="btn btn-back fs-16 fw-medium btn-lg" routerLink="/app/assignment">
+              <i class="fas fa-times btn-icon"></i>Cancel
             </button>
-            <button class="btn btn-success btn-lg" [disabled]="!selectedFile || isProcessing" (click)="processDocx()">
+            <button class="btn btn-import fs-16 fw-medium btn-lg" [disabled]="!selectedFile || isProcessing" (click)="processDocx()">
               <span *ngIf="!isProcessing">
-                <i class="fas fa-cogs me-2"></i>Process Document
+                <i class="fas fa-cogs btn-icon"></i>Process Document
               </span>
               <span *ngIf="isProcessing">
                 <span class="spinner-border spinner-border-sm me-2"></span>

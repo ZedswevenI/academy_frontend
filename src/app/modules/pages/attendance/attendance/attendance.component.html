@@ -79,9 +79,13 @@
                             <i class="fa-solid fa-circle-check me-1"></i>{{ markedCount }} marked
                         </span>
                         <div class="dropdown ms-auto" *ngIf="originalData.length > 0">
-                            <button class="btn btn-sm btn-success dropdown-toggle fw-semibold px-3 py-2" type="button"
+                            <!-- <button class="btn btn-sm btn-success dropdown-toggle fw-semibold px-3 py-2" type="button"
                                 id="exportMenu" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+                            </button> -->
+                            <button class="btn btn-export fs-16 fw-medium" type="button"
+                                id="exportMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="exportMenu">
                                 <li>

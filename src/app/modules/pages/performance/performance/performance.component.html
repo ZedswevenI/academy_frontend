@@ -7,15 +7,15 @@
                 <i class="fa-solid fa-chart-line me-2"></i>Performance
             </h1>
             <div class="d-flex gap-2">
-                <button *ngIf="canSync && selectedBatchId" class="btn btn-outline-success rounded-pill px-3"
+                <button *ngIf="canSync && selectedBatchId" class="btn btn-edit fs-16 fw-medium me-2"
                     [disabled]="syncing" (click)="syncBatch()">
                     <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
-                    <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
+                    <i *ngIf="!syncing" class="fa-solid fa-rotate btn-icon"></i>
                     {{ syncing ? 'Syncing...' : 'Sync Batch' }}
                 </button>
-                <button *ngIf="selectedBatchId" class="btn btn-outline-primary rounded-pill px-3"
+                <button *ngIf="selectedBatchId" class="btn btn-create fs-16 fw-medium"
                     (click)="goToReport()">
-                    <i class="fa-solid fa-chart-bar me-1"></i>Batch Report
+                    <i class="fa-solid fa-chart-bar btn-icon"></i>Batch Report
                 </button>
             </div>
         </div>
@@ -33,7 +33,7 @@
                 </selectbox>
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button class="btn submitbutton px-4 w-100" style="border-radius:30px;"
+                <button class="btn btn-create fs-16 fw-medium" 
                     [disabled]="!selectedBatchId || !selectedYear || loading" (click)="onApply()">
                     <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ loading ? 'Loading...' : 'Apply' }}
@@ -45,7 +45,7 @@
         <div class="mt-2">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
                 [totalRecords]="totalRecords" searchPlaceholder="Search student name or admission no..."
-                (requestData)="loadTableData($event)">
+                (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>
 
@@ -110,8 +110,8 @@
             </div>
 
             <div class="modal-footer border-0 px-4 pb-4 pt-0 gap-2">
-                <button class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn submitbutton rounded-pill px-4"
+                <button class="btn btn-close-custom fs-16 fw-medium me-2" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium"
                     [disabled]="overrideSaving || !overrideForm.subjectId" (click)="saveOverride()">
                     <span *ngIf="overrideSaving" class="spinner-border spinner-border-sm me-1"></span>
                     {{ overrideSaving ? 'Saving...' : 'Save Override' }}

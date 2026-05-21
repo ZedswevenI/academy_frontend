@@ -144,6 +144,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { Router } from '@angular/router';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -240,6 +241,7 @@ export class SentLogsComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private router: Router
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -403,4 +405,10 @@ export class SentLogsComponent implements OnInit {
         },
       });
   }
+
+  onRowSelected(row: any) {
+    this.selectedLog = row;
+    this.showDetailModal = true;
+  }
+
 }

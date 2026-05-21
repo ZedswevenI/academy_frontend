@@ -75,13 +75,12 @@
 
                 <!-- Actions -->
                 <div class="col-12 text-end mt-4">
-                    <button type="button" class="btn closebutton px-4 me-2"
-                        style="border-radius: 30px;" (click)="cancel()">
+                    <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="cancel()">
                         Back
                     </button>
-                    <button type="button" class="btn submitbutton px-4"
+                    <button type="button" class="btn btn-create fs-16 fw-medium"
                         [disabled]="packageForm.invalid || loading || uploading"
-                        (click)="submit()" style="border-radius: 30px;">
+                        (click)="submit()">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
                         {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Submit') }}
                     </button>

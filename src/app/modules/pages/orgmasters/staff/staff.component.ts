@@ -1046,4 +1046,26 @@ export class StaffComponent implements OnInit {
     }
     return null;
   }
+
+  onRowSelected(row: any) {
+    const recId = row?.recId || row?._raw?._id;
+    if (!recId) return;
+    this.showView = true;
+    this.viewRec = null;
+    this.viewRelievingDate = '';
+    this.commonApi
+      .fetchData({ entiId: this.entiId, recId }, this.moduleName, 'staff/view')
+      .subscribe({
+        next: (res: any) => {
+          this.viewRec = res?.data || null;
+          this.viewRelievingDate = this.msToDateInput(
+            this.viewRec?.relievingDate,
+          );
+        },
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Failed to load staff');
+          this.showView = false;
+        },
+      });
+  }
 }

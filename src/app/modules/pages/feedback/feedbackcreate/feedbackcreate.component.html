@@ -203,13 +203,13 @@
                             </div>
                             <!-- Action buttons -->
                             <div class="d-flex gap-2 align-items-center">
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
+                                <button type="button" class="btn btn-export fs-16 fw-medium me-2"
                                     *ngIf="availableFaculties.length" (click)="addAllFaculties()">
                                     <i class="fa-solid fa-users me-1"></i>Add All
                                 </button>
                                 <!-- Add faculty dropdown -->
                                 <div class="position-relative">
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"
+                                    <button type="button" class="btn btn-create fs-16 fw-medium"
                                         (click)="showAddDropdown = !showAddDropdown">
                                         <i class="fa-solid fa-user-plus me-1"></i>Add Faculty
                                         <i class="fa-solid fa-chevron-down ms-1" style="font-size:10px"></i>
@@ -347,10 +347,10 @@
 
             <!-- Actions -->
             <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="button" class="btn closebutton px-4" style="border-radius:30px"
+                <button type="button" class="btn btn-back fs-16 fw-medium me-2"
                     (click)="cancel()">Back</button>
-                <button type="button" class="btn submitbutton px-4" [disabled]="feedbackForm.invalid || saving"
-                    (click)="submit()" style="border-radius:30px">
+                <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="feedbackForm.invalid || saving"
+                    (click)="submit()">
                     <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
                     {{ saving ? 'Saving...' : (isEditMode ? 'Update' : 'Create Form') }}
                 </button>

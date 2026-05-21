@@ -176,4 +176,10 @@ export class TableListComponent {
 
     this.newMessage = '';
   }
+
+
+  onRowSelected(row: any) {
+    const s = row?._raw || row;
+    this.router.navigate(['/app/student/view', s.studentId]);
+  }
 }

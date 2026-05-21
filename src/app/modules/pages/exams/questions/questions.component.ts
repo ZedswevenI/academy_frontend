@@ -388,4 +388,29 @@ export class ExamQuestionsComponent implements OnInit {
   goToImport(): void {
     this.router.navigate(['/app/exams/exams/question-import'], { state: { bank: true } });
   }
+
+  async onRowSelected(row: any) {
+    this.viewData = JSON.parse(JSON.stringify(row));
+    this.showViewModal = true;
+
+    let questionHtml = await this.replaceDownloadUrls(this.viewData.questionHtml || '');
+    questionHtml = this.renderLatexInHtml(questionHtml);
+    this.viewQuestionHtml = this.sanitizer.bypassSecurityTrustHtml(questionHtml);
+
+    if (this.viewData.solutionHtml) {
+      let solutionHtml = await this.replaceDownloadUrls(this.viewData.solutionHtml);
+      solutionHtml = this.renderLatexInHtml(solutionHtml);
+      this.viewSolutionHtml = this.sanitizer.bypassSecurityTrustHtml(solutionHtml);
+    } else {
+      this.viewSolutionHtml = '';
+    }
+
+    if (this.viewData.questionOptions && this.viewData.questionOptions.length > 0) {
+      for (let i = 0; i < this.viewData.questionOptions.length; i++) {
+        let optHtml = await this.replaceDownloadUrls(this.viewData.questionOptions[i].textHtml || '');
+        optHtml = this.renderLatexInHtml(optHtml);
+        this.viewData.questionOptions[i].safeHtml = this.sanitizer.bypassSecurityTrustHtml(optHtml);
+      }
+    }
+  }
 }

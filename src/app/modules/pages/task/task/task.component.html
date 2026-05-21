@@ -7,7 +7,7 @@
           <h1 class="fw-bold mb-0" style="font-size: 30px;">
             <i class="fa-solid fa-list-check me-2"></i> Task
           </h1>
-          <button *appHasRole="['L3','L1']" class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+          <button *appHasRole="['L3','L1']" class="btn btn-create fs-16 fw-medium" type="button"
             routerLink="/app/task/create">
             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
             Add Task</button>
@@ -18,7 +18,7 @@
       <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
         [success]="'Completed'" [danger]="'NOT COMPLETED'" [warn]="'Pending'" [warn1]="'NEED MORE TIME'"
         [primary]="'In Progress'" [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-        (requestData)="loadTableData($event)"></custom-table>
+        (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)"></custom-table>
     </div>
   </div>
 </div>

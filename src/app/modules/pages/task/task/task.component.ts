@@ -16,6 +16,7 @@ export class TaskComponent implements OnInit {
   columnsArray = [{ key: 'taskName', label: 'Task Name', sortable: false }, { key: 'assignedDate', label: 'Assigned Date', sortable: false }, { key: 'dueDate', label: 'Due Date', sortable: false }, { key: 'status', label: 'Status', sortable: false }];
   dataArray: any[] = [];
   totalRecords = 0;
+  isEditMode: boolean = false;
   actions = [
     {
       type: 'icon',
@@ -101,6 +102,13 @@ export class TaskComponent implements OnInit {
 
   editTask(row: any) {
     this.router.navigate(['/app/task/create'], {
+      state: { taskData: row }
+    });
+  }
+
+   onRowSelected(row: any) {
+    this.router.navigate(['/app/task/view'], {
+      queryParams: { taskId: row.taskId },
       state: { taskData: row }
     });
   }

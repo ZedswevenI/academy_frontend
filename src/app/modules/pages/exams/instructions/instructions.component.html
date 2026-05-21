@@ -10,12 +10,12 @@
               <i class="fa-solid fa-clipboard-list me-2"></i>Instructions
             </h1>
             <div class="d-flex">
-              <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium me-2" type="button"
+              <button class="btn btn-back fs-16 fw-medium me-2" type="button"
                 (click)="toggleFilters()">
                 <i class="fa-solid fa-filter"></i>
                 {{ showFilters ? 'Hide Filters' : 'Filters' }}
               </button>
-              <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+              <button class="btn btn-create fs-16 fw-medium" type="button"
                 (click)="openCreateForm()">
                 <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
                 Add Instruction
@@ -41,10 +41,10 @@
                 </div>
 
                 <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
-                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+                  <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="clearFilters()">
                     Clear
                   </button>
-                  <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">
+                  <button type="button" class="btn btn-create fs-16 fw-medium" (click)="refresh()">
                     Search
                   </button>
                 </div>
@@ -56,7 +56,7 @@
 
       <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
         [success]="'active'" [primary]="'inactive'" [totalRecords]="totalRecords" [loading]="loading"
-        (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search instructions...'">
+        (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search instructions...'" (rowClick)="onRowSelected($event)">
       </custom-table>
     </div>
 
@@ -67,8 +67,8 @@
           <i class="fa-solid fa-clipboard-list me-2"></i>
           {{ isEditMode ? 'Edit Instruction' : 'Create Instruction' }}
         </h4>
-        <button class="btn btn-outline-secondary btn-sm" (click)="closeForm()">
-          <i class="fa-solid fa-arrow-left me-1"></i> Back
+        <button class="btn btn-back fs-16 fw-medium" (click)="closeForm()">
+          <i class="fa-solid fa-arrow-left btn-icon"></i> Back
         </button>
       </div>
 
@@ -102,10 +102,10 @@
         </div>
 
         <div class="text-end mt-4">
-          <button type="button" class="btn btn-outline-secondary me-2" (click)="closeForm()">
+          <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeForm()">
             Cancel
           </button>
-          <button type="button" class="btn btn-primary"
+          <button type="button" class="btn btn-create fs-16 fw-medium"
             [disabled]="instructionForm.invalid"
             (click)="submitInstruction()">
             {{ isEditMode ? 'Update' : 'Create' }}
@@ -136,7 +136,7 @@
           <div class="instruction-view-content" [innerHTML]="viewContentHtml"></div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" (click)="closeViewModal()">Close</button>
+          <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeViewModal()">Close</button>
         </div>
       </div>
     </div>

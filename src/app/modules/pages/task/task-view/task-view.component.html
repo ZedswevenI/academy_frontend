@@ -7,6 +7,7 @@
                     <h1 class="fw-bold mb-0" style="font-size: 30px">
                         <i class="fa-solid fa-list-check me-2"></i>Task View
                     </h1>
+                    <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/task">Back</button>
                 </div>
             </div>
         </div>
@@ -72,21 +73,21 @@
                     </div>
                 </div>
                 <div class="col-12 text-end mt-3">
-                    <button class="btn closebutton px-4" style="border-radius: 30px" routerLink="/app/task">
+                    <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/task">
                         Back
                     </button>
                     <button *ngIf="taskData?.status === 'Pending' || taskData?.status === 'PENDING'"
-                        class="btn btn-warning px-4 me-2" style="border-radius: 30px" (click)="markInProgress()">
+                        class="btn btn-import fs-16 fw-medium me-2" (click)="markInProgress()">
                         Mark In Progress
                     </button>
                     <button *ngIf="
               taskData?.status === 'IN_PROGRESS' ||
               taskData?.status === 'In Progress'
-            " class="btn btn-warning px-4 me-2" style="border-radius: 30px" (click)="needTime()">
+            " class="btn btn-shuffle fs-16 fw-medium" (click)="needTime()">
                         Need More Time
                     </button>
-                    <button *ngIf="taskData?.status !== 'COMPLETED'" class="btn submitbutton px-4"
-                        style="border-radius: 30px" (click)="onAct()">
+                    <button *ngIf="taskData?.status !== 'COMPLETED'" class="btn btn-create fs-16 fw-medium" 
+                    (click)="onAct()">
                         Update Status
                     </button>
                 </div>
@@ -156,8 +157,8 @@
         </div>
 
         <div class="text-end mt-4">
-            <button class="btn closebutton me-2" (click)="onClose()">Back</button>
-            <button class="btn submitbutton" (click)="onConfirm()">Update Status</button>
+            <button class="btn btn-back fs-16 fw-medium me-2" (click)="onClose()">Back</button>
+            <button class="btn btn-create fs-16 fw-medium" (click)="onConfirm()">Update Status</button>
         </div>
     </div>
 </div>

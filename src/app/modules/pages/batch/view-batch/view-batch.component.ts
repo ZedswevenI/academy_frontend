@@ -133,8 +133,6 @@ export class ViewBatchComponent implements OnInit {
   ngOnInit(): void {
     this.batchId = safeTrim(this.route.snapshot.paramMap.get('batchId'));
     this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Masters' },
       { label: 'Batches', link: '/app/batch' },
       { label: 'View' },
     ]);
@@ -2176,5 +2174,16 @@ export class ViewBatchComponent implements OnInit {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     XLSX.writeFile(wb, 'sample_student_import.xlsx');
+  }
+
+  viewStudent(s: any){
+    const stu = s?._raw || s;
+    this.router.navigate(['/app/student/view', stu.studentId]);
+  }
+
+   viewTeacher(staffId: any) {
+    this.router.navigate(['/app/teacher/view'], {
+      queryParams: { staffId: staffId },
+    });
   }
 }

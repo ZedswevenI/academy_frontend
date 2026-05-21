@@ -15,6 +15,7 @@ export class CustomTableComponent implements OnDestroy {
   @Input() showfilter: boolean = false;
   @Input() pageSizeOptions = [5, 10, 20, 50];
   @Input() storageKey: string = '';
+  @Output() rowClick = new EventEmitter<any>();
 
   private get _storageKey(): string {
     return this.storageKey || `tbl_ps_${window.location.pathname}`;
@@ -461,7 +462,10 @@ export class CustomTableComponent implements OnDestroy {
     return {};
   }
 
-  
+  onRowClicked(row: any) {
+    this.rowClick.emit(row);
+  }
+
 }
 
 

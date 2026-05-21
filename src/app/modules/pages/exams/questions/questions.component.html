@@ -8,16 +8,16 @@
             <i class="fa-solid fa-circle-question me-2"></i>Questions
           </h1>
           <div class="d-flex">
-            <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium me-2" type="button"
+            <button class="btn btn-back fs-16 fw-medium me-2" type="button"
               (click)="toggleFilters()">
               <i class="fa-solid fa-filter"></i>
               {{ showFilters ? 'Hide Filters' : 'Filters' }}
             </button>
-            <button class="btn btn-outline-primary rounded-pill fs-16 fw-medium me-2" type="button"
+            <button class="btn btn-import fs-16 fw-medium me-2" type="button"
               (click)="goToImport()">
               <i class="fa-solid fa-file-import me-1"></i> Import
             </button>
-            <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button"
+            <button class="btn btn-create fs-16 fw-medium" type="button"
               (click)="goToCreate()">
               <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
               Add Question
@@ -62,11 +62,11 @@
                 </selectbox>
               </div>
 
-              <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+              <div class="col-12 col-md-2 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-1" (click)="clearFilters()">
                   Clear
                 </button>
-                <button type="button" class="btn btn-sm btn-primary" (click)="refresh()">
+                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="refresh()">
                   Search
                 </button>
               </div>
@@ -78,7 +78,7 @@
 
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
       [success]="'active'" [primary]="'inactive'" [totalRecords]="totalRecords" [loading]="loading"
-      (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search questions...'">
+      (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search questions...'" (rowClick)="onRowSelected($event)" >
     </custom-table>
 
   </div>
