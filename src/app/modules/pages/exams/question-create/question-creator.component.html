@@ -423,7 +423,7 @@
                 </div>
               </div>
 
-              <button type="button" class="btn btn-outline-primary btn-sm" (click)="addOption()">
+              <button type="button" class="btn btn-shuffle fs-16 fw-medium" (click)="addOption()">
                 <i class="fas fa-plus"></i> Add Option
               </button>
             </div>
@@ -481,7 +481,8 @@
                   <div class="card-body">
                     <div class="row align-items-start">
                       <div class="col-md-5">
-                        <label class="form-label small text-muted">Item {{ i + 1 }} ({{ getMatrixLeftKey(i) }}) - Left</label>
+                        <label class="form-label small text-muted">Item {{ i + 1 }} ({{ getMatrixLeftKey(i) }}) -
+                          Left</label>
                         <div class="editor-container border rounded">
                           <div class="editor-toolbar bg-light border-bottom p-2">
                             <div class="btn-toolbar" role="toolbar">
@@ -538,7 +539,8 @@
                         </small>
                       </div>
                       <div class="col-md-5">
-                        <label class="form-label small text-muted">Item {{ i + 1 }} ({{ getMatrixRightKey(i) }}) - Right</label>
+                        <label class="form-label small text-muted">Item {{ i + 1 }} ({{ getMatrixRightKey(i) }}) -
+                          Right</label>
                         <div class="editor-container border rounded">
                           <div class="editor-toolbar bg-light border-bottom p-2">
                             <div class="btn-toolbar" role="toolbar">
@@ -614,7 +616,8 @@
                           {{ rKey }}
                         </button>
                       </div>
-                      <div class="mt-2 text-muted x-small" *ngIf="matrixLeft.at(i).get('selectedMatches')?.value?.length">
+                      <div class="mt-2 text-muted x-small"
+                        *ngIf="matrixLeft.at(i).get('selectedMatches')?.value?.length">
                         Matches: {{ matrixLeft.at(i).get('selectedMatches')?.value.join(', ') }}
                       </div>
                     </div>
@@ -623,7 +626,7 @@
                 </div>
               </div>
 
-              <button type="button" class="btn btn-outline-primary btn-sm" (click)="addMatrixPair()">
+              <button type="button" class="btn btn-create fs-16 fw-medium" (click)="addMatrixPair()">
                 <i class="fas fa-plus"></i> Add Pair
               </button>
             </div>
@@ -656,14 +659,14 @@
 
             <!-- Action Buttons -->
             <div class="d-flex justify-content-between mt-4">
-              <button type="button" class="btn btn-outline-secondary" (click)="resetForm()">
-                <i class="fas fa-redo"></i> Reset
+              <button type="button" class="btn btn-edit fs-16 fw-medium" (click)="resetForm()">
+                <i class="fas fa-redo btn-icon"></i> Reset
               </button>
               <div>
-                <button type="button" class="btn btn-outline-secondary me-2" routerLink="/app/exams/exams">
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" routerLink="/app/exams/exams">
                   Cancel
                 </button>
-                <button type="submit" class="btn btn-primary" [disabled]="!questionForm.valid">
+                <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="!questionForm.valid">
                   <i class="fas fa-save"></i> Save Question
                 </button>
                 <!-- <button type="submit" class="btn btn-primary">

@@ -11,7 +11,6 @@
 
 
       <div class="col-md-6 text-end">
-        <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
         <div class="btn-group me-2">
           <button type="button" class="btn btn-edit fs-16 fw-medium dropdown-toggle" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -30,9 +29,10 @@
             </li>
           </ul>
         </div>
-        <button  *ngIf="!authService.assignmentRole()" class="btn btn-create fs-16 fw-medium" (click)="addNewQuestion()">
+        <button  *ngIf="!authService.assignmentRole()" class="btn btn-create fs-16 fw-medium me-2" (click)="addNewQuestion()">
           + Add Question
         </button>
+        <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
       </div>
     </div>
   </div>

@@ -10,13 +10,13 @@
           </p>
         </div>
         <div class="col-md-6 text-end">
-          <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
           <button class="btn btn-edit fs-16 fw-medium me-2" (click)="resetOrder()" title="Reset to original order">
             <i class="bi bi-arrow-counterclockwise btn-icon"></i> Reset
           </button>
-          <button class="btn btn-create fs-16 fw-medium" (click)="saveNewOrder()" title="Save the new order">
+          <button class="btn btn-create fs-16 fw-medium me-2" (click)="saveNewOrder()" title="Save the new order">
             <i class="bi bi-check-circle btn-icon"></i> Save Order
           </button>
+          <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
         </div>
       </div>
     </div>

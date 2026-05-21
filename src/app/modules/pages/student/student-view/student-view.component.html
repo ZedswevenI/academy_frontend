@@ -47,20 +47,20 @@
                     <!-- <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
                         <i class="fa-solid fa-arrow-left"></i> Back to Students
                     </button> -->
-                      <!-- <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
+                    <!-- <button *appHasRole="['L1']" class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
                         <i class="fa-solid fa-file-excel"></i> Export Excel
                     </button> -->
                     <!-- <button class="btn btn-outline-primary btn-sm" *appHasRole="['L1']" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen"></i> Edit Profile
                     </button> -->
-                     <button class="btn btn-back fs-16 fw-medium" routerLink="/app/student">
-                        <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Students
-                    </button>
                     <button class="btn btn-export fs-16 fw-medium" *appHasRole="['L1']" (click)="exportToExcel()">
                         <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
                     </button>
                     <button class="btn btn-edit fs-16 fw-medium" *appHasRole="['L1']" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen btn-icon"></i> Edit Profile
+                    </button>
+                    <button class="btn btn-back fs-16 fw-medium" routerLink="/app/student">
+                        <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Students
                     </button>
                 </div>
 
