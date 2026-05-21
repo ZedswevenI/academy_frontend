@@ -9,12 +9,12 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openImport()">
+                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openImport()">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Import Programs</span>
                 </button>
 
-                <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="add()">
+                <button class="btn btn-create fs-16 fw-medium" (click)="add()">
                     <i class="fa-solid fa-plus"></i>
                     <span>Add Program</span>
                 </button>
@@ -24,7 +24,7 @@
         <div class="card-body pt-0">
             <custom-table [autoFitChars]="true" [columns]="columns" [data]="programData" [actions]="actions"
                 [showfilter]="false" [loading]="loading" [totalRecords]="totalRecords"
-                (requestData)="fetchTableData($event)">
+                (requestData)="fetchTableData($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>
     </div>
@@ -148,7 +148,7 @@
                     </div>
                 </div>
                 <div class="d-flex justify-content-end gap-2 mt-4">
-                    <button type="button" class="btn btn-outline-secondary" (click)="closeView()">Close</button>
+                    <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeView()">Close</button>
                 </div>
             </div>
         </div>
@@ -247,8 +247,8 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" [disabled]="programForm.invalid">
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()">Cancel</button>
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="programForm.invalid">
                             {{ formMode === 'create' ? 'Save Program' : 'Update Program' }}
                         </button>
                     </div>
@@ -289,9 +289,9 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" class="btn btn-outline-secondary"
+                    <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                         (click)="closeSubjectsModal()">Cancel</button>
-                    <button type="button" class="btn btn-primary" (click)="confirmAddSubjects()"
+                    <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmAddSubjects()"
                         [disabled]="!modalSelectedSubjects.length || addingSubjects">
                         <i class="fa-solid fa-plus me-1"></i>
                         Add Selected
@@ -314,11 +314,11 @@
 
             <div class="app-modal-body" [formGroup]="examMapForm">
                 <div class="d-flex gap-2 justify-content-end mb-2">
-                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addExamMappingRow()">
+                    <button type="button" class="btn btn-import fs-16 fw-medium me-2" (click)="addExamMappingRow()">
                         <i class="fa-solid fa-plus me-1"></i>
                         Add Row
                     </button>
-                    <button type="button" class="btn btn-sm btn-primary" (click)="saveExamMappings()"
+                    <button type="button" class="btn btn-create fs-16 fw-medium" (click)="saveExamMappings()"
                         [disabled]="examMappingsFA.length === 0 || examMapForm.invalid || savingExamMappings">
                         <i class="fa-solid fa-floppy-disk me-1"></i>
                         Save
@@ -626,11 +626,11 @@
 
             <!-- Footer buttons -->
             <div class="d-flex justify-content-end gap-2 mt-3">
-                <button type="button" class="btn btn-outline-secondary" (click)="closeImport()">
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeImport()">
                     Cancel
                 </button>
 
-                <button type="button" class="btn btn-primary" (click)="confirmImport()"
+                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmImport()"
                     [disabled]="!importPreviewRows.length || importHasInvalidRows">
                     <i class="fa-solid fa-file-import me-1"></i>
                     Import
@@ -682,9 +682,9 @@
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-3">
-                <button type="button" class="btn btn-outline-secondary"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                     (click)="closeRemoveSubjectsModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" (click)="confirmRemoveSubjects()"
+                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmRemoveSubjects()"
                     [disabled]="!selectedSubjectsToRemove.size || removingSubjects">
                     <i class="fa-solid fa-circle-minus me-1"></i>
                     Remove Selected

@@ -98,36 +98,48 @@ export class ProgramComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-eye',
       tooltip: 'View',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.openView(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.edit(row),
     },
     {
       type: 'icon',
       icon: 'fa-solid fa-layer-group',
       tooltip: 'Add Subjects',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.openSubjectsModal(row),
     },
     {
       type: 'icon',
       icon: 'fa-solid fa-circle-minus',
       tooltip: 'Remove Subjects',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.openRemoveSubjectsModal(row),
     },
     {
       type: 'icon',
       icon: 'fa-solid fa-diagram-project',
       tooltip: 'Exam Mapping',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.openExamMappingModal(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
+      color: '#6B7280',
+      hoverColor: '#DC2626',
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -141,8 +153,7 @@ export class ProgramComponent implements OnInit {
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Masters' },
+      { label: 'Org-Masters' },
       { label: 'Programs' },
     ]);
   }
@@ -429,8 +440,8 @@ export class ProgramComponent implements OnInit {
 
     const subs = Array.isArray(p.subjects)
       ? p.subjects
-          .map((x: any) => (typeof x === 'string' ? x : x?._id))
-          .filter(Boolean)
+        .map((x: any) => (typeof x === 'string' ? x : x?._id))
+        .filter(Boolean)
       : [];
 
     this.programForm.patchValue({
@@ -573,8 +584,8 @@ export class ProgramComponent implements OnInit {
           const v = res?.data || {};
           const subs = Array.isArray(v.subjects)
             ? v.subjects
-                .map((x: any) => (typeof x === 'string' ? x : x?._id))
-                .filter(Boolean)
+              .map((x: any) => (typeof x === 'string' ? x : x?._id))
+              .filter(Boolean)
             : [];
 
           this.existingSubjectIds = new Set(subs.map((x: any) => String(x)));
@@ -739,10 +750,10 @@ export class ProgramComponent implements OnInit {
   private makeExamMappingRow(v?: any) {
     const existingIds = Array.isArray(v?.subjectIds)
       ? v.subjectIds
-          .map((x: any) =>
-            typeof x === 'object' ? String(x?._id || x) : String(x),
-          )
-          .filter(Boolean)
+        .map((x: any) =>
+          typeof x === 'object' ? String(x?._id || x) : String(x),
+        )
+        .filter(Boolean)
       : [];
     return this.fb.group({
       categoryId: [String(v?.categoryId || ''), Validators.required],
@@ -1217,7 +1228,7 @@ export class ProgramComponent implements OnInit {
           this.removingSubjects = false;
           this.alert.success(
             `${res?.data?.subjectsRemoved || ''} subject(s) removed. ` +
-              `${res?.data?.remainingExamMappings ?? ''} exam mapping(s) remain.`,
+            `${res?.data?.remainingExamMappings ?? ''} exam mapping(s) remain.`,
           );
           this.closeRemoveSubjectsModal();
           this.refreshTable();
@@ -1263,5 +1274,28 @@ export class ProgramComponent implements OnInit {
   getRowSubjectIds(i: number): string[] {
     const g = this.examMappingsFA.at(i) as FormGroup;
     return (g?.get('subjectIds')?.value as string[]) || [];
+  }
+
+  onRowSelected(row: any) {
+    const recId = row?.recId || row?._raw?._id;
+    if (!recId) return;
+
+    this.viewLoading = true;
+
+    this.commonApi
+      .fetchData(
+        { entiId: this.entiId, recId },
+        this.moduleName,
+        'program/view',
+      )
+      .pipe(finalize(() => (this.viewLoading = false)))
+      .subscribe({
+        next: (res: any) => {
+          this.viewData = res?.data || null;
+          this.showView = true;
+        },
+        error: (err: any) =>
+          this.alert.error(err?.error?.message || 'Failed to load program'),
+      });
   }
 }

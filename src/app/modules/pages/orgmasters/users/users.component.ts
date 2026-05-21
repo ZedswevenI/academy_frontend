@@ -683,38 +683,50 @@ export class UsersComponent implements OnInit {
   importing = false;
 
   columns = [
-    { key: 'name',      label: 'User Name', sortable: true  },
-    { key: 'email',     label: 'Email',     sortable: true  },
-    { key: 'phone',     label: 'Phone',     sortable: false },
-    { key: 'empCode',   label: 'Emp Code',  sortable: false },
-    { key: 'roleLabel', label: 'Role',      sortable: false },
-    { key: 'status',    label: 'Status',    sortable: false },
+    { key: 'name', label: 'User Name', sortable: true },
+    { key: 'email', label: 'Email', sortable: true },
+    { key: 'phone', label: 'Phone', sortable: false },
+    { key: 'empCode', label: 'Emp Code', sortable: false },
+    { key: 'roleLabel', label: 'Role', sortable: false },
+    { key: 'status', label: 'Status', sortable: false },
   ];
 
   actions = [
     {
-      type: 'icon', icon: 'fa-solid fa-circle-info', tooltip: 'Role permissions',
+      type: 'icon',
+      icon: 'fa-solid fa-circle-info',
+      tooltip: 'Role permissions',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.openRoleInfo(row.roleLevel as RoleKey),
     },
     {
-      type: 'icon', icon: 'fa-regular fa-pen-to-square', tooltip: 'Edit',
+      type: 'icon',
+      icon: 'fa-regular fa-pen-to-square',
+      tooltip: 'Edit',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
       callback: (row: any) => this.edit(row),
     },
     {
-      type: 'icon', icon: 'fa-regular fa-trash-can', tooltip: 'Delete', hoverColor: '#D42B2B',
+      type: 'icon', 
+      icon: 'fa-regular fa-trash-can', 
+      tooltip: 'Delete', 
+      color: '#6B7280',
+      hoverColor: '#D42B2B',
       callback: (row: any) => this.openDelete(row),
     },
   ];
 
   // FIX: labels now match Access Level excel exactly (L1–L7)
   roleOptions = [
-    { value: 'L1', label: 'L1 - Super Admin'  },
-    { value: 'L2', label: 'L2 - Admissions'   },
-    { value: 'L3', label: 'L3 - AO'           },
-    { value: 'L4', label: 'L4 - Teacher'      },
-    { value: 'L5', label: 'L5 - Exam'         },
-    { value: 'L6', label: 'L6 - Account'      },
-    { value: 'L7', label: 'L7 - EDP'          },
+    { value: 'L1', label: 'L1 - Super Admin' },
+    { value: 'L2', label: 'L2 - Admissions' },
+    { value: 'L3', label: 'L3 - AO' },
+    { value: 'L4', label: 'L4 - Teacher' },
+    { value: 'L5', label: 'L5 - Exam' },
+    { value: 'L6', label: 'L6 - Account' },
+    { value: 'L7', label: 'L7 - EDP' },
   ];
 
   // FIX: permissions rewritten to match Access Level excel exactly
@@ -828,19 +840,18 @@ export class UsersComponent implements OnInit {
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Users & Roles' },
+      { label: 'Org-Master' },
       { label: 'Users' },
     ]);
   }
 
   ngOnInit(): void {
     this.userForm = this.fb.group({
-      name:     ['', Validators.required],
-      email:    ['', [Validators.required, Validators.email]],
-      phone:    ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
-      role:     [null, Validators.required],
-      empCode:  [''],
+      name: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      role: [null, Validators.required],
+      empCode: [''],
       password: [''],
       centerId: [null, Validators.required],
       isActive: [true],
@@ -871,9 +882,9 @@ export class UsersComponent implements OnInit {
         }
         this.centers = res?.data || [];
         this.centerOptions = this.centers.map((c: any) => ({
-          label:      c.centerName,
-          value:      String(c.centerId || c._id || '').trim(),
-          _id:        c._id,
+          label: c.centerName,
+          value: String(c.centerId || c._id || '').trim(),
+          _id: c._id,
           centerName: c.centerName,
         }));
       },
@@ -897,7 +908,7 @@ export class UsersComponent implements OnInit {
       sortParam = params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
 
     const query: any = { page: params.page, limit: params.pageSize };
-    if (sortParam)     query.sort   = sortParam;
+    if (sortParam) query.sort = sortParam;
     if (params.search) query.search = params.search;
     const queryString = Object.keys(query)
       .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`).join('&');
@@ -907,7 +918,7 @@ export class UsersComponent implements OnInit {
         const rows = Array.isArray(res?.data) ? res.data : [];
         this.users = rows.map((u: any) => ({
           ...u,
-          empCode:   u.empCode  || '-',
+          empCode: u.empCode || '-',
           roleLabel: u.roleLabel || this.roleOptions.find((r) => r.value === u.roleLevel)?.label || u.roleLevel || '-',
         }));
         this.totalRecords = this.toNum(res?.count);
@@ -935,14 +946,14 @@ export class UsersComponent implements OnInit {
   }
 
   edit(row: any): void {
-    this.formMode  = 'edit';
+    this.formMode = 'edit';
     this.editingId = row?._id || null;
     this.userForm.patchValue({
-      name:     row?.name      || '',
-      email:    row?.email     || '',
-      phone:    row?.phone     || '',
-      role:     row?.roleLevel || null,
-      centerId: row?.centerId  || null,
+      name: row?.name || '',
+      email: row?.email || '',
+      phone: row?.phone || '',
+      role: row?.roleLevel || null,
+      centerId: row?.centerId || null,
       isActive: (row?.status || '') === 'Active',
     });
     this.userForm.get('empCode')?.setValue(row?.empCode || '', { emitEvent: false });
@@ -952,7 +963,7 @@ export class UsersComponent implements OnInit {
   }
 
   cancel(): void {
-    this.showForm  = false;
+    this.showForm = false;
     this.editingId = null;
   }
 
@@ -962,18 +973,18 @@ export class UsersComponent implements OnInit {
       this.alertService.error('Please fill all required fields');
       return;
     }
-    const raw      = this.userForm.getRawValue() || {};
+    const raw = this.userForm.getRawValue() || {};
     const centerId = String(raw.centerId || '').trim();
     const selectedCenter = this.centerOptions.find((c) => String(c.value) === centerId);
 
     const payload: any = {
-      entiId:     this.entiId,
-      name:       String(raw.name  || '').trim(),
-      email:      String(raw.email || '').trim().toLowerCase(),
-      phone:      String(raw.phone || '').trim(),
-      roleLevel:  String(raw.role  || 'L4').trim(),
-      status:     raw.isActive ? 'Active' : 'Inactive',
-      centerId:   centerId || null,
+      entiId: this.entiId,
+      name: String(raw.name || '').trim(),
+      email: String(raw.email || '').trim().toLowerCase(),
+      phone: String(raw.phone || '').trim(),
+      roleLevel: String(raw.role || 'L4').trim(),
+      status: raw.isActive ? 'Active' : 'Inactive',
+      centerId: centerId || null,
       centerName: selectedCenter?.centerName || null,
     };
 
@@ -1013,7 +1024,7 @@ export class UsersComponent implements OnInit {
       this.alertService.error('You cannot delete your own account.');
       return;
     }
-    this.deleteTarget  = row;
+    this.deleteTarget = row;
     this.deleteMessage = `Are you sure you want to delete user "${row?.name || ''}"?`;
     this.deleteModalVisible = true;
   }
@@ -1034,25 +1045,25 @@ export class UsersComponent implements OnInit {
 
   openRoleInfo(role: RoleKey | null): void {
     if (!role || !this.roleMetaMap[role]) return;
-    this.roleInfoKey     = role;
+    this.roleInfoKey = role;
     this.roleInfoVisible = true;
   }
 
   closeRoleInfo(): void {
     this.roleInfoVisible = false;
-    this.roleInfoKey     = null;
+    this.roleInfoKey = null;
   }
 
-  openImport()  { this.showImport = true;  this.resetImport(); }
+  openImport() { this.showImport = true; this.resetImport(); }
   closeImport() { this.showImport = false; this.importing = false; this.resetImport(); this.cdr.detectChanges(); }
 
   private resetImport() {
-    this.importFileName       = '';
-    this.importPreviewRows    = [];
+    this.importFileName = '';
+    this.importPreviewRows = [];
     this.importHasInvalidRows = false;
-    this.importInvalidCount   = 0;
-    this.importMode           = 'upsert';
-    this.importing            = false;
+    this.importInvalidCount = 0;
+    this.importMode = 'upsert';
+    this.importing = false;
   }
 
   onExcelSelected(ev: any) {
@@ -1067,8 +1078,8 @@ export class UsersComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = (e: any) => {
       try {
-        const wb  = XLSX.read(e.target.result as ArrayBuffer, { type: 'array' });
-        const ws  = wb.Sheets[wb.SheetNames[0]];
+        const wb = XLSX.read(e.target.result as ArrayBuffer, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
         const rawRows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' }) as any[];
         this.importPreviewRows = rawRows.map((r, idx) => this.mapExcelRow(r, idx + 2));
         this.computeImportValidation();
@@ -1090,16 +1101,16 @@ export class UsersComponent implements OnInit {
       return '';
     };
 
-    const name       = get('Name', 'Full Name', 'User Name', 'name');
-    const email      = get('Email', 'email').toLowerCase();
-    const phone      = get('Phone', 'phone');
-    const roleLevel  = (get('Role', 'Role Level', 'roleLevel') || '').toUpperCase();
+    const name = get('Name', 'Full Name', 'User Name', 'name');
+    const email = get('Email', 'email').toLowerCase();
+    const phone = get('Phone', 'phone');
+    const roleLevel = (get('Role', 'Role Level', 'roleLevel') || '').toUpperCase();
     const centerName = get('Center', 'Center Name', 'centerName');
     const centerCode = get('Center Code', 'CenterCode', 'centerCode');
-    const empCode    = get('EmpCode', 'Employee Code', 'empCode');
+    const empCode = get('EmpCode', 'Employee Code', 'empCode');
 
     const errors: string[] = [];
-    if (!name)  errors.push('Name required');
+    if (!name) errors.push('Name required');
     if (!email) errors.push('Email required');
     if (email && !this.isEmail(email)) errors.push('Invalid email');
     if (!phone) errors.push('Phone required');
@@ -1119,29 +1130,29 @@ export class UsersComponent implements OnInit {
     if (!centerHit) errors.push(`Center not found: "${centerName || centerCode}"`);
 
     return {
-      _rowNo:     rowNo,
-      _valid:     errors.length === 0,
-      _errors:    errors,
+      _rowNo: rowNo,
+      _valid: errors.length === 0,
+      _errors: errors,
       name, email, phone,
-      roleLevel:  VALID_ROLE_LEVELS.includes(roleLevel as RoleKey) ? roleLevel : '',
-      empCode:    empCode || null,
-      centerId:   centerHit ? String(centerHit.centerId || centerHit._id || '') : null,
+      roleLevel: VALID_ROLE_LEVELS.includes(roleLevel as RoleKey) ? roleLevel : '',
+      empCode: empCode || null,
+      centerId: centerHit ? String(centerHit.centerId || centerHit._id || '') : null,
       centerName: centerHit?.centerName || centerName || null,
-      status:     'Active',
+      status: 'Active',
     };
   }
 
   private computeImportValidation() {
-    const invalid         = (this.importPreviewRows || []).filter((x) => !x._valid || x._importOk === false);
-    this.importInvalidCount   = invalid.length;
+    const invalid = (this.importPreviewRows || []).filter((x) => !x._valid || x._importOk === false);
+    this.importInvalidCount = invalid.length;
     this.importHasInvalidRows = invalid.length > 0;
   }
 
   confirmImport() {
     if (!this.importPreviewRows.length) { this.alertService.error('Please upload an Excel file first'); return; }
-    if (this.importHasInvalidRows)      { this.alertService.error('Fix invalid rows before importing'); return; }
+    if (this.importHasInvalidRows) { this.alertService.error('Fix invalid rows before importing'); return; }
 
-    const rows    = this.importPreviewRows.map((r: any) => ({
+    const rows = this.importPreviewRows.map((r: any) => ({
       _rowNo: r._rowNo, name: r.name, email: r.email, phone: r.phone,
       roleLevel: r.roleLevel, empCode: r.empCode || null,
       centerId: r.centerId, centerName: r.centerName, status: 'Active',
@@ -1152,13 +1163,13 @@ export class UsersComponent implements OnInit {
     this.api.fetchData(payload, 'ims/user', 'import').subscribe({
       next: (res: any) => {
         const { summary, results, skippedRows } = this.pickImportPayload(res);
-        if (results.length)     this.applyImportResultsToPreview(results);
+        if (results.length) this.applyImportResultsToPreview(results);
         if (skippedRows.length) this.applySkippedRowsToPreview(skippedRows);
 
         const inserted = Number(summary?.inserted || 0);
-        const updated  = Number(summary?.updated  || 0);
-        const skipped  = Number(summary?.skipped  || skippedRows.length || 0);
-        const failed   = Number(summary?.failed   || 0) || results.filter((x: any) => !(x?.ok === true || x?.status === true)).length;
+        const updated = Number(summary?.updated || 0);
+        const skipped = Number(summary?.skipped || skippedRows.length || 0);
+        const failed = Number(summary?.failed || 0) || results.filter((x: any) => !(x?.ok === true || x?.status === true)).length;
 
         this.importing = false;
         const msg = `Import done. Inserted: ${inserted}, Updated: ${updated}, Skipped: ${skipped}, Failed: ${failed}`;
@@ -1170,7 +1181,7 @@ export class UsersComponent implements OnInit {
       error: (err: any) => {
         const resp = err?.error || err;
         const { results, skippedRows } = this.pickImportPayload(resp);
-        if (results.length)     this.applyImportResultsToPreview(results);
+        if (results.length) this.applyImportResultsToPreview(results);
         if (skippedRows.length) this.applySkippedRowsToPreview(skippedRows);
         this.importing = false;
         this.alertService.error(resp?.message || 'Import failed');
@@ -1219,20 +1230,20 @@ export class UsersComponent implements OnInit {
   }
 
   private pickImportPayload(resp: any) {
-    const root        = resp || {};
-    const data        = root?.data && typeof root.data === 'object' ? root.data : null;
-    const summary     = data?.summary     || root?.summary     || {};
-    const resultsRaw  = data?.results     || root?.results     || [];
-    const invalidRaw  = data?.invalidRows || root?.invalidRows || [];
-    const skippedRaw  = data?.skippedRows || root?.skippedRows || [];
+    const root = resp || {};
+    const data = root?.data && typeof root.data === 'object' ? root.data : null;
+    const summary = data?.summary || root?.summary || {};
+    const resultsRaw = data?.results || root?.results || [];
+    const invalidRaw = data?.invalidRows || root?.invalidRows || [];
+    const skippedRaw = data?.skippedRows || root?.skippedRows || [];
 
-    const results     = Array.isArray(resultsRaw) ? resultsRaw : [];
-    const invalidRows = Array.isArray(invalidRaw)  ? invalidRaw : [];
-    const skippedRows = Array.isArray(skippedRaw)  ? skippedRaw : [];
+    const results = Array.isArray(resultsRaw) ? resultsRaw : [];
+    const invalidRows = Array.isArray(invalidRaw) ? invalidRaw : [];
+    const skippedRows = Array.isArray(skippedRaw) ? skippedRaw : [];
 
     const normalizedFromInvalid = invalidRows.map((x: any) => ({
-      rowNo:   Number(x?.rowNo ?? (x?.index != null ? x.index + 2 : 0)),
-      ok:      false,
+      rowNo: Number(x?.rowNo ?? (x?.index != null ? x.index + 2 : 0)),
+      ok: false,
       message: x?.message || x?.error || (Array.isArray(x?.errors) ? x.errors.join(', ') : 'Invalid'),
     }));
 
@@ -1248,10 +1259,10 @@ export class UsersComponent implements OnInit {
     this.importPreviewRows = (this.importPreviewRows || []).map((r: any) => {
       const rr = map.get(Number(r._rowNo));
       if (!rr) return r;
-      const ok  = rr?.ok === true || rr?.status === true;
+      const ok = rr?.ok === true || rr?.status === true;
       const msg = rr?.message || rr?.error || rr?.reason || (Array.isArray(rr?.errors) ? rr.errors.join(', ') : '') || '';
       return ok
-        ? { ...r, _importOk: true,  _importError: '' }
+        ? { ...r, _importOk: true, _importError: '' }
         : { ...r, _importOk: false, _importError: msg || 'Import failed', _valid: false, _errors: [msg || 'Import failed'] };
     });
     this.computeImportValidation();

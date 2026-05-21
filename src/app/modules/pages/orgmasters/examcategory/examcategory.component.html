@@ -7,13 +7,13 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" type="button"
+                <button class="btn btn-import fs-16 fw-medium me-2" type="button"
                     (click)="openImport()" [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Import Categories</span>
                 </button>
 
-                <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" type="button" (click)="add()"
+                <button class="btn btn-create fs-16 fw-medium" type="button" (click)="add()"
                     [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-plus"></i>
                     <span>Add Category</span>
@@ -67,10 +67,10 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving">
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()" [disabled]="saving">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="form.invalid || saving">
                             <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
                                 aria-hidden="true"></span>
                             {{ formMode === 'create' ? 'Save' : 'Update' }}
@@ -199,9 +199,9 @@
                 <form [formGroup]="subcategoryForm" (ngSubmit)="saveSubcategories()">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="fw-semibold small mb-0">Sub-Categories</label>
-                        <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                        <button type="button" class="btn btn-import fs-16 fw-medium"
                             (click)="addSubcategoryRow()">
-                            <i class="fa-solid fa-plus"></i> Add Row
+                            <i class="fa-solid fa-plus btn-icon"></i> Add Row
                         </button>
                     </div>
 
@@ -237,11 +237,11 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="cancelSubcategory()"
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancelSubcategory()"
                             [disabled]="savingSubcategories">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-primary" [disabled]="savingSubcategories">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="savingSubcategories">
                             <span *ngIf="savingSubcategories" class="spinner-border spinner-border-sm me-2"
                                 role="status" aria-hidden="true"></span>
                             Save Sub-Categories

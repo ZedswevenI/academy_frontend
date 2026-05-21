@@ -133,7 +133,7 @@ export class ActivityComponent implements OnInit {
           next: (res: any) => {
             if (res.status && res.data) {
               this.batch_options = (res.data.batches || []).map((b: any) => ({
-                label: b.batchName,
+                label: `${b.batchName} (${b.batchCode})`,
                 value: b.batchCode
               }));
             }
@@ -143,7 +143,7 @@ export class ActivityComponent implements OnInit {
         });
       } else {
         this.commonApi.fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full').subscribe({
-          next: (res: any) => { this.batch_options = (res?.data || []).map((b: any) => ({ label: b.batchName, value: b.batchCode })); resolve(); },
+          next: (res: any) => { this.batch_options = (res?.data || []).map((b: any) => ({ label: `${b.batchName} (${b.batchCode})`, value: b.batchCode })); resolve(); },
           error: () => resolve()
         });
       }

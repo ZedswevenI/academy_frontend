@@ -8,17 +8,17 @@
                 </p>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="openImport()">
-                    <i class="fa-solid fa-file-import"></i>
+                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openImport()">
+                    <i class="fa-solid fa-file-import btn-icon"></i>
                     <span>Import Users</span>
                 </button>
-                <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                <button class="btn btn-export fs-16 fw-medium me-2"
                     (click)="syncUsersWithStaff()" [disabled]="syncing">
-                    <i class="fa-solid fa-rotate" [class.fa-spin]="syncing"></i>
+                    <i class="fa-solid fa-rotate btn-icon" [class.fa-spin]="syncing"></i>
                     <span>{{ syncing ? 'Syncing...' : 'Sync with Staff' }}</span>
                 </button>
-                <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" (click)="add()">
-                    <i class="fa-solid fa-plus"></i>
+                <button class="btn btn-create fs-16 fw-medium" (click)="add()">
+                    <i class="fa-solid fa-plus btn-icon"></i>
                     <span>Add User</span>
                 </button>
             </div>
@@ -106,8 +106,8 @@
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancel()">Cancel</button>
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="userForm.invalid">
                             {{ formMode === 'create' ? 'Save User' : 'Update User' }}
                         </button>
                     </div>
