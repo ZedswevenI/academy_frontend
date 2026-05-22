@@ -1,17 +1,13 @@
 <div class="container-fluid p-4 bg-light min-vh-100">
-
     <!-- Loading -->
     <div *ngIf="loading" class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
         <p class="mt-2 text-muted">Loading student details...</p>
     </div>
-
     <ng-container *ngIf="!loading && student">
-
         <!-- ── Header ─────────────────────────────────────────────────────────── -->
         <div class="card shadow-sm mb-4 p-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-
                 <div class="d-flex align-items-center gap-3">
                     <div class="avatar-wrap me-3">
                         <img *ngIf="photoUrl" [src]="photoUrl" class="rounded-circle object-fit-cover border"
@@ -32,18 +28,15 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <span class="badge px-3 py-1" [ngClass]="{
             'bg-success-subtle text-success':     student.basic?.status === 'ACTIVE',
             'bg-secondary-subtle text-secondary': student.basic?.status === 'INACTIVE',
             'bg-danger-subtle text-danger':       student.basic?.status === 'DROPOUT'
           }">{{ student.basic?.status }}</span>
-
                     <span class="text-muted" *ngIf="attendanceSummary">
                         Attendance: <strong>{{ attendanceSummary.attendancePercentage }}%</strong>
                     </span>
-
                     <!-- <button class="btn btn-outline-secondary btn-sm" routerLink="/app/student">
                         <i class="fa-solid fa-arrow-left"></i> Back to Students
                     </button> -->
@@ -63,21 +56,23 @@
                         <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Students
                     </button>
                 </div>
-
             </div>
         </div>
-
         <div class="row g-4">
-
             <!-- ── Left Column ───────────────────────────────────────────────────── -->
             <div class="col-lg-4">
-
                 <!-- Profile card -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h6 class="fw-semibold mb-3">Profile</h6>
+                        <!-- <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.mobile || '—' }}</p>
+                        <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email || '—' }}</p> -->
                         <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.mobile || '—' }}</p>
+                        <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.phone1 || '—' }}</p>
+                        <p><i class="fa-solid fa-phone me-2"></i>{{ student.basic?.phone2 || '—' }}</p>
                         <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email || '—' }}</p>
+                        <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email1 || '—' }}</p>
+                        <p><i class="fa-solid fa-envelope me-2"></i>{{ student.basic?.email2 || '—' }}</p>
                         <hr>
                         <p class="mb-1"><strong>Parent Name</strong></p>
                         <p>{{ student.basic?.parentName || '—' }}</p>
@@ -93,7 +88,6 @@
                         </ng-container>
                     </div>
                 </div>
-
                 <!-- Quick Stats -->
                 <div class="card shadow-sm">
                     <div class="card-body">
@@ -130,14 +124,11 @@
                         </div> -->
                     </div>
                 </div>
-
             </div>
-
             <!-- ── Right Column ──────────────────────────────────────────────────── -->
             <div class="col-lg-8">
                 <div class="card shadow-sm">
                     <div class="card-body">
-
                         <!-- Tabs -->
                         <ul class="nav nav-tabs mb-3">
                             <li class="nav-item">
@@ -180,7 +171,6 @@
                                 </button>
                             </li>
                         </ul>
-
                         <!-- ── PROGRAM TAB ──────────────────────────────────────────────── -->
                         <div *ngIf="activeViewTab === 'program'">
                             <div class="row">
@@ -217,10 +207,8 @@
                                 </div>
                             </div>
                         </div>
-
                         <!-- ── ATTENDANCE TAB ──────────────────────────────────────────── -->
                         <div *ngIf="activeViewTab === 'attendance'">
-
                             <div *ngIf="attendanceSummary" class="row g-2 mb-3">
                                 <div class="col-6 col-md-3">
                                     <div class="border rounded p-2 text-center">
@@ -248,7 +236,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div *ngIf="!dataArray.length" class="text-center text-muted py-4">
                                 <i class="fa-solid fa-calendar-check fa-2x mb-2 d-block"></i>
                                 No attendance records found.
@@ -258,10 +245,8 @@
                                 [warn]="'LATE'" [searchPlaceholder]="'Search attendance...'">
                             </custom-table>
                         </div>
-
                         <!-- ── ASSIGNMENTS TAB ─────────────────────────────────────────── -->
                         <div *ngIf="activeViewTab === 'assignments'">
-
                             <!-- Topic-wise summary cards -->
                             <div *ngIf="topicSummaryKeys.length" class="row g-2 mb-3">
                                 <div class="col-12 col-sm-6 col-md-4" *ngFor="let topic of topicSummaryKeys">
@@ -284,7 +269,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div *ngIf="!dataArray1.length" class="text-center text-muted py-4">
                                 <i class="fa-solid fa-file-pen fa-2x mb-2 d-block"></i>
                                 No assignment results found.
@@ -293,7 +277,6 @@
                                 [data]="dataArray1" [showaction]="false" [searchPlaceholder]="'Search results...'">
                             </custom-table>
                         </div>
-
                         <!-- ── LATE ENTRIES TAB ────────────────────────────────────────── -->
                         <div *ngIf="activeViewTab === 'late'">
                             <div *ngIf="lateLoading" class="text-center py-4">
@@ -308,10 +291,8 @@
                                 [searchPlaceholder]="'Search late entries...'">
                             </custom-table>
                         </div>
-
                         <!-- ── REMARKS TAB ─────────────────────────────────────────────── -->
                         <div *ngIf="activeViewTab === 'remarks'">
-
                             <div class="d-flex justify-content-end mb-3">
                                 <button class="btn btn-sm btn-outline-primary rounded-pill"
                                     (click)="toggleRemarkForm()">
@@ -319,7 +300,6 @@
                                     {{ showRemarkForm ? 'Cancel' : 'Add Remark' }}
                                 </button>
                             </div>
-
                             <div *ngIf="showRemarkForm" class="border rounded-3 p-3 mb-3 bg-light">
                                 <div class="row g-2">
                                     <div class="col-md-3">
@@ -359,7 +339,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div *ngIf="!dataArray4.length" class="text-center text-muted py-4">
                                 <i class="fa-solid fa-comment fa-2x mb-2 d-block"></i>
                                 No remarks recorded.
@@ -368,14 +347,11 @@
                                 [data]="dataArray4" [showaction]="false" [searchPlaceholder]="'Search remarks...'">
                             </custom-table>
                         </div>
-
                     </div>
                 </div>
             </div>
-
         </div>
     </ng-container>
-
     <!-- Student not found -->
     <div *ngIf="!loading && !student" class="text-center py-5 text-muted">
         <i class="fa-solid fa-user-slash fa-3x mb-3 d-block"></i>
@@ -384,7 +360,6 @@
             Back to Students
         </button>
     </div>
-
 </div>
 
 <!-- ── EDIT PROFILE MODAL ──────────────────────────────────────────────────── -->
@@ -407,12 +382,30 @@
                         <input class="form-control form-control-sm" formControlName="name" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-medium">Phone</label>
+                        <label class="form-label small fw-medium">Father Phone Number</label>
                         <input class="form-control form-control-sm" formControlName="phone" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-medium">Email</label>
+                        <label class="form-label small fw-medium">Mother Phone Number</label>
+                        <input class="form-control form-control-sm" formControlName="phone1" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Alternate Phone Number</label>
+                        <input class="form-control form-control-sm" formControlName="phone2" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Father Email</label>
                         <input class="form-control form-control-sm" formControlName="email" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Mother Email</label>
+                        <input class="form-control form-control-sm" formControlName="email1" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-medium">Alternate Email</label>
+                        <input class="form-control form-control-sm" formControlName="email2" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-medium">Gender</label>
