@@ -465,7 +465,7 @@
         <div class="app-modal-header d-flex justify-content-between align-items-center">
             <div>
                 <h6 class="mb-0 fw-semibold">
-                    <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Reevaluate Result
+                    <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Re-evaluate Result
                 </h6>
                 <span class="text-muted small" *ngIf="reevaluateRow">
                     {{ reevaluateRow.examName }}
@@ -480,15 +480,15 @@
                     placeholder="Enter a reason for reevaluation" [disabled]="reevaluating"></textarea>
             </div>
             <div class="d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-outline-secondary" (click)="cancelReevaluate()"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancelReevaluate()"
                     [disabled]="reevaluating">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-primary" (click)="confirmReevaluate()"
+                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmReevaluate()"
                     [disabled]="reevaluating || !reevaluateNote.trim()">
                     <span *ngIf="reevaluating" class="spinner-border spinner-border-sm me-2" role="status"></span>
                     <i class="fa-solid fa-arrows-rotate me-1" *ngIf="!reevaluating"></i>
-                    Reevaluate
+                    Re-evaluate
                 </button>
             </div>
         </div>

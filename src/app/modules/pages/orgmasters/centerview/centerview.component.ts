@@ -73,9 +73,8 @@ export class CenterviewComponent implements OnInit {
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
-      { label: 'Control Panel' },
-      { label: 'Masters' },
-      { label: 'Centers' },
+      { label: 'Org-Masters' },
+      { label: 'Center', link: '/app/org-master/center' },
       { label: 'View' },
     ]);
   }

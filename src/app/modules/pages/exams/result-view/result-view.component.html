@@ -11,7 +11,7 @@
                     <span *ngIf="examData?.examName"> | {{ examData.examName }} ({{ examData.examCode }})</span>
                 </small>
             </div>
-            <button class="btn btn-outline-secondary rounded-pill fs-16 fw-medium"
+            <button class="btn btn-back fs-16 fw-medium"
                 (click)="router.navigate(['/app/exams/exams/result-batch'], { state: { exam: examData } })">
                 <i class="fa-solid fa-arrow-left me-1"></i> Back
             </button>

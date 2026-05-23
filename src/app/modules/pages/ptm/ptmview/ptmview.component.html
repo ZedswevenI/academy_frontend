@@ -394,7 +394,7 @@
                         Staff Remarks
                         <span class="text-muted fw-normal small ms-1">(per subject teacher)</span>
                     </label>
-                    <button class="btn btn-sm btn-outline-primary rounded-pill" (click)="addRemarkRow()">
+                    <button class="btn btn-shuffle fs-16 fw-medium" (click)="addRemarkRow()">
                         <i class="fa-solid fa-plus me-1"></i>Add Row
                     </button>
                 </div>
@@ -413,7 +413,7 @@
                         class="border rounded-3 p-3 position-relative">
                         <!-- Remove button -->
                         <button *ngIf="staffRemarksArray.length > 1"
-                            class="btn btn-sm btn-outline-danger rounded-circle position-absolute"
+                            class="btn btn-close-custom fs-16 fw-medium"
                             style="top:8px;right:8px;width:28px;height:28px;padding:0;line-height:1"
                             (click)="removeRemarkRow(i)" title="Remove this row">
                             <i class="fa-solid fa-xmark" style="font-size:11px"></i>
@@ -465,11 +465,11 @@
                 </div>
             </div>
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium" data-bs-dismiss="modal"
                     title="Discard changes and close" data-bs-toggle="tooltip">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-success rounded-pill px-4" [disabled]="staffSaving || !staffStatus"
+                <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="staffSaving || !staffStatus"
                     (click)="saveStaffFeedback()" [title]="
             !staffStatus
               ? 'Please select a status first'
@@ -636,7 +636,7 @@
             </div>
 
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium" data-bs-dismiss="modal"
                     title="Close questions view" data-bs-toggle="tooltip">
                     Close
                 </button>
@@ -762,7 +762,7 @@
             </div>
 
             <div class="modal-footer border-top">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium" data-bs-dismiss="modal"
                     (click)="resetImport()" title="Cancel and discard file" data-bs-toggle="tooltip">
                     Cancel
                 </button>

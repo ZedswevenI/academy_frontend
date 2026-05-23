@@ -72,7 +72,7 @@ export class CenterComponent implements OnInit {
     this.entiId = localStorage.getItem('tenantId')
     this.breadcrumb.set([
       { label: 'Org-Masters' },
-      { label: 'Centers' }
+      { label: 'Center' }
     ]);
   }
 

@@ -7,7 +7,7 @@
           <h4 class="mb-1 fw-bold"><i class="fas fa-file-import me-2"></i>Import Historical Marks</h4>
           <small class="text-muted">Create an exam and import student marks from Excel</small>
         </div>
-        <button class="btn btn-outline-secondary btn-sm" (click)="goBack()">
+        <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
           <i class="fas fa-arrow-left me-1"></i> Back
         </button>
       </div>
@@ -78,7 +78,7 @@
           <h6 class="fw-bold text-primary mb-0">
             <i class="fas fa-layer-group me-2"></i>Sections <span class="text-danger">*</span>
           </h6>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="addSection()">
+          <button type="button" class="btn btn-shuffle fs-16 fw-medium" (click)="addSection()">
             <i class="fas fa-plus me-1"></i> Add Section
           </button>
         </div>
@@ -136,7 +136,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h6 class="fw-bold text-primary mb-0"><i class="fas fa-file-excel me-2"></i>Student Marks <span
               class="text-danger">*</span></h6>
-          <button class="btn btn-sm btn-outline-success" (click)="downloadSample()">
+          <button class="btn btn-late-entry fs-16 fw-medium" (click)="downloadSample()">
             <i class="fas fa-download me-1"></i> Sample Excel
           </button>
         </div>
@@ -155,11 +155,11 @@
             <div class="fw-medium">{{ excelFile!.name }}</div>
             <small class="text-muted">{{ (excelFile!.size / 1024).toFixed(1) }} KB</small>
           </div>
-          <button class="btn btn-sm btn-outline-primary" (click)="parseExcel()" [disabled]="excelParsing">
+          <button class="btn btn-create fs-16 fw-medium" (click)="parseExcel()" [disabled]="excelParsing">
             <span *ngIf="excelParsing" class="spinner-border spinner-border-sm me-1"></span>
             {{ excelParsing ? 'Validating...' : 'Validate' }}
           </button>
-          <button class="btn btn-sm btn-outline-danger" (click)="removeExcel()">Remove</button>
+          <button class="btn btn-close-custom fs-16 fw-medium" (click)="removeExcel()">Remove</button>
         </div>
 
         <!-- Parsed preview -->
@@ -190,8 +190,8 @@
 
         <!-- ── Actions ── -->
         <div class="d-flex justify-content-end gap-3 mt-4">
-          <button class="btn btn-outline-secondary px-4" (click)="goBack()">Cancel</button>
-          <button class="btn btn-primary px-4" (click)="submit()" [disabled]="submitting || !canSubmit()">
+          <button class="btn btn-close-custom fs-16 fw-medium" (click)="goBack()">Cancel</button>
+          <button class="btn btn-create fs-16 fw-medium" (click)="submit()" [disabled]="submitting || !canSubmit()">
             <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
             <i *ngIf="!submitting" class="fas fa-cloud-upload-alt me-2"></i>
             {{ submitting ? 'Importing...' : 'Import Marks' }}
