@@ -15,27 +15,17 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 export class ViewTeacherComponent implements OnInit {
   private moduleName = 'teacher';
   entiId: any;
-
   staffId = '';
   loading = false;
   saving = false;
-
-  // ── Resolved data ────────────────────────────────────────────────────────
   basicInfo: any = null;
   stats: any = null;
   showAssignmentTab = true;
-
-
-  // Subject codes that should NOT show the Assignment tab
   private readonly excludedSubjectCodes = new Set([
     'ENGLISH', 'TAMIL', 'SOCIAL SCIENCE', 'PET', 'YOGA', 'ART', 'COMPUTER SCIENCE', 'HINDI'
   ]);
-
-  // ── Relieving popup ──────────────────────────────────────────────────────
   showRelievingModal = false;
   newRelievingDate = '';
-
-  // ── Batches tab ──────────────────────────────────────────────────────────
   columnsBatches = [
     { key: 'batchName', label: 'Batch Name', sortable: false },
     { key: 'batchCode', label: 'Batch Code', sortable: false },
@@ -44,8 +34,6 @@ export class ViewTeacherComponent implements OnInit {
     { key: 'subjects', label: 'Subjects', sortable: false },
   ];
   dataBatches: any[] = [];
-
-  // ── Assignments tab ──────────────────────────────────────────────────────
   columnsAssignments = [
     { key: 'testNo', label: 'Test No', sortable: false },
     { key: 'batchId', label: 'Batch', sortable: false },
@@ -54,8 +42,6 @@ export class ViewTeacherComponent implements OnInit {
     { key: 'enabledOn', label: 'Enabled On', sortable: false },
   ];
   dataAssignments: any[] = [];
-
-  // ── Study Materials tab ──────────────────────────────────────────────────
   columnsMaterials = [
     { key: 'title', label: 'Title', sortable: false },
     { key: 'classNo', label: 'Class', sortable: false },
@@ -63,8 +49,6 @@ export class ViewTeacherComponent implements OnInit {
     { key: 'uploadedOn', label: 'Uploaded On', sortable: false },
   ];
   dataMaterials: any[] = [];
-
-  // ── Feedback Given tab ───────────────────────────────────────────────────
   columnsFeedback = [
     { key: 'admissionNo', label: 'Admission No', sortable: false },
     { key: 'academicYear', label: 'Academic Year', sortable: false },
@@ -72,8 +56,6 @@ export class ViewTeacherComponent implements OnInit {
     { key: 'givenOn', label: 'Given On', sortable: false },
   ];
   dataFeedback: any[] = [];
-
-  // ── Relieving Date tab ───────────────────────────────────────────────────
   columnsRelieving = [
     { key: 'name', label: 'Staff Name', sortable: false },
     { key: 'code', label: 'Staff Code', sortable: false },
@@ -82,7 +64,6 @@ export class ViewTeacherComponent implements OnInit {
     { key: 'relieve', label: 'Relieving Date', sortable: false },
   ];
   dataRelieving: any[] = [];
-
   actionsRelieving = [
     {
       type: 'icon',
@@ -117,12 +98,9 @@ export class ViewTeacherComponent implements OnInit {
     });
   }
 
-  // ── Fetch ────────────────────────────────────────────────────────────────
   loadStaffDetails() {
     const payload = { entiId: this.entiId, staffId: this.staffId };
-
     this.loading = true;
-
     this.commonApi
       .fetchData(payload, this.moduleName, 'view')
       .pipe(finalize(() => (this.loading = false)))
@@ -141,19 +119,14 @@ export class ViewTeacherComponent implements OnInit {
   private mapResponse(data: any) {
     this.basicInfo = data.basicInfo || null;
     this.stats = data.stats || null;
-
-    // Determine whether to show the Assignments tab
-    // Show it only if the teacher has at least one subject NOT in the excluded list
     const subjects: any[] = data.basicInfo?.subject || [];
     if (subjects.length) {
       this.showAssignmentTab = subjects.some(
         (s: any) => !this.excludedSubjectCodes.has(String(s.subjectName || '').trim())
       );
     } else {
-      this.showAssignmentTab = true; // No subjects info → show by default
+      this.showAssignmentTab = true;
     }
-
-    // Batches
     this.dataBatches = (data.assignedBatches || []).map((b: any) => ({
       batchName: b.batchName || '—',
       batchCode: b.batchCode || '—',
@@ -161,8 +134,6 @@ export class ViewTeacherComponent implements OnInit {
       centerName: b.centerName || '—',
       subjects: (b.subjectsAssigned || []).join(', ') || '—',
     }));
-
-    // Assignments
     this.dataAssignments = (data.enabledAssignments || []).map((a: any) => ({
       testNo: a.testNo || '—',
       batchId: a.batchId || '—',
@@ -174,8 +145,6 @@ export class ViewTeacherComponent implements OnInit {
         })
         : '—',
     }));
-
-    // Study Materials
     this.dataMaterials = (data.uploadedMaterials || []).map((m: any) => ({
       title: m.title || '—',
       classNo: m.classNo ? `Class ${m.classNo}` : '—',
@@ -186,8 +155,6 @@ export class ViewTeacherComponent implements OnInit {
         })
         : '—',
     }));
-
-    // Student Feedback
     this.dataFeedback = (data.studentFeedbacks || []).map((f: any) => ({
       admissionNo: f.admissionNo || '—',
       academicYear: f.academicYear || '—',
@@ -198,8 +165,6 @@ export class ViewTeacherComponent implements OnInit {
         })
         : '—',
     }));
-
-    // Relieving row
     const b = this.basicInfo;
     if (b) {
       this.dataRelieving = [{
@@ -223,7 +188,6 @@ export class ViewTeacherComponent implements OnInit {
     }
   }
 
-  // ── Avatar initials ───────────────────────────────────────────────────────
   get avatarText(): string {
     if (!this.basicInfo?.staffName) return '??';
     return this.basicInfo.staffName
@@ -233,7 +197,6 @@ export class ViewTeacherComponent implements OnInit {
       .join('');
   }
 
-  // ── Date formatter ────────────────────────────────────────────────────────
   fmt(val: any): string {
     if (!val) return '—';
     return new Date(val).toLocaleDateString('en-GB', {
@@ -241,19 +204,15 @@ export class ViewTeacherComponent implements OnInit {
     });
   }
 
-  // ── Relieving update ──────────────────────────────────────────────────────
   updateRelievingDate() {
     if (!this.newRelievingDate || this.saving) return;
-
     const payload = {
       entiId: this.entiId,
       userId: localStorage.getItem('userId') || '',
       staffId: this.staffId,
       relievingDate: new Date(this.newRelievingDate).getTime(),
     };
-
     this.saving = true;
-
     this.commonApi
       .fetchData(payload, this.moduleName, 'update')
       .pipe(finalize(() => (this.saving = false)))
@@ -271,19 +230,15 @@ export class ViewTeacherComponent implements OnInit {
       });
   }
 
-  // ── Retire ────────────────────────────────────────────────────────────────
   retireEmployee() {
     if (this.saving) return;
-
     const payload = {
       entiId: this.entiId,
       userId: localStorage.getItem('userId') || '',
       staffId: this.staffId,
       status: 'Inactive',
     };
-
     this.saving = true;
-
     this.commonApi
       .fetchData(payload, this.moduleName, 'update')
       .pipe(finalize(() => (this.saving = false)))
@@ -306,17 +261,13 @@ export class ViewTeacherComponent implements OnInit {
     this.showRelievingModal = false;
   }
 
-  // ── Excel Export ─────────────────────────────────────────────────────────
   exportToExcel() {
     if (!this.basicInfo) {
       this.alert.error('No data to export');
       return;
     }
-
     const wb = XLSX.utils.book_new();
     const b = this.basicInfo;
-
-    // Sheet 1: Profile
     const profileRows = [
       { Field: 'Staff Name', Value: b.staffName || '—' },
       { Field: 'Staff Code', Value: b.staffCode || '—' },
@@ -330,14 +281,12 @@ export class ViewTeacherComponent implements OnInit {
       { Field: 'Payroll', Value: b.payroll || '—' },
       { Field: 'Faculty Type', Value: b.facultyType || '—' },
       { Field: 'Subject', Value: b.subject || '—' },
-      { Field: 'Week Off', Value: b.weekOff || '—' },
+      { Field: 'Week Off', Value: b.weekoff[0]|| '—' },
       { Field: 'Address', Value: b.address || '—' },
       { Field: 'Joining Date', Value: this.fmt(b.joiningDate) },
       { Field: 'Relieving Date', Value: this.fmt(b.relievingDate) || 'Not Set' },
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(profileRows), 'Profile');
-
-    // Sheet 2: Batches
     if (this.dataBatches.length) {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
         this.dataBatches.map(r => ({
@@ -349,8 +298,6 @@ export class ViewTeacherComponent implements OnInit {
         }))
       ), 'Batches');
     }
-
-    // Sheet 3: Assignments
     if (this.dataAssignments.length) {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
         this.dataAssignments.map(r => ({
@@ -362,8 +309,6 @@ export class ViewTeacherComponent implements OnInit {
         }))
       ), 'Assignments');
     }
-
-    // Sheet 4: Study Materials
     if (this.dataMaterials.length) {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
         this.dataMaterials.map(r => ({
@@ -374,8 +319,6 @@ export class ViewTeacherComponent implements OnInit {
         }))
       ), 'Study Materials');
     }
-
-    // Sheet 5: Feedback
     if (this.dataFeedback.length) {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
         this.dataFeedback.map(r => ({
@@ -386,8 +329,6 @@ export class ViewTeacherComponent implements OnInit {
         }))
       ), 'Feedback');
     }
-
-    // Sheet 6: Relieving
     if (this.dataRelieving.length) {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
         this.dataRelieving.map(r => ({
@@ -399,7 +340,6 @@ export class ViewTeacherComponent implements OnInit {
         }))
       ), 'Relieving');
     }
-
     const fileName = `Teacher_${b.staffCode || b.staffName || 'Export'}.xlsx`;
     XLSX.writeFile(wb, fileName);
   }
