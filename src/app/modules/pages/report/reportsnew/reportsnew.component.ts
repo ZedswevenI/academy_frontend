@@ -19,7 +19,7 @@ interface ReportItem {
 })
 export class ReportsnewComponent implements OnInit {
   tenantId = '';
-  activeTab: 'batch' | 'student' | 'teacher' = 'batch';
+  activeTab: 'batch' | 'student' | 'teacher' | 'assignments' = 'batch';
   batchReports: ReportItem[] = [
     {
       key: 'batch-info',
@@ -70,6 +70,19 @@ export class ReportsnewComponent implements OnInit {
       description: 'Assignment completion status per batch',
     },
     {
+      key: 'batch-cgpa',
+      label: 'CGPA Report',
+      icon: 'fa-solid fa-star-half-stroke',
+      description: 'Batch-wise and student-wise CGPA breakdown',
+    },
+    {
+      key: 'batch-slash',
+      label: 'Slash Report',
+      icon: 'fa-solid fa-chart-pie',
+      description:
+        'Available, completed and pending assignments per batch per subject',
+    },
+    {
       key: 'batch-exams',
       label: 'Exams',
       icon: 'fa-solid fa-graduation-cap',
@@ -116,6 +129,12 @@ export class ReportsnewComponent implements OnInit {
       description: 'Batches assigned to a teacher',
     },
     {
+      key: 'teacher-load',
+      label: 'Faculty Load',
+      icon: 'fa-solid fa-weight-hanging',
+      description: 'Scheduled hours per staff across batches and subjects',
+    },
+    {
       key: 'teacher-tasks',
       label: 'Tasks',
       icon: 'fa-solid fa-list-check',
@@ -156,6 +175,27 @@ export class ReportsnewComponent implements OnInit {
       label: 'Exams',
       icon: 'fa-solid fa-graduation-cap',
       description: 'Exams managed by a teacher',
+    },
+  ];
+  assignmentReports: ReportItem[] = [
+    {
+      key: 'batch-assignments',
+      label: 'Assignment Completion',
+      icon: 'fa-solid fa-file-alt',
+      description: 'Assignment completion status per batch',
+    },
+    {
+      key: 'batch-cgpa',
+      label: 'CGPA Report',
+      icon: 'fa-solid fa-star-half-stroke',
+      description: 'Batch-wise and student-wise CGPA breakdown',
+    },
+    {
+      key: 'batch-slash',
+      label: 'Slash Report',
+      icon: 'fa-solid fa-chart-pie',
+      description:
+        'Available, completed and pending assignments per batch per subject',
     },
   ];
   selectedReport: ReportItem | null = null;
@@ -210,6 +250,15 @@ export class ReportsnewComponent implements OnInit {
   programSearch = '';
   centerSearch = '';
   filterMode = '';
+  cgpaStudentDetail: any[] = [];
+  facultyLoadDetail: any[] = [];
+  filterCenterIds: string[] = [];
+  selectedStudentIds: string[] = [];
+  selectedAdmissionNos: string[] = [];
+  studentDropdownOpen = false;
+  attendanceDetailData: any[] = [];
+  remarksDetailData2: any[] = [];
+  lateEntriesDetailData: any[] = [];
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -225,9 +274,24 @@ export class ReportsnewComponent implements OnInit {
     this.loadStaff();
   }
 
-  switchTab(tab: 'batch' | 'student' | 'teacher') {
+  switchTab(tab: 'batch' | 'student' | 'teacher' | 'assignments') {
     this.activeTab = tab;
     this.clearReport();
+  }
+
+  getActiveReports(): ReportItem[] {
+    switch (this.activeTab) {
+      case 'batch':
+        return this.batchReports;
+      case 'student':
+        return this.studentReports;
+      case 'teacher':
+        return this.teacherReports;
+      case 'assignments':
+        return this.assignmentReports;
+      default:
+        return [];
+    }
   }
 
   selectReport(report: ReportItem) {
@@ -242,12 +306,18 @@ export class ReportsnewComponent implements OnInit {
       this.loadPrograms();
       this.loadCenters();
     }
+    if (report.key === 'teacher-load') {
+      this.loadCenters();
+    }
     if (
-      report.key === 'batch-phase-allotment' ||
-      report.key === 'batch-assignments' ||
-      report.key === 'batch-subject-hours' ||
-      report.key === 'batch-timetable' ||
-      report.key === 'batch-subject-hours'
+      [
+        'batch-phase-allotment',
+        'batch-assignments',
+        'batch-subject-hours',
+        'batch-timetable',
+        'batch-cgpa',
+        'batch-slash',
+      ].includes(report.key)
     ) {
       this.loadSubjects();
     }
@@ -298,6 +368,16 @@ export class ReportsnewComponent implements OnInit {
     this.programSearch = '';
     this.centerSearch = '';
     this.filterMode = '';
+    this.cgpaStudentDetail = [];
+    this.facultyLoadDetail = [];
+    this.filterCenterIds = [];
+    this.selectedStudentIds = [];
+    this.selectedAdmissionNos = [];
+    this.studentDropdownOpen = false;
+    this.studentSearch = '';
+    this.attendanceDetailData = [];
+    this.remarksDetailData2 = [];
+    this.lateEntriesDetailData = [];
   }
 
   private loadBatches() {
@@ -518,27 +598,92 @@ export class ReportsnewComponent implements OnInit {
     }
   }
 
+  // private loadStudentsByBatches(batchIds: string[]) {
+  //   if (!batchIds.length) {
+  //     this.studentOptions = [];
+  //     return;
+  //   }
+  //   const endpoint = `list?list=full&batchIds=${batchIds.join(',')}`;
+  //   this.commonApi
+  //     .fetchData({ entiId: this.tenantId }, 'student', endpoint)
+  //     .subscribe({
+  //       next: (res: any) => {
+  //         this.studentOptions = (res?.data || []).map((s: any) => ({
+  //           value: s.studentId || s._id,
+  //           label:
+  //             (s.admissionNo || '') +
+  //             ' - ' +
+  //             (s.student?.name || s.name || s.studentName || ''),
+  //           admissionNo: s.admissionNo,
+  //           studentId: s.studentId || s._id,
+  //         }));
+  //       },
+  //     });
+  // }
+
+  // SIMPLEST FIX — use batchCode query param:
   private loadStudentsByBatches(batchIds: string[]) {
     if (!batchIds.length) {
       this.studentOptions = [];
       return;
     }
-    const endpoint = `list?list=full&batchIds=${batchIds.join(',')}`;
-    this.commonApi
-      .fetchData({ entiId: this.tenantId }, 'student', endpoint)
-      .subscribe({
-        next: (res: any) => {
-          this.studentOptions = (res?.data || []).map((s: any) => ({
-            value: s.studentId || s._id,
-            label:
-              (s.admissionNo || '') +
-              ' - ' +
-              (s.student?.name || s.name || s.studentName || ''),
-            admissionNo: s.admissionNo,
-            studentId: s.studentId || s._id,
-          }));
+    const batchCodes = this.batchOptions
+      .filter((b) => batchIds.includes(b.value))
+      .map((b) => b.batchCode)
+      .filter(Boolean);
+    if (!batchCodes.length) {
+      this.studentOptions = [];
+      return;
+    }
+    if (batchCodes.length === 1) {
+      this.commonApi
+        .fetchData(
+          { entiId: this.tenantId },
+          'student',
+          `list?list=full&batchCode=${batchCodes[0]}`,
+        )
+        .subscribe({
+          next: (res: any) => {
+            this.studentOptions = this.mapStudentOptions(res?.data || []);
+          },
+        });
+    } else {
+      const { forkJoin } = require('rxjs');
+      const calls = batchCodes.map((bc: string) =>
+        this.commonApi.fetchData(
+          { entiId: this.tenantId },
+          'student',
+          `list?list=full&batchCode=${bc}`,
+        ),
+      );
+      forkJoin(calls).subscribe({
+        next: (results: any[]) => {
+          const allStudents = (results as any[]).flatMap(
+            (res: any) => res?.data || [],
+          );
+          const seen = new Set();
+          const unique = allStudents.filter((s: any) => {
+            const id = s.studentId || s._id;
+            if (seen.has(id)) return false;
+            seen.add(id);
+            return true;
+          });
+          this.studentOptions = this.mapStudentOptions(unique);
         },
       });
+    }
+  }
+
+  private mapStudentOptions(students: any[]): any[] {
+    return students.map((s: any) => ({
+      value: s.studentId || s._id,
+      label:
+        (s.admissionNo || '') +
+        ' - ' +
+        (s.student?.name || s.name || s.studentName || ''),
+      admissionNo: s.admissionNo,
+      studentId: s.studentId || s._id,
+    }));
   }
 
   onStudentChange(val: string) {
@@ -623,6 +768,20 @@ export class ReportsnewComponent implements OnInit {
           payload.batchIds = this.selectedBatchIds;
         if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
         break;
+      case 'batch-cgpa':
+        module = 'reports/batch';
+        endpoint = 'cgpa';
+        if (this.selectedBatchIds.length)
+          payload.batchIds = this.selectedBatchIds;
+        if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
+        break;
+      case 'batch-slash':
+        module = 'reports/batch';
+        endpoint = 'slash';
+        if (this.selectedBatchIds.length)
+          payload.batchIds = this.selectedBatchIds;
+        if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
+        break;
       case 'batch-exams':
         module = 'reports/batch';
         endpoint = 'exams';
@@ -647,25 +806,43 @@ export class ReportsnewComponent implements OnInit {
         if (this.filterStatus) payload.status = this.filterStatus;
         break;
       case 'student-attendance':
-        module = 'reports/student';
-        endpoint = 'attendance';
-        payload.admissionNo = this.selectedAdmissionNo;
+        if (this.selectedAdmissionNos.length === 1) {
+          module = 'reports/student';
+          endpoint = 'attendance';
+          payload.admissionNo = this.selectedAdmissionNos[0];
+        } else {
+          module = 'reports/student';
+          endpoint = 'attendance-bulk';
+          payload.admissionNos = this.selectedAdmissionNos;
+        }
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'student-remarks':
-        module = 'reports/student';
-        endpoint = 'remarks';
-        payload.admissionNo = this.selectedAdmissionNo;
+        if (this.selectedAdmissionNos.length === 1) {
+          module = 'reports/student';
+          endpoint = 'remarks';
+          payload.admissionNo = this.selectedAdmissionNos[0];
+        } else {
+          module = 'reports/student';
+          endpoint = 'remarks-bulk';
+          payload.admissionNos = this.selectedAdmissionNos;
+        }
         if (this.filterType) payload.type = this.filterType;
         if (this.filterStatus) payload.status = this.filterStatus;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'student-late-entries':
-        module = 'reports/student';
-        endpoint = 'late-entries';
-        payload.admissionNo = this.selectedAdmissionNo;
+        if (this.selectedAdmissionNos.length === 1) {
+          module = 'reports/student';
+          endpoint = 'late-entries';
+          payload.admissionNo = this.selectedAdmissionNos[0];
+        } else {
+          module = 'reports/student';
+          endpoint = 'late-entries-bulk';
+          payload.admissionNos = this.selectedAdmissionNos;
+        }
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         if (this.filterEntryType) payload.entryType = this.filterEntryType;
@@ -675,6 +852,17 @@ export class ReportsnewComponent implements OnInit {
         endpoint = 'batches';
         payload.staffId = this.selectedStaffId;
         if (this.filterStatus) payload.status = this.filterStatus;
+        break;
+      case 'teacher-load':
+        module = 'reports/teacher';
+        endpoint = 'load';
+        if (this.selectedStaffId) payload.staffId = this.selectedStaffId;
+        if (this.selectedBatchIds.length)
+          payload.batchIds = this.selectedBatchIds;
+        if (this.selectedCenterIds.length)
+          payload.centerIds = this.selectedCenterIds;
+        if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
+        if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
       case 'teacher-tasks':
         module = 'reports/teacher';
@@ -901,7 +1089,7 @@ export class ReportsnewComponent implements OnInit {
       case 'batch-subject-hours':
         this.reportColumns = [
           { key: 'batchCode', label: 'Batch' },
-          { key: 'batchName', label: 'Batch Name' }, 
+          { key: 'batchName', label: 'Batch Name' },
           { key: 'subjectName', label: 'Subject' },
           { key: 'subjectCode', label: 'Code' },
           { key: 'allottedHours', label: 'Allotted Hours' },
@@ -913,15 +1101,84 @@ export class ReportsnewComponent implements OnInit {
         break;
       case 'batch-assignments':
         this.reportColumns = [
-          { key: 'testCode', label: 'Code' },
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'testCode', label: 'Test Code' },
           { key: 'subjectName', label: 'Subject' },
+          { key: 'enabledAtFormatted', label: 'Enabled On' },
           { key: 'totalStudents', label: 'Students' },
           { key: 'completed', label: 'Completed' },
           { key: 'inProgress', label: 'In Progress' },
           { key: 'assigned', label: 'Assigned' },
-          { key: 'completionPct', label: 'Completion %' },
+          { key: 'completionPctLabel', label: 'Completion %' },
+        ];
+        this.reportTableData = data.map((r: any) => ({
+          ...r,
+          batchCode: r.batchCode || '-',
+          enabledAtFormatted: r.enabledAt ? this.formatEpoch(r.enabledAt) : '-',
+          completionPctLabel:
+            r.completionPct !== null ? r.completionPct + '%' : '-',
+        }));
+        break;
+      case 'batch-cgpa':
+        this.reportColumns = [
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchName', label: 'Batch Name' },
+          { key: 'subjectName', label: 'Subject' },
+          { key: 'subjectCode', label: 'Code' },
+          { key: 'totalStudents', label: 'Total Students' },
+          { key: 'completedStudents', label: 'Completed' },
+          { key: 'avgCgpa', label: 'Avg CGPA' },
+          { key: 'minCgpa', label: 'Min CGPA' },
+          { key: 'maxCgpa', label: 'Max CGPA' },
         ];
         this.reportTableData = data;
+        this.cgpaStudentDetail = res.studentDetail || [];
+        this.reportSummary = res.summary || null;
+        if (this.reportSummary) {
+          this.summaryItems = Object.keys(this.reportSummary)
+            .filter(
+              (k) =>
+                typeof this.reportSummary[k] !== 'object' &&
+                this.reportSummary[k] !== null,
+            )
+            .map((k) => ({
+              label: this.formatSummaryKey(k),
+              value: this.reportSummary[k],
+            }));
+        }
+        break;
+
+      case 'batch-slash':
+        this.reportColumns = [
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchName', label: 'Batch Name' },
+          { key: 'subjectName', label: 'Subject' },
+          { key: 'subjectCode', label: 'Code' },
+          { key: 'availableTests', label: 'Available' },
+          { key: 'totalStudents', label: 'Students' },
+          { key: 'fullyCompleted', label: 'Completed All' },
+          { key: 'inProgress', label: 'In Progress' },
+          { key: 'notStarted', label: 'Not Started' },
+          { key: 'completionPctLabel', label: 'Completion %' },
+        ];
+        this.reportTableData = data.map((r: any) => ({
+          ...r,
+          completionPctLabel:
+            r.completionPct !== null ? r.completionPct + '%' : '-',
+        }));
+        this.reportSummary = res.summary || null;
+        if (this.reportSummary) {
+          this.summaryItems = Object.keys(this.reportSummary)
+            .filter(
+              (k) =>
+                typeof this.reportSummary[k] !== 'object' &&
+                this.reportSummary[k] !== null,
+            )
+            .map((k) => ({
+              label: this.formatSummaryKey(k),
+              value: this.reportSummary[k],
+            }));
+        }
         break;
       case 'batch-exams':
         this.reportColumns = [
@@ -993,62 +1250,150 @@ export class ReportsnewComponent implements OnInit {
         }
         break;
       case 'student-attendance':
-        this.reportColumns = [
-          { key: 'dateFormatted', label: 'Date' },
-          { key: 'periodNo', label: 'Period' },
-          { key: 'subjectName', label: 'Subject' },
-          { key: 'status', label: 'Status' },
-          { key: 'remarks', label: 'Remarks' },
-          { key: 'topicTaught', label: 'Topic' },
-        ];
-        this.reportTableData = res?.periodAttendance?.detail || [];
-        this.reportSummary = {
-          periodTotal: res?.periodAttendance?.total || 0,
-          periodPresent: res?.periodAttendance?.present || 0,
-          periodAbsent: res?.periodAttendance?.absent || 0,
-          periodPresentPct: res?.periodAttendance?.presentPct || 0,
-          schoolTotal: res?.schoolAttendance?.total || 0,
-          schoolPresent: res?.schoolAttendance?.present || 0,
-          schoolPresentPct: res?.schoolAttendance?.presentPct || 0,
-        };
-        this.summaryItems = [
-          { label: 'Period Total', value: this.reportSummary.periodTotal },
-          { label: 'Period Present', value: this.reportSummary.periodPresent },
-          { label: 'Period Absent', value: this.reportSummary.periodAbsent },
-          {
-            label: 'Period Present %',
-            value: this.reportSummary.periodPresentPct + '%',
-          },
-          { label: 'School Total', value: this.reportSummary.schoolTotal },
-          { label: 'School Present', value: this.reportSummary.schoolPresent },
-          {
-            label: 'School Present %',
-            value: this.reportSummary.schoolPresentPct + '%',
-          },
-        ];
-        this.schoolAttData = res?.schoolAttendance?.detail || [];
-        this.subjectSummaryData = res?.subjectSummary || [];
+        const isBulk = this.selectedAdmissionNos.length !== 1;
+        if (isBulk) {
+          this.reportColumns = [
+            { key: 'admissionNo', label: 'Admission No' },
+            { key: 'studentName', label: 'Student' },
+            { key: 'batchCode', label: 'Batch' },
+            { key: 'totalPeriods', label: 'Total Periods' },
+            { key: 'present', label: 'Present' },
+            { key: 'absent', label: 'Absent' },
+            { key: 'late', label: 'Late' },
+            { key: 'attendancePct', label: 'Attendance %' },
+          ];
+          this.reportTableData = res.data || [];
+          this.attendanceDetailData = res.detail || [];
+          this.reportSummary = res.summary || null;
+          if (this.reportSummary) {
+            this.summaryItems = Object.keys(this.reportSummary)
+              .filter(
+                (k) =>
+                  typeof this.reportSummary[k] !== 'object' &&
+                  this.reportSummary[k] !== null,
+              )
+              .map((k) => ({
+                label: this.formatSummaryKey(k),
+                value: this.reportSummary[k],
+              }));
+          }
+        } else {
+          this.reportColumns = [
+            { key: 'dateFormatted', label: 'Date' },
+            { key: 'periodNo', label: 'Period' },
+            { key: 'subjectName', label: 'Subject' },
+            { key: 'status', label: 'Status' },
+            { key: 'remarks', label: 'Remarks' },
+            { key: 'topicTaught', label: 'Topic' },
+          ];
+          this.reportTableData = res?.periodAttendance?.detail || [];
+          this.reportSummary = {
+            periodTotal: res?.periodAttendance?.total || 0,
+            periodPresent: res?.periodAttendance?.present || 0,
+            periodAbsent: res?.periodAttendance?.absent || 0,
+            periodPresentPct: res?.periodAttendance?.presentPct || 0,
+            schoolTotal: res?.schoolAttendance?.total || 0,
+            schoolPresent: res?.schoolAttendance?.present || 0,
+            schoolPresentPct: res?.schoolAttendance?.presentPct || 0,
+          };
+          this.summaryItems = [
+            { label: 'Period Total', value: this.reportSummary.periodTotal },
+            {
+              label: 'Period Present',
+              value: this.reportSummary.periodPresent,
+            },
+            { label: 'Period Absent', value: this.reportSummary.periodAbsent },
+            {
+              label: 'Period Present %',
+              value: this.reportSummary.periodPresentPct + '%',
+            },
+            { label: 'School Total', value: this.reportSummary.schoolTotal },
+            {
+              label: 'School Present',
+              value: this.reportSummary.schoolPresent,
+            },
+            {
+              label: 'School Present %',
+              value: this.reportSummary.schoolPresentPct + '%',
+            },
+          ];
+          this.schoolAttData = res?.schoolAttendance?.detail || [];
+          this.subjectSummaryData = res?.subjectSummary || [];
+        }
         break;
       case 'student-remarks':
-        this.reportColumns = [
-          { key: 'slNo', label: '#' },
-          { key: 'type', label: 'Type' },
-          { key: 'dateFormatted', label: 'Date' },
-          { key: 'remark', label: 'Remark' },
-          { key: 'status', label: 'Status' },
-        ];
-        this.reportTableData = data;
+        const isRemarksBulk = this.selectedAdmissionNos.length !== 1;
+        if (isRemarksBulk) {
+          this.reportColumns = [
+            { key: 'admissionNo', label: 'Admission No' },
+            { key: 'studentName', label: 'Student' },
+            { key: 'batchCode', label: 'Batch' },
+            { key: 'totalRemarks', label: 'Total Remarks' },
+          ];
+          this.reportTableData = data;
+          this.remarksDetailData2 = res.detail || [];
+          this.reportSummary = res.summary || null;
+          if (this.reportSummary) {
+            this.summaryItems = Object.keys(this.reportSummary)
+              .filter(
+                (k) =>
+                  typeof this.reportSummary[k] !== 'object' &&
+                  this.reportSummary[k] !== null,
+              )
+              .map((k) => ({
+                label: this.formatSummaryKey(k),
+                value: this.reportSummary[k],
+              }));
+          }
+        } else {
+          this.reportColumns = [
+            { key: 'slNo', label: '#' },
+            { key: 'type', label: 'Type' },
+            { key: 'dateFormatted', label: 'Date' },
+            { key: 'remark', label: 'Remark' },
+            { key: 'status', label: 'Status' },
+          ];
+          this.reportTableData = data;
+        }
         break;
       case 'student-late-entries':
-        this.reportColumns = [
-          { key: 'slNo', label: '#' },
-          { key: 'entryType', label: 'Type' },
-          { key: 'dateFormatted', label: 'Date' },
-          { key: 'periodNo', label: 'Period' },
-          { key: 'delayMinutes', label: 'Delay (min)' },
-          { key: 'reason', label: 'Reason' },
-        ];
-        this.reportTableData = data;
+        const isLateEntriesBulk = this.selectedAdmissionNos.length !== 1;
+        if (isLateEntriesBulk) {
+          this.reportColumns = [
+            { key: 'admissionNo', label: 'Admission No' },
+            { key: 'studentName', label: 'Student' },
+            { key: 'batchCode', label: 'Batch' },
+            { key: 'totalEntries', label: 'Total Entries' },
+            { key: 'lateCount', label: 'Late' },
+            { key: 'earlyCount', label: 'Early Leave' },
+            { key: 'totalDelayMinutes', label: 'Total Delay (min)' },
+          ];
+          this.reportTableData = data;
+          this.lateEntriesDetailData = res.detail || [];
+          this.reportSummary = res.summary || null;
+          if (this.reportSummary) {
+            this.summaryItems = Object.keys(this.reportSummary)
+              .filter(
+                (k) =>
+                  typeof this.reportSummary[k] !== 'object' &&
+                  this.reportSummary[k] !== null,
+              )
+              .map((k) => ({
+                label: this.formatSummaryKey(k),
+                value: this.reportSummary[k],
+              }));
+          }
+        } else {
+          this.reportColumns = [
+            { key: 'slNo', label: '#' },
+            { key: 'entryType', label: 'Type' },
+            { key: 'dateFormatted', label: 'Date' },
+            { key: 'periodNo', label: 'Period' },
+            { key: 'delayMinutes', label: 'Delay (min)' },
+            { key: 'reason', label: 'Reason' },
+          ];
+          this.reportTableData = data;
+        }
         break;
       case 'teacher-batches':
         this.reportColumns = [
@@ -1062,6 +1407,36 @@ export class ReportsnewComponent implements OnInit {
           { key: 'status', label: 'Status' },
         ];
         this.reportTableData = data;
+        break;
+      case 'teacher-load':
+        this.reportColumns = [
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Code' },
+          { key: 'batchCode', label: 'Batch Code' },
+          { key: 'batchName', label: 'Batch Name' },
+          { key: 'subjectName', label: 'Subject' },
+          // { key: 'centerName', label: 'Center' },
+          { key: 'scheduledCount', label: 'Periods' },
+          { key: 'scheduledHoursFormatted', label: 'Scheduled Hours' },
+          { key: 'cancelledCount', label: 'Cancelled' },
+          { key: 'replacedCount', label: 'Replaced Periods' },
+          { key: 'replacedHoursFormatted', label: 'Replaced Hours' },
+        ];
+        this.reportTableData = data;
+        this.facultyLoadDetail = res.detail || [];
+        this.reportSummary = res.summary || null;
+        if (this.reportSummary) {
+          this.summaryItems = Object.keys(this.reportSummary)
+            .filter(
+              (k) =>
+                typeof this.reportSummary[k] !== 'object' &&
+                this.reportSummary[k] !== null,
+            )
+            .map((k) => ({
+              label: this.formatSummaryKey(k),
+              value: this.reportSummary[k],
+            }));
+        }
         break;
       case 'teacher-tasks':
         this.reportColumns = [
@@ -1247,6 +1622,22 @@ export class ReportsnewComponent implements OnInit {
         return this.remarksDetailData;
       case 'Per-Batch Breakdown':
         return this.examBatchData;
+      case 'Student-wise CGPA':
+        return [
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'subjectName', label: 'Subject' },
+          { key: 'admissionNo', label: 'Admission No' },
+          { key: 'status', label: 'Status' },
+          { key: 'cgpa', label: 'CGPA' },
+        ];
+      case 'Faculty Load Detail':
+        return this.facultyLoadDetail;
+      case 'Period-level Attendance':
+        return this.attendanceDetailData;
+      case 'Student Remarks Detail':
+        return this.remarksDetailData2;
+      case 'Late Entries Detail':
+        return this.lateEntriesDetailData;
       default:
         return [];
     }
@@ -1313,6 +1704,52 @@ export class ReportsnewComponent implements OnInit {
           { key: 'completed', label: 'Completed' },
           { key: 'completionPct', label: 'Completion %' },
         ];
+      case 'Faculty Load Detail':
+        return [
+          { key: 'staffName', label: 'Staff' },
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'centerName', label: 'Center' },
+          { key: 'subjectName', label: 'Subject' },
+          { key: 'scheduledCount', label: 'Periods' },
+          { key: 'scheduledHoursFormatted', label: 'Hours' },
+          { key: 'cancelledCount', label: 'Cancelled' },
+          { key: 'replacedCount', label: 'Replaced' },
+          { key: 'replacedHoursFormatted', label: 'Replaced Hours' },
+        ];
+      case 'Period-level Attendance':
+        return [
+          { key: 'admissionNo', label: 'Enrollment No' },
+          { key: 'studentName', label: 'Student' },
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'dateFormatted', label: 'Date' },
+          { key: 'periodNo', label: 'Period' },
+          { key: 'subjectName', label: 'Subject' },
+          { key: 'status', label: 'Status' },
+          { key: 'remarks', label: 'Remarks' },
+          { key: 'topicTaught', label: 'Topic' },
+        ];
+      case 'Student Remarks Detail':
+        return [
+          { key: 'admissionNo', label: 'Admission No' },
+          { key: 'studentName', label: 'Student' },
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'type', label: 'Type' },
+          { key: 'dateFormatted', label: 'Date' },
+          { key: 'remark', label: 'Remark' },
+          { key: 'status', label: 'Status' },
+          { key: 'reportedByParent', label: 'Reported By Parent' },
+        ];
+      case 'Late Entries Detail':
+        return [
+          { key: 'admissionNo', label: 'Admission No' },
+          { key: 'studentName', label: 'Student' },
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'entryType', label: 'Type' },
+          { key: 'dateFormatted', label: 'Date' },
+          { key: 'periodNo', label: 'Period' },
+          { key: 'delayMinutes', label: 'Delay (min)' },
+          { key: 'reason', label: 'Reason' },
+        ];
       default:
         return [];
     }
@@ -1320,6 +1757,7 @@ export class ReportsnewComponent implements OnInit {
 
   exportToExcel() {
     if (!this.reportTableData.length || !this.selectedReport) return;
+    const wb = XLSX.utils.book_new();
     const headers = this.reportColumns.map((c: any) => c.label);
     const keys = this.reportColumns.map((c: any) => c.key);
     const rows = this.reportTableData.map((row: any) =>
@@ -1330,9 +1768,110 @@ export class ReportsnewComponent implements OnInit {
         return obj;
       }, {}),
     );
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, this.selectedReport.label);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Summary');
+    if (
+      this.selectedReport.key === 'teacher-load' &&
+      this.facultyLoadDetail.length > 0
+    ) {
+      const detailCols = this.getActiveDetailColumns();
+      const savedLabel = this.selectedDetailLabel;
+      this.selectedDetailLabel = 'Faculty Load Detail';
+      const dCols = this.getActiveDetailColumns();
+      this.selectedDetailLabel = savedLabel;
+      const dHeaders = dCols.map((c: any) => c.label);
+      const dKeys = dCols.map((c: any) => c.key);
+      const dRows = this.facultyLoadDetail.map((row: any) =>
+        dKeys.reduce((obj: any, key: string, idx: number) => {
+          obj[dHeaders[idx]] = row[key] ?? '';
+          return obj;
+        }, {}),
+      );
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(dRows),
+        'Detail',
+      );
+    }
+    if (
+      this.selectedReport.key === 'student-attendance' &&
+      this.attendanceDetailData.length > 0
+    ) {
+      const detailCols = [
+        { key: 'admissionNo', label: 'Admission No' },
+        { key: 'studentName', label: 'Student' },
+        { key: 'batchCode', label: 'Batch' },
+        { key: 'dateFormatted', label: 'Date' },
+        { key: 'periodNo', label: 'Period' },
+        { key: 'subjectName', label: 'Subject' },
+        { key: 'status', label: 'Status' },
+        { key: 'remarks', label: 'Remarks' },
+        { key: 'topicTaught', label: 'Topic' },
+      ];
+      const dRows = this.attendanceDetailData.map((row: any) =>
+        detailCols.reduce((obj: any, col: any) => {
+          obj[col.label] = row[col.key] ?? '';
+          return obj;
+        }, {}),
+      );
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(dRows),
+        'Period Detail',
+      );
+    }
+    if (
+      this.selectedReport.key === 'student-remarks' &&
+      this.remarksDetailData2.length > 0
+    ) {
+      const detailCols = [
+        { key: 'admissionNo', label: 'Admission No' },
+        { key: 'studentName', label: 'Student' },
+        { key: 'batchCode', label: 'Batch' },
+        { key: 'type', label: 'Type' },
+        { key: 'dateFormatted', label: 'Date' },
+        { key: 'remark', label: 'Remark' },
+        { key: 'status', label: 'Status' },
+        { key: 'reportedByParent', label: 'Reported By Parent' },
+      ];
+      const dRows = this.remarksDetailData2.map((row: any) =>
+        detailCols.reduce((obj: any, col: any) => {
+          obj[col.label] = row[col.key] ?? '';
+          return obj;
+        }, {}),
+      );
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(dRows),
+        'Remarks Detail',
+      );
+    }
+    // ADD after remarks detail sheet block:
+    if (
+      this.selectedReport.key === 'student-late-entries' &&
+      this.lateEntriesDetailData.length > 0
+    ) {
+      const detailCols = [
+        { key: 'admissionNo', label: 'Admission No' },
+        { key: 'studentName', label: 'Student' },
+        { key: 'batchCode', label: 'Batch' },
+        { key: 'entryType', label: 'Type' },
+        { key: 'dateFormatted', label: 'Date' },
+        { key: 'periodNo', label: 'Period' },
+        { key: 'delayMinutes', label: 'Delay (min)' },
+        { key: 'reason', label: 'Reason' },
+      ];
+      const dRows = this.lateEntriesDetailData.map((row: any) =>
+        detailCols.reduce((obj: any, col: any) => {
+          obj[col.label] = row[col.key] ?? '';
+          return obj;
+        }, {}),
+      );
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(dRows),
+        'Late Entries Detail',
+      );
+    }
     XLSX.writeFile(
       wb,
       `${this.selectedReport.label.replace(/\s+/g, '_')}_Report.xlsx`,
@@ -1363,9 +1902,14 @@ export class ReportsnewComponent implements OnInit {
 
   needsBatchFilter(): boolean {
     if (!this.selectedReport) return false;
+    // return (
+    //   this.selectedReport.key.startsWith('batch-') &&
+    //   this.selectedReport.key !== 'batch-info'
+    // );
     return (
-      this.selectedReport.key.startsWith('batch-') &&
-      this.selectedReport.key !== 'batch-info'
+      (this.selectedReport.key.startsWith('batch-') &&
+        this.selectedReport.key !== 'batch-info') ||
+      ['batch-cgpa', 'batch-slash'].includes(this.selectedReport.key)
     );
   }
 
@@ -1387,6 +1931,7 @@ export class ReportsnewComponent implements OnInit {
       'teacher-attendance',
       'teacher-feedback',
       'teacher-exams',
+      'teacher-load',
     ].includes(this.selectedReport.key);
   }
 
@@ -1414,6 +1959,7 @@ export class ReportsnewComponent implements OnInit {
       'teacher-attendance',
       'teacher-feedback',
       'teacher-exams',
+      'teacher-load',
     ].includes(this.selectedReport.key);
   }
 
@@ -1428,10 +1974,43 @@ export class ReportsnewComponent implements OnInit {
       'teacher-attendance',
     ].includes(key);
     if (needsDates && (!this.fromDate || !this.toDate)) return false;
-    if (key === 'student-attendance' && (!this.fromDate || !this.toDate))
+    // if (key === 'student-attendance' && (!this.fromDate || !this.toDate))
+    //   return false;
+    // if (this.needsStudentFilter() && !this.selectedAdmissionNo) return false;
+    // if (this.needsStaffFilter() && !this.selectedStaffId) return false;
+    // if (
+    //   this.selectedReport?.key === 'student-attendance' &&
+    //   !this.selectedAdmissionNos.length
+    // )
+    //   return false;
+    // if (
+    //   this.needsStudentFilter() &&
+    //   this.selectedReport?.key !== 'student-attendance' &&
+    //   !this.selectedAdmissionNo
+    // )
+    //   return false;
+    const multiStudentReports = [
+      'student-attendance',
+      'student-remarks',
+      'student-late-entries',
+    ];
+    if (
+      multiStudentReports.includes(this.selectedReport?.key) &&
+      !this.selectedAdmissionNos.length
+    )
       return false;
-    if (this.needsStudentFilter() && !this.selectedAdmissionNo) return false;
-    if (this.needsStaffFilter() && !this.selectedStaffId) return false;
+    if (
+      this.needsStudentFilter() &&
+      !multiStudentReports.includes(this.selectedReport?.key) &&
+      !this.selectedAdmissionNo
+    )
+      return false;
+    if (
+      this.needsStaffFilter() &&
+      !this.selectedStaffId &&
+      this.selectedReport.key !== 'teacher-load'
+    )
+      return false;
     return true;
   }
 
@@ -1597,6 +2176,10 @@ export class ReportsnewComponent implements OnInit {
       this.centerDropdownOpen = false;
       this.centerSearch = '';
     }
+    if (!target.closest('.student-multiselect-wrapper')) {
+      this.studentDropdownOpen = false;
+      this.studentSearch = '';
+    }
   }
 
   formatHours(decimalHours: any): string {
@@ -1613,5 +2196,139 @@ export class ReportsnewComponent implements OnInit {
     if (hrs === 0) return `${mins} min`;
     if (mins === 0) return `${hrs} hr`;
     return `${hrs} hr ${mins} min`;
+  }
+
+  showCgpaStudentDetail() {
+    this.selectedDetailLabel = 'Student-wise CGPA';
+    this.showDetailPanel = true;
+  }
+  get hasCgpaStudentDetail(): boolean {
+    return (
+      this.selectedReport?.key === 'batch-cgpa' &&
+      this.cgpaStudentDetail.length > 0
+    );
+  }
+
+  showFacultyLoadDetail() {
+    this.selectedDetailLabel = 'Faculty Load Detail';
+    this.showDetailPanel = true;
+  }
+
+  get hasFacultyLoadDetail(): boolean {
+    return (
+      this.selectedReport?.key === 'teacher-load' &&
+      this.facultyLoadDetail.length > 0
+    );
+  }
+
+  get allStudentsSelected(): boolean {
+    return (
+      this.studentOptions.length > 0 &&
+      this.selectedStudentIds.length === this.studentOptions.length
+    );
+  }
+
+  get studentSelectionLabel(): string {
+    if (!this.selectedStudentIds.length) return 'Select Students';
+    if (this.allStudentsSelected) return 'All Students';
+    if (this.selectedStudentIds.length === 1)
+      return (
+        this.studentOptions.find((s) => s.value === this.selectedStudentIds[0])
+          ?.label || '1 selected'
+      );
+    return `${this.selectedStudentIds.length} students selected`;
+  }
+
+  get filteredStudentOptions(): any[] {
+    const q = this.studentSearch.toLowerCase().trim();
+    return q
+      ? this.studentOptions.filter((s) => s.label.toLowerCase().includes(q))
+      : this.studentOptions;
+  }
+
+  toggleStudentDropdown() {
+    this.studentDropdownOpen = !this.studentDropdownOpen;
+    if (!this.studentDropdownOpen) this.studentSearch = '';
+  }
+
+  isStudentSelected(value: string): boolean {
+    return this.selectedStudentIds.includes(value);
+  }
+
+  toggleStudentSelection(value: string) {
+    const student = this.studentOptions.find((s) => s.value === value);
+    if (this.isStudentSelected(value)) {
+      this.selectedStudentIds = this.selectedStudentIds.filter(
+        (id) => id !== value,
+      );
+      this.selectedAdmissionNos = this.selectedAdmissionNos.filter(
+        (a) => a !== student?.admissionNo,
+      );
+    } else {
+      this.selectedStudentIds = [...this.selectedStudentIds, value];
+      if (student?.admissionNo)
+        this.selectedAdmissionNos = [
+          ...this.selectedAdmissionNos,
+          student.admissionNo,
+        ];
+    }
+  }
+
+  toggleSelectAllStudents() {
+    if (this.allStudentsSelected) {
+      this.selectedStudentIds = [];
+      this.selectedAdmissionNos = [];
+    } else {
+      this.selectedStudentIds = this.studentOptions.map((s) => s.value);
+      this.selectedAdmissionNos = this.studentOptions
+        .map((s) => s.admissionNo)
+        .filter(Boolean);
+    }
+  }
+
+  showAttendanceDetail() {
+    this.selectedDetailLabel = 'Period-level Attendance';
+    this.showDetailPanel = true;
+  }
+
+  get hasAttendanceDetail(): boolean {
+    return (
+      this.selectedReport?.key === 'student-attendance' &&
+      this.attendanceDetailData.length > 0 &&
+      this.selectedAdmissionNos.length !== 1
+    );
+  }
+
+  onManualAdmissionInput(event: any) {
+    const val = event.target.value || '';
+    this.selectedAdmissionNos = val
+      .split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    this.selectedStudentIds = [...this.selectedAdmissionNos];
+  }
+
+  showRemarksDetail2() {
+    this.selectedDetailLabel = 'Student Remarks Detail';
+    this.showDetailPanel = true;
+  }
+  get hasRemarksDetail2(): boolean {
+    return (
+      this.selectedReport?.key === 'student-remarks' &&
+      this.remarksDetailData2.length > 0 &&
+      this.selectedAdmissionNos.length !== 1
+    );
+  }
+
+  showLateEntriesDetail() {
+    this.selectedDetailLabel = 'Late Entries Detail';
+    this.showDetailPanel = true;
+  }
+  get hasLateEntriesDetail(): boolean {
+    return (
+      this.selectedReport?.key === 'student-late-entries' &&
+      this.lateEntriesDetailData.length > 0 &&
+      this.selectedAdmissionNos.length !== 1
+    );
   }
 }

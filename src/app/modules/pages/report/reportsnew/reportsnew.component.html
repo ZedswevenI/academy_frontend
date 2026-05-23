@@ -28,39 +28,23 @@
                 teacherReports.length
                 }}</span>
         </button>
+        <button class="tab-btn" [class.active]="activeTab === 'assignments'" (click)="switchTab('assignments')">
+            <i class="fa-solid fa-file-alt me-1"></i> Assignments
+            <span class="badge bg-light text-dark ms-1">{{
+                assignmentReports.length
+                }}</span>
+        </button>
     </div>
     <!-- ===== REPORT LIST ===== -->
     <div *ngIf="!selectedReport" class="report-grid">
-        <ng-container *ngIf="activeTab === 'batch'">
-            <div *ngFor="let r of batchReports" class="report-card" (click)="selectReport(r)">
-                <div class="report-card-icon"><i [class]="r.icon"></i></div>
-                <div class="report-card-body">
-                    <div class="report-card-title">{{ r.label }}</div>
-                    <div class="report-card-desc">{{ r.description }}</div>
-                </div>
-                <i class="fa-solid fa-chevron-right report-card-arrow"></i>
+        <div *ngFor="let r of getActiveReports()" class="report-card" (click)="selectReport(r)">
+            <div class="report-card-icon"><i [class]="r.icon"></i></div>
+            <div class="report-card-body">
+                <div class="report-card-title">{{ r.label }}</div>
+                <div class="report-card-desc">{{ r.description }}</div>
             </div>
-        </ng-container>
-        <ng-container *ngIf="activeTab === 'student'">
-            <div *ngFor="let r of studentReports" class="report-card" (click)="selectReport(r)">
-                <div class="report-card-icon"><i [class]="r.icon"></i></div>
-                <div class="report-card-body">
-                    <div class="report-card-title">{{ r.label }}</div>
-                    <div class="report-card-desc">{{ r.description }}</div>
-                </div>
-                <i class="fa-solid fa-chevron-right report-card-arrow"></i>
-            </div>
-        </ng-container>
-        <ng-container *ngIf="activeTab === 'teacher'">
-            <div *ngFor="let r of teacherReports" class="report-card" (click)="selectReport(r)">
-                <div class="report-card-icon"><i [class]="r.icon"></i></div>
-                <div class="report-card-body">
-                    <div class="report-card-title">{{ r.label }}</div>
-                    <div class="report-card-desc">{{ r.description }}</div>
-                </div>
-                <i class="fa-solid fa-chevron-right report-card-arrow"></i>
-            </div>
-        </ng-container>
+            <i class="fa-solid fa-chevron-right report-card-arrow"></i>
+        </div>
     </div>
     <!-- ===== SELECTED REPORT VIEW ===== -->
     <div *ngIf="selectedReport" class="report-view">
@@ -86,6 +70,18 @@
                     (click)="showSchoolAttDetail()">
                     <i class="fa-solid fa-calendar-days me-1"></i> School Attendance
                 </button>
+                <button *ngIf="hasAttendanceDetail" class="btn btn-outline-secondary btn-sm"
+                    (click)="showAttendanceDetail()">
+                    <i class="fa-solid fa-list me-1"></i> Period Detail
+                </button>
+                <button *ngIf="hasRemarksDetail2" class="btn btn-outline-secondary btn-sm"
+                    (click)="showRemarksDetail2()">
+                    <i class="fa-solid fa-comment-dots me-1"></i> Remarks Detail
+                </button>
+                <button *ngIf="hasLateEntriesDetail" class="btn btn-outline-secondary btn-sm"
+                    (click)="showLateEntriesDetail()">
+                    <i class="fa-solid fa-clock me-1"></i> Late Entries Detail
+                </button>
                 <button *ngIf="hasSubjectSummary" class="btn btn-outline-secondary btn-sm"
                     (click)="showSubjectSummary()">
                     <i class="fa-solid fa-book me-1"></i> Subject Summary
@@ -99,6 +95,14 @@
                 <button *ngIf="hasExamBatchDetail" class="btn btn-outline-secondary btn-sm"
                     (click)="showExamBatchDetail()">
                     <i class="fa-solid fa-layer-group me-1"></i> Batch Breakdown
+                </button>
+                <button *ngIf="hasCgpaStudentDetail" class="btn btn-outline-secondary btn-sm"
+                    (click)="showCgpaStudentDetail()">
+                    <i class="fa-solid fa-user-graduate me-1"></i> Student CGPA
+                </button>
+                <button *ngIf="hasFacultyLoadDetail" class="btn btn-outline-secondary btn-sm"
+                    (click)="showFacultyLoadDetail()">
+                    <i class="fa-solid fa-table-list me-1"></i> Load Detail
                 </button>
                 <button *ngIf="reportTableData.length > 0" class="btn btn-export fs-16 fw-medium"
                     (click)="exportToExcel()">
@@ -332,7 +336,7 @@
                     </div>
                 </ng-container>
                 <!-- Student selector -->
-                <div class="col-md-3" *ngIf="needsStudentFilter()">
+                <!-- <div class="col-md-3" *ngIf="needsStudentFilter()">
                     <label class="form-label fw-medium">Student <span class="text-danger">*</span></label>
                     <ng-container *ngIf="selectedBatchIds.length; else admissionInput">
                         <select class="form-select form-select-sm" [(ngModel)]="selectedStudentId"
@@ -347,17 +351,103 @@
                         <input class="form-control form-control-sm" placeholder="Enter admission no..."
                             [(ngModel)]="selectedAdmissionNo" />
                     </ng-template>
+                </div> -->
+                <div class="col-md-3" *ngIf="needsStudentFilter()">
+                    <label class="form-label fw-medium">
+                        Student <span class="text-danger">*</span>
+                    </label>
+
+                    <!-- Multi-select for student-attendance -->
+                    <!-- <ng-container *ngIf="selectedReport.key === 'student-attendance'; else singleStudentSelect"> -->
+                    <ng-container
+                        *ngIf="['student-attendance','student-remarks','student-late-entries'].includes(selectedReport.key); else singleStudentSelect">
+                        <ng-container *ngIf="selectedBatchIds.length; else admissionInput">
+                            <div class="student-multiselect-wrapper" style="position:relative">
+                                <button type="button"
+                                    class="form-select form-select-sm text-start d-flex justify-content-between align-items-center"
+                                    (click)="toggleStudentDropdown()">
+                                    <span class="text-truncate">{{ studentSelectionLabel }}</span>
+                                    <i class="fa-solid fa-chevron-down ms-2 small"></i>
+                                </button>
+                                <div *ngIf="studentDropdownOpen" class="border rounded shadow bg-white"
+                                    style="position:absolute;z-index:1050;width:100%;top:100%;left:0">
+                                    <div class="px-2 pt-2 pb-1 border-bottom">
+                                        <input class="form-control form-control-sm" placeholder="Search student..."
+                                            [(ngModel)]="studentSearch" (click)="$event.stopPropagation()">
+                                    </div>
+                                    <div style="max-height:220px;overflow-y:auto">
+                                        <div class="d-flex align-items-center px-3 py-2 border-bottom"
+                                            style="cursor:pointer" (click)="toggleSelectAllStudents()">
+                                            <input type="checkbox" class="form-check-input me-2"
+                                                [checked]="allStudentsSelected"
+                                                [indeterminate]="selectedStudentIds.length > 0 && !allStudentsSelected"
+                                                readonly>
+                                            <span class="fw-medium">All Students</span>
+                                        </div>
+                                        <div *ngFor="let s of filteredStudentOptions"
+                                            class="d-flex align-items-center px-3 py-2 batch-option"
+                                            style="cursor:pointer" (click)="toggleStudentSelection(s.value)">
+                                            <input type="checkbox" class="form-check-input me-2"
+                                                [checked]="isStudentSelected(s.value)" readonly>
+                                            <span>{{ s.label }}</span>
+                                        </div>
+                                        <div *ngIf="!filteredStudentOptions.length" class="px-3 py-2 text-muted small">
+                                            No results</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </ng-container>
+                        <ng-template #admissionInput>
+                            <input class="form-control form-control-sm"
+                                placeholder="Enter admission no (comma separated)..."
+                                (change)="onManualAdmissionInput($event)" />
+                            <small class="text-muted">Enter multiple separated by comma</small>
+                        </ng-template>
+                    </ng-container>
+
+                    <!-- Single select for other student reports -->
+                    <ng-template #singleStudentSelect>
+                        <ng-container *ngIf="selectedBatchIds.length; else singleAdmissionInput">
+                            <select class="form-select form-select-sm" [(ngModel)]="selectedStudentId"
+                                (ngModelChange)="onStudentChange($event)">
+                                <option value="">Select Student</option>
+                                <option *ngFor="let s of studentOptions" [value]="s.value">{{ s.label }}</option>
+                            </select>
+                        </ng-container>
+                        <ng-template #singleAdmissionInput>
+                            <input class="form-control form-control-sm" placeholder="Enter admission no..."
+                                [(ngModel)]="selectedAdmissionNo" />
+                        </ng-template>
+                    </ng-template>
                 </div>
+
                 <!-- Staff selector -->
                 <div class="col-md-3" *ngIf="needsStaffFilter()">
-                    <label class="form-label fw-medium">Staff <span class="text-danger">*</span></label>
+                    <!-- <label class="form-label fw-medium">Staff <span class="text-danger">*</span></label> -->
+                    <label class="form-label fw-medium">
+                        Staff
+                        <span class="text-danger" *ngIf="selectedReport.key !== 'teacher-load'">*</span>
+                        <span class="text-muted fw-normal small"
+                            *ngIf="selectedReport.key === 'teacher-load'">(optional)</span>
+                    </label>
                     <input class="form-control form-control-sm mb-1" placeholder="Search staff..."
                         [(ngModel)]="staffSearch" (input)="filterStaffOptions()" />
                     <select class="form-select form-select-sm" [(ngModel)]="selectedStaffId">
-                        <option value="">Select Staff</option>
+                        <!-- <option value="">Select Staff</option> -->
+                        <option value="">{{ selectedReport.key === 'teacher-load' ? 'All Staff' : 'Select Staff' }}
+                        </option>
                         <option *ngFor="let s of filteredStaffOptions" [value]="s.value">
                             {{ s.label }}
                         </option>
+                    </select>
+                </div>
+                <!-- Center filter (teacher-load only) -->
+                <div class="col-md-2" *ngIf="selectedReport.key === 'teacher-load'">
+                    <label class="form-label fw-medium">Center</label>
+                    <select class="form-select form-select-sm" [ngModel]="selectedCenterIds[0] || ''"
+                        (ngModelChange)="selectedCenterIds = $event ? [$event] : []">
+                        <option value="">All</option>
+                        <option *ngFor="let c of centerOptions" [value]="c.value">{{ c.label }}</option>
                     </select>
                 </div>
                 <!-- Date filters -->
@@ -370,7 +460,6 @@
                   [
                     'batch-timetable',
                     'batch-late-entries',
-                    'student-attendance',
                     'teacher-late-entries',
                     'teacher-early-leaving',
                     'teacher-attendance',
@@ -385,7 +474,6 @@
                             <span class="text-danger" *ngIf="
                   [
                     'batch-late-entries',
-                    'student-attendance',
                     'teacher-late-entries',
                     'teacher-early-leaving',
                   ].includes(selectedReport.key)
@@ -414,9 +502,14 @@
                 </div>
                 <!-- Subject filter -->
                 <div class="col-md-2" *ngIf="
-            selectedReport.key === 'batch-phase-allotment' ||
-            selectedReport.key === 'batch-assignments' ||
-            selectedReport.key === 'batch-subject-hours'
+            [
+              'batch-phase-allotment',
+              'batch-assignments',
+              'batch-subject-hours',
+              'batch-timetable',
+              'batch-cgpa',
+              'batch-slash',
+            ].includes(selectedReport.key)
           ">
                     <label class="form-label fw-medium">Subject</label>
                     <select class="form-select form-select-sm" [(ngModel)]="filterSubjectId">
@@ -424,6 +517,14 @@
                         <option *ngFor="let s of subjectOptions" [value]="s.value">
                             {{ s.label }}
                         </option>
+                    </select>
+                </div>
+                <div class="col-md-2" *ngIf="selectedReport.key === 'batch-timetable'">
+                    <label class="form-label fw-medium">Mode</label>
+                    <select class="form-select form-select-sm" [(ngModel)]="filterMode">
+                        <option value="">All</option>
+                        <option value="OFFLINE">Offline</option>
+                        <option value="ONLINE">Online</option>
                     </select>
                 </div>
                 <!-- Late entry type -->
@@ -489,7 +590,6 @@
           [
             'batch-timetable',
             'batch-late-entries',
-            'student-attendance',
             'teacher-late-entries',
             'teacher-early-leaving',
             'teacher-attendance',
