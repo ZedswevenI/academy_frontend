@@ -14,7 +14,7 @@
         <button class="btn btn-edit fs-16 fw-medium me-2" *appHasRole="['L1']" (click)="openOffcanvas('edit')">
             <i class="fa-regular fa-pen-to-square btn-icon"></i> Edit
         </button>
-          <button class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">
+        <button class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">
             <i class="fa-solid fa-arrow-left btn-icon"></i> Back
         </button>
     </div>
@@ -220,10 +220,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>Name</th>
-                            <th>Admission No</th>
+                            <th>Student Name</th>
+                            <th>Enrollment No</th>
                             <th>Phone</th>
-                            <th>AY</th>
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
@@ -233,7 +232,6 @@
                             <td class="fw-semibold">{{ s?.student?.name || '-' }}</td>
                             <td class="text-muted">{{ s?.admissionNo || '-' }}</td>
                             <td class="text-muted">{{ s?.student?.phone || '-' }}</td>
-                            <td class="text-muted">{{ s?.academicYear || '-' }}</td>
                             <td class="text-end">
                                 <!-- <button class="btn btn-sm btn-outline-danger" title="Remove"
                                     (click)="removeStudent(s?.studentId)">
@@ -277,7 +275,7 @@
                                     <div class="text-muted small text-truncate">{{ m?.subjectName || '-' }}</div>
                                 </div>
                                 <button class="btn btn-sm btn-outline-secondary me-2" title="View"
-                                (click)="viewTeacher(m.staffId)">
+                                    (click)="viewTeacher(m.staffId)">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
                             </div>
@@ -810,8 +808,8 @@
             [disabled]="loading || !shuffleSelectedCount">
             <i class="fa-solid fa-shuffle me-1"></i> Shuffle
         </button>
-        <button *ngIf="offcanvasMode === 'classTeacher'" class="btn btn-create fs-16 fw-medium" (click)="assignClassTeacher()"
-            [disabled]="loading">
+        <button *ngIf="offcanvasMode === 'classTeacher'" class="btn btn-create fs-16 fw-medium"
+            (click)="assignClassTeacher()" [disabled]="loading">
             <i class="fa-solid fa-floppy-disk me-1"></i> Save Teacher
         </button>
     </div>
