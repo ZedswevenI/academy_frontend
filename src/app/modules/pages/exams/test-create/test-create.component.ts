@@ -28,13 +28,12 @@ export class TestCreateComponent implements OnInit {
 
   testTypeOptions = [
     { label: 'Practice', value: 'practice' },
-    { label: 'Live', value: 'live' },
-    { label: 'Mock', value: 'mock' }
+    // { label: 'Live', value: 'live' },
+    // { label: 'Mock', value: 'mock' }
   ];
 
   mediumOptions = [
     { label: 'English', value: 'en' },
-    // { label: 'Hindi', value: 'hi' },
     { label: 'Tamil', value: 'ta' }
   ];
 
@@ -119,21 +118,18 @@ export class TestCreateComponent implements OnInit {
     const endTime = group.get('endTime')?.value;
     const autoPublishAt = group.get('autoPublishAt')?.value;
     const errors: ValidationErrors = {};
-
     if (!this.isEditMode && startTime) {
       const startTs = new Date(startTime).getTime();
       if (startTs <= Date.now()) {
         errors['startTimeNotFuture'] = true;
       }
     }
-
     if (!this.isEditMode && endTime) {
       const endTs = new Date(endTime).getTime();
       if (endTs <= Date.now()) {
         errors['endTimeNotFuture'] = true;
       }
     }
-
     if (startTime && endTime) {
       const startTs = new Date(startTime).getTime();
       const endTs = new Date(endTime).getTime();
@@ -141,15 +137,13 @@ export class TestCreateComponent implements OnInit {
         errors['endBeforeStart'] = true;
       }
     }
-
     if (autoPublishAt && endTime) {
       const publishTs = new Date(autoPublishAt).getTime();
       const endTs = new Date(endTime).getTime();
-      if (publishTs <= endTs) {
+      if (publishTs < endTs) {
         errors['publishBeforeEnd'] = true;
       }
     }
-
     return Object.keys(errors).length ? errors : null;
   }
 
@@ -266,7 +260,6 @@ export class TestCreateComponent implements OnInit {
 
   private populateFormForEdit(): void {
     const d = this.editData;
-
     this.examForm.patchValue({
       examCode: this.isDuplicateMode ? '' : d.examCode,
       examName: d.examName,
@@ -280,17 +273,18 @@ export class TestCreateComponent implements OnInit {
       startTime: this.toDatetimeLocal(d.startTime),
       endTime: this.toDatetimeLocal(d.endTime),
       autoPublishAt: d.autoPublishAt ? this.toDatetimeLocal(d.autoPublishAt) : '',
-      instructionId: d.instructionId || '',
+      // instructionId: d.instructionId || '',
+      instructionId: d.instructionId?._id || d.instructionId || '',
       calculatorType: d.calculatorType || 'none',
       classNo: d.classNo || null
     });
-
     this.sections.clear();
     (d.sections || []).forEach((s: any) => {
       this.sections.push(this.fb.group({
         sectionCode: [s.sectionCode, Validators.required],
         sectionName: [s.sectionName, Validators.required],
-        subjectId: [s.subjectId, Validators.required],
+        // subjectId: [s.subjectId, Validators.required],
+        subjectId: [s.subjectId?._id || s.subjectId, Validators.required],
         numberOfQuestions: [s.numberOfQuestions, [Validators.required, Validators.min(1)]],
         sortOrder: [s.sortOrder]
       }));
@@ -315,7 +309,6 @@ export class TestCreateComponent implements OnInit {
 
   submitExam(): void {
     this.examForm.markAllAsTouched();
-
     if (this.dateErrors?.['startTimeNotFuture']) {
       this.alert.error('Start time must be in the future');
       return;
@@ -347,7 +340,6 @@ export class TestCreateComponent implements OnInit {
       this.alert.error('Please fill all required fields');
       return;
     }
-
     const f = this.examForm.getRawValue();
     const payload: any = {
       entiId: this.tenantId,
@@ -368,14 +360,14 @@ export class TestCreateComponent implements OnInit {
       classNo: f.classNo || null,
       sections: f.sections
     };
-
     if (this.isEditMode) {
       payload.examId = this.examId;
       this.commonApi.fetchData(payload, 'exam', 'update').subscribe({
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Exam updated successfully');
-            this.router.navigate(['/app/exams/exams']);
+            // this.router.navigate(['/app/exams/exams']);
+            this.router.navigate(['/app/exams/exams/view'], { state: { exam: res.data } });
           }
         },
         error: (err: any) => this.alert.error(err?.error?.message || 'Error updating exam')
@@ -386,7 +378,8 @@ export class TestCreateComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Exam duplicated successfully');
-            this.router.navigate(['/app/exams/exams']);
+            // this.router.navigate(['/app/exams/exams']);
+            this.router.navigate(['/app/exams/exams/view'], { state: { exam: res.data } });
           }
         },
         error: (err: any) => this.alert.error(err?.error?.message || 'Error duplicating exam')
@@ -396,7 +389,8 @@ export class TestCreateComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Exam created successfully');
-            this.router.navigate(['/app/exams/exams']);
+            // this.router.navigate(['/app/exams/exams']);
+            this.router.navigate(['/app/exams/exams/view'], { state: { exam: res.data } });
           }
         },
         error: (err: any) => this.alert.error(err?.error?.message || 'Error creating exam')

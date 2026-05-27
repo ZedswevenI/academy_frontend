@@ -23,10 +23,33 @@ import { AnswerImportComponent } from './answer-import/answer-import.component';
 import { StudentResultComponent } from './student-result/student-result.component';
 import { MarksImportComponent } from './marks-import/marks-import.component';
 import { ImportedExamsComponent } from './imported-exams/imported-exams.component';
+import { QuestionCreateNewComponent } from './question-create-new/question-create-new.component';
+import { PassageSelectorNewComponent } from './passage-selector-new/passage-selector-new.component';
 
 @NgModule({
-  declarations: [TestComponent, TestCreateComponent, TestViewComponent, QuestionCreatorComponent, QuestionImportComponent, PassageSelectorComponent, TestimportComponent,QuestionViewComponent,QuestionArrangementComponent, ExamInstructionsComponent, ExamPassageComponent, ExamQuestionsComponent, ResultBatchComponent, ResultViewComponent, AnswerImportComponent, StudentResultComponent, MarksImportComponent, ImportedExamsComponent],
-  imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor,NgClass,DragDropModule, BaseChartDirective],
+  declarations: [
+    TestComponent,
+    TestCreateComponent,
+    TestViewComponent,
+    QuestionCreatorComponent,
+    QuestionImportComponent,
+    PassageSelectorComponent,
+    TestimportComponent,
+    QuestionViewComponent,
+    QuestionArrangementComponent,
+    ExamInstructionsComponent,
+    ExamPassageComponent,
+    ExamQuestionsComponent,
+    ResultBatchComponent,
+    ResultViewComponent,
+    AnswerImportComponent,
+    StudentResultComponent,
+    MarksImportComponent,
+    ImportedExamsComponent,
+    QuestionCreateNewComponent,
+    PassageSelectorNewComponent
+  ],
+  imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor, NgClass, DragDropModule, BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],
   exports: []
 })

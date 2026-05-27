@@ -1,0 +1,747 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0 text-primary">
+                            <i class="fas fa-question-circle text-primary me-2"></i>
+                            {{ isEditMode ? 'Edit Question' : 'Create Question' }}
+                        </h4>
+                        <button type="button" class="btn btn-back fs-16 fw-medium" (click)="goBackToQuestions()">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Back
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <form [formGroup]="questionForm" (ngSubmit)="onSubmit()">
+                        <!-- ================= EXAM MODE: SECTION ================= -->
+                        <div class="row mb-4" *ngIf="!isBankMode">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold">Subject <span class="text-danger">*</span></label>
+                                <select class="form-select" formControlName="sectionId" (change)="onSectionChange()">
+                                    <option value="">Select Subject</option>
+                                    <option *ngFor="let s of sections" [value]="s.sectionId">{{ s.sectionName }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Sort Order <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="sortOrder" min="1" />
+                            </div>
+                            <!-- <div class="col-md-4">
+                                <label class="form-label fw-bold">Question ID</label>
+                                <input class="form-control" formControlName="questionId"
+                                    placeholder="e.g. q_001 (optional)" />
+                            </div> -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Question No</label>
+                                <input class="form-control" formControlName="questionId" readonly
+                                    placeholder="Auto-generated on subject select"
+                                    style="background-color:#e9ecef; cursor:not-allowed;" />
+                            </div>
+                        </div>
+                        <!-- ================= BANK MODE: SUBJECT / TOPIC / SUBTOPIC / CLASS ================= -->
+                        <div class="row mb-4" *ngIf="isBankMode">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Subject <span class="text-danger">*</span></label>
+                                <select class="form-select" formControlName="bankSubjectId"
+                                    (change)="onBankSubjectChange($any($event.target).value)">
+                                    <option value="">Select Subject</option>
+                                    <option *ngFor="let s of subjectOptions" [value]="s.value">{{ s.label }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Topic <span class="text-danger">*</span></label>
+                                <input class="form-control" formControlName="topicId" placeholder="e.g. LIGHT I" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Sub Topic</label>
+                                <input class="form-control" formControlName="subTopicId"
+                                    placeholder="e.g. REFLECTION OF LIGHT" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Class <span class="text-danger">*</span></label>
+                                <select class="form-select" formControlName="classNo"
+                                    [class.is-invalid]="questionForm.get('classNo')?.invalid && questionForm.get('classNo')?.touched">
+                                    <option [ngValue]="null">Select Class</option>
+                                    <option *ngFor="let c of classOptions" [ngValue]="c.value">{{ c.label }}</option>
+                                </select>
+                                <div class="invalid-feedback">Class is required.</div>
+                            </div>
+                        </div>
+                        <hr class="mb-4" />
+                        <!-- ================= QUESTION TYPE + MARKS + DIFFICULTY ================= -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Question Type <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" formControlName="questionType">
+                                    <option *ngFor="let type of questionTypes" [value]="type.value">{{ type.label }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">Marks (+) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="positiveMarks" min="0"
+                                    step="0.5" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">Marks (-) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="negativeMarks" min="0"
+                                    step="0.5" />
+                                <small class="text-muted">NTA default applied</small>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">Difficulty</label>
+                                <select class="form-select" formControlName="difficulty">
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">Sort Order</label>
+                                <input type="number" class="form-control" formControlName="sortOrder" min="1"
+                                    *ngIf="isBankMode" />
+                            </div>
+                        </div>
+                        <!-- ================= PARTIAL MARKING (hidden for single/integer/numeric/tf/subjective) ================= -->
+                        <div class="row mb-3" *ngIf="showPartialMarkingToggle()">
+                            <div class="col-auto">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" formControlName="hasPartialMarking"
+                                        id="chkPartial" />
+                                    <label class="form-check-label fw-bold" for="chkPartial">Partial Marking</label>
+                                </div>
+                            </div>
+
+                            <!-- MCQ Multi: configurable partial mark per correct + wrong penalty -->
+                            <ng-container
+                                *ngIf="getSelectedQuestionType() === 'mcq_multi' && questionForm.get('hasPartialMarking')?.value">
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold">Per Correct Option</label>
+                                    <input type="number" class="form-control" formControlName="partialMarkPerCorrect"
+                                        min="0" step="0.5" placeholder="e.g. 1" />
+                                    <small class="text-muted">Marks if no wrong selected</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold">Wrong Penalty</label>
+                                    <input type="number" class="form-control" formControlName="wrongPenalty" min="0"
+                                        step="0.5" placeholder="e.g. 2" />
+                                    <small class="text-muted">Full penalty if any wrong</small>
+                                </div>
+                                <div class="col-12" *ngIf="mcqPartialMarksExceeded()">
+                                    <div class="alert alert-warning py-2 mt-2">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        Partial marks per correct × correct options count exceeds total positive marks.
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </div>
+                        <!-- ================= NUMERIC RANGE ================= -->
+                        <div class="row mb-3" *ngIf="getSelectedQuestionType() === 'numeric'">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Accepted Range — Min <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="numericMin" step="0.01"
+                                    placeholder="e.g. 9.8" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Accepted Range — Max <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" formControlName="numericMax" step="0.01"
+                                    placeholder="e.g. 10.2" />
+                            </div>
+                            <div class="col-12" *ngIf="questionForm.get('numericMin')?.value !== null && questionForm.get('numericMax')?.value !== null &&
+                       +questionForm.get('numericMin')!.value > +questionForm.get('numericMax')!.value">
+                                <div class="alert alert-warning py-2 mt-1">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> Min must be ≤ Max.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ================= OPTIONAL TOGGLES ================= -->
+                        <div class="d-flex flex-wrap gap-4 mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" formControlName="enablePassage"
+                                    id="chkPassage" />
+                                <label class="form-check-label fw-bold" for="chkPassage">Add Passage</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" formControlName="enableInstruction"
+                                    id="chkInstruction" />
+                                <label class="form-check-label fw-bold" for="chkInstruction">Add Instruction</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" formControlName="enableSolution"
+                                    id="chkSolution" />
+                                <label class="form-check-label fw-bold" for="chkSolution">Add Solution</label>
+                            </div>
+                        </div>
+                        <!-- ================= PASSAGE ================= -->
+                        <div *ngIf="questionForm.get('enablePassage')?.value" class="mb-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="form-label fw-bold mb-0 me-2">Passage</span>
+                                <button type="button" class="btn btn-outline-primary btn-sm me-2"
+                                    (click)="openPassagePopup()">
+                                    <i class="fas fa-search me-1"></i> Select Passage
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm"
+                                    (click)="openPreviewFromValue('Passage', 'passageText')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <span *ngIf="questionForm.get('passageId')?.value" class="ms-3 badge bg-success">
+                                    Passage selected ✓
+                                </span>
+                            </div>
+                            <app-rich-text-editor class="w-full" [value]="questionForm.value.passageText"
+                                [readOnly]="true">
+                            </app-rich-text-editor>
+                        </div>
+                        <!-- ================= INSTRUCTION ================= -->
+                        <div *ngIf="questionForm.get('enableInstruction')?.value" class="mb-4">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="form-label fw-bold mb-0 me-2">Instruction</span>
+                                <button type="button" class="btn btn-outline-info btn-sm"
+                                    (click)="openPreviewFromValue('Instruction', 'instruction')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <app-rich-text-editor (valueChange)="questionForm.get('instruction')?.setValue($event)">
+                            </app-rich-text-editor>
+                        </div>
+                        <!-- ================= QUESTION TEXT EDITOR ================= -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Question <span class="text-danger">*</span></label>
+                            <div class="editor-container border rounded">
+                                <div class="editor-toolbar bg-light border-bottom p-2">
+                                    <div class="btn-toolbar flex-wrap gap-1" role="toolbar">
+                                        <div class="btn-group btn-group-sm me-1">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('bold')" title="Bold"><i
+                                                    class="fas fa-bold"></i></button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('italic')" title="Italic"><i
+                                                    class="fas fa-italic"></i></button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('underline')" title="Underline"><i
+                                                    class="fas fa-underline"></i></button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('strikeThrough')" title="Strikethrough"><i
+                                                    class="fas fa-strikethrough"></i></button>
+                                        </div>
+                                        <div class="btn-group btn-group-sm me-1">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('insertUnorderedList')" title="Bullet"><i
+                                                    class="fas fa-list-ul"></i></button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('insertOrderedList')" title="Numbered"><i
+                                                    class="fas fa-list-ol"></i></button>
+                                        </div>
+                                        <div class="btn-group btn-group-sm me-1">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('justifyLeft')" title="Left"><i
+                                                    class="fas fa-align-left"></i></button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('justifyCenter')" title="Center"><i
+                                                    class="fas fa-align-center"></i></button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('justifyRight')" title="Right"><i
+                                                    class="fas fa-align-right"></i></button>
+                                        </div>
+                                        <div class="btn-group btn-group-sm me-1">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="insertTable('questionEditor')" title="Table"><i
+                                                    class="fas fa-table"></i></button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="insertLatex('questionEditor')" title="LaTeX"><i
+                                                    class="fas fa-superscript"></i> TeX</button>
+                                        </div>
+                                        <div class="btn-group btn-group-sm me-1">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                (click)="execCommand('removeFormat')" title="Clear"><i
+                                                    class="fas fa-remove-format"></i></button>
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-info"
+                                                (click)="openPreview('Question', 'questionEditor')" title="Preview"><i
+                                                    class="fas fa-eye"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="questionEditor" class="editor-content p-3" contenteditable="true"
+                                    (paste)="onPasteImage($event, 'questionEditor')"
+                                    (input)="onEditorInput($event, 'questionText')"
+                                    style="min-height:150px; max-height:400px; overflow-y:auto; word-wrap:break-word; white-space:pre-wrap;">
+                                </div>
+                            </div>
+                            <small class="text-muted"><i class="fas fa-info-circle"></i> Paste images, use LaTeX, insert
+                                tables</small>
+                        </div>
+                        <!-- ================= MCQ OPTIONS ================= -->
+                        <div *ngIf="getSelectedQuestionType() === 'mcq_single' || getSelectedQuestionType() === 'mcq_multi'"
+                            class="mb-4">
+                            <label class="form-label fw-bold">
+                                Options <span class="text-danger">*</span>
+                                <small class="text-muted ms-2 fw-normal">
+                                    ({{ getSelectedQuestionType() === 'mcq_single' ? 'Select ONE correct answer' :
+                                    'Select ALL correct answers' }})
+                                </small>
+                            </label>
+                            <div formArrayName="questionOptions">
+                                <div *ngFor="let option of options.controls; let i = index" [formGroupName]="i"
+                                    class="mb-3">
+                                    <div class="card border">
+                                        <div class="card-body p-3">
+                                            <div class="row align-items-start">
+                                                <div class="col-auto">
+                                                    <div class="d-flex flex-column align-items-center gap-1 mt-2">
+                                                        <span class="badge bg-secondary rounded-circle"
+                                                            style="width:28px;height:28px;line-height:20px;text-align:center;">
+                                                            {{ 'ABCDEFGH'[i] }}
+                                                        </span>
+                                                        <!-- mcq_single: radio-style (only one can be correct) -->
+                                                        <div class="form-check"
+                                                            *ngIf="getSelectedQuestionType() === 'mcq_single'">
+                                                            <input class="form-check-input" type="radio"
+                                                                [checked]="option.get('isCorrect')?.value"
+                                                                (change)="option.get('isCorrect')?.setValue(true); onOptionChange(i, 'mcq_single')"
+                                                                [id]="'opt-single-' + i" name="mcqSingleCorrect" />
+                                                            <label class="form-check-label small text-success fw-bold"
+                                                                [for]="'opt-single-' + i">Correct</label>
+                                                        </div>
+                                                        <!-- mcq_multi: checkbox -->
+                                                        <div class="form-check"
+                                                            *ngIf="getSelectedQuestionType() === 'mcq_multi'">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                formControlName="isCorrect"
+                                                                (change)="onOptionChange(i, 'mcq_multi')"
+                                                                [id]="'opt-multi-' + i" />
+                                                            <label class="form-check-label small text-success fw-bold"
+                                                                [for]="'opt-multi-' + i">Correct</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <label class="form-label small text-muted mb-1">Option {{
+                                                        'ABCDEFGH'[i] }}</label>
+                                                    <div class="editor-container border rounded"
+                                                        [class.border-success]="option.get('isCorrect')?.value"
+                                                        [class.border-2]="option.get('isCorrect')?.value">
+                                                        <div class="editor-toolbar bg-light border-bottom p-1">
+                                                            <div class="btn-toolbar flex-wrap gap-1" role="toolbar">
+                                                                <!-- Text formatting -->
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'bold')"
+                                                                        title="Bold"><i
+                                                                            class="fas fa-bold"></i></button>
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'italic')"
+                                                                        title="Italic"><i
+                                                                            class="fas fa-italic"></i></button>
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'underline')"
+                                                                        title="Underline"><i
+                                                                            class="fas fa-underline"></i></button>
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'strikeThrough')"
+                                                                        title="Strikethrough"><i
+                                                                            class="fas fa-strikethrough"></i></button>
+                                                                </div>
+                                                                <!-- Lists -->
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'insertUnorderedList')"
+                                                                        title="Bullet List"><i
+                                                                            class="fas fa-list-ul"></i></button>
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'insertOrderedList')"
+                                                                        title="Numbered List"><i
+                                                                            class="fas fa-list-ol"></i></button>
+                                                                </div>
+                                                                <!-- Alignment -->
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'justifyLeft')"
+                                                                        title="Align Left"><i
+                                                                            class="fas fa-align-left"></i></button>
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'justifyCenter')"
+                                                                        title="Align Center"><i
+                                                                            class="fas fa-align-center"></i></button>
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'justifyRight')"
+                                                                        title="Align Right"><i
+                                                                            class="fas fa-align-right"></i></button>
+                                                                </div>
+                                                                <!-- Table / LaTeX -->
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="insertOptionTable(i)"
+                                                                        title="Insert Table"><i
+                                                                            class="fas fa-table"></i></button>
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="insertOptionLatex(i)"
+                                                                        title="Insert LaTeX"><i
+                                                                            class="fas fa-superscript"></i> TeX</button>
+                                                                </div>
+                                                                <!-- Clear + Preview -->
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                        (click)="execOptionCommand(i, 'removeFormat')"
+                                                                        title="Clear Formatting"><i
+                                                                            class="fas fa-remove-format"></i></button>
+                                                                </div>
+                                                                <div class="btn-group btn-group-sm">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-info btn-sm"
+                                                                        (click)="openPreview('Option ' + 'ABCDEFGH'[i], 'optionEditor-' + i)"
+                                                                        title="Preview">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div [id]="'optionEditor-' + i" class="editor-content p-3"
+                                                            contenteditable="true"
+                                                            (input)="onOptionEditorInput(i, $event)"
+                                                            (paste)="onPasteImage($event, 'optionEditor-' + i)"
+                                                            style="min-height:80px; max-height:300px; overflow-y:auto; word-wrap:break-word; white-space:pre-wrap;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-auto">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm mt-4"
+                                                        (click)="removeOption(i)" [disabled]="options.length <= 2">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-shuffle fs-16 fw-medium" (click)="addOption()">
+                                <i class="fas fa-plus"></i> Add Option
+                            </button>
+                        </div>
+                        <!-- ================= TRUE / FALSE ================= -->
+                        <div *ngIf="getSelectedQuestionType() === 'true_false'" class="mb-4">
+                            <label class="form-label fw-bold">Correct Answer <span class="text-danger">*</span></label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" formControlName="trueFalseAnswer" [value]="true"
+                                    id="true-option" autocomplete="off" />
+                                <label class="btn btn-outline-success" for="true-option">
+                                    <i class="fas fa-check-circle"></i> True
+                                </label>
+                                <input type="radio" class="btn-check" formControlName="trueFalseAnswer" [value]="false"
+                                    id="false-option" autocomplete="off" />
+                                <label class="btn btn-outline-danger" for="false-option">
+                                    <i class="fas fa-times-circle"></i> False
+                                </label>
+                            </div>
+                        </div>
+                        <!-- ================= INTEGER ANSWER (plain number only) ================= -->
+                        <div *ngIf="getSelectedQuestionType() === 'integer'" class="mb-4">
+                            <label class="form-label fw-bold">
+                                Correct Answer (Integer) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" formControlName="integerAnswer" step="1"
+                                placeholder="Enter integer answer e.g. 42" style="max-width:280px;"
+                                [class.is-invalid]="questionForm.get('integerAnswer')?.invalid && questionForm.get('integerAnswer')?.touched" />
+                            <small class="text-muted">Only whole numbers accepted (no decimals)</small>
+                        </div>
+                        <!-- ================= NUMERIC SAMPLE ANSWER (optional reference) ================= -->
+                        <div *ngIf="getSelectedQuestionType() === 'numeric'" class="mb-4">
+                            <label class="form-label fw-bold">Sample Answer (optional reference)</label>
+                            <div class="editor-container border rounded">
+                                <div id="subjectiveEditor" class="editor-content p-3" contenteditable="true"
+                                    (input)="onEditorInput($event, 'subjectiveAnswer')"
+                                    style="min-height:80px; word-wrap:break-word;">
+                                </div>
+                            </div>
+                            <small class="text-muted">The actual accepted range is defined by Min/Max above</small>
+                        </div>
+                        <!-- ================= SUBJECTIVE ANSWER ================= -->
+                        <div *ngIf="getSelectedQuestionType() === 'subjective'" class="mb-4">
+                            <label class="form-label fw-bold">Expected Answer / Key Points</label>
+                            <div class="editor-container border rounded">
+                                <div id="subjectiveEditor" class="editor-content p-3" contenteditable="true"
+                                    (input)="onEditorInput($event, 'subjectiveAnswer')"
+                                    style="min-height:100px; word-wrap:break-word; white-space:pre-wrap; overflow-y:auto;">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ================= MATRIX TYPE ================= -->
+                        <div *ngIf="getSelectedQuestionType() === 'matrix'" class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <label class="form-label fw-bold mb-0">Matrix Pairs <span
+                                            class="text-danger">*</span></label>
+                                    <small class="text-muted ms-2">Match items from left column to right column</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge" [class.bg-success]="!matrixMarksExceeded()"
+                                        [class.bg-danger]="matrixMarksExceeded()">
+                                        Pair Marks Total: {{ getMatrixPairMarksTotal() }} / {{
+                                        questionForm.get('positiveMarks')?.value }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="alert alert-warning py-2" *ngIf="matrixMarksExceeded()">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Sum of pair marks exceeds total positive marks ({{
+                                questionForm.get('positiveMarks')?.value }}).
+                            </div>
+                            <div class="row mb-2 fw-bold">
+                                <div class="col-md-5">Left Column</div>
+                                <div class="col-md-5">Right Column</div>
+                                <div class="col-md-2">Pair Marks</div>
+                            </div>
+                            <div *ngFor="let item of matrixLeft.controls; let i = index" class="mb-3">
+                                <div class="card border">
+                                    <div class="card-body p-3">
+                                        <div class="row align-items-start">
+                                            <!-- Left editor -->
+                                            <div class="col-md-5">
+                                                <label class="form-label small text-muted">
+                                                    Item {{ i + 1 }} ({{ getMatrixLeftKey(i) }}) — Left
+                                                </label>
+                                                <div class="editor-container border rounded">
+                                                    <div class="editor-toolbar bg-light border-bottom p-1">
+                                                        <div class="btn-toolbar gap-1">
+                                                            <div class="btn-group btn-group-sm me-1">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="execMatrixLeftCommand(i, 'bold')"><i
+                                                                        class="fas fa-bold"></i></button>
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="execMatrixLeftCommand(i, 'italic')"><i
+                                                                        class="fas fa-italic"></i></button>
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="execMatrixLeftCommand(i, 'underline')"><i
+                                                                        class="fas fa-underline"></i></button>
+                                                            </div>
+                                                            <div class="btn-group btn-group-sm me-1">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="insertMatrixLeftTable(i)"><i
+                                                                        class="fas fa-table"></i></button>
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="insertMatrixLeftLatex(i)"><i
+                                                                        class="fas fa-superscript"></i> TeX</button>
+                                                            </div>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-info btn-sm"
+                                                                    (click)="openPreview('Matrix Left ' + (i+1), 'matrixLeftEditor-' + i)">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div [id]="'matrixLeftEditor-' + i" class="editor-content p-3"
+                                                        contenteditable="true"
+                                                        (input)="onMatrixLeftEditorInput(i, $event)"
+                                                        (paste)="onPasteImage($event, 'matrixLeftEditor-' + i)"
+                                                        style="min-height:100px; max-height:300px; overflow-y:auto; word-wrap:break-word;">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Right editor -->
+                                            <div class="col-md-5">
+                                                <label class="form-label small text-muted">
+                                                    Item {{ i + 1 }} ({{ getMatrixRightKey(i) }}) — Right
+                                                </label>
+                                                <div class="editor-container border rounded">
+                                                    <div class="editor-toolbar bg-light border-bottom p-1">
+                                                        <div class="btn-toolbar gap-1">
+                                                            <div class="btn-group btn-group-sm me-1">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="execMatrixRightCommand(i, 'bold')"><i
+                                                                        class="fas fa-bold"></i></button>
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="execMatrixRightCommand(i, 'italic')"><i
+                                                                        class="fas fa-italic"></i></button>
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="execMatrixRightCommand(i, 'underline')"><i
+                                                                        class="fas fa-underline"></i></button>
+                                                            </div>
+                                                            <div class="btn-group btn-group-sm me-1">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="insertMatrixRightTable(i)"><i
+                                                                        class="fas fa-table"></i></button>
+                                                                <button type="button"
+                                                                    class="btn btn-outline-secondary btn-sm"
+                                                                    (click)="insertMatrixRightLatex(i)"><i
+                                                                        class="fas fa-superscript"></i> TeX</button>
+                                                            </div>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-info btn-sm"
+                                                                    (click)="openPreview('Matrix Right ' + (i+1), 'matrixRightEditor-' + i)">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div [id]="'matrixRightEditor-' + i" class="editor-content p-3"
+                                                        contenteditable="true"
+                                                        (input)="onMatrixRightEditorInput(i, $event)"
+                                                        (paste)="onPasteImage($event, 'matrixRightEditor-' + i)"
+                                                        style="min-height:100px; max-height:300px; overflow-y:auto; word-wrap:break-word;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Pair marks input -->
+                                            <div class="col-md-2">
+                                                <label class="form-label small text-muted">Marks for {{
+                                                    getMatrixLeftKey(i) }}</label>
+                                                <div [formGroupName]="i" formArrayName="matrixLeft">
+                                                    <input type="number" class="form-control" min="0" step="0.5"
+                                                        [formControl]="$any(matrixLeft.at(i)).get('pairMarks')"
+                                                        placeholder="e.g. 2" />
+                                                </div>
+                                                <button type="button" class="btn btn-outline-danger btn-sm mt-2 w-100"
+                                                    (click)="removeMatrixPair(i)" [disabled]="matrixLeft.length <= 1">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Correct Match Selection -->
+                                        <div class="mt-3 pt-3 border-top">
+                                            <label class="form-label fw-bold small text-primary mb-2 d-block">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                Correct Match for {{ getMatrixLeftKey(i) }}
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <button type="button" *ngFor="let rKey of allMatrixRightKeys"
+                                                    class="btn btn-sm px-3 rounded-pill"
+                                                    [class.btn-primary]="isMatrixMatched(i, rKey)"
+                                                    [class.btn-outline-primary]="!isMatrixMatched(i, rKey)"
+                                                    (click)="toggleMatrixMatch(i, rKey)">
+                                                    {{ rKey }}
+                                                </button>
+                                            </div>
+                                            <div class="mt-1 text-muted small"
+                                                *ngIf="matrixLeft.at(i).get('selectedMatches')?.value?.length">
+                                                Matches: {{ matrixLeft.at(i).get('selectedMatches')?.value.join(', ') }}
+                                            </div>
+                                            <div class="text-danger small mt-1"
+                                                *ngIf="!matrixLeft.at(i).get('selectedMatches')?.value?.length">
+                                                Select at least one match
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-create fs-16 fw-medium" (click)="addMatrixPair()">
+                                <i class="fas fa-plus"></i> Add Pair
+                            </button>
+                        </div>
+                        <!-- ================= SOLUTION ================= -->
+                        <div *ngIf="questionForm.get('enableSolution')?.value" class="mb-4">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="form-label fw-bold mb-0 me-2">Solution</span>
+                                <button type="button" class="btn btn-outline-info btn-sm"
+                                    (click)="openPreviewFromValue('Solution', 'solution')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <app-rich-text-editor (valueChange)="questionForm.get('solution')?.setValue($event)">
+                            </app-rich-text-editor>
+                            <small class="text-muted"><i class="fas fa-info-circle"></i> Visible after exam</small>
+                        </div>
+                        <!-- ================= TAGS ================= -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Tags</label>
+                            <div class="d-flex gap-2">
+                                <input class="form-control" style="max-width:280px;" [(ngModel)]="tagInput"
+                                    [ngModelOptions]="{standalone: true}" placeholder="Add tag & press Enter"
+                                    (keydown)="onTagKeydown($event)" />
+                                <button type="button" class="btn btn-outline-primary btn-sm" (click)="addTag()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 mt-2" *ngIf="tags.length">
+                                <span *ngFor="let tag of tags; let i = index"
+                                    class="badge bg-light text-dark border d-flex align-items-center gap-1">
+                                    {{ tag }}
+                                    <button type="button" class="btn-close btn-close-sm" style="font-size:0.6rem;"
+                                        (click)="removeTag(i)"></button>
+                                </span>
+                            </div>
+                        </div>
+                        <!-- ================= ACTION BUTTONS ================= -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-edit fs-16 fw-medium" (click)="resetForm()">
+                                <i class="fas fa-redo me-1"></i> Reset
+                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-close-custom fs-16 fw-medium"
+                                    (click)="goBackToQuestions()">Cancel</button>
+                                <button type="submit" class="btn btn-create fs-16 fw-medium"
+                                    [disabled]="!isFormReadyToSubmit()">
+                                    <i class="fas fa-save me-1"></i>
+                                    {{ isEditMode ? 'Update Question' : 'Save Question' }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ================= PASSAGE SELECTOR POPUP ================= -->
+    <app-passage-selector-new *ngIf="showPassagePopup" [passages]="passages" [allPassages]="allPassages"
+        [preselectedClassNo]="isBankMode ? questionForm.get('classNo')?.value : examData?.classNo"
+        [preselectedSubjectId]="isBankMode ? questionForm.get('bankSubjectId')?.value : selectedSubjectId"
+        (selected)="onPassageSelected($event)" (closed)="closePassagePopup()">
+    </app-passage-selector-new>
+    <!-- ================= PREVIEW MODAL ================= -->
+    <div *ngIf="showPreviewModal" class="modal-backdrop fade show" (click)="closePreview()"></div>
+    <div *ngIf="showPreviewModal" class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content rounded-4">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-eye text-info me-2"></i>{{ previewTitle }} Preview
+                    </h5>
+                    <button type="button" class="btn-close" (click)="closePreview()"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="preview-content" [innerHTML]="previewHtml" style="min-height:100px; font-size:16px; line-height:1.6;
+                   word-wrap:break-word; white-space:normal; overflow-wrap:break-word;">
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill" (click)="closePreview()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
