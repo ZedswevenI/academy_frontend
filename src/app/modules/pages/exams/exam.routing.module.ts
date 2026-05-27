@@ -17,6 +17,8 @@ import { AnswerImportComponent } from './answer-import/answer-import.component';
 import { StudentResultComponent } from './student-result/student-result.component';
 import { MarksImportComponent } from './marks-import/marks-import.component';
 import { ImportedExamsComponent } from './imported-exams/imported-exams.component';
+import { QuestionCreateNewComponent } from './question-create-new/question-create-new.component';
+import { PassageSelectorNewComponent } from './passage-selector-new/passage-selector-new.component';
 
 const routes: Routes = [
   { path: 'instructions', component: ExamInstructionsComponent, title: 'Exam-Instructions' },
@@ -25,7 +27,7 @@ const routes: Routes = [
   { path: 'exams', component: TestComponent, title: 'Exams' },
   { path: 'exams/create', component: TestCreateComponent, title: 'Exam-Create' },
   { path: 'exams/import', component: TestimportComponent, title: 'Exam-Import' },
-  { path: 'exams/question-create', component: QuestionCreatorComponent, title: 'Exam-Question-Create' },
+  { path: 'exams/question-create', component: QuestionCreateNewComponent, title: 'Exam-Question-Create' },
   { path: 'exams/question-view', component: QuestionViewComponent, title: 'Exam-Question-View' },
   { path: 'exams/question-rearrange', component: QuestionArrangementComponent, title: 'Exam-Question-rearrangeOrder' },
   { path: 'exams/question-import', component: QuestionImportComponent, title: 'Exam-Question-Import' },
