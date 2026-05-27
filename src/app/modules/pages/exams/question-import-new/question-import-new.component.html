@@ -1,0 +1,373 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- ===================== UPLOAD STEP ===================== -->
+            <div *ngIf="currentStep === 'upload'" class="card shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-import me-2"></i>Import Questions from DOCX
+                    </h4>
+                    <button class="btn btn-outline-light btn-sm" (click)="downloadSample()">
+                        <i class="fas fa-download me-1"></i> Sample DOCX
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="downloadSample()">
+                            <i class="fas fa-download me-1"></i> Download Sample DOCX
+                        </button>
+                    </div>
+                    <!-- Exam mode: Section selector -->
+                    <div class="row mb-4" *ngIf="!isBankMode">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Subject / Section <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" [(ngModel)]="selectedSectionId">
+                                <option value="">Select Subject</option>
+                                <option *ngFor="let s of sections" [value]="s.sectionId">{{ s.sectionName }}</option>
+                            </select>
+                            <small class="text-muted">Select the subject/section for imported questions</small>
+                        </div>
+                    </div>
+
+                    <!-- Bank mode: Subject / Topic / SubTopic / Class -->
+                    <div class="row mb-4" *ngIf="isBankMode">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Class <span class="text-danger">*</span></label>
+                            <select class="form-select" [(ngModel)]="selectedClassNo">
+                                <option [ngValue]="null">Select Class</option>
+                                <option *ngFor="let c of classOptions" [ngValue]="c.value">{{ c.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Subject <span class="text-danger">*</span></label>
+                            <select class="form-select" [(ngModel)]="selectedSubjectId"
+                                (ngModelChange)="onBankSubjectChange($event)">
+                                <option value="">Select Subject</option>
+                                <option *ngFor="let s of subjectOptions" [value]="s.value">{{ s.label }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Topic <span class="text-danger">*</span></label>
+                            <input class="form-control" [(ngModel)]="selectedTopicId" placeholder="e.g. LIGHT I" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Sub Topic</label>
+                            <input class="form-control" [(ngModel)]="selectedSubTopicId"
+                                placeholder="e.g. REFLECTION OF LIGHT" />
+                        </div>
+                    </div>
+
+                    <!-- File Upload Area -->
+                    <div class="upload-area border rounded p-5 text-center mb-3" [class.border-success]="selectedFile"
+                        [class.border-primary]="!selectedFile">
+                        <i class="fas fa-cloud-upload-alt fa-4x mb-3" [class.text-success]="selectedFile"
+                            [class.text-primary]="!selectedFile"></i>
+                        <h5 class="mb-3">{{ selectedFile ? selectedFile.name : 'Choose a DOCX file to import' }}</h5>
+                        <input type="file" id="docxFile" class="d-none" accept=".docx"
+                            (change)="onFileSelected($event)" />
+                        <label for="docxFile" class="btn btn-primary btn-lg">
+                            <i class="fas fa-folder-open me-2"></i>
+                            {{ selectedFile ? 'Choose Different File' : 'Browse Files' }}
+                        </label>
+                        <p class="text-muted mt-3 mb-0">
+                            <small>Supported format: .docx (Microsoft Word Document)</small>
+                        </p>
+                    </div>
+
+                    <!-- Error -->
+                    <div *ngIf="errorMessage" class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ errorMessage }}
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-center gap-3 mt-2">
+                        <button class="btn btn-outline-secondary btn-lg"
+                            [routerLink]="isBankMode ? '/app/exams/questions' : '/app/exams/exams'">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button class="btn btn-success btn-lg" [disabled]="!selectedFile ||
+                          (!isBankMode && !selectedSectionId) ||
+                          (isBankMode && !selectedSubjectId) ||
+                          (isBankMode && !selectedClassNo) ||
+                          isProcessing" (click)="processDocx()">
+                            <span *ngIf="!isProcessing"><i class="fas fa-cogs me-2"></i>Process Document</span>
+                            <span *ngIf="isProcessing">
+                                <span class="spinner-border spinner-border-sm me-2"></span>Processing...
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Format Guide -->
+                    <div class="alert alert-info mt-3">
+                        <h6 class="fw-bold"><i class="fas fa-info-circle me-1"></i> DOCX Format Guide</h6>
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-6">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tag</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>[Q]</code></td>
+                                            <td>Start of a question (text can follow on same line)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>[qtype]</code></td>
+                                            <td>mcq_single, mcq_multi, integer, numeric, true_false, subjective,
+                                                short_answer, matrix</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>[DIFFICULTY]</code></td>
+                                            <td>easy / medium / hard</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>[ans]</code></td>
+                                            <td>Answer — A for single, A,B,C for multi, 42 for integer</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>[Marks]</code></td>
+                                            <td>positive,negative e.g. <code>4,1</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>[numericMin]</code></td>
+                                            <td>Minimum accepted value (numeric type)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>[numericMax]</code></td>
+                                            <td>Maximum accepted value (numeric type)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>[soln]</code></td>
+                                            <td>Solution (multi-line supported)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>(A) (B)...</code></td>
+                                            <td>MCQ options</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="bg-light border rounded p-2 small"
+                                    style="font-family:monospace; font-size:12px; line-height:1.8;">
+                                    [Q] Which is a vector quantity?<br>
+                                    [qtype] mcq_single<br>
+                                    [DIFFICULTY] medium<br>
+                                    (A) Mass<br>
+                                    (B) Velocity<br>
+                                    (C) Temperature<br>
+                                    (D) Energy<br>
+                                    [ans] B<br>
+                                    [Marks] 4,1<br>
+                                    [soln] Velocity has both magnitude and direction.<br>
+                                    It is a vector quantity.<br>
+                                    <br>
+                                    [Q] Integer type example<br>
+                                    [qtype] integer<br>
+                                    [ans] 42<br>
+                                    [Marks] 4,0
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ===================== PREVIEW STEP ===================== -->
+            <div *ngIf="currentStep === 'preview'" class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Preview Imported Questions
+                    </h4>
+                    <span class="badge bg-light text-dark fs-6">
+                        {{ parsedQuestions.length }} Question(s) Found
+                    </span>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Successfully parsed <strong>{{ parsedQuestions.length }}</strong> question(s).
+                        Review and click <strong>Submit All Questions</strong> when ready.
+                    </div>
+
+                    <!-- Questions list -->
+                    <div class="questions-container">
+                        <div *ngFor="let question of parsedQuestions; let i = index"
+                            class="question-card card mb-4 border">
+
+                            <!-- Card Header -->
+                            <div class="card-header bg-light">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <!-- Question Number -->
+                                        <span class="badge bg-primary fs-6 rounded-pill px-3">
+                                            Q{{ question.id }}
+                                        </span>
+                                        <span class="fw-semibold">Question {{ i + 1 }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <!-- Type badge -->
+                                        <span class="badge bg-info text-dark">
+                                            {{ getQuestionTypeLabel(question.qtype) }}
+                                        </span>
+                                        <!-- Difficulty badge -->
+                                        <span class="badge" [class.bg-success]="question.difficulty === 'easy'"
+                                            [class.bg-warning]="question.difficulty === 'medium'"
+                                            [class.bg-danger]="question.difficulty === 'hard'">
+                                            {{ question.difficulty }}
+                                        </span>
+                                        <!-- Marks badge -->
+                                        <span class="badge bg-secondary">
+                                            +{{ question.positiveMarks }}
+                                            <span *ngIf="question.negativeMarks > 0"> / −{{ question.negativeMarks
+                                                }}</span>
+                                        </span>
+                                        <!-- Partial marking badge -->
+                                        <span class="badge bg-warning text-dark" *ngIf="question.hasPartialMarking">
+                                            Partial
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+
+                                <!-- Question Text -->
+                                <div class="mb-3">
+                                    <label class="fw-bold text-primary mb-1">
+                                        <i class="fas fa-question-circle me-1"></i>Question:
+                                    </label>
+                                    <div class="p-3 bg-light rounded border" [innerHTML]="question.questionHtml"></div>
+                                </div>
+
+                                <!-- MCQ Options -->
+                                <div *ngIf="question.options.length > 0" class="mb-3">
+                                    <label class="fw-bold text-primary mb-1">
+                                        <i class="fas fa-list me-1"></i>Options:
+                                    </label>
+                                    <div>
+                                        <div *ngFor="let option of question.options"
+                                            class="option-item p-2 mb-2 border rounded d-flex align-items-start gap-2"
+                                            [class.border-success]="isCorrectOption(question, option.label)"
+                                            [class.bg-success-subtle]="isCorrectOption(question, option.label)">
+                                            <span class="badge rounded-pill mt-1"
+                                                [class.bg-success]="isCorrectOption(question, option.label)"
+                                                [class.bg-secondary]="!isCorrectOption(question, option.label)"
+                                                style="min-width:28px;">
+                                                {{ option.label }}
+                                            </span>
+                                            <div [innerHTML]="option.html" class="flex-grow-1"></div>
+                                            <i *ngIf="isCorrectOption(question, option.label)"
+                                                class="fas fa-check-circle text-success mt-1"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Matrix columns -->
+                                <div *ngIf="question.qtype === 'matrix' && question.matrixLeft.length" class="mb-3">
+                                    <label class="fw-bold text-primary mb-1">
+                                        <i class="fas fa-table me-1"></i>Matrix Match:
+                                    </label>
+                                    <div class="row g-2">
+                                        <div class="col-md-5">
+                                            <div class="fw-semibold text-muted small mb-1">Left Column</div>
+                                            <div *ngFor="let item of question.matrixLeft; let i = index"
+                                                class="p-2 mb-1 border rounded d-flex gap-2">
+                                                <span class="badge bg-primary">{{ 'ABCDEFGH'[i] }}</span>
+                                                <span>{{ item }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-arrows-alt-h fa-2x text-muted"></i>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div class="fw-semibold text-muted small mb-1">Right Column</div>
+                                            <div *ngFor="let item of question.matrixRight; let i = index"
+                                                class="p-2 mb-1 border rounded d-flex gap-2">
+                                                <span class="badge bg-success">{{ 'PQRSTUVW'[i] }}</span>
+                                                <span>{{ item }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Correct Answer display -->
+                                <div class="mb-3">
+                                    <label class="fw-bold text-success mb-1">
+                                        <i class="fas fa-check-double me-1"></i>Correct Answer:
+                                    </label>
+                                    <div class="p-2 bg-success-subtle border border-success rounded">
+                                        <strong>{{ getCorrectOptionLabels(question) }}</strong>
+                                        <!-- Show numeric range if applicable -->
+                                        <span
+                                            *ngIf="question.qtype === 'numeric' && (question.numericMin !== null || question.numericMax !== null)"
+                                            class="ms-3 text-muted small">
+                                            (Accepted range: {{ question.numericMin }} — {{ question.numericMax }})
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Solution -->
+                                <div *ngIf="question.solutionHtml" class="mb-2">
+                                    <label class="fw-bold text-info mb-1">
+                                        <i class="fas fa-lightbulb me-1"></i>Solution:
+                                    </label>
+                                    <div class="p-3 bg-info-subtle rounded border border-info-subtle"
+                                        [innerHTML]="question.solutionHtml"></div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" (click)="reset()">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Upload
+                            </button>
+                            <button class="btn btn-outline-danger"
+                                [routerLink]="isBankMode ? '/app/exams/questions' : '/app/exams/exams'">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                        </div>
+                        <button class="btn btn-success btn-lg" [disabled]="isProcessing" (click)="submitAllQuestions()">
+                            <span *ngIf="!isProcessing">
+                                <i class="fas fa-paper-plane me-2"></i>Submit All Questions
+                            </span>
+                            <span *ngIf="isProcessing">
+                                <span class="spinner-border spinner-border-sm me-2"></span>Submitting...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================== SUCCESS STEP ===================== -->
+            <div *ngIf="currentStep === 'success'" class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-check-circle text-success mb-3" style="font-size:5rem"></i>
+                    <h3 class="text-success mb-3">Questions Imported Successfully!</h3>
+                    <p class="text-muted mb-4">
+                        <strong>{{ parsedQuestions.length }}</strong> question(s) have been imported.
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <button class="btn btn-primary" (click)="reset()">
+                            <i class="fas fa-plus me-2"></i>Import More
+                        </button>
+                        <button class="btn btn-outline-secondary"
+                            [routerLink]="isBankMode ? '/app/exams/questions' : '/app/exams/exams'">
+                            <i class="fas fa-list me-2"></i>
+                            {{ isBankMode ? 'View Question Bank' : 'View Exams' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
