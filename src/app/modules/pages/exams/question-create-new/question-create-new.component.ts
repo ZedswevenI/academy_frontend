@@ -391,8 +391,10 @@ export class QuestionCreateNewComponent implements OnInit {
           enablePassage: !!(q.passageId || q.passageHtml),
           enableInstruction: !!q.instructionHtml,
           enableSolution: !!q.solutionHtml,
-          passageId: q.passageId || null,
-          passageText: q.passageHtml || '',
+          // passageId: q.passageId || null,
+          // passageText: q.passageHtml || '',
+          passageId: q.passageId?._id || q.passageId || null,
+          passageText: q.passageId?.passageHtml || q.passageHtml || '',
           instruction: instructionHtml,
           solution: solutionHtml,
           trueFalseAnswer:
@@ -1048,15 +1050,17 @@ export class QuestionCreateNewComponent implements OnInit {
     const questionHtml = this.restoreOriginalUrls(questionText);
     const instructionHtml = this.restoreOriginalUrls(instruction);
     const solutionHtml = this.restoreOriginalUrls(solution);
-
+    // const passageId = formValue.enablePassage ? formValue.passageId : null;
+    // const selectedPassage = passageId
+    //   ? this.passages.find(
+    //       (p: any) => p._id === passageId || p.passageId === passageId,
+    //     )
+    //   : null;
+    // const passageHtml = selectedPassage?.passageHtml || '';
     const passageId = formValue.enablePassage ? formValue.passageId : null;
-    const selectedPassage = passageId
-      ? this.passages.find(
-          (p: any) => p._id === passageId || p.passageId === passageId,
-        )
-      : null;
-    const passageHtml = selectedPassage?.passageHtml || '';
-
+    const passageHtml = formValue.enablePassage
+      ? formValue.passageText || ''
+      : '';
     const allImages = [
       ...this.extractImageUrls(questionHtml),
       ...this.extractImageUrls(solutionHtml),
@@ -1619,5 +1623,10 @@ export class QuestionCreateNewComponent implements OnInit {
     }
     if (this.mcqPartialMarksExceeded()) return false;
     return true;
+  }
+
+  get safePassageHtml(): SafeHtml {
+    const html = this.questionForm.get('passageText')?.value || '';
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 }

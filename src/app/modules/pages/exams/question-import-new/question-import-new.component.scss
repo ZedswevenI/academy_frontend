@@ -1,0 +1,205 @@
+/* ---------- Layout ---------- */
+
+.card {
+  border: none !important;
+}
+
+.upload-area {
+  background: #ffffff;
+  border: 2px dashed #cfd8dc;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.upload-area:hover {
+  background: #f9fbfc;
+  border-color: #90caf9;
+}
+
+.card {
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.card-header {
+  background: #f8fafc !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.card-body {
+  background: #ffffff;
+}
+
+/* ---------- Question Cards ---------- */
+
+.question-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  transition: box-shadow 0.25s ease;
+}
+
+.question-card:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* ---------- Section Labels ---------- */
+
+label.fw-bold {
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+/* ---------- Question / Option / Solution Content ---------- */
+
+.question-content,
+.option-item,
+.solution-content {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.question-content {
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.option-item {
+  background: #ffffff;
+}
+
+.option-content {
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.solution-content {
+  background: #f0f7ff;
+  border-left: 4px solid #3b82f6;
+  color: #1e3a8a;
+}
+
+/* ---------- Badges ---------- */
+
+.badge {
+  font-weight: 500;
+  padding: 0.4em 0.6em;
+}
+
+.badge.bg-primary {
+  background: #2563eb !important;
+}
+
+.badge.bg-info {
+  background: #0ea5e9 !important;
+}
+
+.badge.bg-success {
+  background: #16a34a !important;
+}
+
+.badge.bg-warning {
+  background: #f59e0b !important;
+}
+
+.badge.bg-danger {
+  background: #dc2626 !important;
+}
+
+.badge.bg-secondary {
+  background: #64748b !important;
+}
+
+/* ---------- Correct Option Highlight ---------- */
+
+.option-item.border-success {
+  border-color: #22c55e !important;
+  background: #f0fdf4;
+}
+
+.bg-success-subtle {
+  background-color: #f0fdf4 !important;
+}
+
+/* ---------- Answer Box ---------- */
+
+.answer-section .bg-success-subtle {
+  border: 1px solid #bbf7d0;
+  background: #ecfdf5 !important;
+  color: #065f46;
+}
+
+/* ---------- Images ---------- */
+
+.question-content img,
+.option-content img,
+.solution-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 12px 0;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.btn-success {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.btn-outline-secondary {
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.btn-outline-secondary:hover {
+  background: #f1f5f9;
+}
+
+/* ---------- Alerts ---------- */
+
+.alert {
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.alert-info {
+  background: #f0f7ff;
+  border: 1px solid #c7ddff;
+  color: #1e3a8a;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #065f46;
+}
+
+/* ---------- Success Screen ---------- */
+
+.success-animation {
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

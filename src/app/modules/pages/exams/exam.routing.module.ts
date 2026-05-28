@@ -19,6 +19,7 @@ import { MarksImportComponent } from './marks-import/marks-import.component';
 import { ImportedExamsComponent } from './imported-exams/imported-exams.component';
 import { QuestionCreateNewComponent } from './question-create-new/question-create-new.component';
 import { PassageSelectorNewComponent } from './passage-selector-new/passage-selector-new.component';
+import { QuestionImportNewComponent } from './question-import-new/question-import-new.component';
 
 const routes: Routes = [
   { path: 'instructions', component: ExamInstructionsComponent, title: 'Exam-Instructions' },
@@ -30,7 +31,7 @@ const routes: Routes = [
   { path: 'exams/question-create', component: QuestionCreateNewComponent, title: 'Exam-Question-Create' },
   { path: 'exams/question-view', component: QuestionViewComponent, title: 'Exam-Question-View' },
   { path: 'exams/question-rearrange', component: QuestionArrangementComponent, title: 'Exam-Question-rearrangeOrder' },
-  { path: 'exams/question-import', component: QuestionImportComponent, title: 'Exam-Question-Import' },
+  { path: 'exams/question-import', component: QuestionImportNewComponent, title: 'Exam-Question-Import' },
   { path: 'exams/answer-import', component: AnswerImportComponent, title: 'Exam-Answer-Import' },
   { path: 'exams/view', component: TestViewComponent, title: 'Exam-View' },
   { path: 'exams/result-batch', component: ResultBatchComponent, title: 'Exam-Result-Batches' },
