@@ -8,27 +8,24 @@ import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import katex from 'katex';
+import { DomSanitizer } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-ass-view',
   standalone: false,
   templateUrl: './test-view.component.html',
-  styleUrl: './test-view.component.scss'
+  styleUrl: './test-view.component.scss',
 })
 export class TestViewComponent implements OnInit {
-
   examData: any = {};
   loading = false;
   isDraft = false;
   tenantId = '';
   sectionTypeCountMap: Record<string, Record<string, number>> = {};
-
-  /* ================= TABS ================= */
-  activeTab: 'details' | 'results' | 'question-wise' | 'participants' = 'details';
+  activeTab: 'details' | 'results' | 'question-wise' | 'participants' =
+    'details';
   resultSubTab: 'batches' | 'leaderboard' | 'attempts' | 'timing' = 'batches';
   hasResults = false;
-
-  /* ================= QUESTION WISE REPORT ================= */
   questionWiseLoading = false;
   questionWiseData: any[] = [];
   questionWiseChartData: ChartData<'bar'> = { labels: [], datasets: [] };
@@ -37,19 +34,24 @@ export class TestViewComponent implements OnInit {
     maintainAspectRatio: false,
     plugins: {
       legend: { position: 'top' },
-      title: { display: true, text: 'Question Performance Overview', font: { size: 15, weight: 'bold' } }
+      title: {
+        display: true,
+        text: 'Question Performance Overview',
+        font: { size: 15, weight: 'bold' },
+      },
     },
     scales: {
       x: { stacked: true, title: { display: true, text: 'Question No' } },
-      y: { stacked: true, title: { display: true, text: 'Participants' }, beginAtZero: true, ticks: { stepSize: 1 } }
-    }
+      y: {
+        stacked: true,
+        title: { display: true, text: 'Participants' },
+        beginAtZero: true,
+        ticks: { stepSize: 1 },
+      },
+    },
   };
-
-  /* ================= PARTICIPANTS REPORT ================= */
   participantsLoading = false;
   participantsData: any[] = [];
-
-  /* ================= BATCH RESULTS ================= */
   batchLoading = false;
   batchData: any[] = [];
   totalBatchRecords = 0;
@@ -59,7 +61,7 @@ export class TestViewComponent implements OnInit {
     { key: 'studentCount', label: 'Students', sortable: false },
     { key: 'assignedCount', label: 'Assigned', sortable: false },
     { key: 'startedCount', label: 'Started', sortable: false },
-    { key: 'completedCount', label: 'Completed', sortable: false }
+    { key: 'completedCount', label: 'Completed', sortable: false },
   ];
   batchTableData: any[] = [];
   batchActions = [
@@ -69,27 +71,34 @@ export class TestViewComponent implements OnInit {
       tooltip: 'View Batch Results',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.viewBatchResult(row)
-    }
+      callback: (row: any) => this.viewBatchResult(row),
+    },
   ];
   analyticsLoading = false;
   analyticsData: any[] = [];
   sectionAnalyticsMap: Record<string, any[]> = {};
   subjectMap: Record<string, string> = {};
-
-  // Attempts chart
   attemptsChartData: ChartData<'bar'> = { labels: [], datasets: [] };
   attemptsChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { position: 'top' },
-      title: { display: true, text: 'Section-wise Attempts', font: { size: 15, weight: 'bold' } }
+      title: {
+        display: true,
+        text: 'Section-wise Attempts',
+        font: { size: 15, weight: 'bold' },
+      },
     },
     scales: {
       x: { stacked: true, title: { display: true, text: 'Section' } },
-      y: { stacked: true, title: { display: true, text: 'Count' }, beginAtZero: true, ticks: { stepSize: 1 } }
-    }
+      y: {
+        stacked: true,
+        title: { display: true, text: 'Count' },
+        beginAtZero: true,
+        ticks: { stepSize: 1 },
+      },
+    },
   };
   timingLoading = false;
   timingData: any[] = [];
@@ -100,19 +109,31 @@ export class TestViewComponent implements OnInit {
     maintainAspectRatio: false,
     plugins: {
       legend: { position: 'top' },
-      title: { display: true, text: 'Section-wise Avg Time', font: { size: 15, weight: 'bold' } },
+      title: {
+        display: true,
+        text: 'Section-wise Avg Time',
+        font: { size: 15, weight: 'bold' },
+      },
       tooltip: {
         callbacks: {
           label: (ctx: any) => {
             const sec = Math.round(ctx.raw || 0);
             let formatted: string;
-            if (sec >= 3600) formatted = Math.floor(sec / 3600) + 'h ' + Math.floor((sec % 3600) / 60) + 'm ' + (sec % 60) + 's';
-            else if (sec >= 60) formatted = Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+            if (sec >= 3600)
+              formatted =
+                Math.floor(sec / 3600) +
+                'h ' +
+                Math.floor((sec % 3600) / 60) +
+                'm ' +
+                (sec % 60) +
+                's';
+            else if (sec >= 60)
+              formatted = Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
             else formatted = sec + 's';
             return ctx.dataset.label + ': ' + formatted;
-          }
-        }
-      }
+          },
+        },
+      },
     },
     scales: {
       x: { title: { display: true, text: 'Section' } },
@@ -122,13 +143,20 @@ export class TestViewComponent implements OnInit {
         ticks: {
           callback: (value: any) => {
             const sec = Number(value);
-            if (sec >= 3600) return Math.floor(sec / 3600) + 'h ' + Math.floor((sec % 3600) / 60) + 'm';
-            if (sec >= 60) return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+            if (sec >= 3600)
+              return (
+                Math.floor(sec / 3600) +
+                'h ' +
+                Math.floor((sec % 3600) / 60) +
+                'm'
+              );
+            if (sec >= 60)
+              return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
             return sec + 's';
-          }
-        }
-      }
-    }
+          },
+        },
+      },
+    },
   };
   leaderboardLoading = false;
   leaderboardData: any[] = [];
@@ -136,8 +164,6 @@ export class TestViewComponent implements OnInit {
   leaderboardPage = 1;
   leaderboardLimit = 20;
   leaderboardBatchId = '';
-
-  // Batch filter for analytics
   selectedBatchId = '';
   allBatches: any[] = [];
   showBatchModal = false;
@@ -150,13 +176,9 @@ export class TestViewComponent implements OnInit {
   showPublishResultModal = false;
   publishResultNote = '';
   publishingResult = false;
-
-  /* ================= REEVALUATE RESULT MODAL ================= */
   showReevaluateModal = false;
   reevaluateNote = '';
   reevaluating = false;
-
-  /* ================= GRACE MARKS MODAL ================= */
   showGraceModal = false;
   graceRow: any = null;
   graceApplying = false;
@@ -171,22 +193,25 @@ export class TestViewComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private fb: FormBuilder,
-    public authService: AuthService
+    public authService: AuthService,
+    private sanitizer: DomSanitizer,
   ) {
     const state: any = history.state;
     if (state?.exam) {
       this.examData = state.exam;
     }
-    console.log("this.examData ", this.examData)
+    console.log('this.examData ', this.examData);
     this.tenantId = localStorage.getItem('tenantId') || '';
   }
 
   ngOnInit(): void {
-    const listRoute = this.examData?.isImported ? '/app/exams/imported-exams' : '/app/exams/exams';
+    const listRoute = this.examData?.isImported
+      ? '/app/exams/imported-exams'
+      : '/app/exams/exams';
     const listLabel = this.examData?.isImported ? 'Imported Exams' : 'Exams';
     this.breadcrumb.set([
       { label: listLabel, link: listRoute },
-      { label: 'View' }
+      { label: 'View' },
     ]);
 
     if (!this.examData?.examId) {
@@ -194,14 +219,11 @@ export class TestViewComponent implements OnInit {
       this.router.navigate([listRoute]);
       return;
     }
-
     this.isDraft = this.examData.status === 'draft';
     this.hasResults = this.examData.status !== 'draft';
-
     this.initGraceForm();
     this.fetchSubjects();
     this.loadSectionQuestionTypeCounts();
-
     if (this.hasResults) {
       this.fetchBatches();
       this.fetchAnalytics();
@@ -209,7 +231,9 @@ export class TestViewComponent implements OnInit {
     }
   }
 
-  /* ================= ACTION VISIBILITY ================= */
+  sanitizeHtml(html: string): any {
+    return this.sanitizer.bypassSecurityTrustHtml(html || '');
+  }
   get canPublishResult(): boolean {
     const status = this.examData?.status;
     const hasGraces = this.examData?.graces && this.examData.graces.length > 0;
@@ -251,7 +275,7 @@ export class TestViewComponent implements OnInit {
       totalMarks: d.totalMarks,
       totalQuestions: d.totalQuestions,
       startTime: Date.now() + 86400000,
-      endTime: Date.now() + 86400000 + (d.duration * 60000),
+      endTime: Date.now() + 86400000 + d.duration * 60000,
       autoPublishAt: null,
       instructionId: d.instructionId,
       calculatorType: d.calculatorType,
@@ -260,8 +284,8 @@ export class TestViewComponent implements OnInit {
         sectionName: s.sectionName,
         subjectId: s.subjectId?._id || s.subjectId,
         numberOfQuestions: s.numberOfQuestions,
-        sortOrder: s.sortOrder
-      }))
+        sortOrder: s.sortOrder,
+      })),
     };
 
     const endpoint = withQuestions ? 'duplicate' : 'create';
@@ -273,7 +297,9 @@ export class TestViewComponent implements OnInit {
       next: (res: any) => {
         this.loading = false;
         if (res?.status) {
-          this.alert.success(`Exam duplicated successfully ${withQuestions ? 'with' : 'without'} questions`);
+          this.alert.success(
+            `Exam duplicated successfully ${withQuestions ? 'with' : 'without'} questions`,
+          );
           this.showDuplicateModal = false;
         } else {
           this.alert.error(res?.message || 'Error duplicating exam');
@@ -282,17 +308,21 @@ export class TestViewComponent implements OnInit {
       error: (err: any) => {
         this.loading = false;
         this.alert.error(err?.error?.message || 'Error duplicating exam');
-      }
+      },
     });
   }
   closeDuplicateModal() {
     this.showDuplicateModal = false;
   }
   rearrangeQuestions() {
-    this.router.navigate(['/app/exams/exams/question-rearrange'], { state: { questions: this.examData } });
+    this.router.navigate(['/app/exams/exams/question-rearrange'], {
+      state: { questions: this.examData },
+    });
   }
   importAnswers() {
-    this.router.navigate(['/app/exams/exams/answer-import'], { state: { exam: this.examData } });
+    this.router.navigate(['/app/exams/exams/answer-import'], {
+      state: { exam: this.examData },
+    });
   }
 
   /* ================= PUBLISH RESULT ================= */
@@ -311,7 +341,7 @@ export class TestViewComponent implements OnInit {
       entiId: this.tenantId,
       examId: this.examData.examId,
       publishedAt: Date.now(),
-      note: this.publishResultNote.trim() || 'Result published'
+      note: this.publishResultNote.trim() || 'Result published',
     };
 
     this.publishingResult = true;
@@ -331,7 +361,7 @@ export class TestViewComponent implements OnInit {
       error: (err: any) => {
         this.publishingResult = false;
         this.alert.error(err?.error?.message || 'Error publishing result');
-      }
+      },
     });
   }
 
@@ -348,14 +378,12 @@ export class TestViewComponent implements OnInit {
 
   confirmReevaluate() {
     if (this.reevaluating) return;
-
     const payload = {
       entiId: this.tenantId,
       userId: localStorage.getItem('userId'),
       examId: this.examData.examId,
-      note: this.reevaluateNote.trim() || 'Reevaluated result'
+      note: this.reevaluateNote.trim() || 'Reevaluated result',
     };
-
     this.reevaluating = true;
     this.commonApi.fetchData(payload, 'exam/grace', 'reevaluate').subscribe({
       next: (res: any) => {
@@ -364,14 +392,18 @@ export class TestViewComponent implements OnInit {
           this.alert.success('Result reevaluated successfully');
           this.showReevaluateModal = false;
           this.reevaluateNote = '';
-
+          this.loadExamData();
+          this.questionWiseData = [];
+          this.participantsData = [];
           if (this.hasResults) {
             this.fetchBatches();
             this.fetchAnalytics();
             this.fetchTimingAnalytics();
-            if (this.resultSubTab === 'leaderboard') {
-              this.fetchLeaderboard();
-            }
+            if (this.resultSubTab === 'leaderboard') this.fetchLeaderboard();
+            if (this.activeTab === 'question-wise')
+              this.fetchQuestionWiseReport();
+            if (this.activeTab === 'participants')
+              this.fetchParticipantsReport();
           }
         } else {
           this.alert.error(res?.message || 'Failed to reevaluate result');
@@ -380,7 +412,7 @@ export class TestViewComponent implements OnInit {
       error: (err: any) => {
         this.reevaluating = false;
         this.alert.error(err?.error?.message || 'Error reevaluating result');
-      }
+      },
     });
   }
 
@@ -407,24 +439,32 @@ export class TestViewComponent implements OnInit {
       next: (allRes: any) => {
         this.allAssignableBatches = allRes?.data || [];
 
-        this.commonApi.fetchData({ entiId, examId: this.examData.examId }, 'exam/batch', 'list-by-exam').subscribe({
-          next: (assignedRes: any) => {
-            const assignedBatches = assignedRes?.data || [];
-            assignedBatches.forEach((b: any) => {
-              if (b.status === 'enabled') {
-                this.enabledBatchIds.add(b.batchId);
-                this.selectedBatchIds.add(b.batchId);
-              }
-            });
-            this.batchModalLoading = false;
-          },
-          error: () => { this.batchModalLoading = false; }
-        });
+        this.commonApi
+          .fetchData(
+            { entiId, examId: this.examData.examId },
+            'exam/batch',
+            'list-by-exam',
+          )
+          .subscribe({
+            next: (assignedRes: any) => {
+              const assignedBatches = assignedRes?.data || [];
+              assignedBatches.forEach((b: any) => {
+                if (b.status === 'enabled') {
+                  this.enabledBatchIds.add(b.batchId);
+                  this.selectedBatchIds.add(b.batchId);
+                }
+              });
+              this.batchModalLoading = false;
+            },
+            error: () => {
+              this.batchModalLoading = false;
+            },
+          });
       },
       error: () => {
         this.batchModalLoading = false;
         this.alert.error('Error loading batches');
-      }
+      },
     });
   }
   toggleBatchSelect(batchId: string) {
@@ -438,8 +478,12 @@ export class TestViewComponent implements OnInit {
     const entiId = this.tenantId;
     const examId = this.examData.examId;
 
-    const toAssign = Array.from(this.selectedBatchIds).filter(id => !this.enabledBatchIds.has(id));
-    const toDisable = Array.from(this.enabledBatchIds).filter(id => !this.selectedBatchIds.has(id));
+    const toAssign = Array.from(this.selectedBatchIds).filter(
+      (id) => !this.enabledBatchIds.has(id),
+    );
+    const toDisable = Array.from(this.enabledBatchIds).filter(
+      (id) => !this.selectedBatchIds.has(id),
+    );
 
     if (!toAssign.length && !toDisable.length) {
       this.alert.error('No changes to save');
@@ -464,23 +508,49 @@ export class TestViewComponent implements OnInit {
 
     if (toAssign.length) {
       pending++;
-      this.commonApi.fetchData({ entiId, examId, batchIds: toAssign }, 'exam/batch', 'assign').subscribe({
-        next: (res: any) => {
-          if (!res?.status) { hasError = true; this.alert.error('Error assigning batches'); }
-          checkDone();
-        },
-        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error assigning batches'); checkDone(); }
-      });
+      this.commonApi
+        .fetchData(
+          { entiId, examId, batchIds: toAssign },
+          'exam/batch',
+          'assign',
+        )
+        .subscribe({
+          next: (res: any) => {
+            if (!res?.status) {
+              hasError = true;
+              this.alert.error('Error assigning batches');
+            }
+            checkDone();
+          },
+          error: (err) => {
+            hasError = true;
+            this.alert.error(err?.error?.message || 'Error assigning batches');
+            checkDone();
+          },
+        });
     }
     if (toDisable.length) {
       pending++;
-      this.commonApi.fetchData({ entiId, examId, batchIds: toDisable }, 'exam/batch', 'disable').subscribe({
-        next: (res: any) => {
-          if (!res?.status) { hasError = true; this.alert.error('Error disabling batches'); }
-          checkDone();
-        },
-        error: (err) => { hasError = true; this.alert.error(err?.error?.message || 'Error disabling batches'); checkDone(); }
-      });
+      this.commonApi
+        .fetchData(
+          { entiId, examId, batchIds: toDisable },
+          'exam/batch',
+          'disable',
+        )
+        .subscribe({
+          next: (res: any) => {
+            if (!res?.status) {
+              hasError = true;
+              this.alert.error('Error disabling batches');
+            }
+            checkDone();
+          },
+          error: (err) => {
+            hasError = true;
+            this.alert.error(err?.error?.message || 'Error disabling batches');
+            checkDone();
+          },
+        });
     }
   }
 
@@ -489,8 +559,8 @@ export class TestViewComponent implements OnInit {
     this.graceForm = this.fb.group({
       subjectId: [''],
       questionId: ['', Validators.required],
-      graceMarks: [1, [Validators.required, Validators.min(0)]],
-      note: ['', Validators.required]
+      graceMarks: [1, [Validators.required, Validators.min(1)]],
+      note: ['', Validators.required],
     });
     this.graceForm.get('subjectId')?.valueChanges.subscribe(() => {
       this.graceForm.patchValue({ questionId: '' });
@@ -500,10 +570,17 @@ export class TestViewComponent implements OnInit {
   openGraceModal() {
     this.graceRow = { ...this.examData };
     if (this.graceRow.graces) {
-      this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.isActive);
+      this.graceRow.graces = this.graceRow.graces.filter(
+        (g: any) => g.isActive,
+      );
     }
     this.graceQuestions = [];
-    this.graceForm.reset({ subjectId: '', questionId: '', graceMarks: 1, note: '' });
+    this.graceForm.reset({
+      subjectId: '',
+      questionId: '',
+      graceMarks: 1,
+      note: '',
+    });
     this.showGraceModal = true;
     this.loadGraceQuestions();
   }
@@ -512,33 +589,39 @@ export class TestViewComponent implements OnInit {
     this.graceRow = null;
   }
   loadSectionQuestionTypeCounts() {
-    this.commonApi.fetchData(
-      { entiId: this.tenantId, examId: this.examData.examId },
-      'exam/questions',
-      'getallquestions'
-    ).subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          const questions: any[] = res.data?.questions || [];
-          const map: Record<string, Record<string, number>> = {};
-          questions.forEach((q: any) => {
-            const rawSubject = q.subjectId;
-            const subjectKey = (rawSubject && typeof rawSubject === 'object')
-              ? rawSubject._id
-              : rawSubject;
-            if (!subjectKey) return;
-            const type = q.questionType || 'other';
-            if (!map[subjectKey]) map[subjectKey] = {};
-            map[subjectKey][type] = (map[subjectKey][type] || 0) + 1;
-          });
-          this.sectionTypeCountMap = map;
-        }
-      },
-      error: (err) => console.error('Error loading question type counts:', err)
-    });
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId, examId: this.examData.examId },
+        'exam/questions',
+        'getallquestions',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            const questions: any[] = res.data?.questions || [];
+            const map: Record<string, Record<string, number>> = {};
+            questions.forEach((q: any) => {
+              const rawSubject = q.subjectId;
+              const subjectKey =
+                rawSubject && typeof rawSubject === 'object'
+                  ? rawSubject._id
+                  : rawSubject;
+              if (!subjectKey) return;
+              const type = q.questionType || 'other';
+              if (!map[subjectKey]) map[subjectKey] = {};
+              map[subjectKey][type] = (map[subjectKey][type] || 0) + 1;
+            });
+            this.sectionTypeCountMap = map;
+          }
+        },
+        error: (err) =>
+          console.error('Error loading question type counts:', err),
+      });
   }
 
-  getTypeCountsForSection(sectionId: string): { type: string; count: number }[] {
+  getTypeCountsForSection(
+    sectionId: string,
+  ): { type: string; count: number }[] {
     const counts = this.sectionTypeCountMap[sectionId] || {};
     return Object.entries(counts).map(([type, count]) => ({ type, count }));
   }
@@ -559,30 +642,43 @@ export class TestViewComponent implements OnInit {
 
   loadGraceQuestions() {
     this.graceQuestionsLoading = true;
-    this.commonApi.fetchData({ entiId: this.tenantId, examId: this.graceRow.examId }, 'exam/questions', 'getallquestions').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          const loadedQuestions = res.data?.questions || [];
-          this.graceQuestions = loadedQuestions.map((q: any) => ({
-            ...q,
-            questionHtml: this.renderLatexInHtml(q.questionHtml || q.question || '')
-          }));
-        }
-        this.graceQuestionsLoading = false;
-      },
-      error: (err) => {
-        this.graceQuestionsLoading = false;
-        console.error('Error loading questions:', err);
-      }
-    });
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId, examId: this.graceRow.examId },
+        'exam/questions',
+        'getallquestions',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            const loadedQuestions = res.data?.questions || [];
+            this.graceQuestions = loadedQuestions.map((q: any) => ({
+              ...q,
+              questionHtml: this.renderLatexInHtml(
+                q.questionHtml || q.question || '',
+              ),
+            }));
+          }
+          this.graceQuestionsLoading = false;
+        },
+        error: (err) => {
+          this.graceQuestionsLoading = false;
+          console.error('Error loading questions:', err);
+        },
+      });
   }
   getFilteredGraceQuestions() {
     const selected = this.graceForm.get('subjectId')?.value;
-    if (!selected || selected === '' || selected === 'null' || selected === 'undefined') {
+    if (
+      !selected ||
+      selected === '' ||
+      selected === 'null' ||
+      selected === 'undefined'
+    ) {
       return this.graceQuestions;
     }
     const targetId = String(selected).trim();
-    return this.graceQuestions.filter(q => {
+    return this.graceQuestions.filter((q) => {
       const qSubId = q.subjectId?._id || q.subjectId;
       if (!qSubId) return false;
       return String(qSubId).trim() === targetId;
@@ -597,9 +693,11 @@ export class TestViewComponent implements OnInit {
       return;
     }
     const formValue = this.graceForm.value;
-    const selectedQ = this.graceQuestions.find((q: any) => (q.questionId || q._id) === formValue.questionId);
-    const sectionId = selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
-
+    const selectedQ = this.graceQuestions.find(
+      (q: any) => (q.questionId || q._id) === formValue.questionId,
+    );
+    const sectionId =
+      selectedQ?.sectionId || this.graceRow?.sections?.[0]?.sectionId;
     const payload = {
       entiId: this.tenantId,
       userId: localStorage.getItem('userId'),
@@ -607,9 +705,8 @@ export class TestViewComponent implements OnInit {
       questionId: formValue.questionId,
       sectionId: sectionId,
       graceMarks: formValue.graceMarks,
-      note: formValue.note
+      note: formValue.note,
     };
-
     this.graceApplying = true;
     this.commonApi.fetchData(payload, 'exam/grace', 'add').subscribe({
       next: (res: any) => {
@@ -617,6 +714,7 @@ export class TestViewComponent implements OnInit {
         if (res?.status) {
           this.alert.success('Grace marks applied successfully');
           this.closeGraceModal();
+          this.loadExamData();
         } else {
           this.alert.error(res?.message || 'Failed to apply grace marks');
         }
@@ -624,26 +722,27 @@ export class TestViewComponent implements OnInit {
       error: (err) => {
         this.graceApplying = false;
         this.alert.error(err?.error?.message || 'Error applying grace marks');
-      }
+      },
     });
   }
   removeGrace(graceId: string) {
     if (!confirm('Are you sure you want to remove this grace mark?')) return;
-
     const payload = {
       entiId: this.tenantId,
       examId: this.graceRow.examId,
       graceId: graceId,
-      userId: localStorage.getItem('userId')
+      userId: localStorage.getItem('userId'),
     };
-
     this.graceRemovingGraceId = graceId;
     this.commonApi.fetchData(payload, 'exam/grace', 'remove').subscribe({
       next: (res: any) => {
         this.graceRemovingGraceId = null;
         if (res?.status) {
           this.alert.success('Grace mark removed successfully');
-          this.graceRow.graces = this.graceRow.graces.filter((g: any) => g.graceId !== graceId);
+          this.graceRow.graces = this.graceRow.graces.filter(
+            (g: any) => g.graceId !== graceId,
+          );
+          this.loadExamData();
         } else {
           this.alert.error(res?.message || 'Failed to remove grace mark');
         }
@@ -651,7 +750,7 @@ export class TestViewComponent implements OnInit {
       error: (err) => {
         this.graceRemovingGraceId = null;
         this.alert.error(err?.error?.message || 'Error removing grace mark');
-      }
+      },
     });
   }
 
@@ -680,16 +779,44 @@ export class TestViewComponent implements OnInit {
   private renderLatexInHtml(html: string): string {
     if (!html) return html;
     let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: true,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: true,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: false,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: false,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     return result;
   }
@@ -697,7 +824,9 @@ export class TestViewComponent implements OnInit {
   getSelectedQuestionText(): string {
     const qId = this.graceForm.get('questionId')?.value;
     if (!qId) return '';
-    const idx = this.graceQuestions.findIndex((q: any) => (q.questionId || q._id) === qId);
+    const idx = this.graceQuestions.findIndex(
+      (q: any) => (q.questionId || q._id) === qId,
+    );
     if (idx !== -1) return `Question ${idx + 1}`;
     return qId;
   }
@@ -719,32 +848,34 @@ export class TestViewComponent implements OnInit {
     this.questionWiseLoading = true;
     const payload: any = {
       entiId: this.tenantId,
-      examId: this.examData.examId
+      examId: this.examData.examId,
     };
     if (this.selectedBatchId) {
       payload.batchId = this.selectedBatchId;
     }
 
-    this.commonApi.fetchData(payload, 'exam/result/analytics', 'question-wise').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.questionWiseData = res.data || [];
-          this.buildQuestionWiseChart();
-        }
-        this.questionWiseLoading = false;
-      },
-      error: () => {
-        this.questionWiseLoading = false;
-        this.alert.error('Error loading question wise report');
-      }
-    });
+    this.commonApi
+      .fetchData(payload, 'exam/result/analytics', 'question-wise')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.questionWiseData = res.data || [];
+            this.buildQuestionWiseChart();
+          }
+          this.questionWiseLoading = false;
+        },
+        error: () => {
+          this.questionWiseLoading = false;
+          this.alert.error('Error loading question wise report');
+        },
+      });
   }
 
   buildQuestionWiseChart() {
-    const labels = this.questionWiseData.map(q => `Q${q.qNo}`);
-    const correctData = this.questionWiseData.map(q => q.correctedBy);
-    const incorrectData = this.questionWiseData.map(q => q.incorrectedBy);
-    const unattemptedData = this.questionWiseData.map(q => q.unattemptedBy);
+    const labels = this.questionWiseData.map((q) => `Q${q.qNo}`);
+    const correctData = this.questionWiseData.map((q) => q.correctedBy);
+    const incorrectData = this.questionWiseData.map((q) => q.incorrectedBy);
+    const unattemptedData = this.questionWiseData.map((q) => q.unattemptedBy);
 
     this.questionWiseChartData = {
       labels,
@@ -753,21 +884,21 @@ export class TestViewComponent implements OnInit {
           label: 'Correct',
           data: correctData,
           backgroundColor: '#22C55E', // success
-          borderRadius: 4
+          borderRadius: 4,
         },
         {
           label: 'Incorrect',
           data: incorrectData,
           backgroundColor: '#EF4444', // danger
-          borderRadius: 4
+          borderRadius: 4,
         },
         {
           label: 'Unattempted',
           data: unattemptedData,
           backgroundColor: '#F59E0B', // warning
-          borderRadius: 4
-        }
-      ]
+          borderRadius: 4,
+        },
+      ],
     };
   }
 
@@ -775,24 +906,26 @@ export class TestViewComponent implements OnInit {
     this.participantsLoading = true;
     const payload: any = {
       entiId: this.tenantId,
-      examId: this.examData.examId
+      examId: this.examData.examId,
     };
     if (this.selectedBatchId) {
       payload.batchId = this.selectedBatchId;
     }
 
-    this.commonApi.fetchData(payload, 'exam/result/analytics', 'participants').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.participantsData = res.data || [];
-        }
-        this.participantsLoading = false;
-      },
-      error: () => {
-        this.participantsLoading = false;
-        this.alert.error('Error loading participants report');
-      }
-    });
+    this.commonApi
+      .fetchData(payload, 'exam/result/analytics', 'participants')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.participantsData = res.data || [];
+          }
+          this.participantsLoading = false;
+        },
+        error: () => {
+          this.participantsLoading = false;
+          this.alert.error('Error loading participants report');
+        },
+      });
   }
 
   switchResultSubTab(tab: 'batches' | 'leaderboard' | 'attempts' | 'timing') {
@@ -808,7 +941,7 @@ export class TestViewComponent implements OnInit {
     this.batchLoading = true;
     const payload = {
       entiId: this.tenantId,
-      examId: this.examData.examId
+      examId: this.examData.examId,
     };
 
     this.commonApi.fetchData(payload, 'exam/batch', 'list-by-exam').subscribe({
@@ -818,11 +951,11 @@ export class TestViewComponent implements OnInit {
           this.totalBatchRecords = res.count || 0;
           this.batchTableData = this.batchData.map((item: any) => ({
             ...item,
-            statusDisplay: item.status === 'enabled' ? 'Enabled' : 'Disabled'
+            statusDisplay: item.status === 'enabled' ? 'Enabled' : 'Disabled',
           }));
           this.allBatches = this.batchData.map((b: any) => ({
             batchId: b.batchId,
-            label: b.batchId
+            label: b.batchId,
           }));
         }
         this.batchLoading = false;
@@ -830,13 +963,13 @@ export class TestViewComponent implements OnInit {
       error: () => {
         this.batchLoading = false;
         this.alert.error('Error loading batches');
-      }
+      },
     });
   }
 
   viewBatchResult(row: any) {
     this.router.navigate(['/app/exams/exams/result-view'], {
-      state: { batch: row, exam: this.examData }
+      state: { batch: row, exam: this.examData },
     });
   }
 
@@ -846,22 +979,24 @@ export class TestViewComponent implements OnInit {
     const payload: any = {
       entiId: this.tenantId,
     };
-    this.commonApi.fetchData(payload, 'ims/subject', 'list?list=full').subscribe({
-      next: (res: any) => {
-        if (res?.status && res.data) {
-          this.subjectMap = res.data.reduce((acc: any, cur: any) => {
-            acc[cur._id] = cur.subjectName;
-            return acc;
-          }, {});
-          // Rebuild charts if they were already built with IDs
-          if (this.analyticsData.length > 0) this.buildAttemptsChart();
-          if (this.timingData.length > 0) this.buildTimingChart();
-        }
-      },
-      error: (err) => {
-        console.error('Error fetching subjects:', err);
-      }
-    });
+    this.commonApi
+      .fetchData(payload, 'ims/subject', 'list?list=full')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status && res.data) {
+            this.subjectMap = res.data.reduce((acc: any, cur: any) => {
+              acc[cur._id] = cur.subjectName;
+              return acc;
+            }, {});
+            // Rebuild charts if they were already built with IDs
+            if (this.analyticsData.length > 0) this.buildAttemptsChart();
+            if (this.timingData.length > 0) this.buildTimingChart();
+          }
+        },
+        error: (err) => {
+          console.error('Error fetching subjects:', err);
+        },
+      });
   }
 
   /* ================= ANALYTICS ================= */
@@ -870,50 +1005,54 @@ export class TestViewComponent implements OnInit {
     this.analyticsLoading = true;
     const payload: any = {
       entiId: this.tenantId,
-      examId: this.examData.examId
+      examId: this.examData.examId,
     };
     if (this.selectedBatchId) {
       payload.batchId = this.selectedBatchId;
     }
 
-    this.commonApi.fetchData(payload, 'exam/result/analytics', 'attempts').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.analyticsData = res.data || [];
-          this.buildSectionAnalytics();
-        }
-        this.analyticsLoading = false;
-      },
-      error: () => {
-        this.analyticsLoading = false;
-        this.alert.error('Error loading analytics');
-      }
-    });
+    this.commonApi
+      .fetchData(payload, 'exam/result/analytics', 'attempts')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.analyticsData = res.data || [];
+            this.buildSectionAnalytics();
+          }
+          this.analyticsLoading = false;
+        },
+        error: () => {
+          this.analyticsLoading = false;
+          this.alert.error('Error loading analytics');
+        },
+      });
   }
 
   fetchTimingAnalytics() {
     this.timingLoading = true;
     const payload: any = {
       entiId: this.tenantId,
-      examId: this.examData.examId
+      examId: this.examData.examId,
     };
     if (this.selectedBatchId) {
       payload.batchId = this.selectedBatchId;
     }
 
-    this.commonApi.fetchData(payload, 'exam/result/analytics', 'timing').subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.timingData = res.data || [];
-          this.buildSectionTiming();
-        }
-        this.timingLoading = false;
-      },
-      error: () => {
-        this.timingLoading = false;
-        this.alert.error('Error loading timing analytics');
-      }
-    });
+    this.commonApi
+      .fetchData(payload, 'exam/result/analytics', 'timing')
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.timingData = res.data || [];
+            this.buildSectionTiming();
+          }
+          this.timingLoading = false;
+        },
+        error: () => {
+          this.timingLoading = false;
+          this.alert.error('Error loading timing analytics');
+        },
+      });
   }
 
   /* ================= LEADERBOARD ================= */
@@ -922,7 +1061,7 @@ export class TestViewComponent implements OnInit {
     this.leaderboardLoading = true;
     const payload: any = {
       entiId: this.tenantId,
-      examId: this.examData.examId
+      examId: this.examData.examId,
     };
     if (this.leaderboardBatchId) {
       payload.batchId = this.leaderboardBatchId;
@@ -930,19 +1069,21 @@ export class TestViewComponent implements OnInit {
 
     const query = `page=${this.leaderboardPage}&limit=${this.leaderboardLimit}`;
 
-    this.commonApi.fetchData(payload, 'exam/result', `leaderboard?${query}`).subscribe({
-      next: (res: any) => {
-        if (res?.status) {
-          this.leaderboardData = res.data || [];
-          this.totalLeaderboardRecords = res.count || 0;
-        }
-        this.leaderboardLoading = false;
-      },
-      error: () => {
-        this.leaderboardLoading = false;
-        this.alert.error('Error loading leaderboard');
-      }
-    });
+    this.commonApi
+      .fetchData(payload, 'exam/result', `leaderboard?${query}`)
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.leaderboardData = res.data || [];
+            this.totalLeaderboardRecords = res.count || 0;
+          }
+          this.leaderboardLoading = false;
+        },
+        error: () => {
+          this.leaderboardLoading = false;
+          this.alert.error('Error loading leaderboard');
+        },
+      });
   }
 
   onLeaderboardBatchChange() {
@@ -976,7 +1117,11 @@ export class TestViewComponent implements OnInit {
   }
 
   getSectionResultFromLeaderboard(result: any, sectionId: string): any {
-    return (result.sectionResults || []).find((sr: any) => sr.sectionId === sectionId) || null;
+    return (
+      (result.sectionResults || []).find(
+        (sr: any) => sr.sectionId === sectionId,
+      ) || null
+    );
   }
 
   onBatchFilterChange() {
@@ -997,16 +1142,16 @@ export class TestViewComponent implements OnInit {
 
   private buildAttemptsChart() {
     const sectionIds = this.getSectionKeys();
-    const labels = sectionIds.map(id => this.getSectionName(id));
-    const correctData = sectionIds.map(id => {
+    const labels = sectionIds.map((id) => this.getSectionName(id));
+    const correctData = sectionIds.map((id) => {
       const items = this.sectionAnalyticsMap[id] || [];
       return items.reduce((s: number, i: any) => s + (i.correctCount || 0), 0);
     });
-    const wrongData = sectionIds.map(id => {
+    const wrongData = sectionIds.map((id) => {
       const items = this.sectionAnalyticsMap[id] || [];
       return items.reduce((s: number, i: any) => s + (i.wrongCount || 0), 0);
     });
-    const skippedData = sectionIds.map(id => {
+    const skippedData = sectionIds.map((id) => {
       const items = this.sectionAnalyticsMap[id] || [];
       return items.reduce((s: number, i: any) => s + (i.skippedCount || 0), 0);
     });
@@ -1014,10 +1159,25 @@ export class TestViewComponent implements OnInit {
     this.attemptsChartData = {
       labels,
       datasets: [
-        { label: 'Correct', data: correctData, backgroundColor: '#22c55e', borderRadius: 4 },
-        { label: 'Wrong', data: wrongData, backgroundColor: '#ef4444', borderRadius: 4 },
-        { label: 'Skipped', data: skippedData, backgroundColor: '#f59e0b', borderRadius: 4 }
-      ]
+        {
+          label: 'Correct',
+          data: correctData,
+          backgroundColor: '#22c55e',
+          borderRadius: 4,
+        },
+        {
+          label: 'Wrong',
+          data: wrongData,
+          backgroundColor: '#ef4444',
+          borderRadius: 4,
+        },
+        {
+          label: 'Skipped',
+          data: skippedData,
+          backgroundColor: '#f59e0b',
+          borderRadius: 4,
+        },
+      ],
     };
   }
 
@@ -1034,31 +1194,53 @@ export class TestViewComponent implements OnInit {
 
   private buildTimingChart() {
     const sectionIds = this.getTimingSectionKeys();
-    const labels = sectionIds.map(id => this.getSectionName(id));
-    const avgData = sectionIds.map(id => {
+    const labels = sectionIds.map((id) => this.getSectionName(id));
+    const avgData = sectionIds.map((id) => {
       const items = this.sectionTimingMap[id] || [];
       if (!items.length) return 0;
-      const total = items.reduce((s: number, i: any) => s + (i.avgTimeTaken || 0), 0);
+      const total = items.reduce(
+        (s: number, i: any) => s + (i.avgTimeTaken || 0),
+        0,
+      );
       return Math.round(total / items.length);
     });
-    const minData = sectionIds.map(id => {
+    const minData = sectionIds.map((id) => {
       const items = this.sectionTimingMap[id] || [];
       if (!items.length) return 0;
-      return Math.round(Math.min(...items.map((i: any) => i.minTimeTaken || 0)));
+      return Math.round(
+        Math.min(...items.map((i: any) => i.minTimeTaken || 0)),
+      );
     });
-    const maxData = sectionIds.map(id => {
+    const maxData = sectionIds.map((id) => {
       const items = this.sectionTimingMap[id] || [];
       if (!items.length) return 0;
-      return Math.round(Math.max(...items.map((i: any) => i.maxTimeTaken || 0)));
+      return Math.round(
+        Math.max(...items.map((i: any) => i.maxTimeTaken || 0)),
+      );
     });
 
     this.timingChartData = {
       labels,
       datasets: [
-        { label: 'Avg Time', data: avgData, backgroundColor: '#3b82f6', borderRadius: 4 },
-        { label: 'Min Time', data: minData, backgroundColor: '#22c55e', borderRadius: 4 },
-        { label: 'Max Time', data: maxData, backgroundColor: '#ef4444', borderRadius: 4 }
-      ]
+        {
+          label: 'Avg Time',
+          data: avgData,
+          backgroundColor: '#3b82f6',
+          borderRadius: 4,
+        },
+        {
+          label: 'Min Time',
+          data: minData,
+          backgroundColor: '#22c55e',
+          borderRadius: 4,
+        },
+        {
+          label: 'Max Time',
+          data: maxData,
+          backgroundColor: '#ef4444',
+          borderRadius: 4,
+        },
+      ],
     };
   }
 
@@ -1098,22 +1280,54 @@ export class TestViewComponent implements OnInit {
   }
 
   getSectionName(sectionId: string): string {
-    const section = (this.examData.sections || []).find((s: any) => s.sectionId === sectionId);
+    const section = (this.examData.sections || []).find(
+      (s: any) => s.sectionId === sectionId,
+    );
     if (section?.sectionName) return section.sectionName;
     return this.subjectMap[sectionId] || sectionId;
   }
 
-  getSectionSummary(sectionId: string): { totalStudents: number; avgAccuracy: number; totalCorrect: number; totalWrong: number; totalSkipped: number } {
+  getSectionSummary(sectionId: string): {
+    totalStudents: number;
+    avgAccuracy: number;
+    totalCorrect: number;
+    totalWrong: number;
+    totalSkipped: number;
+  } {
     const items = this.sectionAnalyticsMap[sectionId] || [];
-    if (!items.length) return { totalStudents: 0, avgAccuracy: 0, totalCorrect: 0, totalWrong: 0, totalSkipped: 0 };
+    if (!items.length)
+      return {
+        totalStudents: 0,
+        avgAccuracy: 0,
+        totalCorrect: 0,
+        totalWrong: 0,
+        totalSkipped: 0,
+      };
 
-    const totalCorrect = items.reduce((s: number, i: any) => s + (i.correctCount || 0), 0);
-    const totalWrong = items.reduce((s: number, i: any) => s + (i.wrongCount || 0), 0);
-    const totalSkipped = items.reduce((s: number, i: any) => s + (i.skippedCount || 0), 0);
-    const avgAccuracy = items.reduce((s: number, i: any) => s + (i.accuracyPct || 0), 0) / items.length;
+    const totalCorrect = items.reduce(
+      (s: number, i: any) => s + (i.correctCount || 0),
+      0,
+    );
+    const totalWrong = items.reduce(
+      (s: number, i: any) => s + (i.wrongCount || 0),
+      0,
+    );
+    const totalSkipped = items.reduce(
+      (s: number, i: any) => s + (i.skippedCount || 0),
+      0,
+    );
+    const avgAccuracy =
+      items.reduce((s: number, i: any) => s + (i.accuracyPct || 0), 0) /
+      items.length;
     const totalStudents = items.length > 0 ? items[0].totalStudents : 0;
 
-    return { totalStudents, avgAccuracy: Math.round(avgAccuracy), totalCorrect, totalWrong, totalSkipped };
+    return {
+      totalStudents,
+      avgAccuracy: Math.round(avgAccuracy),
+      totalCorrect,
+      totalWrong,
+      totalSkipped,
+    };
   }
 
   /* ================= STUDENT RESULT ================= */
@@ -1122,59 +1336,79 @@ export class TestViewComponent implements OnInit {
     this.router.navigate(['/app/exams/exams/student-result'], {
       state: {
         exam: this.examData,
-        student: row
-      }
+        student: row,
+      },
     });
   }
-
-
 
   /* ================= HELPERS ================= */
 
   formatStatus(status: string): string {
     switch (status) {
-      case 'draft': return 'Draft';
-      case 'published': return 'Published';
-      case 'result_published': return 'Result Published';
-      case 'completed': return 'Completed';
-      default: return status || '-';
+      case 'draft':
+        return 'Draft';
+      case 'published':
+        return 'Published';
+      case 'result_published':
+        return 'Result Published';
+      case 'completed':
+        return 'Completed';
+      default:
+        return status || '-';
     }
   }
 
   getStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'draft': return 'bg-secondary';
-      case 'published': return 'bg-success';
-      case 'result_published': return 'bg-info';
-      case 'completed': return 'bg-primary';
-      default: return 'bg-secondary';
+      case 'draft':
+        return 'bg-secondary';
+      case 'published':
+        return 'bg-success';
+      case 'result_published':
+        return 'bg-info';
+      case 'completed':
+        return 'bg-primary';
+      default:
+        return 'bg-secondary';
     }
   }
 
   formatTestType(type: string): string {
     switch (type) {
-      case 'practice': return 'Practice';
-      case 'live': return 'Live';
-      case 'mock': return 'Mock';
-      default: return type || '-';
+      case 'practice':
+        return 'Practice';
+      case 'live':
+        return 'Live';
+      case 'mock':
+        return 'Mock';
+      default:
+        return type || '-';
     }
   }
 
   formatMedium(medium: string): string {
     switch (medium) {
-      case 'en': return 'English';
-      case 'hi': return 'Hindi';
-      case 'ta': return 'Tamil';
-      default: return medium || '-';
+      case 'en':
+        return 'English';
+      case 'hi':
+        return 'Hindi';
+      case 'ta':
+        return 'Tamil';
+      default:
+        return medium || '-';
     }
   }
 
   formatCalculator(type: string): string {
     switch (type) {
-      case 'none': return 'None';
-      case 'normal': return 'Normal';
-      case 'scientific': return 'Scientific';
-      default: return type || 'None';
+      case 'none':
+        return 'None';
+      case 'normal':
+        return 'Normal';
+      case 'scientific':
+        return 'Scientific';
+      default:
+        return type || 'None';
     }
   }
 
@@ -1182,18 +1416,73 @@ export class TestViewComponent implements OnInit {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     return d.toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
     });
   }
 
   /* ================= NAVIGATION ================= */
 
   viewQuestions() {
-    this.router.navigate(['/app/exams/exams/question-view'], { state: { questions: this.examData, source: 'exam-view' } });
+    this.router.navigate(['/app/exams/exams/question-view'], {
+      state: { questions: this.examData, source: 'exam-view' },
+    });
   }
 
   editExam() {
-    this.router.navigate(['/app/exams/exams/create'], { state: { test: this.examData } });
+    this.router.navigate(['/app/exams/exams/create'], {
+      state: { test: this.examData },
+    });
+  }
+
+  loadExamData() {
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId, examId: this.examData.examId },
+        'exam',
+        'get',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status && res?.data) {
+            this.examData = res.data;
+            this.isDraft = this.examData.status === 'draft';
+          }
+        },
+        error: (err) => console.error('Error reloading exam data:', err),
+      });
+  }
+
+  getGraceQuestionDisplay(questionId: string): string {
+    if (!questionId) return 'Unknown Question';
+    const idx = this.graceQuestions.findIndex(
+      (q: any) => (q.questionId || q._id) === questionId,
+    );
+    if (idx === -1) return `Question ID: ${questionId}`;
+    const q = this.graceQuestions[idx];
+    const text =
+      q.questionText ||
+      (typeof q.questionHtml === 'string'
+        ? q.questionHtml.replace(/<[^>]*>/g, '').substring(0, 60)
+        : '');
+    return `Q${idx + 1} - ${q.questionNo} ${text ? ' — ' + text + (text.length >= 60 ? '...' : '') : ''}`;
+  }
+
+  getGraceSectionDisplay(sectionId: string): string {
+    if (!sectionId) return '';
+    const section = (this.examData?.sections || []).find(
+      (s: any) => s.sectionId === sectionId,
+    );
+    return section ? section.sectionName : sectionId;
+  }
+
+  hasActiveGrace(questionId: string): boolean {
+    return (this.graceRow?.graces || []).some(
+      (g: any) => g.questionId === questionId && g.isActive !== false,
+    );
   }
 }
