@@ -65,15 +65,18 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   bankFilterClassNo: number | null = null;
 
   classOptions = [
-    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
-    { label: '12th Pass', value: 13 }
+    ...Array.from({ length: 7 }, (_, i) => ({
+      label: `Class ${i + 6}`,
+      value: i + 6,
+    })),
+    { label: '12th Pass', value: 13 },
   ];
   bankSearch = '';
   bankPage = 1;
   bankPageSize = 10;
   questionTypeOptions = [
     { label: 'MCQ (Single)', value: 'mcq_single' },
-    { label: 'MCQ (Multiple)', value: 'mcq_multiple' },
+    { label: 'MCQ (Multiple)', value: 'mcq_multi' },
     { label: 'Integer', value: 'integer' },
     { label: 'Numerical', value: 'numeric' },
     { label: 'Subjective', value: 'subjective' },
@@ -118,14 +121,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       this.backState = { exam: this.questionData };
       this.breadcrump.set([
         { label: 'Exam View', link: '' },
-        { label: 'Questions' }
+        { label: 'Questions' },
       ]);
     } else {
       this.backRoute = '/app/exams/exams';
       this.backState = null;
       this.breadcrump.set([
         { label: 'Exams', link: '/app/exams/exams' },
-        { label: 'Questions' }
+        { label: 'Questions' },
       ]);
     }
 
@@ -169,10 +172,12 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   addNewQuestion() {
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: {
+        source: 'exam-view',
         question: {
           testId: this.testId,
           examId: this.testId,
           sections: this.questionData.sections || [],
+          classNo: this.questionData.classNo || null,
         },
       },
     });
@@ -252,11 +257,36 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
             )
           : [];
         const matchMap = this.parseMatrixCorrectAnswer(q.correctAnswer);
+        // return {
+        //   ...q,
+        //   questionNumber: index + 1,
+        //   questionHtml: this.sanitizeHtml(questionHtml),
+        //   solutionHtml: this.sanitizeHtml(solutionHtml),
+        //   questionOptions: options.map((o) => ({
+        //     ...o,
+        //     textHtml: this.sanitizeHtml(o.textHtml),
+        //   })),
+        //   leftColumn,
+        //   rightColumn,
+        //   matrixMatches: leftColumn.map((l: any) => ({
+        //     key: l.key,
+        //     matches: matchMap[l.key] || [],
+        //   })),
+        // };
+        // Process passageHtml and instructionHtml
+        let passageHtml = q.passageId?.passageHtml || q.passageHtml || '';
+        let instructionHtml = q.instructionHtml || '';
+        passageHtml = await this.replaceDownloadUrls(passageHtml);
+        instructionHtml = await this.replaceDownloadUrls(instructionHtml);
+        passageHtml = this.normalizeDelimiters(passageHtml);
+        instructionHtml = this.normalizeDelimiters(instructionHtml);
         return {
           ...q,
           questionNumber: index + 1,
           questionHtml: this.sanitizeHtml(questionHtml),
           solutionHtml: this.sanitizeHtml(solutionHtml),
+          passageHtml: this.sanitizeHtml(passageHtml),
+          instructionHtml: this.sanitizeHtml(instructionHtml),
           questionOptions: options.map((o) => ({
             ...o,
             textHtml: this.sanitizeHtml(o.textHtml),
@@ -272,14 +302,38 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     );
   }
 
-  private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, string[]> {
+  // private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, string[]> {
+  //   const map: Record<string, string[]> = {};
+  //   if (!correctAnswer) return map;
+  //   correctAnswer.split(';').forEach((pStr: string) => {
+  //     const [lK, rKs] = pStr.split(':');
+  //     if (lK && rKs) {
+  //       map[lK.trim()] = rKs.trim().split('');
+  //     }
+  //   });
+  //   return map;
+  // }
+
+  private parseMatrixCorrectAnswer(
+    correctAnswer: string,
+  ): Record<string, string[]> {
     const map: Record<string, string[]> = {};
     if (!correctAnswer) return map;
     correctAnswer.split(';').forEach((pStr: string) => {
-      const [lK, rKs] = pStr.split(':');
-      if (lK && rKs) {
-        map[lK.trim()] = rKs.trim().split('');
-      }
+      const colonIdx = pStr.indexOf(':');
+      if (colonIdx === -1) return;
+      const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
+      let rPart = pStr.substring(colonIdx + 1).trim();
+      rPart = rPart.replace(/\([^)]*\)/g, '').trim();
+      if (!lKey || !rPart) return;
+      if (!map[lKey]) map[lKey] = [];
+      rPart
+        .toUpperCase()
+        .split('')
+        .filter(Boolean)
+        .forEach((rk) => {
+          if (!map[lKey].includes(rk)) map[lKey].push(rk);
+        });
     });
     return map;
   }
@@ -476,23 +530,38 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     walk(element);
   }
 
+  // formatQuestionType(type: string): string {
+  //   switch (type) {
+  //     case 'mcq_single':
+  //       return 'MCQ (Single)';
+  //     case 'mcq_multi':
+  //       return 'MCQ (Multiple)';
+  //     case 'true_false':
+  //       return 'True / False';
+  //     case 'subjective':
+  //       return 'Subjective';
+  //     case 'matrix':
+  //       return 'Matrix Match';
+  //     case 'passage_qns':
+  //       return 'Passage Based';
+  //     default:
+  //       return type;
+  //   }
+  // }
+
   formatQuestionType(type: string): string {
-    switch (type) {
-      case 'mcq_single':
-        return 'MCQ (Single)';
-      case 'mcq_multi':
-        return 'MCQ (Multiple)';
-      case 'true_false':
-        return 'True / False';
-      case 'subjective':
-        return 'Subjective';
-      case 'matrix':
-        return 'Matrix Match';
-      case 'passage_qns':
-        return 'Passage Based';
-      default:
-        return type;
-    }
+    const map: Record<string, string> = {
+      mcq_single: 'MCQ (Single)',
+      mcq_multi: 'MCQ (Multiple)',
+      true_false: 'True / False',
+      subjective: 'Subjective',
+      short_answer: 'Short Answer',
+      integer: 'Integer',
+      numeric: 'Numerical',
+      matrix: 'Matrix Match',
+      passage_qns: 'Passage Based',
+    };
+    return map[type] || type;
   }
 
   getGraceForQuestion(questionId: string) {
@@ -516,6 +585,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   applyGrace() {
     if (!this.graceNoteInput.trim()) {
       this.alert.error('Please provide a reason for this grace mark');
+      return;
+    }
+    if (!this.graceMarksInput || this.graceMarksInput <= 0) {
+      this.alert.error('Grace marks must be greater than 0');
+      return;
+    }
+    if (!Number.isFinite(this.graceMarksInput)) {
+      this.alert.error('Please enter a valid number for grace marks');
       return;
     }
     const q = this.selectedGraceQuestion;
@@ -600,9 +677,12 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   answerModalToggle(optIndex: number) {
     const type = this.answerModalQuestion?.questionType;
     if (type === 'mcq_single' || type === 'mcq-single') {
-      this.answerModalEntry.options.forEach((o: any, i: number) => (o.isCorrect = i === optIndex));
+      this.answerModalEntry.options.forEach(
+        (o: any, i: number) => (o.isCorrect = i === optIndex),
+      );
     } else {
-      this.answerModalEntry.options[optIndex].isCorrect = !this.answerModalEntry.options[optIndex].isCorrect;
+      this.answerModalEntry.options[optIndex].isCorrect =
+        !this.answerModalEntry.options[optIndex].isCorrect;
     }
   }
 
@@ -611,58 +691,65 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     const e = this.answerModalEntry;
     const type = q.questionType;
     const item: any = { questionId: q.questionId };
-
     if (['mcq_single', 'mcq_multi', 'mcq-single', 'mcq-multi'].includes(type)) {
       item.questionOptions = e.options.map((o: any) => ({
         key: o.key,
         isCorrect: o.isCorrect,
         partialMark: o.partialMark || 0,
       }));
-      item.correctAnswer = e.options.filter((o: any) => o.isCorrect).map((o: any) => o.key).join(',');
+      // item.correctAnswer = e.options.filter((o: any) => o.isCorrect).map((o: any) => o.key).join(',');
+      item.correctAnswer = e.options
+        .filter((o: any) => o.isCorrect)
+        .map((o: any) => o.key)
+        .join(';');
     } else {
       item.correctAnswer = e.correctAnswer;
     }
-
     const payload = {
       entiId: this.entiId,
       userId: localStorage.getItem('userId'),
       examId: this.testId,
       questions: [item],
     };
-
     this.answerModalSaving = true;
-    this.commonApi.fetchData(payload, 'exam/questions', 'bulk-upload-answers').subscribe({
-      next: (res: any) => {
-        this.answerModalSaving = false;
-        if (res?.status) {
-          this.alert.success('Answer updated successfully');
-          q.correctAnswer = item.correctAnswer;
-          if (item.questionOptions?.length) {
-            item.questionOptions.forEach((updated: any) => {
-              const existing = q.questionOptions?.find((o: any) => o.key === updated.key);
-              if (existing) existing.isCorrect = updated.isCorrect;
-            });
+    this.commonApi
+      .fetchData(payload, 'exam/questions', 'bulk-upload-answers')
+      .subscribe({
+        next: (res: any) => {
+          this.answerModalSaving = false;
+          if (res?.status) {
+            this.alert.success('Answer updated successfully');
+            q.correctAnswer = item.correctAnswer;
+            if (item.questionOptions?.length) {
+              item.questionOptions.forEach((updated: any) => {
+                const existing = q.questionOptions?.find(
+                  (o: any) => o.key === updated.key,
+                );
+                if (existing) existing.isCorrect = updated.isCorrect;
+              });
+            }
+            this.closeAnswerModal();
+          } else {
+            this.alert.error(res?.message || 'Failed to update answer');
           }
-          this.closeAnswerModal();
-        } else {
-          this.alert.error(res?.message || 'Failed to update answer');
-        }
-      },
-      error: (err: any) => {
-        this.answerModalSaving = false;
-        this.alert.error(err?.error?.message || 'Error updating answer');
-      },
-    });
+        },
+        error: (err: any) => {
+          this.answerModalSaving = false;
+          this.alert.error(err?.error?.message || 'Error updating answer');
+        },
+      });
   }
 
   editQuestion(question: any) {
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: {
+        source: 'exam-view',
         question: {
           testId: this.testId,
           examId: this.testId,
           recId: question._id,
           sections: this.questionData.sections || [],
+          classNo: this.questionData.classNo || null,
         },
       },
     });
@@ -672,25 +759,47 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     if (!confirm('Are you sure you want to delete this question?')) {
       return;
     }
+    // const body = {
+    //   tenantId: this.entiId,
+    //   recId: question._id,
+    // };
+    // this.commonApi.fetchData(body, 'exam/questions', 'delete').subscribe({
+    //   next: (res: any) => {
+    //     if (res?.status) {
+    //       this.questions = this.questions.filter(
+    //         (q) => q.questionId !== question.questionId,
+    //       );
+    //     }
+    //   },
+    //   error: () => alert('Error deleting question'),
+    // });
     const body = {
-      tenantId: this.entiId,
+      entiId: this.entiId,
       recId: question._id,
     };
     this.commonApi.fetchData(body, 'exam/questions', 'delete').subscribe({
       next: (res: any) => {
         if (res?.status) {
-          this.questions = this.questions.filter(
-            (q) => q.questionId !== question.questionId,
-          );
+          this.alert.success('Question deleted successfully');
+          this.questions = this.questions.filter((q) => q._id !== question._id);
+        } else {
+          this.alert.error(res?.message || 'Failed to delete question');
         }
       },
-      error: () => alert('Error deleting question'),
+      error: (err: any) =>
+        this.alert.error(err?.error?.message || 'Error deleting question'),
     });
   }
 
+  // importAnswers() {
+  //   this.router.navigate(['/app/exams/exams/answer-import'], {
+  //     state: { exam: this.questionData },
+  //   });
+  // }
+
   importAnswers() {
     this.router.navigate(['/app/exams/exams/answer-import'], {
-      state: { exam: this.questionData },
+      state: { exam: this.questionData, source: 'question-view' },
     });
   }
 
@@ -1046,12 +1155,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     if (this.bankFilterSubTopicId?.trim())
       query.subTopicId = this.bankFilterSubTopicId.trim();
     if (this.bankFilterDifficulty) query.difficulty = this.bankFilterDifficulty;
-    if (this.bankFilterQuestionType) query.questionType = this.bankFilterQuestionType;
+    if (this.bankFilterQuestionType)
+      query.questionType = this.bankFilterQuestionType;
     if (this.bankFilterClassNo) query.classNo = this.bankFilterClassNo;
     const queryString = Object.keys(query)
       .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
       .join('&');
-    console.log(queryString)
+    console.log(queryString);
     this.commonApi
       .fetchData(
         { entiId: this.entiId },
@@ -1126,12 +1236,21 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       sectionId: this.bankSectionId,
     };
     this.commonApi.fetchData(payload, 'exam/questions', 'map').subscribe({
+      // next: (res: any) => {
+      //   this.bankMapping = false;
+      //   if (res?.status) {
+      //     this.alert.success('Question mapped successfully');
+      //     this.bankSelectedIds.delete(recId);
+      //     this.loadQuestions();
+      //   }
+      // },
       next: (res: any) => {
         this.bankMapping = false;
         if (res?.status) {
           this.alert.success('Question mapped successfully');
           this.bankSelectedIds.delete(recId);
           this.loadQuestions();
+          this.loadExamDetails(); // ← refresh totals
         }
       },
       error: () => {
@@ -1158,14 +1277,24 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       sectionId: this.bankSectionId,
     };
     this.commonApi.fetchData(payload, 'exam/questions', 'bulk-map').subscribe({
+      // next: (res: any) => {
+      //   this.bankMapping = false;
+      //   if (res?.status) {
+      //     this.alert.success(
+      //       `${this.bankSelectedIds.size} question(s) mapped successfully`,
+      //     );
+      //     this.bankSelectedIds.clear();
+      //     this.loadQuestions();
+      //     this.closeBankModal();
+      //   }
+      // },
       next: (res: any) => {
         this.bankMapping = false;
         if (res?.status) {
-          this.alert.success(
-            `${this.bankSelectedIds.size} question(s) mapped successfully`,
-          );
+          this.alert.success(res.message || `Questions mapped successfully`);
           this.bankSelectedIds.clear();
           this.loadQuestions();
+          this.loadExamDetails(); // ← refresh totals
           this.closeBankModal();
         }
       },
@@ -1186,5 +1315,95 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       pages.push(i);
     }
     return pages;
+  }
+
+  get actualQuestionCount(): number {
+    return this.questions.length;
+  }
+
+  get canAddQuestion(): boolean {
+    const limit = this.questionData?.totalQuestions || 0;
+    if (!limit) return true; // no limit set
+    return this.actualQuestionCount < limit;
+  }
+
+  getSectionActualCount(sectionId: string): number {
+    return this.questions.filter((q: any) => q.sectionId === sectionId).length;
+  }
+
+  getSectionLimit(sectionId: string): number {
+    const section = (this.questionData?.sections || []).find(
+      (s: any) => s.sectionId === sectionId,
+    );
+    return section?.numberOfQuestions || 0;
+  }
+
+  canAddToSection(sectionId: string): boolean {
+    const limit = this.getSectionLimit(sectionId);
+    if (!limit) return true;
+    return this.getSectionActualCount(sectionId) < limit;
+  }
+
+  private decodeHtmlEntities(text: string): string {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = text;
+    return txt.value;
+  }
+
+  renderLatexInHtml(html: string): string {
+    if (!html) return html;
+    let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (m, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: true,
+        });
+      } catch {
+        return m;
+      }
+    });
+    result = result.replace(/\$\$([\s\S]+?)\$\$/g, (m, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: true,
+        });
+      } catch {
+        return m;
+      }
+    });
+    result = result.replace(/\\\(([\s\S]+?)\\\)/g, (m, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: false,
+        });
+      } catch {
+        return m;
+      }
+    });
+    result = result.replace(/\$([^$]+?)\$/g, (m, tex) => {
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: false,
+        });
+      } catch {
+        return m;
+      }
+    });
+    return result;
+  }
+
+  getQuestionNumberForGrace(questionId: string): string {
+    const idx = this.questions.findIndex(
+      (q: any) => q.questionId === questionId,
+    );
+    if (idx === -1) return questionId;
+    const q = this.questions[idx];
+    const text = this.stripHtml(
+      typeof q.questionHtml === 'string' ? q.questionHtml : '',
+    ).substring(0, 50);
+    return `${q.questionNo} ${text ? ' — ' + text + (text.length >= 50 ? '...' : '') : ''}`;
   }
 }

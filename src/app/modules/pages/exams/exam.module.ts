@@ -25,6 +25,7 @@ import { MarksImportComponent } from './marks-import/marks-import.component';
 import { ImportedExamsComponent } from './imported-exams/imported-exams.component';
 import { QuestionCreateNewComponent } from './question-create-new/question-create-new.component';
 import { PassageSelectorNewComponent } from './passage-selector-new/passage-selector-new.component';
+import { QuestionImportNewComponent } from './question-import-new/question-import-new.component';
 
 @NgModule({
   declarations: [
@@ -47,7 +48,8 @@ import { PassageSelectorNewComponent } from './passage-selector-new/passage-sele
     MarksImportComponent,
     ImportedExamsComponent,
     QuestionCreateNewComponent,
-    PassageSelectorNewComponent
+    PassageSelectorNewComponent,
+    QuestionImportNewComponent
   ],
   imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor, NgClass, DragDropModule, BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],

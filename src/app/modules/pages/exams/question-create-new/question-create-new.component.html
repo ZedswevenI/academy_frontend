@@ -195,9 +195,13 @@
                                     Passage selected ✓
                                 </span>
                             </div>
-                            <app-rich-text-editor class="w-full" [value]="questionForm.value.passageText"
+                            <!-- <app-rich-text-editor class="w-full" [value]="questionForm.value.passageText"
                                 [readOnly]="true">
-                            </app-rich-text-editor>
+                            </app-rich-text-editor> -->
+                            <div class="border rounded p-3 bg-light"
+                                style="min-height:80px; max-height:300px; overflow-y:auto; word-wrap:break-word;"
+                                [innerHTML]="safePassageHtml">
+                            </div>
                         </div>
                         <!-- ================= INSTRUCTION ================= -->
                         <div *ngIf="questionForm.get('enableInstruction')?.value" class="mb-4">
