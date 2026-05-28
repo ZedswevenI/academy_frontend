@@ -842,7 +842,7 @@
       <div class="modal-header">
         <div>
           <h5 class="modal-title fw-bold">
-            <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Reevaluate Result
+            <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Re-evaluate Result
           </h5>
           <small class="text-muted">{{ examData?.examName }}</small>
         </div>
@@ -856,9 +856,9 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" (click)="cancelReevaluate()"
+        <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancelReevaluate()"
           [disabled]="reevaluating">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="confirmReevaluate()"
+        <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmReevaluate()"
           [disabled]="reevaluating || !reevaluateNote.trim()">
           <span *ngIf="reevaluating" class="spinner-border spinner-border-sm me-2"></span>
           <i class="fa-solid fa-arrows-rotate me-1" *ngIf="!reevaluating"></i>

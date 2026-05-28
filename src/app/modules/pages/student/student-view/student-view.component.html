@@ -294,9 +294,18 @@
                         <!-- ── REMARKS TAB ─────────────────────────────────────────────── -->
                         <div *ngIf="activeViewTab === 'remarks'">
                             <div class="d-flex justify-content-end mb-3">
-                                <button class="btn btn-sm btn-outline-primary rounded-pill"
-                                    (click)="toggleRemarkForm()">
+                                <!-- <button class="btn btn-create fs-16 fw-medium"
+                                    (click)="toggleRemarkForm()"
+                                    ngClass="">
                                     <i class="fa-solid fa-plus me-1"></i>
+                                    {{ showRemarkForm ? 'Cancel' : 'Add Remark' }}
+                                </button> -->
+                                <button class="btn fs-16 fw-medium"
+                                    [ngClass]="showRemarkForm ? 'btn-close-custom' : 'btn-create'"
+                                    (click)="toggleRemarkForm()">
+                                    <i
+                                        [class]="showRemarkForm ? 'fa-solid fa-xmark me-1' : 'fa-solid fa-plus me-1'"></i>
+
                                     {{ showRemarkForm ? 'Cancel' : 'Add Remark' }}
                                 </button>
                             </div>
@@ -330,7 +339,7 @@
                                         </div>
                                     </div>
                                     <div class="col-12 d-flex justify-content-end">
-                                        <button class="btn btn-sm btn-primary" (click)="submitRemark()"
+                                        <button class="btn btn-create fs-16 fw-medium" (click)="submitRemark()"
                                             [disabled]="remarkLoading">
                                             <span *ngIf="remarkLoading"
                                                 class="spinner-border spinner-border-sm me-1"></span>

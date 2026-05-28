@@ -190,8 +190,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closeEditorModal()">Cancel</button>
-                <button class="btn btn-sm btn-primary" (click)="saveBatch()" [disabled]="loading || editorForm.invalid">
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeEditorModal()">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium" (click)="saveBatch()" [disabled]="loading || editorForm.invalid">
                     <i class="fa-solid fa-floppy-disk"></i> {{ isEditMode ? 'Update' : 'Save' }}
                 </button>
             </div>
@@ -242,8 +242,8 @@
                 <div class="d-flex justify-content-between align-items-center mt-2">
                     <div class="text-muted small">Selected: {{ selectedStudentIds.size }}</div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-secondary" (click)="closeAssignModal()">Cancel</button>
-                        <button class="btn btn-sm btn-primary" (click)="assignStudents()"
+                        <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeAssignModal()">Cancel</button>
+                        <button class="btn btn-create fs-16 fw-medium" (click)="assignStudents()"
                             [disabled]="loading || !selectedStudentIds.size">
                             Assign
                         </button>
@@ -285,7 +285,7 @@
                             optionValue="value" [(ngModel)]="staffDraft.staffId"></selectbox>
                     </div>
                     <div class="col-12 col-md-2 d-grid">
-                        <button class="btn btn-sm btn-primary" (click)="addStaffMapRow()">Add</button>
+                        <button class="btn btn-shuffle fs-16 fw-medium" (click)="addStaffMapRow()">Add</button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -315,8 +315,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closeStaffModal()">Cancel</button>
-                <button class="btn btn-sm btn-primary" (click)="saveStaffMap()" [disabled]="loading">
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeStaffModal()">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium" (click)="saveStaffMap()" [disabled]="loading">
                     <i class="fa-solid fa-floppy-disk"></i> Save Mapping
                 </button>
             </div>
@@ -486,10 +486,10 @@
             </div>
 
             <div class="modal-footer border-0">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closePromoteModal()">
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="closePromoteModal()">
                     {{ promoteResult ? 'Close' : 'Cancel' }}
                 </button>
-                <button *ngIf="!promoteResult" class="btn btn-sm btn-primary" (click)="confirmPromote()"
+                <button *ngIf="!promoteResult" class="btn btn-create fs-16 fw-medium" (click)="confirmPromote()"
                     [disabled]="loading">
                     <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-arrow-up-right-dots me-1" *ngIf="!loading"></i>
@@ -577,8 +577,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closeLateModal()">Cancel</button>
-                <button class="btn btn-sm btn-warning" (click)="submitLateEntry()"
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeLateModal()">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium" (click)="submitLateEntry()"
                     [disabled]="loading || lateForm.invalid">
                     <i class="fa-solid fa-clock"></i> Log Entry
                 </button>
@@ -683,8 +683,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm btn-outline-secondary" (click)="closeSpecialClassModal()">Cancel</button>
-                <button class="btn btn-sm btn-success" (click)="submitSpecialClass()"
+                <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeSpecialClassModal()">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium" (click)="submitSpecialClass()"
                     [disabled]="loading || specialClassForm.invalid">
                     <i class="fa-solid fa-calendar-plus"></i> Add Special Class
                 </button>
