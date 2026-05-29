@@ -53,7 +53,17 @@ function normalizeQtype(raw: string): string {
   if (['numeric', 'numerical', 'num'].includes(v)) return 'numeric';
   if (['true_false', 'true/false', 'tf', 'truefalse', 'boolean'].includes(v))
     return 'true_false';
-  if (['subjective', 'subj', 'long_answer', 'long'].includes(v))
+  // if (['subjective', 'subj', 'long_answer', 'long'].includes(v))
+  if (
+    [
+      'subjective',
+      'subj',
+      'long_answer',
+      'long',
+      'text_based',
+      'text',
+    ].includes(v)
+  )
     return 'subjective';
   if (['short_answer', 'short', 'fill'].includes(v)) return 'short_answer';
   if (['passage_qns', 'passage', 'text_based'].includes(v))
@@ -738,7 +748,7 @@ export class QuestionImportNewComponent implements OnInit {
           questionOptions: processedOptions,
           leftColumn:
             q.matrixLeft?.map((text, i) => ({
-              key: String.fromCharCode(65 + i), 
+              key: String.fromCharCode(65 + i),
               text: text.replace(/^[A-Za-z]\.\s*/, '').trim(),
             })) || [],
           rightColumn:
@@ -956,7 +966,7 @@ export class QuestionImportNewComponent implements OnInit {
       <w:p><w:r><w:t>[soln] When a ball is thrown upward kinetic energy converts to potential energy and back.</w:t></w:r></w:p>
 
       <w:p><w:r><w:t>[Q] The SI unit of force is</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] short_answer</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[qtype] text_based</w:t></w:r></w:p>
       <w:p><w:r><w:t>[DIFFICULTY] easy</w:t></w:r></w:p>
       <w:p><w:r><w:t>[ans] Newton</w:t></w:r></w:p>
       <w:p><w:r><w:t>[Marks] 4,0</w:t></w:r></w:p>

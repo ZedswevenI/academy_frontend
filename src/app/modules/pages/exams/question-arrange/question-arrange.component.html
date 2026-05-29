@@ -25,6 +25,28 @@
   <div *ngIf="isLoading" class="text-center py-5">
     <div class="spinner-border text-primary"></div>
   </div>
+  <!-- Section tabs — only shown when exam has multiple sections -->
+  <div class="d-flex gap-2 mb-3 flex-wrap" *ngIf="sections.length > 1">
+    <button *ngFor="let s of sections" class="btn btn-sm" [class.btn-primary]="selectedSectionId === s.sectionId"
+      [class.btn-outline-secondary]="selectedSectionId !== s.sectionId" (click)="onSectionChange(s.sectionId)">
+      {{ s.sectionName }}
+      <span class="badge ms-1" [class.bg-white]="selectedSectionId === s.sectionId"
+        [class.text-dark]="selectedSectionId === s.sectionId" [class.bg-secondary]="selectedSectionId !== s.sectionId">
+        {{ sectionQuestionsMap[s.sectionId]?.length || 0 }}
+      </span>
+    </button>
+  </div>
+
+  <!-- Current section info -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="mb-0 fw-bold text-primary">
+      <i class="fas fa-layer-group me-1"></i>
+      {{ getSectionName(selectedSectionId) }}
+      <span class="text-muted fw-normal ms-1 small">
+        ({{ rearrangedQuestions.length }} questions)
+      </span>
+    </h6>
+  </div>
   <!-- Questions List (Draggable) -->
   <div *ngIf="!isLoading" class="container-fluid">
     <div cdkDropList #questionList="cdkDropList" [cdkDropListData]="rearrangedQuestions"

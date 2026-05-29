@@ -375,7 +375,6 @@ export class QuestionCreateNewComponent implements OnInit {
           q.instructionHtml,
         );
         const solutionHtml = await this.replaceDownloadUrls(q.solutionHtml);
-
         this.questionForm.patchValue({
           sectionId: q.sectionId || '',
           questionId: q.questionId || '',
@@ -412,21 +411,39 @@ export class QuestionCreateNewComponent implements OnInit {
           subTopicId: q.subTopicId || '',
           classNo: q.classNo || null,
         });
-
         this.onSectionChange();
-
+        // setTimeout(() => {
+        //   const questionEditor = document.getElementById('questionEditor');
+        //   if (questionEditor) questionEditor.innerHTML = questionHtml || '';
+        //   if (q.questionType === 'subjective' || q.questionType === 'numeric') {
+        //     const subjectiveEditor =
+        //       document.getElementById('subjectiveEditor');
+        //     if (subjectiveEditor)
+        //       subjectiveEditor.innerHTML = q.correctAnswer || '';
+        //   }
+        // }, 0);
         setTimeout(() => {
           const questionEditor = document.getElementById('questionEditor');
           if (questionEditor) questionEditor.innerHTML = questionHtml || '';
-          if (q.questionType === 'subjective' || q.questionType === 'numeric') {
+          if (q.solutionHtml) {
+            const solutionEditor = document.getElementById('solutionEditor');
+            if (solutionEditor) solutionEditor.innerHTML = solutionHtml || '';
+          }
+          if (q.instructionHtml) {
+            const instructionEditor =
+              document.getElementById('instructionEditor');
+            if (instructionEditor)
+              instructionEditor.innerHTML = instructionHtml || '';
+          }
+          if (
+            ['subjective', 'numeric', 'short_answer'].includes(q.questionType)
+          ) {
             const subjectiveEditor =
               document.getElementById('subjectiveEditor');
             if (subjectiveEditor)
               subjectiveEditor.innerHTML = q.correctAnswer || '';
           }
         }, 0);
-
-        // Load options
         if (q.questionOptions?.length) {
           this.options.clear();
           for (let i = 0; i < q.questionOptions.length; i++) {

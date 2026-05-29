@@ -63,7 +63,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   bankFilterDifficulty = '';
   bankFilterQuestionType = '';
   bankFilterClassNo: number | null = null;
-
   classOptions = [
     ...Array.from({ length: 7 }, (_, i) => ({
       label: `Class ${i + 6}`,
@@ -89,6 +88,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     { label: 'Medium', value: 'medium' },
     { label: 'Hard', value: 'hard' },
   ];
+  selectedFilterSectionId = '';
 
   constructor(
     private commonApi: CommonapiService,
@@ -136,6 +136,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       this.loadExamDetails();
       this.loadQuestions();
     }
+  }
+
+  get filteredQuestions(): any[] {
+    if (!this.selectedFilterSectionId) return this.questions;
+    return this.questions.filter(
+      (q: any) => q.sectionId === this.selectedFilterSectionId,
+    );
   }
 
   loadExamDetails() {
@@ -1405,5 +1412,18 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       typeof q.questionHtml === 'string' ? q.questionHtml : '',
     ).substring(0, 50);
     return `${q.questionNo} ${text ? ' — ' + text + (text.length >= 50 ? '...' : '') : ''}`;
+  }
+
+  get actualTotalMarks(): number {
+    return this.questions.reduce(
+      (sum: number, q: any) => sum + (parseFloat(q.positiveMarks) || 0),
+      0,
+    );
+  }
+
+  get marksMismatch(): boolean {
+    const defined = parseFloat(this.questionData?.totalMarks) || 0;
+    if (!defined) return false;
+    return this.questions.length > 0 && this.actualTotalMarks !== defined;
   }
 }

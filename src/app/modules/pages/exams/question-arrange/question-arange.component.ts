@@ -1,4 +1,14 @@
-import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectorRef, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectorRef,
+  ViewChildren,
+  QueryList,
+  ElementRef,
+} from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -12,8 +22,6 @@ import { Location } from '@angular/common';
 
 declare var katex: any;
 declare var renderMathInElement: any;
-
-
 
 interface Toast {
   message: string;
@@ -31,8 +39,6 @@ export class QuestionArrangementComponent implements OnInit {
   @Input() questions: any[] = [];
   @Output() orderChanged = new EventEmitter<any[]>();
   @Output() saveOrder = new EventEmitter<any[]>();
-
-
   rearrangedQuestions: any[] = [];
   isDragging = false;
   selectedQuestion: any | null = null;
@@ -42,7 +48,10 @@ export class QuestionArrangementComponent implements OnInit {
   testId!: string;
   isLoading = false;
   errorMessage = '';
-
+  examData: any = {};
+  sections: any[] = [];
+  selectedSectionId: string = '';
+  sectionQuestionsMap: Record<string, any[]> = {};
   @ViewChildren('questionContent') questionElements!: QueryList<ElementRef>;
   @ViewChildren('optionContent') optionElements!: QueryList<ElementRef>;
 
@@ -53,109 +62,85 @@ export class QuestionArrangementComponent implements OnInit {
     private transformService: QuestionTransformService,
     private cdr: ChangeDetectorRef,
     private breacrumb: BredcrumpService,
-    private location: Location
+    private location: Location,
   ) {
     this.breacrumb.set([
       { label: 'Exams', link: '/app/exams/exams' },
       { label: 'View' },
-      { label: 'Re-Arrange' },])
+      { label: 'Re-Arrange' },
+    ]);
   }
-
 
   ngOnInit(): void {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
     this.entiId = ent || '';
+    // this.testId = state.questions.examId || state.questions.testId;
+    // if (this.testId) {
+    //   this.loadQuestions();
+    // }
     this.testId = state.questions.examId || state.questions.testId;
-
+    this.examData = state.questions || {};
+    this.sections = this.examData.sections || [];
+    if (this.sections.length) {
+      this.selectedSectionId = this.sections[0].sectionId;
+    }
     if (this.testId) {
       this.loadQuestions();
     }
-
   }
 
   async loadQuestions(): Promise<void> {
     try {
       this.isLoading = true;
       this.errorMessage = '';
-
-      // 1. Prepare API request body
       const body = {
         tenantId: this.entiId,
-        examId: this.testId
+        examId: this.testId,
       };
       const res: any = await firstValueFrom(
-        this.commonApi.fetchData(body, 'exam/questions', 'getallquestions')
+        this.commonApi.fetchData(body, 'exam/questions', 'getallquestions'),
       );
-
       if (res?.status && res?.data) {
         const rawQuestions = res.data.questions;
         this.rearrangedQuestions = await this.processQuestions(rawQuestions);
-
         this.questions = await this.processQuestions(rawQuestions);
-
-        // 7. Initialize rearranged questions with order
-        this.rearrangedQuestions = this.questions.map((q, index) => ({
-          ...q,
-          isView: false,
-          order: index,
-        }));
-
+        // this.rearrangedQuestions = this.questions.map((q, index) => ({
+        //   ...q,
+        //   isView: false,
+        //   order: index,
+        // }));
+        // this.cdr.detectChanges();
+        // setTimeout(() => this.renderMathContent(), 300);
+        // Group by section
+        this.sectionQuestionsMap = {};
+        this.sections.forEach((s: any) => {
+          this.sectionQuestionsMap[s.sectionId] = [];
+        });
+        this.questions.forEach((q: any, index: number) => {
+          const sid = q.sectionId;
+          if (!this.sectionQuestionsMap[sid]) {
+            this.sectionQuestionsMap[sid] = [];
+          }
+          this.sectionQuestionsMap[sid].push({
+            ...q,
+            isView: false,
+            order: index,
+          });
+        });
+        this.rearrangedQuestions =
+          this.sectionQuestionsMap[this.selectedSectionId] || [];
         this.cdr.detectChanges();
         setTimeout(() => this.renderMathContent(), 300);
       }
-
-      // // 2. Fetch data with proper typing
-      // const res: any = await firstValueFrom(
-      //   this.commonApi.fetchData(body, 'exam/question/list', 'bytest')
-      // );
-
-      // // 3. Validate response
-      // if (!res?.status) {
-      //   throw new Error('API returned error status');
-      // }
-
-      // if (!res?.data?.length || !res.data[0]?.questions) {
-      //   throw new Error('No questions found in response');
-      // }
-
-      // // 4. Get raw questions from API
-      // const rawQuestions = res.data[0].questions;
-
-      // // 5. Transform raw questions to Question interface
-      // const transformedQuestions = this.transformService.transformQuestions(
-      //   rawQuestions
-      // );
-
-      // // 6. Process with LaTeX support
-      // this.questions = this.transformService.processQuestionsWithLatex(
-      //   transformedQuestions
-      // );
-
-      // // 7. Initialize rearranged questions with order
-      // this.rearrangedQuestions = this.questions.map((q, index) => ({
-      //   ...q,
-      //   order: index,
-      // }));
-
-      // // 8. Log for debugging
-      // console.log('Questions loaded:', this.questions.length);
-      // console.log('Questions:', this.questions);
-
-      // // 9. Trigger change detection
       this.cdr.markForCheck();
-
-
     } catch (error) {
-      console.error('Error loading questions:', error);
-      // this.errorMessage = this.getErrorMessage(error);
       this.cdr.markForCheck();
     } finally {
       this.isLoading = false;
       this.cdr.markForCheck();
     }
   }
-
 
   /**
    * Handle drag and drop
@@ -165,7 +150,7 @@ export class QuestionArrangementComponent implements OnInit {
       moveItemInArray(
         this.rearrangedQuestions,
         event.previousIndex,
-        event.currentIndex
+        event.currentIndex,
       );
 
       this.rearrangedQuestions.forEach((q, index) => {
@@ -182,11 +167,10 @@ export class QuestionArrangementComponent implements OnInit {
    */
   swapUp(index: number): void {
     if (index > 0) {
-      [this.rearrangedQuestions[index], this.rearrangedQuestions[index - 1]] =
-        [
-          this.rearrangedQuestions[index - 1],
-          this.rearrangedQuestions[index],
-        ];
+      [this.rearrangedQuestions[index], this.rearrangedQuestions[index - 1]] = [
+        this.rearrangedQuestions[index - 1],
+        this.rearrangedQuestions[index],
+      ];
 
       this.rearrangedQuestions.forEach((q, i) => {
         q.order = i;
@@ -202,11 +186,10 @@ export class QuestionArrangementComponent implements OnInit {
    */
   swapDown(index: number): void {
     if (index < this.rearrangedQuestions.length - 1) {
-      [this.rearrangedQuestions[index], this.rearrangedQuestions[index + 1]] =
-        [
-          this.rearrangedQuestions[index + 1],
-          this.rearrangedQuestions[index],
-        ];
+      [this.rearrangedQuestions[index], this.rearrangedQuestions[index + 1]] = [
+        this.rearrangedQuestions[index + 1],
+        this.rearrangedQuestions[index],
+      ];
 
       this.rearrangedQuestions.forEach((q, i) => {
         q.order = i;
@@ -238,7 +221,7 @@ export class QuestionArrangementComponent implements OnInit {
    */
   previewQuestion(question: any): void {
     this.selectedQuestion = question;
-    this.selectedQuestion.questionView = !this.selectedQuestion.questionView
+    this.selectedQuestion.questionView = !this.selectedQuestion.questionView;
     this.cdr.detectChanges();
     setTimeout(() => this.renderMathContent(), 300);
 
@@ -253,51 +236,85 @@ export class QuestionArrangementComponent implements OnInit {
     this.selectedQuestion = null;
   }
 
-  /**
-   * Reset order
-   */
+  // resetOrder(): void {
+  //   this.rearrangedQuestions = this.questions.map((q, index) => ({
+  //     ...q,
+  //     order: index,
+  //   }));
+  //   this.orderChanged.emit(this.rearrangedQuestions);
+  //   this.showToast('Order reset to original!', 'info');
+  // }
+
   resetOrder(): void {
-    this.rearrangedQuestions = this.questions.map((q, index) => ({
+    const original = [
+      ...(this.sectionQuestionsMap[this.selectedSectionId] || []),
+    ].sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    this.rearrangedQuestions = original.map((q: any, i: number) => ({
       ...q,
-      order: index,
+      order: i,
     }));
-    this.orderChanged.emit(this.rearrangedQuestions);
     this.showToast('Order reset to original!', 'info');
   }
 
-  /**
-   * Save new order
-   */
-  async saveNewOrder() {
-    this.saveOrder.emit(this.rearrangedQuestions);
-    const payload = this.getAllQuestion();
-    const entiId = localStorage.getItem('tenantId');
+  getSectionName(sectionId: string): string {
+    const s = this.sections.find((sec: any) => sec.sectionId === sectionId);
+    return s?.sectionName || 'Questions';
+  }
 
-    const newPlaylod = {
-      tenantId: entiId,
+  onSectionChange(sectionId: string): void {
+    this.sectionQuestionsMap[this.selectedSectionId] = this.rearrangedQuestions;
+    this.selectedSectionId = sectionId;
+    this.rearrangedQuestions = this.sectionQuestionsMap[sectionId] || [];
+    this.cdr.detectChanges();
+    setTimeout(() => this.renderMathContent(), 300);
+  }
+
+  async saveNewOrder() {
+    // this.saveOrder.emit(this.rearrangedQuestions);
+    // const payload = this.getAllQuestion();
+    // const entiId = localStorage.getItem('tenantId');
+
+    // const newPlaylod = {
+    //   tenantId: entiId,
+    //   examId: this.testId,
+    //   questions: payload,
+    // };
+    // this.commonApi
+    //   .fetchData(newPlaylod, 'exam/questions', 'sort-order')
+    //   .subscribe({
+    //     next: (res: any) => {
+    //       if (res?.status) {
+    //         this.showToast('Order saved successfully!', 'success');
+    const payload = this.rearrangedQuestions.map((q: any, i: number) => ({
+      qId: q._id,
+      sortOrder: i,
+    }));
+    const body = {
+      entiId: this.entiId,
       examId: this.testId,
-      questions: payload
-    }
-    this.commonApi.fetchData(
-      newPlaylod,
-      'exam/questions',
-      'sort-order'
-    ).subscribe({
+      questions: payload,
+    };
+    this.commonApi.fetchData(body, 'exam/questions', 'sort-order').subscribe({
       next: (res: any) => {
         if (res?.status) {
+          this.sectionQuestionsMap[this.selectedSectionId] =
+            this.rearrangedQuestions.map((q: any, i: number) => ({
+              ...q,
+              order: i,
+            }));
           this.showToast('Order saved successfully!', 'success');
           this.router.navigate(['/app/exams/exams']);
         }
       },
       error: (err) => {
         this.showToast(err.error?.message, 'success');
-      }
+      },
     });
   }
 
   getAllQuestion(): any[] {
     const arr: any[] = [];
-    this.rearrangedQuestions.forEach(q => {
+    this.rearrangedQuestions.forEach((q) => {
       arr.push({
         sortOrder: q.order + 1,
         qId: q._id,
@@ -322,7 +339,9 @@ export class QuestionArrangementComponent implements OnInit {
    * Copy question number
    */
   copyQuestionNumber(question: any): void {
-    const newNumber = (this.rearrangedQuestions.indexOf(question) + 1).toString();
+    const newNumber = (
+      this.rearrangedQuestions.indexOf(question) + 1
+    ).toString();
     navigator.clipboard.writeText(newNumber);
     this.showToast('Question number copied: ' + newNumber, 'success');
   }
@@ -372,7 +391,9 @@ export class QuestionArrangementComponent implements OnInit {
    * Get button class for disabled state
    */
   getButtonClass(isDisabled: boolean): string {
-    return isDisabled ? 'btn-outline-secondary disabled' : 'btn-outline-primary';
+    return isDisabled
+      ? 'btn-outline-secondary disabled'
+      : 'btn-outline-primary';
   }
 
   getOptionLabel(index: number): string {
@@ -393,43 +414,43 @@ export class QuestionArrangementComponent implements OnInit {
 
         const options = q.questionOptions?.length
           ? await Promise.all(
-            q.questionOptions.map(async (opt: any) => {
-              let textHtml = await this.replaceDownloadUrls(opt.textHtml);
-              textHtml = this.normalizeDelimiters(textHtml);
-              return {
-                ...opt,
-                textHtml: textHtml
-              };
-            })
-          )
+              q.questionOptions.map(async (opt: any) => {
+                let textHtml = await this.replaceDownloadUrls(opt.textHtml);
+                textHtml = this.normalizeDelimiters(textHtml);
+                return {
+                  ...opt,
+                  textHtml: textHtml,
+                };
+              }),
+            )
           : [];
 
         const leftColumn = q.leftColumn?.length
           ? await Promise.all(
-            q.leftColumn.map(async (item: any, i: number) => {
-              let text = await this.replaceDownloadUrls(item?.text || '');
-              text = this.normalizeDelimiters(text);
-              return {
-                ...item,
-                key: item?.key || String.fromCharCode(65 + i),
-                textHtml: this.sanitizeHtml(text),
-              };
-            })
-          )
+              q.leftColumn.map(async (item: any, i: number) => {
+                let text = await this.replaceDownloadUrls(item?.text || '');
+                text = this.normalizeDelimiters(text);
+                return {
+                  ...item,
+                  key: item?.key || String.fromCharCode(65 + i),
+                  textHtml: this.sanitizeHtml(text),
+                };
+              }),
+            )
           : [];
 
         const rightColumn = q.rightColumn?.length
           ? await Promise.all(
-            q.rightColumn.map(async (item: any, i: number) => {
-              let text = await this.replaceDownloadUrls(item?.text || '');
-              text = this.normalizeDelimiters(text);
-              return {
-                ...item,
-                key: item?.key || String.fromCharCode(80 + i),
-                textHtml: this.sanitizeHtml(text),
-              };
-            })
-          )
+              q.rightColumn.map(async (item: any, i: number) => {
+                let text = await this.replaceDownloadUrls(item?.text || '');
+                text = this.normalizeDelimiters(text);
+                return {
+                  ...item,
+                  key: item?.key || String.fromCharCode(80 + i),
+                  textHtml: this.sanitizeHtml(text),
+                };
+              }),
+            )
           : [];
 
         const matchMap: Record<string, string[]> = {};
@@ -445,9 +466,9 @@ export class QuestionArrangementComponent implements OnInit {
           questionNumber: index + 1,
           questionHtml: this.sanitizeHtml(questionHtml),
           solutionHtml: this.sanitizeHtml(solutionHtml),
-          questionOptions: options.map(o => ({
+          questionOptions: options.map((o) => ({
             ...o,
-            textHtml: this.sanitizeHtml(o.textHtml)
+            textHtml: this.sanitizeHtml(o.textHtml),
           })),
           leftColumn,
           rightColumn,
@@ -456,7 +477,7 @@ export class QuestionArrangementComponent implements OnInit {
             matches: matchMap[l.key] || [],
           })),
         };
-      })
+      }),
     );
   }
 
@@ -498,14 +519,13 @@ export class QuestionArrangementComponent implements OnInit {
           this.commonApi.fetchData(
             { url: originalUrl },
             'exam/questions/image',
-            'download'
-          )
+            'download',
+          ),
         );
 
         if (downloadRes?.status) {
           updatedHtml = updatedHtml.replace(originalUrl, downloadRes.url);
         }
-
       } catch (err) {
         console.error('Image download error:', err);
       }
@@ -552,7 +572,6 @@ export class QuestionArrangementComponent implements OnInit {
       //     console.error(`Error rendering solution ${idx}:`, err);
       //   }
       // });
-
     } catch (err) {
       console.error('Error in renderMathContent:', err);
     }
@@ -567,14 +586,14 @@ export class QuestionArrangementComponent implements OnInit {
           { left: '$$', right: '$$', display: true },
           { left: '$', right: '$', display: false },
           { left: '\\(', right: '\\)', display: false },
-          { left: '\\[', right: '\\]', display: true }
+          { left: '\\[', right: '\\]', display: true },
         ],
         throwOnError: false,
         strict: false,
         trust: true,
         macros: {
-          "\\f": "#1f(#2)",
-        }
+          '\\f': '#1f(#2)',
+        },
       });
     } catch (err) {
       console.error('renderMathInElement error:', err);
@@ -596,7 +615,7 @@ export class QuestionArrangementComponent implements OnInit {
       // ...Array.from(this.solutionElements)
     ];
 
-    allElements.forEach(refElement => {
+    allElements.forEach((refElement) => {
       try {
         const element = refElement.nativeElement;
         this.processElementForMath(element);
@@ -627,7 +646,7 @@ export class QuestionArrangementComponent implements OnInit {
         while ((match = mathRegex.exec(text)) !== null) {
           if (match.index > lastIndex) {
             fragment.appendChild(
-              document.createTextNode(text.substring(lastIndex, match.index))
+              document.createTextNode(text.substring(lastIndex, match.index)),
             );
           }
 
@@ -641,12 +660,16 @@ export class QuestionArrangementComponent implements OnInit {
             const mathHtml = katex.renderToString(processedMath, {
               throwOnError: false,
               displayMode: isDisplay,
-              strict: 'ignore'
+              strict: 'ignore',
             });
 
-            const mathContainer = document.createElement(isDisplay ? 'div' : 'span');
+            const mathContainer = document.createElement(
+              isDisplay ? 'div' : 'span',
+            );
             mathContainer.innerHTML = mathHtml;
-            mathContainer.className = isDisplay ? 'katex-display-custom' : 'katex-inline-custom';
+            mathContainer.className = isDisplay
+              ? 'katex-display-custom'
+              : 'katex-inline-custom';
             fragment.appendChild(mathContainer);
           } catch (err) {
             console.error('KaTeX rendering error:', err);
@@ -658,7 +681,7 @@ export class QuestionArrangementComponent implements OnInit {
 
         if (lastIndex < text.length) {
           fragment.appendChild(
-            document.createTextNode(text.substring(lastIndex))
+            document.createTextNode(text.substring(lastIndex)),
           );
         }
 
@@ -668,12 +691,16 @@ export class QuestionArrangementComponent implements OnInit {
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as HTMLElement;
 
-        if (['SCRIPT', 'STYLE', 'IMG', 'IFRAME', 'CODE', 'PRE'].includes(element.tagName)) {
+        if (
+          ['SCRIPT', 'STYLE', 'IMG', 'IFRAME', 'CODE', 'PRE'].includes(
+            element.tagName,
+          )
+        ) {
           return;
         }
 
         const children = Array.from(node.childNodes);
-        children.forEach(child => walk(child));
+        children.forEach((child) => walk(child));
       }
     };
 
@@ -702,5 +729,4 @@ export class QuestionArrangementComponent implements OnInit {
   goBack() {
     this.location.back();
   }
-
 }

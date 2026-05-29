@@ -1,6 +1,15 @@
 <div class="container-fluid py-4">
   <!-- Header Card -->
   <div class="card shadow-sm mb-4">
+    <div *ngIf="marksMismatch" class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>
+        Total marks of assigned questions
+        (<strong>{{ actualTotalMarks }}</strong>) does not match
+        exam total marks (<strong>{{ questionData?.totalMarks }}</strong>).
+        Difference: <strong>{{ questionData?.totalMarks - actualTotalMarks }}</strong> marks unassigned.
+      </span>
+    </div>
     <div class="card-body d-flex justify-content-between align-items-center">
       <div>
         <h5 class="mb-0">Questions List</h5>
@@ -18,6 +27,7 @@
         </small>
       </div>
       <div class="col-md-6 text-end">
+        <!-- Section filter -->
         <!-- <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-outline-success btn-sm me-2"
           (click)="openBankModal()">
           <i class="fas fa-database me-1"></i> Map from Bank
@@ -66,6 +76,21 @@
         </button>
       </div>
     </div>
+    <div class="d-flex align-items-center gap-3 mb-2 ms-3 flex-wrap">
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 fw-bold small">Filter by Section:</label>
+        <select class="form-select form-select-sm" style="width:200px;" [(ngModel)]="selectedFilterSectionId">
+          <option value="">All Sections</option>
+          <option *ngFor="let s of questionData?.sections" [value]="s.sectionId">
+            {{ s.sectionName }}
+            ({{ getSectionActualCount(s.sectionId) }}/{{ s.numberOfQuestions }})
+          </option>
+        </select>
+      </div>
+      <small class="text-muted">
+        Showing {{ filteredQuestions.length }} of {{ questions.length }} questions
+      </small>
+    </div>
   </div>
   <!-- Loading -->
   <div *ngIf="loading" class="text-center py-5">
@@ -98,7 +123,7 @@
     </div>
   </div>
   <!-- Question Cards -->
-  <div *ngFor="let q of questions; let i = index" class="card mb-4 shadow-sm">
+  <div *ngFor="let q of filteredQuestions; let i = index" class="card mb-4 shadow-sm">
     <!-- Card Header -->
     <div class="card-header d-flex justify-content-between align-items-center">
       <div>
@@ -151,7 +176,8 @@
     <!-- Card Body -->
     <div class="card-body">
       <!-- Passage (if enabled) -->
-      <div *ngIf="q.enablePassage && q.passageHtml" class="mb-3 p-3 border rounded bg-light">
+      <div *ngIf="q.enablePassage && q.passageHtml && q.passageHtml.toString().length > 0"
+        class="mb-3 p-3 border rounded bg-light">
         <div class="fw-bold text-primary mb-2">
           <i class="fas fa-book me-1"></i> Passage
         </div>
@@ -230,18 +256,15 @@
           class="ms-2 badge bg-success fs-6">
           {{ q.correctAnswer }}
         </span>
-
         <!-- True/False -->
         <span *ngIf="q.questionType === 'true_false'" class="ms-2 badge fs-6"
           [class.bg-success]="q.correctAnswer === 'true'" [class.bg-danger]="q.correctAnswer === 'false'">
           {{ q.correctAnswer === 'true' ? 'True' : 'False' }}
         </span>
-
         <!-- Integer -->
         <span *ngIf="q.questionType === 'integer'" class="ms-2 badge bg-primary fs-6">
           {{ q.correctAnswer }}
         </span>
-
         <!-- Numeric — show range -->
         <span *ngIf="q.questionType === 'numeric'" class="ms-2">
           <span class="badge bg-primary fs-6">{{ q.correctAnswer }}</span>
@@ -249,13 +272,16 @@
             (Range: {{ q.numericMin }} — {{ q.numericMax }})
           </span>
         </span>
-
         <!-- Subjective / Short Answer -->
-        <span *ngIf="q.questionType === 'subjective' || q.questionType === 'short_answer'"
+        <!-- <span *ngIf="q.questionType === 'subjective' || q.questionType === 'short_answer'"
           class="ms-2 text-muted fst-italic">
           {{ q.correctAnswer || '(manually evaluated)' }}
+        </span> -->
+        <span *ngIf="q.questionType === 'subjective' || q.questionType === 'short_answer'"
+          class="ms-2 text-muted fst-italic">
+          <span *ngIf="q.correctAnswer" [innerHTML]="sanitizeHtml(q.correctAnswer)"></span>
+          <span *ngIf="!q.correctAnswer">(manually evaluated)</span>
         </span>
-
         <!-- Matrix — handled above in matrix section -->
         <span *ngIf="q.questionType === 'matrix'" class="ms-2 text-muted small">
           See matrix matches above
