@@ -3,6 +3,8 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ReportItem {
   key: string;
@@ -23,7 +25,7 @@ export class ReportsnewComponent implements OnInit {
   batchReports: ReportItem[] = [
     {
       key: 'batch-info',
-      label: 'Batch Info',
+      label: 'Batch Details',
       icon: 'fa-solid fa-building',
       description: 'Overview of all batches with student & staff counts',
     },
@@ -62,25 +64,6 @@ export class ReportsnewComponent implements OnInit {
       label: 'Subject Hours',
       icon: 'fa-solid fa-hourglass-half',
       description: 'Hours allotted per subject in a batch',
-    },
-    {
-      key: 'batch-assignments',
-      label: 'Assignments',
-      icon: 'fa-solid fa-file-alt',
-      description: 'Assignment completion status per batch',
-    },
-    {
-      key: 'batch-cgpa',
-      label: 'CGPA Report',
-      icon: 'fa-solid fa-star-half-stroke',
-      description: 'Batch-wise and student-wise CGPA breakdown',
-    },
-    {
-      key: 'batch-slash',
-      label: 'Slash Report',
-      icon: 'fa-solid fa-chart-pie',
-      description:
-        'Available, completed and pending assignments per batch per subject',
     },
     {
       key: 'batch-exams',
@@ -122,6 +105,13 @@ export class ReportsnewComponent implements OnInit {
     },
   ];
   teacherReports: ReportItem[] = [
+    {
+      key: 'teacher-faculty-report',
+      label: 'Faculty Report',
+      icon: 'fa-solid fa-user-tie',
+      description:
+        'Comprehensive faculty report with teaching hours, tasks, attendance and more',
+    },
     {
       key: 'teacher-batches',
       label: 'Batches',
@@ -179,23 +169,16 @@ export class ReportsnewComponent implements OnInit {
   ];
   assignmentReports: ReportItem[] = [
     {
-      key: 'batch-assignments',
-      label: 'Assignment Completion',
+      key: 'batch-assignment-report',
+      label: 'Tab Assignment Report',
       icon: 'fa-solid fa-file-alt',
-      description: 'Assignment completion status per batch',
+      description: 'Batch-wise and student-wise assignment scores',
     },
     {
-      key: 'batch-cgpa',
-      label: 'CGPA Report',
-      icon: 'fa-solid fa-star-half-stroke',
-      description: 'Batch-wise and student-wise CGPA breakdown',
-    },
-    {
-      key: 'batch-slash',
+      key: 'batch-slash-detail',
       label: 'Slash Report',
       icon: 'fa-solid fa-chart-pie',
-      description:
-        'Available, completed and pending assignments per batch per subject',
+      description: 'Assignment completion per student per topic',
     },
   ];
   selectedReport: ReportItem | null = null;
@@ -259,6 +242,52 @@ export class ReportsnewComponent implements OnInit {
   attendanceDetailData: any[] = [];
   remarksDetailData2: any[] = [];
   lateEntriesDetailData: any[] = [];
+  readonly maskedColumns = new Set([
+    'phone',
+    'phone1',
+    'phone2',
+    'email',
+    'email1',
+    'email2',
+    'parentPhone',
+  ]);
+  revealedColumns: Set<string> = new Set();
+  phaseAllotmentBatchOptions: any[] = [];
+  allBatchesFullList: any[] = [];
+  assignmentReportView: 'batch' | 'student' = 'batch';
+  assignmentBatchResults: any[] = [];
+  assignmentStudentResults: any[] = [];
+  slashTopicOptions: any[] = [];
+  selectedTopicIds: string[] = [];
+  topicDropdownOpen = false;
+  topicSearch = '';
+  selectedStaffIds: string[] = [];
+  staffMultiSelectDropdownOpen = false;
+  staffMultiSelectSearch = '';
+  facultyLoadData: any[] = [];
+  sectionOptions = [
+    { key: 'teaching', label: 'Teaching Hours', disabled: false },
+    { key: 'invigilation', label: 'Invigilation Hours', disabled: true },
+    { key: 'tasks', label: 'Tasks', disabled: false },
+    { key: 'cancelled', label: 'Cancelled Periods', disabled: false },
+    { key: 'replaced', label: 'Replaced Periods', disabled: false },
+    { key: 'lateEntry', label: 'Late Entry', disabled: false },
+    { key: 'earlyLeaving', label: 'Early Leaving', disabled: false },
+    { key: 'attendanceMarked', label: 'Attendance Marked', disabled: false },
+    {
+      key: 'attendanceNotMarked',
+      label: 'Attendance Not Marked',
+      disabled: false,
+    },
+    {
+      key: 'assignments',
+      label: 'Assignment Enabled Per Batch',
+      disabled: false,
+    },
+  ];
+
+  selectedSections: string[] = [];
+  facultyReportData: any[] = [];
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -309,15 +338,21 @@ export class ReportsnewComponent implements OnInit {
     if (report.key === 'teacher-load') {
       this.loadCenters();
     }
+    if (report.key === 'batch-phase-allotment') {
+      this.loadPrograms();
+      this.phaseAllotmentBatchOptions = [...this.batchOptions];
+      this.subjectOptions = [];
+    }
     if (
-      [
-        'batch-phase-allotment',
-        'batch-assignments',
-        'batch-subject-hours',
-        'batch-timetable',
-        'batch-cgpa',
-        'batch-slash',
-      ].includes(report.key)
+      ['batch-assignments', 'batch-cgpa', 'batch-slash'].includes(report.key)
+    ) {
+      this.loadSubjects();
+    }
+    if (['batch-timetable', 'batch-subject-hours'].includes(report.key)) {
+      this.subjectOptions = [];
+    }
+    if (
+      ['batch-assignment-report', 'batch-slash-detail'].includes(report.key)
     ) {
       this.loadSubjects();
     }
@@ -378,6 +413,21 @@ export class ReportsnewComponent implements OnInit {
     this.attendanceDetailData = [];
     this.remarksDetailData2 = [];
     this.lateEntriesDetailData = [];
+    this.revealedColumns = new Set();
+    this.phaseAllotmentBatchOptions = [...this.batchOptions];
+    this.assignmentReportView = 'batch';
+    this.assignmentBatchResults = [];
+    this.assignmentStudentResults = [];
+    this.slashTopicOptions = [];
+    this.selectedTopicIds = [];
+    this.topicDropdownOpen = false;
+    this.topicSearch = '';
+    this.selectedStaffIds = [];
+    this.staffMultiSelectDropdownOpen = false;
+    this.staffMultiSelectSearch = '';
+    this.facultyLoadData = [];
+    this.selectedSections = [];
+    this.facultyReportData = [];
   }
 
   private loadBatches() {
@@ -385,12 +435,15 @@ export class ReportsnewComponent implements OnInit {
       .fetchData({ entiId: this.tenantId }, 'batch', 'list?list=full')
       .subscribe({
         next: (res: any) => {
-          this.batchOptions = (res?.data || []).map((b: any) => ({
+          this.allBatchesFullList = res?.data || [];
+          this.batchOptions = this.allBatchesFullList.map((b: any) => ({
             value: b.batchId || b._id,
             label: b.batchCode + ' - ' + b.batchName,
             batchCode: b.batchCode,
             batchId: b.batchId || b._id,
+            programId: b.programId,
           }));
+          this.phaseAllotmentBatchOptions = [...this.batchOptions];
         },
       });
   }
@@ -469,10 +522,11 @@ export class ReportsnewComponent implements OnInit {
   }
 
   get allBatchesSelected(): boolean {
-    return (
-      this.batchOptions.length > 0 &&
-      this.selectedBatchIds.length === this.batchOptions.length
-    );
+    const opts =
+      this.selectedReport?.key === 'batch-phase-allotment'
+        ? this.phaseAllotmentBatchOptions
+        : this.batchOptions;
+    return opts.length > 0 && this.selectedBatchIds.length === opts.length;
   }
 
   get batchSelectionLabel(): string {
@@ -586,42 +640,52 @@ export class ReportsnewComponent implements OnInit {
       if (batch?.batchCode)
         this.selectedBatchCodes = [...this.selectedBatchCodes, batch.batchCode];
     }
+    if (
+      this.selectedReport?.key === 'batch-timetable' ||
+      this.selectedReport?.key === 'batch-subject-hours'
+    ) {
+      this.loadSubjectsByBatches(this.selectedBatchIds);
+    }
+    if (this.selectedReport?.key === 'batch-phase-allotment') {
+      this.onPhaseAllotmentBatchChange();
+    }
+    if (
+      this.selectedReport?.key === 'batch-assignment-report' &&
+      this.assignmentReportView === 'student'
+    ) {
+      this.loadStudentsByBatches(this.selectedBatchIds);
+    }
   }
 
   toggleSelectAllBatches() {
+    const opts =
+      this.selectedReport?.key === 'batch-phase-allotment'
+        ? this.phaseAllotmentBatchOptions
+        : this.batchOptions;
     if (this.allBatchesSelected) {
       this.selectedBatchIds = [];
       this.selectedBatchCodes = [];
     } else {
-      this.selectedBatchIds = this.batchOptions.map((b: any) => b.value);
-      this.selectedBatchCodes = this.batchOptions.map((b: any) => b.batchCode);
+      this.selectedBatchIds = opts.map((b: any) => b.value);
+      this.selectedBatchCodes = opts.map((b: any) => b.batchCode);
+    }
+    if (
+      this.selectedReport?.key === 'batch-timetable' ||
+      this.selectedReport?.key === 'batch-subject-hours'
+    ) {
+      this.loadSubjectsByBatches(this.selectedBatchIds);
+    }
+    if (this.selectedReport?.key === 'batch-phase-allotment') {
+      this.onPhaseAllotmentBatchChange();
+    }
+    if (
+      this.selectedReport?.key === 'batch-assignment-report' &&
+      this.assignmentReportView === 'student'
+    ) {
+      this.loadStudentsByBatches(this.selectedBatchIds);
     }
   }
 
-  // private loadStudentsByBatches(batchIds: string[]) {
-  //   if (!batchIds.length) {
-  //     this.studentOptions = [];
-  //     return;
-  //   }
-  //   const endpoint = `list?list=full&batchIds=${batchIds.join(',')}`;
-  //   this.commonApi
-  //     .fetchData({ entiId: this.tenantId }, 'student', endpoint)
-  //     .subscribe({
-  //       next: (res: any) => {
-  //         this.studentOptions = (res?.data || []).map((s: any) => ({
-  //           value: s.studentId || s._id,
-  //           label:
-  //             (s.admissionNo || '') +
-  //             ' - ' +
-  //             (s.student?.name || s.name || s.studentName || ''),
-  //           admissionNo: s.admissionNo,
-  //           studentId: s.studentId || s._id,
-  //         }));
-  //       },
-  //     });
-  // }
-
-  // SIMPLEST FIX — use batchCode query param:
   private loadStudentsByBatches(batchIds: string[]) {
     if (!batchIds.length) {
       this.studentOptions = [];
@@ -751,6 +815,8 @@ export class ReportsnewComponent implements OnInit {
         if (this.selectedBatchIds.length)
           payload.batchIds = this.selectedBatchIds;
         if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
+        if (this.selectedProgramIds.length)
+          payload.programIds = this.selectedProgramIds;
         break;
       case 'batch-subject-hours':
         module = 'reports/batch';
@@ -847,6 +913,15 @@ export class ReportsnewComponent implements OnInit {
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         if (this.filterEntryType) payload.entryType = this.filterEntryType;
         break;
+      case 'teacher-faculty-report':
+        module = 'reports/teacher';
+        endpoint = 'faculty-report';
+        if (this.selectedStaffIds.length)
+          payload.staffIds = this.selectedStaffIds;
+        if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
+        if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
+        payload.sections = this.selectedSections;
+        break;
       case 'teacher-batches':
         module = 'reports/teacher';
         endpoint = 'batches';
@@ -856,9 +931,8 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-load':
         module = 'reports/teacher';
         endpoint = 'load';
-        if (this.selectedStaffId) payload.staffId = this.selectedStaffId;
-        if (this.selectedBatchIds.length)
-          payload.batchIds = this.selectedBatchIds;
+        if (this.selectedStaffIds.length)
+          payload.staffIds = this.selectedStaffIds;
         if (this.selectedCenterIds.length)
           payload.centerIds = this.selectedCenterIds;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
@@ -926,6 +1000,35 @@ export class ReportsnewComponent implements OnInit {
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
         break;
+      case 'batch-assignment-report':
+        module = 'reports/batch';
+        endpoint = 'assignment-report';
+        if (!this.selectedBatchIds.length) {
+          this.alert.error('Please select at least one batch');
+          this.reportLoading = false;
+          return;
+        }
+        payload.batchIds = this.selectedBatchIds;
+        payload.view = this.assignmentReportView;
+        if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
+        if (this.assignmentReportView === 'student') {
+          payload.admissionNos = this.selectedAdmissionNos;
+        }
+        break;
+
+      case 'batch-slash-detail':
+        module = 'reports/batch';
+        endpoint = 'slash-detail';
+        if (!this.selectedBatchIds.length) {
+          this.alert.error('Please select at least one batch');
+          this.reportLoading = false;
+          return;
+        }
+        payload.batchIds = this.selectedBatchIds;
+        if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
+        if (this.selectedTopicIds.length)
+          payload.topicIds = this.selectedTopicIds;
+        break;
     }
     this.commonApi.fetchData(payload, module, endpoint).subscribe({
       next: (res: any) => {
@@ -986,9 +1089,14 @@ export class ReportsnewComponent implements OnInit {
             : []),
           { key: 'admissionNo', label: 'Enrollment No' },
           { key: 'name', label: 'Name' },
-          { key: 'phone', label: 'Phone' },
-          { key: 'email', label: 'Email' },
+          { key: 'phone', label: 'Phone', masked: true },
+          { key: 'phone1', label: 'Phone 1', masked: true },
+          { key: 'phone2', label: 'Phone 2', masked: true },
+          { key: 'email', label: 'Email', masked: true },
+          { key: 'email1', label: 'Email 1', masked: true },
+          { key: 'email2', label: 'Email 2', masked: true },
           { key: 'parentName', label: 'Parent' },
+          { key: 'parentPhone', label: 'Parent Phone', masked: true },
           { key: 'status', label: 'Status' },
         ];
         this.reportTableData = data.map((r: any, i: number) => ({
@@ -1057,46 +1165,71 @@ export class ReportsnewComponent implements OnInit {
         break;
       case 'batch-phase-allotment':
         this.reportColumns = [
+          ...(this.selectedBatchIds.length !== 1
+            ? [
+                { key: 'batchCode', label: 'Batch Code' },
+                { key: 'batchName', label: 'Batch Name' },
+              ]
+            : []),
           { key: 'subjectName', label: 'Subject' },
-          { key: 'subjectCode', label: 'Code' },
-          { key: 'totalEstHours', label: 'Est Hours' },
-          { key: 'totalAllottedHours', label: 'Allotted' },
-          { key: 'totalRemainingHours', label: 'Remaining' },
-          { key: 'overallProgressPct', label: 'Progress %' },
-          { key: 'unassignedHours', label: 'Unassigned Hrs' },
-          { key: 'phaseCount', label: 'Phases' },
+          { key: 'phaseName', label: 'Phase' },
+          { key: 'estHours', label: 'Est Hours' },
+          { key: 'allottedHours', label: 'Allotted Hours' },
+          { key: 'remainingHours', label: 'Remaining Hours' },
+          { key: 'progressPct', label: 'Progress %' },
         ];
-        this.reportTableData = data.map((r: any) => ({
-          ...r,
-          phaseCount: (r.phases || []).length,
-          totalEstHours: this.formatHours(r.totalEstHours),
-          totalAllottedHours: this.formatHours(r.totalAllottedHours),
-          totalRemainingHours: this.formatHours(r.totalRemainingHours),
-          unassignedHours: this.formatHours(r.unassignedHours),
-        }));
-        this.phaseDetailData = data.flatMap((r: any) =>
-          (r.phases || []).map((ph: any) => ({
-            subjectName: r.subjectName,
-            subjectCode: r.subjectCode,
-            phaseName: ph.phaseName,
-            estHours: this.formatHours(ph.estHours),
-            allottedHours: this.formatHours(ph.allottedHours),
-            remainingHours: this.formatHours(ph.remainingHours),
-            progressPct: ph.progressPct !== null ? ph.progressPct + '%' : '-',
-          })),
-        );
+        const phaseRows: any[] = [];
+        data.forEach((r: any) => {
+          const phases = (r.phases || []).sort(
+            (a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0),
+          );
+          if (phases.length === 0) {
+            phaseRows.push({
+              batchCode: r.batchCode,
+              batchName: r.batchName,
+              subjectName: r.subjectName,
+              phaseName: '-',
+              estHours: this.formatHours(r.totalEstHours),
+              allottedHours: this.formatHours(r.totalAllottedHours),
+              remainingHours: this.formatHours(r.totalRemainingHours),
+              progressPct:
+                r.overallProgressPct !== null
+                  ? r.overallProgressPct + '%'
+                  : '-',
+            });
+          } else {
+            phases.forEach((ph: any) => {
+              phaseRows.push({
+                batchCode: r.batchCode,
+                batchName: r.batchName,
+                subjectName: r.subjectName,
+                phaseName: ph.phaseName,
+                estHours: this.formatHours(ph.estHours),
+                allottedHours: this.formatHours(ph.allottedHours),
+                remainingHours: this.formatHours(ph.remainingHours),
+                progressPct:
+                  ph.progressPct !== null ? ph.progressPct + '%' : '-',
+              });
+            });
+          }
+        });
+        this.reportTableData = phaseRows;
         break;
       case 'batch-subject-hours':
         this.reportColumns = [
           { key: 'batchCode', label: 'Batch' },
           { key: 'batchName', label: 'Batch Name' },
           { key: 'subjectName', label: 'Subject' },
-          { key: 'subjectCode', label: 'Code' },
+          { key: 'phaseName', label: 'Phase' },
+          { key: 'estHours', label: 'Est Hours' },
           { key: 'allottedHours', label: 'Allotted Hours' },
+          { key: 'balanceHours', label: 'Balance Hours' },
         ];
         this.reportTableData = data.map((r: any) => ({
           ...r,
+          estHours: this.formatHours(r.estHours),
           allottedHours: this.formatHours(r.allottedHours),
+          balanceHours: this.formatHours(r.balanceHours),
         }));
         break;
       case 'batch-assignments':
@@ -1147,7 +1280,6 @@ export class ReportsnewComponent implements OnInit {
             }));
         }
         break;
-
       case 'batch-slash':
         this.reportColumns = [
           { key: 'batchCode', label: 'Batch' },
@@ -1395,6 +1527,13 @@ export class ReportsnewComponent implements OnInit {
           this.reportTableData = data;
         }
         break;
+      case 'teacher-faculty-report':
+        this.facultyReportData = res.data || [];
+        this.reportTableData = [];
+        this.reportColumns = [];
+        this.reportSummary = null;
+        this.summaryItems = [];
+        break;
       case 'teacher-batches':
         this.reportColumns = [
           { key: 'batchCode', label: 'Batch Code' },
@@ -1409,34 +1548,11 @@ export class ReportsnewComponent implements OnInit {
         this.reportTableData = data;
         break;
       case 'teacher-load':
-        this.reportColumns = [
-          { key: 'staffName', label: 'Staff' },
-          { key: 'staffCode', label: 'Code' },
-          { key: 'batchCode', label: 'Batch Code' },
-          { key: 'batchName', label: 'Batch Name' },
-          { key: 'subjectName', label: 'Subject' },
-          // { key: 'centerName', label: 'Center' },
-          { key: 'scheduledCount', label: 'Periods' },
-          { key: 'scheduledHoursFormatted', label: 'Scheduled Hours' },
-          { key: 'cancelledCount', label: 'Cancelled' },
-          { key: 'replacedCount', label: 'Replaced Periods' },
-          { key: 'replacedHoursFormatted', label: 'Replaced Hours' },
-        ];
-        this.reportTableData = data;
-        this.facultyLoadDetail = res.detail || [];
-        this.reportSummary = res.summary || null;
-        if (this.reportSummary) {
-          this.summaryItems = Object.keys(this.reportSummary)
-            .filter(
-              (k) =>
-                typeof this.reportSummary[k] !== 'object' &&
-                this.reportSummary[k] !== null,
-            )
-            .map((k) => ({
-              label: this.formatSummaryKey(k),
-              value: this.reportSummary[k],
-            }));
-        }
+        this.facultyLoadData = res.data || [];
+        this.reportTableData = [];
+        this.reportColumns = [];
+        this.reportSummary = null;
+        this.summaryItems = [];
         break;
       case 'teacher-tasks':
         this.reportColumns = [
@@ -1561,6 +1677,44 @@ export class ReportsnewComponent implements OnInit {
             completionPct: b.completionPct,
           })),
         );
+        break;
+      case 'batch-assignment-report':
+        if (res.view === 'batch') {
+          this.assignmentBatchResults = res.batches || [];
+          this.reportTableData = [];
+          this.reportColumns = [];
+        } else {
+          this.assignmentStudentResults = res.students || [];
+          this.reportTableData = [];
+          this.reportColumns = [];
+        }
+        this.reportSummary = null;
+        this.summaryItems = [];
+        break;
+
+      case 'batch-slash-detail':
+        this.reportColumns = [
+          { key: 'batchCode', label: 'Batch' },
+          { key: 'admissionNo', label: 'Enrollment No' },
+          { key: 'studentName', label: 'Student Name' },
+          { key: 'subjectName', label: 'Subject' },
+          { key: 'topicName', label: 'Topic' },
+          { key: 'report', label: 'Available/Completed/Not Completed' },
+        ];
+        this.reportTableData = data;
+        this.reportSummary = res.summary || null;
+        if (this.reportSummary) {
+          this.summaryItems = Object.keys(this.reportSummary)
+            .filter(
+              (k) =>
+                typeof this.reportSummary[k] !== 'object' &&
+                this.reportSummary[k] !== null,
+            )
+            .map((k) => ({
+              label: this.formatSummaryKey(k),
+              value: this.reportSummary[k],
+            }));
+        }
         break;
       default:
         this.reportTableData = data;
@@ -1756,19 +1910,158 @@ export class ReportsnewComponent implements OnInit {
   }
 
   exportToExcel() {
-    if (!this.reportTableData.length || !this.selectedReport) return;
+    if (!this.selectedReport) return;
+    if (
+      !this.reportTableData.length &&
+      !this.hasFacultyLoadCustomData &&
+      !this.hasAssignmentCustomData &&
+      !this.hasFacultyReportData
+    )
+      return;
     const wb = XLSX.utils.book_new();
     const headers = this.reportColumns.map((c: any) => c.label);
     const keys = this.reportColumns.map((c: any) => c.key);
     const rows = this.reportTableData.map((row: any) =>
       keys.reduce((obj: any, key: string, idx: number) => {
+        const col = this.reportColumns[idx];
         let val = row[key];
         if (typeof val === 'boolean') val = val ? 'Yes' : 'No';
-        obj[headers[idx]] = val ?? '';
+        if (col?.masked && val && !this.isColumnRevealed(key)) {
+          obj[headers[idx]] = this.maskValue(String(val));
+        } else {
+          obj[headers[idx]] = val ?? '';
+        }
         return obj;
       }, {}),
     );
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Summary');
+    if (this.selectedReport.key === 'batch-assignment-report') {
+      this.exportAssignmentReportExcel(wb);
+      XLSX.writeFile(wb, 'Assignment_Report.xlsx');
+      return;
+    }
+    if (
+      this.selectedReport.key === 'teacher-load' &&
+      this.facultyLoadData.length > 0
+    ) {
+      wb.SheetNames = [];
+      wb.Sheets = {};
+      this.exportFacultyLoadExcel(wb);
+      XLSX.writeFile(wb, 'Faculty_Load_Report.xlsx');
+      return;
+    }
+    if (
+      this.selectedReport.key === 'teacher-faculty-report' &&
+      this.facultyReportData.length > 0
+    ) {
+      wb.SheetNames = [];
+      wb.Sheets = {};
+      this.exportFacultyReportExcel(wb);
+      XLSX.writeFile(wb, 'Faculty_Report.xlsx');
+      return;
+    }
+    if (
+      this.selectedReport.key === 'batch-slash-detail' &&
+      this.reportTableData.length > 0
+    ) {
+      wb.SheetNames = [];
+      wb.Sheets = {};
+      const headers = this.reportColumns.map((c: any) => c.label);
+      const keys = this.reportColumns.map((c: any) => c.key);
+      const batchGroups = new Map<string, any[]>();
+      for (const row of this.reportTableData) {
+        const bc = row.batchCode || 'Unknown';
+        if (!batchGroups.has(bc)) batchGroups.set(bc, []);
+        batchGroups.get(bc)!.push(row);
+      }
+      for (const [bc, batchRows] of batchGroups.entries()) {
+        const batchName = batchRows[0]?.batchName || '';
+        const headerRow1: any = {};
+        const headerRow2: any = {};
+        headers.forEach((h) => {
+          headerRow1[h] = '';
+          headerRow2[h] = '';
+        });
+        headerRow1[headers[0]] = `Batch Code: ${bc}`;
+        headerRow2[headers[0]] = `Batch Name: ${batchName}`;
+        const sheetRows = [
+          headerRow1,
+          headerRow2,
+          {},
+          ...batchRows.map((row: any) =>
+            keys.reduce((obj: any, key: string, idx: number) => {
+              obj[headers[idx]] = row[key] ?? '';
+              return obj;
+            }, {}),
+          ),
+        ];
+        const ws = XLSX.utils.json_to_sheet(sheetRows);
+        XLSX.utils.book_append_sheet(wb, ws, bc.substring(0, 31));
+      }
+    }
+    if (
+      this.selectedReport.key === 'batch-phase-allotment' &&
+      this.reportTableData.length > 0
+    ) {
+      const batchGroups = new Map<string, any[]>();
+      for (const row of this.reportTableData) {
+        const bc = row.batchCode || 'Unknown';
+        if (!batchGroups.has(bc)) batchGroups.set(bc, []);
+        batchGroups.get(bc)!.push(row);
+      }
+      wb.SheetNames = [];
+      wb.Sheets = {};
+      const headers = this.reportColumns.map((c: any) => c.label);
+      const keys = this.reportColumns.map((c: any) => c.key);
+      for (const [bc, batchRows] of batchGroups.entries()) {
+        const sheetRows = batchRows.map((row: any) =>
+          keys.reduce((obj: any, key: string, idx: number) => {
+            const col = this.reportColumns[idx];
+            let val = row[key];
+            if (typeof val === 'boolean') val = val ? 'Yes' : 'No';
+            obj[headers[idx]] = val ?? '';
+            return obj;
+          }, {}),
+        );
+        const sheetName = bc.substring(0, 31);
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.json_to_sheet(sheetRows),
+          sheetName,
+        );
+      }
+    }
+    if (
+      this.selectedReport.key === 'batch-subject-hours' &&
+      this.reportTableData.length > 0
+    ) {
+      wb.SheetNames = [];
+      wb.Sheets = {};
+      const headers = this.reportColumns.map((c: any) => c.label);
+      const keys = this.reportColumns.map((c: any) => c.key);
+      const batchGroups = new Map<string, any[]>();
+      for (const row of this.reportTableData) {
+        const bc = row.batchCode || 'Unknown';
+        if (!batchGroups.has(bc)) batchGroups.set(bc, []);
+        batchGroups.get(bc)!.push(row);
+      }
+      for (const [bc, batchRows] of batchGroups.entries()) {
+        const sheetRows = batchRows.map((row: any) =>
+          keys.reduce((obj: any, key: string, idx: number) => {
+            const col = this.reportColumns[idx];
+            let val = row[key];
+            if (typeof val === 'boolean') val = val ? 'Yes' : 'No';
+            obj[headers[idx]] = val ?? '';
+            return obj;
+          }, {}),
+        );
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.json_to_sheet(sheetRows),
+          bc.substring(0, 31),
+        );
+      }
+    }
     if (
       this.selectedReport.key === 'teacher-load' &&
       this.facultyLoadDetail.length > 0
@@ -1845,7 +2138,6 @@ export class ReportsnewComponent implements OnInit {
         'Remarks Detail',
       );
     }
-    // ADD after remarks detail sheet block:
     if (
       this.selectedReport.key === 'student-late-entries' &&
       this.lateEntriesDetailData.length > 0
@@ -1902,14 +2194,15 @@ export class ReportsnewComponent implements OnInit {
 
   needsBatchFilter(): boolean {
     if (!this.selectedReport) return false;
-    // return (
-    //   this.selectedReport.key.startsWith('batch-') &&
-    //   this.selectedReport.key !== 'batch-info'
-    // );
+    const key = this.selectedReport.key;
     return (
-      (this.selectedReport.key.startsWith('batch-') &&
-        this.selectedReport.key !== 'batch-info') ||
-      ['batch-cgpa', 'batch-slash'].includes(this.selectedReport.key)
+      (key.startsWith('batch-') && key !== 'batch-info') ||
+      [
+        'batch-cgpa',
+        'batch-slash',
+        'batch-assignment-report',
+        'batch-slash-detail',
+      ].includes(key)
     );
   }
 
@@ -1932,21 +2225,26 @@ export class ReportsnewComponent implements OnInit {
       'teacher-feedback',
       'teacher-exams',
       'teacher-load',
+      'teacher-faculty-report',
     ].includes(this.selectedReport.key);
   }
 
   needsStudentFilter(): boolean {
     if (!this.selectedReport) return false;
-    return this.selectedReport.key.startsWith('student-');
+    if (this.selectedReport.key.startsWith('student-')) return true;
+    return false;
   }
 
   needsBatchFilterForStudent(): boolean {
     if (!this.selectedReport) return false;
-    return this.selectedReport.key.startsWith('student-');
+    if (this.selectedReport.key.startsWith('student-')) return true;
+    return false;
   }
 
   needsStaffFilter(): boolean {
     if (!this.selectedReport) return false;
+    if (this.selectedReport.key === 'teacher-load') return false;
+    if (this.selectedReport.key === 'teacher-faculty-report') return false;
     return this.selectedReport.key.startsWith('teacher-');
   }
 
@@ -1959,7 +2257,6 @@ export class ReportsnewComponent implements OnInit {
       'teacher-attendance',
       'teacher-feedback',
       'teacher-exams',
-      'teacher-load',
     ].includes(this.selectedReport.key);
   }
 
@@ -1974,21 +2271,6 @@ export class ReportsnewComponent implements OnInit {
       'teacher-attendance',
     ].includes(key);
     if (needsDates && (!this.fromDate || !this.toDate)) return false;
-    // if (key === 'student-attendance' && (!this.fromDate || !this.toDate))
-    //   return false;
-    // if (this.needsStudentFilter() && !this.selectedAdmissionNo) return false;
-    // if (this.needsStaffFilter() && !this.selectedStaffId) return false;
-    // if (
-    //   this.selectedReport?.key === 'student-attendance' &&
-    //   !this.selectedAdmissionNos.length
-    // )
-    //   return false;
-    // if (
-    //   this.needsStudentFilter() &&
-    //   this.selectedReport?.key !== 'student-attendance' &&
-    //   !this.selectedAdmissionNo
-    // )
-    //   return false;
     const multiStudentReports = [
       'student-attendance',
       'student-remarks',
@@ -1997,6 +2279,19 @@ export class ReportsnewComponent implements OnInit {
     if (
       multiStudentReports.includes(this.selectedReport?.key) &&
       !this.selectedAdmissionNos.length
+    )
+      return false;
+    if (
+      key === 'batch-assignment-report' &&
+      this.assignmentReportView === 'student'
+    ) {
+      if (!this.selectedBatchIds.length) return false;
+      if (!this.selectedAdmissionNos.length) return false;
+    }
+    if (
+      key === 'batch-assignment-report' &&
+      this.assignmentReportView === 'batch' &&
+      !this.selectedBatchIds.length
     )
       return false;
     if (
@@ -2010,6 +2305,19 @@ export class ReportsnewComponent implements OnInit {
       !this.selectedStaffId &&
       this.selectedReport.key !== 'teacher-load'
     )
+      return false;
+    if (
+      ['batch-assignment-report', 'batch-slash-detail'].includes(key) &&
+      !this.selectedBatchIds.length
+    )
+      return false;
+    if (
+      key === 'batch-assignment-report' &&
+      this.assignmentReportView === 'student' &&
+      !this.selectedAdmissionNos.length
+    )
+      return false;
+    if (key === 'teacher-faculty-report' && !this.selectedSections.length)
       return false;
     return true;
   }
@@ -2135,11 +2443,17 @@ export class ReportsnewComponent implements OnInit {
         (id) => id !== value,
       );
     else this.selectedProgramIds = [...this.selectedProgramIds, value];
+    if (this.selectedReport?.key === 'batch-phase-allotment') {
+      this.onPhaseAllotmentProgramChange();
+    }
   }
 
   toggleSelectAllPrograms() {
     if (this.allProgramsSelected) this.selectedProgramIds = [];
     else this.selectedProgramIds = this.programOptions.map((p) => p.value);
+    if (this.selectedReport?.key === 'batch-phase-allotment') {
+      this.onPhaseAllotmentProgramChange();
+    }
   }
 
   toggleCenterSelection(value: string) {
@@ -2179,6 +2493,14 @@ export class ReportsnewComponent implements OnInit {
     if (!target.closest('.student-multiselect-wrapper')) {
       this.studentDropdownOpen = false;
       this.studentSearch = '';
+    }
+    if (!target.closest('.topic-multiselect-wrapper')) {
+      this.topicDropdownOpen = false;
+      this.topicSearch = '';
+    }
+    if (!target.closest('.staff-multiselect-wrapper')) {
+      this.staffMultiSelectDropdownOpen = false;
+      this.staffMultiSelectSearch = '';
     }
   }
 
@@ -2330,5 +2652,1447 @@ export class ReportsnewComponent implements OnInit {
       this.lateEntriesDetailData.length > 0 &&
       this.selectedAdmissionNos.length !== 1
     );
+  }
+
+  maskValue(val: string | null | undefined): string {
+    if (!val) return '-';
+    const s = String(val).trim();
+    if (s.length <= 4) return s;
+    return 'X'.repeat(s.length - 4) + s.slice(-4);
+  }
+
+  isColumnRevealed(colKey: string): boolean {
+    return this.revealedColumns.has(colKey);
+  }
+
+  toggleColumnReveal(colKey: string, event: Event) {
+    event.stopPropagation();
+    if (this.revealedColumns.has(colKey)) this.revealedColumns.delete(colKey);
+    else this.revealedColumns.add(colKey);
+  }
+
+  getCellDisplayValue(row: any, col: any): string {
+    const val = row[col.key];
+    if (val === null || val === undefined) return '-';
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (col.masked && !this.isColumnRevealed(col.key)) {
+      return this.maskValue(String(val));
+    }
+    return String(val);
+  }
+
+  private loadSubjectsByBatches(batchIds: string[]) {
+    if (!batchIds.length) {
+      if (this.selectedReport?.key === 'batch-subject-hours') {
+        this.subjectOptions = [];
+        return;
+      }
+      this.loadSubjects();
+      return;
+    }
+    const batchCodes = this.batchOptions
+      .filter((b) => batchIds.includes(b.value))
+      .map((b) => b.batchCode)
+      .filter(Boolean);
+    if (!batchCodes.length) {
+      this.loadSubjects();
+      return;
+    }
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId, batchCodes },
+        'reports/batch',
+        'subjects-by-batch',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.subjectOptions = (res?.data || []).map((s: any) => ({
+            value: s._id || s.subjectId,
+            label: s.subjectName,
+          }));
+        },
+        error: () => this.loadSubjects(),
+      });
+  }
+
+  exportToPdf() {
+    if (!this.selectedReport) return;
+    if (
+      !this.reportTableData.length &&
+      !this.hasFacultyLoadCustomData &&
+      !this.hasAssignmentCustomData &&
+      !this.hasFacultyReportData
+    )
+      return;
+    if (this.customPdfExport(this.selectedReport.key)) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const title = this.selectedReport.label + ' Report';
+    doc.setFontSize(14);
+    doc.text(title, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 22);
+    const headers = this.reportColumns.map((c) => c.label);
+    const keys = this.reportColumns.map((c) => c.key);
+    const rows = this.reportTableData.map((row: any) =>
+      keys.map((key, idx) => {
+        const col = this.reportColumns[idx];
+        let val = row[key];
+        if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+        if (col?.masked && val && !this.isColumnRevealed(key)) {
+          return this.maskValue(String(val));
+        }
+        return val !== null && val !== undefined ? String(val) : '-';
+      }),
+    );
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: 28,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+    });
+    doc.save(`${this.selectedReport.label.replace(/\s+/g, '_')}_Report.pdf`);
+  }
+
+  private exportPhaseAllotmentPdf() {
+    if (!this.reportTableData.length || !this.selectedReport) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const headers = this.reportColumns.map((c: any) => c.label);
+    const keys = this.reportColumns.map((c: any) => c.key);
+    const batchGroups = new Map<string, any[]>();
+    for (const row of this.reportTableData) {
+      const bc = row.batchCode || 'Unknown';
+      if (!batchGroups.has(bc)) batchGroups.set(bc, []);
+      batchGroups.get(bc)!.push(row);
+    }
+    let isFirstBatch = true;
+    for (const [bc, batchRows] of batchGroups.entries()) {
+      if (!isFirstBatch) doc.addPage();
+      isFirstBatch = false;
+      const batchName = batchRows[0]?.batchName || '';
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Phase Allotment Report`, 14, 14);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Batch: ${bc}${batchName ? ' - ' + batchName : ''}`, 14, 21);
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 27);
+      const rows = batchRows.map((row: any) =>
+        keys.map((key: string) => {
+          const val = row[key];
+          if (val === null || val === undefined) return '-';
+          if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+          return String(val);
+        }),
+      );
+      autoTable(doc, {
+        head: [headers],
+        body: rows,
+        startY: 32,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        didParseCell: (data: any) => {
+          if (data.section === 'body') {
+            const row = batchRows[data.row.index];
+            if (row?.phaseName === 'Unassigned') {
+              data.cell.styles.textColor = [156, 163, 175];
+              data.cell.styles.fontStyle = 'italic';
+            }
+          }
+        },
+      });
+    }
+    doc.save(`Phase_Allotment_Report.pdf`);
+  }
+
+  private loadBatchesByPrograms(programIds: string[]) {
+    if (!programIds.length) {
+      this.phaseAllotmentBatchOptions = [...this.batchOptions];
+      return;
+    }
+    const filtered = this.batchOptions.filter((b) =>
+      this.allBatchesFullList.some(
+        (fb: any) =>
+          fb.batchId === b.value && programIds.includes(fb.programId),
+      ),
+    );
+    this.phaseAllotmentBatchOptions = filtered;
+    this.selectedBatchIds = this.selectedBatchIds.filter((id) =>
+      this.phaseAllotmentBatchOptions.some((b) => b.value === id),
+    );
+    this.selectedBatchCodes = this.selectedBatchCodes.filter((code) =>
+      this.phaseAllotmentBatchOptions.some((b) => b.batchCode === code),
+    );
+  }
+
+  private loadSubjectsByBatchIds(batchIds: string[]) {
+    if (!batchIds.length) {
+      this.subjectOptions = [];
+      return;
+    }
+    const selectedBatches = this.allBatchesFullList.filter((b: any) =>
+      batchIds.includes(b.batchId || b._id),
+    );
+    const subjectIdSet = new Set<string>();
+    const subjectMap = new Map<string, string>();
+    for (const batch of selectedBatches) {
+      for (const staff of batch.staffMap || []) {
+        if (staff.subjectId && staff.subjectName) {
+          subjectIdSet.add(staff.subjectId);
+          subjectMap.set(staff.subjectId, staff.subjectName);
+        }
+      }
+    }
+    this.subjectOptions = Array.from(subjectIdSet)
+      .map((id) => ({
+        value: id,
+        label: subjectMap.get(id) || id,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  onPhaseAllotmentProgramChange() {
+    this.selectedBatchIds = [];
+    this.selectedBatchCodes = [];
+    this.filterSubjectId = '';
+    this.subjectOptions = [];
+    this.loadBatchesByPrograms(this.selectedProgramIds);
+  }
+
+  onPhaseAllotmentBatchChange() {
+    this.filterSubjectId = '';
+    this.loadSubjectsByBatchIds(this.selectedBatchIds);
+  }
+
+  get activeBatchOptions(): any[] {
+    if (this.selectedReport?.key === 'batch-phase-allotment') {
+      return this.phaseAllotmentBatchOptions;
+    }
+    return this.batchOptions;
+  }
+
+  private exportSubjectHoursPdf() {
+    if (!this.reportTableData.length || !this.selectedReport) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const headers = this.reportColumns.map((c: any) => c.label);
+    const keys = this.reportColumns.map((c: any) => c.key);
+    const batchGroups = new Map<string, any[]>();
+    for (const row of this.reportTableData) {
+      const bc = row.batchCode || 'Unknown';
+      if (!batchGroups.has(bc)) batchGroups.set(bc, []);
+      batchGroups.get(bc)!.push(row);
+    }
+    let isFirstBatch = true;
+    for (const [bc, batchRows] of batchGroups.entries()) {
+      if (!isFirstBatch) doc.addPage();
+      isFirstBatch = false;
+      const batchName = batchRows[0]?.batchName || '';
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Subject Hours Report', 14, 14);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Batch: ${bc}${batchName ? ' - ' + batchName : ''}`, 14, 21);
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 27);
+      const rows = batchRows.map((row: any) =>
+        keys.map((key: string) => {
+          const val = row[key];
+          if (val === null || val === undefined) return '-';
+          if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+          return String(val);
+        }),
+      );
+      autoTable(doc, {
+        head: [headers],
+        body: rows,
+        startY: 32,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        didParseCell: (data: any) => {
+          if (data.section === 'body') {
+            const row = batchRows[data.row.index];
+            if (row?.phaseName === 'Unassigned') {
+              data.cell.styles.textColor = [156, 163, 175];
+              data.cell.styles.fontStyle = 'italic';
+            }
+            if (
+              data.column.dataKey === headers.indexOf('Balance Hours') &&
+              row?.balanceHours &&
+              String(row.balanceHours).startsWith('-')
+            ) {
+              data.cell.styles.textColor = [220, 38, 38];
+            }
+          }
+        },
+      });
+    }
+
+    doc.save('Subject_Hours_Report.pdf');
+  }
+
+  get allTopicsSelected(): boolean {
+    return (
+      this.slashTopicOptions.length > 0 &&
+      this.selectedTopicIds.length === this.slashTopicOptions.length
+    );
+  }
+  get topicSelectionLabel(): string {
+    if (!this.selectedTopicIds.length) return 'All Topics';
+    if (this.allTopicsSelected) return 'All Topics';
+    if (this.selectedTopicIds.length === 1)
+      return (
+        this.slashTopicOptions.find((t) => t.value === this.selectedTopicIds[0])
+          ?.label || '1 selected'
+      );
+    return `${this.selectedTopicIds.length} topics selected`;
+  }
+  get filteredTopicOptions(): any[] {
+    const q = this.topicSearch.toLowerCase().trim();
+    return q
+      ? this.slashTopicOptions.filter((t) => t.label.toLowerCase().includes(q))
+      : this.slashTopicOptions;
+  }
+  toggleTopicDropdown() {
+    this.topicDropdownOpen = !this.topicDropdownOpen;
+    if (!this.topicDropdownOpen) this.topicSearch = '';
+  }
+  isTopicSelected(value: string): boolean {
+    return this.selectedTopicIds.includes(value);
+  }
+  toggleTopicSelection(value: string) {
+    if (this.isTopicSelected(value))
+      this.selectedTopicIds = this.selectedTopicIds.filter(
+        (id) => id !== value,
+      );
+    else this.selectedTopicIds = [...this.selectedTopicIds, value];
+  }
+  toggleSelectAllTopics() {
+    if (this.allTopicsSelected) this.selectedTopicIds = [];
+    else this.selectedTopicIds = this.slashTopicOptions.map((t) => t.value);
+  }
+
+  private loadTopicsByBatchSubject(batchIds: string[], subjectId: string) {
+    if (!batchIds.length || !subjectId) {
+      this.slashTopicOptions = [];
+      return;
+    }
+    const selectedBatches = this.allBatchesFullList.filter((b: any) =>
+      batchIds.includes(b.batchId || b._id),
+    );
+    const classNos = [
+      ...new Set(selectedBatches.map((b: any) => b.classNo).filter(Boolean)),
+    ];
+    if (!classNos.length) {
+      this.slashTopicOptions = [];
+      return;
+    }
+    this.commonApi
+      .fetchData(
+        { entiId: this.tenantId, subjectId, classNos },
+        'ims',
+        `topic/list?list=full&subjectId=${subjectId}`,
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.slashTopicOptions = (res?.data || []).map((t: any) => ({
+            value: t.topicId || t._id,
+            label: t.topicName,
+          }));
+        },
+      });
+  }
+
+  private exportAssignmentReportExcel(wb: any) {
+    if (this.assignmentReportView === 'batch') {
+      for (const batch of this.assignmentBatchResults) {
+        const headers = [
+          'S.No',
+          'Enrollment No',
+          'Student Name',
+          ...batch.columns.map((c: any) => c.colLabel),
+          'SGPA',
+          'GSGPA',
+        ];
+        const keys = [
+          'slNo',
+          'admissionNo',
+          'studentName',
+          ...batch.columns.map((c: any) => c.colKey),
+          'SGPA',
+          'GSGPA',
+        ];
+        const allRows = [...batch.students, batch.batchAverage];
+        const rows = allRows.map((row: any) =>
+          keys.reduce((obj: any, key: string, idx: number) => {
+            obj[headers[idx]] = row[key] ?? '';
+            return obj;
+          }, {}),
+        );
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.json_to_sheet(rows),
+          batch.batchCode.substring(0, 31),
+        );
+      }
+    } else {
+      for (const stu of this.assignmentStudentResults) {
+        const headers = [
+          'Test Code',
+          'Subject',
+          'Topic',
+          'Sub Topic',
+          'Category',
+          'Sub Category',
+          'CGPA',
+          'Status',
+        ];
+        const keys = [
+          'testCode',
+          'subjectName',
+          'topicName',
+          'subTopicName',
+          'categoryName',
+          'subCategoryName',
+          'cgpa',
+          'status',
+        ];
+        const rows = stu.tests.map((t: any) =>
+          keys.reduce((obj: any, key: string, idx: number) => {
+            obj[headers[idx]] = t[key] ?? '';
+            return obj;
+          }, {}),
+        );
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.json_to_sheet(rows),
+          (stu.admissionNo || stu.studentName || 'Student').substring(0, 31),
+        );
+      }
+    }
+  }
+
+  private exportFacultyLoadExcel(wb: any) {
+    const periodHeaders = [
+      'Date',
+      'Batch Name',
+      'Batch Code',
+      'From Time',
+      'End Time',
+      'Hours',
+    ];
+    const periodKeys = [
+      'dateFormatted',
+      'batchName',
+      'batchCode',
+      'fromTime',
+      'endTime',
+      'hours',
+    ];
+    for (const staff of this.facultyLoadData) {
+      for (const subject of staff.subjects || []) {
+        const sheetData: any[] = [];
+        sheetData.push({
+          Date: `Staff: ${staff.staffName} (${staff.staffCode || ''})`,
+        });
+        sheetData.push({ Date: `Subject: ${subject.subjectName}` });
+        sheetData.push({ Date: `Total Hours: ${subject.totalScheduledHours}` });
+        sheetData.push({});
+        if (subject.scheduledPeriods?.length) {
+          sheetData.push({ Date: '--- Scheduled Periods ---' });
+          sheetData.push(
+            periodKeys.reduce((o, k, i) => {
+              o[periodHeaders[i]] = periodHeaders[i];
+              return o;
+            }, {} as any),
+          );
+          for (const p of subject.scheduledPeriods) {
+            sheetData.push(
+              periodKeys.reduce((o, k, i) => {
+                o[periodHeaders[i]] = p[k] ?? '';
+                return o;
+              }, {} as any),
+            );
+          }
+          sheetData.push({});
+        }
+        if (subject.cancelledPeriods?.length) {
+          sheetData.push({ Date: '--- Cancelled / Replaced Periods ---' });
+          sheetData.push(
+            periodKeys.reduce((o, k, i) => {
+              o[periodHeaders[i]] = periodHeaders[i];
+              return o;
+            }, {} as any),
+          );
+          for (const p of subject.cancelledPeriods) {
+            sheetData.push(
+              periodKeys.reduce((o, k, i) => {
+                o[periodHeaders[i]] = p[k] ?? '';
+                return o;
+              }, {} as any),
+            );
+          }
+          sheetData.push({});
+        }
+        if (subject.replacedPeriods?.length) {
+          sheetData.push({ Date: '--- Additional (Replacement) Periods ---' });
+          sheetData.push(
+            periodKeys.reduce((o, k, i) => {
+              o[periodHeaders[i]] = periodHeaders[i];
+              return o;
+            }, {} as any),
+          );
+          for (const p of subject.replacedPeriods) {
+            sheetData.push(
+              periodKeys.reduce((o, k, i) => {
+                o[periodHeaders[i]] = p[k] ?? '';
+                return o;
+              }, {} as any),
+            );
+          }
+          sheetData.push({});
+        }
+        const sheetName =
+          `${staff.staffCode || staff.staffName.substring(0, 5)}_${subject.subjectName.substring(0, 15)}`.substring(
+            0,
+            31,
+          );
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.json_to_sheet(sheetData, { skipHeader: true }),
+          sheetName,
+        );
+      }
+    }
+  }
+
+  private exportAssignmentReportPdf() {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    if (this.assignmentReportView === 'batch') {
+      let isFirst = true;
+      for (const batch of this.assignmentBatchResults) {
+        if (!isFirst) doc.addPage();
+        isFirst = false;
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Assignment Report', 14, 14);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `Batch: ${batch.batchCode} - ${batch.batchName || ''}`,
+          14,
+          21,
+        );
+        doc.text(
+          `Generated: ${new Date().toLocaleDateString('en-IN')}`,
+          14,
+          27,
+        );
+        const headers = [
+          'S.No',
+          'Enrollment No',
+          'Student Name',
+          ...batch.columns.map((c: any) => c.colLabel),
+          'SGPA',
+          'GSGPA',
+        ];
+        const keys = [
+          'slNo',
+          'admissionNo',
+          'studentName',
+          ...batch.columns.map((c: any) => c.colKey),
+          'SGPA',
+          'GSGPA',
+        ];
+        const allRows = [...batch.students, batch.batchAverage];
+        const rows = allRows.map((row: any) =>
+          keys.map((key) =>
+            row[key] !== null && row[key] !== undefined
+              ? String(row[key])
+              : '-',
+          ),
+        );
+        autoTable(doc, {
+          head: [headers],
+          body: rows,
+          startY: 32,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: {
+            fillColor: [59, 130, 246],
+            textColor: 255,
+            fontStyle: 'bold',
+          },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
+          didParseCell: (data: any) => {
+            // Highlight batch average row
+            if (
+              data.section === 'body' &&
+              data.row.index === allRows.length - 1
+            ) {
+              data.cell.styles.fillColor = [219, 234, 254];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          },
+        });
+      }
+    } else {
+      let isFirst = true;
+      for (const stu of this.assignmentStudentResults) {
+        if (!isFirst) doc.addPage();
+        isFirst = false;
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Assignment Report', 14, 14);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `Student: ${stu.studentName || ''} (${stu.admissionNo})`,
+          14,
+          21,
+        );
+        doc.text(`Batch: ${stu.batchCode || ''} | SGPA: ${stu.sgpa}`, 14, 27);
+        const headers = [
+          'Test Code',
+          'Subject',
+          'Topic',
+          'Sub Topic',
+          'Category',
+          'Sub Category',
+          'CGPA',
+          'Status',
+        ];
+        const keys = [
+          'testCode',
+          'subjectName',
+          'topicName',
+          'subTopicName',
+          'categoryName',
+          'subCategoryName',
+          'cgpa',
+          'status',
+        ];
+        const rows = stu.tests.map((t: any) =>
+          keys.map((key) =>
+            t[key] !== null && t[key] !== undefined ? String(t[key]) : '-',
+          ),
+        );
+        autoTable(doc, {
+          head: [headers],
+          body: rows,
+          startY: 32,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: {
+            fillColor: [59, 130, 246],
+            textColor: 255,
+            fontStyle: 'bold',
+          },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
+        });
+      }
+    }
+    doc.save('Assignment_Report.pdf');
+  }
+
+  onSubjectChange(val: string) {
+    this.filterSubjectId = val;
+    if (this.selectedReport?.key === 'batch-slash-detail') {
+      this.selectedTopicIds = [];
+      this.loadTopicsByBatchSubject(this.selectedBatchIds, val);
+    }
+  }
+
+  onAssignmentViewChange(view: 'batch' | 'student') {
+    this.assignmentReportView = view;
+    this.selectedAdmissionNos = [];
+    this.selectedStudentIds = [];
+    this.studentOptions = [];
+    if (view === 'student' && this.selectedBatchIds.length) {
+      this.loadStudentsByBatches(this.selectedBatchIds);
+    }
+  }
+
+  get allStaffMultiSelected(): boolean {
+    return (
+      this.staffOptions.length > 0 &&
+      this.selectedStaffIds.length === this.staffOptions.length
+    );
+  }
+  get staffMultiSelectionLabel(): string {
+    if (!this.selectedStaffIds.length) return 'All Staff';
+    if (this.allStaffMultiSelected) return 'All Staff';
+    if (this.selectedStaffIds.length === 1)
+      return (
+        this.staffOptions.find((s) => s.value === this.selectedStaffIds[0])
+          ?.label || '1 selected'
+      );
+    return `${this.selectedStaffIds.length} staff selected`;
+  }
+  get filteredStaffMultiOptions(): any[] {
+    const q = this.staffMultiSelectSearch.toLowerCase().trim();
+    return q
+      ? this.staffOptions.filter((s) => s.label.toLowerCase().includes(q))
+      : this.staffOptions;
+  }
+  toggleStaffMultiDropdown() {
+    this.staffMultiSelectDropdownOpen = !this.staffMultiSelectDropdownOpen;
+    if (!this.staffMultiSelectDropdownOpen) this.staffMultiSelectSearch = '';
+  }
+  isStaffMultiSelected(value: string): boolean {
+    return this.selectedStaffIds.includes(value);
+  }
+  toggleStaffMultiSelection(value: string) {
+    if (this.isStaffMultiSelected(value))
+      this.selectedStaffIds = this.selectedStaffIds.filter(
+        (id) => id !== value,
+      );
+    else this.selectedStaffIds = [...this.selectedStaffIds, value];
+  }
+  toggleSelectAllStaffMulti() {
+    if (this.allStaffMultiSelected) this.selectedStaffIds = [];
+    else this.selectedStaffIds = this.staffOptions.map((s) => s.value);
+  }
+
+  private exportFacultyLoadPdf() {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const headers = [
+      'Date',
+      'Batch Name',
+      'Batch Code',
+      'From Time',
+      'End Time',
+      'Hours',
+    ];
+    const keys = [
+      'dateFormatted',
+      'batchName',
+      'batchCode',
+      'fromTime',
+      'endTime',
+      'hours',
+    ];
+    let isFirst = true;
+
+    for (const staff of this.facultyLoadData) {
+      for (const subject of staff.subjects || []) {
+        if (!isFirst) doc.addPage();
+        isFirst = false;
+
+        // Header
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Faculty Load Report', 14, 14);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(
+          `${staff.staffName}${staff.staffCode ? ' (' + staff.staffCode + ')' : ''}`,
+          14,
+          22,
+        );
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Subject: ${subject.subjectName}`, 14, 29);
+        doc.text(`Total Hours: ${subject.totalScheduledHours}`, 14, 35);
+        doc.text(
+          `Generated: ${new Date().toLocaleDateString('en-IN')}`,
+          200,
+          14,
+          { align: 'right' },
+        );
+
+        let startY = 41;
+
+        // Scheduled periods
+        if (subject.scheduledPeriods?.length) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Scheduled Periods', 14, startY);
+          startY += 4;
+          const rows = subject.scheduledPeriods.map((p: any) =>
+            keys.map((k) =>
+              p[k] !== null && p[k] !== undefined ? String(p[k]) : '-',
+            ),
+          );
+          autoTable(doc, {
+            head: [headers],
+            body: rows,
+            startY,
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: {
+              fillColor: [59, 130, 246],
+              textColor: 255,
+              fontStyle: 'bold',
+            },
+            alternateRowStyles: { fillColor: [249, 250, 251] },
+          });
+          startY = (doc as any).lastAutoTable.finalY + 6;
+        }
+
+        // Cancelled periods
+        if (subject.cancelledPeriods?.length) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(220, 38, 38);
+          doc.text('Cancelled / Replaced Periods', 14, startY);
+          doc.setTextColor(0, 0, 0);
+          startY += 4;
+          const rows = subject.cancelledPeriods.map((p: any) =>
+            keys.map((k) =>
+              p[k] !== null && p[k] !== undefined ? String(p[k]) : '-',
+            ),
+          );
+          autoTable(doc, {
+            head: [headers],
+            body: rows,
+            startY,
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: {
+              fillColor: [220, 38, 38],
+              textColor: 255,
+              fontStyle: 'bold',
+            },
+            alternateRowStyles: { fillColor: [254, 242, 242] },
+          });
+          startY = (doc as any).lastAutoTable.finalY + 6;
+        }
+
+        // Replacement periods
+        if (subject.replacedPeriods?.length) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(22, 163, 74);
+          doc.text('Additional (Replacement) Periods', 14, startY);
+          doc.setTextColor(0, 0, 0);
+          startY += 4;
+          const rows = subject.replacedPeriods.map((p: any) =>
+            keys.map((k) =>
+              p[k] !== null && p[k] !== undefined ? String(p[k]) : '-',
+            ),
+          );
+          autoTable(doc, {
+            head: [headers],
+            body: rows,
+            startY,
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: {
+              fillColor: [22, 163, 74],
+              textColor: 255,
+              fontStyle: 'bold',
+            },
+            alternateRowStyles: { fillColor: [240, 253, 244] },
+          });
+        }
+      }
+    }
+    doc.save('Faculty_Load_Report.pdf');
+  }
+
+  get hasFacultyLoadCustomData(): boolean {
+    return (
+      this.selectedReport?.key === 'teacher-load' &&
+      this.facultyLoadData.length > 0
+    );
+  }
+
+  get hasAssignmentCustomData(): boolean {
+    return (
+      this.selectedReport?.key === 'batch-assignment-report' &&
+      (this.assignmentBatchResults.length > 0 ||
+        this.assignmentStudentResults.length > 0)
+    );
+  }
+
+  get allSectionsSelected(): boolean {
+    const active = this.sectionOptions.filter((s) => !s.disabled);
+    return active.length > 0 && this.selectedSections.length === active.length;
+  }
+
+  isSectionSelected(key: string): boolean {
+    return this.selectedSections.includes(key);
+  }
+
+  toggleSection(key: string, disabled: boolean) {
+    if (disabled) return;
+    if (this.isSectionSelected(key))
+      this.selectedSections = this.selectedSections.filter((s) => s !== key);
+    else this.selectedSections = [...this.selectedSections, key];
+  }
+
+  toggleSelectAllSections() {
+    const activeKeys = this.sectionOptions
+      .filter((s) => !s.disabled)
+      .map((s) => s.key);
+    if (this.allSectionsSelected) this.selectedSections = [];
+    else this.selectedSections = activeKeys;
+  }
+
+  get hasFacultyReportData(): boolean {
+    return (
+      this.selectedReport?.key === 'teacher-faculty-report' &&
+      this.facultyReportData.length > 0
+    );
+  }
+
+  private exportFacultyReportPdf() {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    let isFirst = true;
+
+    const periodHeaders = [
+      'Date',
+      'Batch',
+      'Batch Code',
+      'Subject',
+      'From',
+      'To',
+      'Hours',
+    ];
+    const periodKeys = [
+      'dateFormatted',
+      'batchName',
+      'batchCode',
+      'subject',
+      'fromTime',
+      'endTime',
+      'hours',
+    ];
+
+    for (const staff of this.facultyReportData) {
+      if (!isFirst) doc.addPage();
+      isFirst = false;
+
+      // Staff header
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Faculty Report', 14, 14);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(
+        `${staff.staffName}${staff.staffCode ? ' (' + staff.staffCode + ')' : ''}`,
+        14,
+        22,
+      );
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      if (staff.centerName) doc.text(`Center: ${staff.centerName}`, 14, 28);
+      doc.text(
+        `Generated: ${new Date().toLocaleDateString('en-IN')}`,
+        200,
+        14,
+        { align: 'right' },
+      );
+
+      let startY = staff.centerName ? 34 : 30;
+
+      const addSectionTable = (
+        title: string,
+        headers: string[],
+        keys: string[],
+        rows: any[],
+        fillColor: [number, number, number],
+        altFill: [number, number, number],
+      ) => {
+        if (!rows?.length) return;
+        if (startY > 170) {
+          doc.addPage();
+          startY = 14;
+        }
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
+        doc.text(title, 14, startY);
+        doc.setTextColor(0, 0, 0);
+        startY += 4;
+        const tableRows = rows.map((r: any) =>
+          keys.map((k) =>
+            r[k] !== null && r[k] !== undefined ? String(r[k]) : '-',
+          ),
+        );
+        autoTable(doc, {
+          head: [headers],
+          body: tableRows,
+          startY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor, textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: altFill },
+        });
+        startY = (doc as any).lastAutoTable.finalY + 6;
+      };
+
+      // Teaching
+      if (staff.teaching?.periods?.length) {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `Teaching Hours: ${staff.teaching.totalHours} | ${staff.teaching.count} periods`,
+          14,
+          startY,
+        );
+        startY += 4;
+        addSectionTable(
+          'Teaching Hours',
+          periodHeaders,
+          periodKeys,
+          staff.teaching.periods,
+          [59, 130, 246],
+          [239, 246, 255],
+        );
+      }
+
+      // Cancelled
+      if (staff.cancelled?.periods?.length) {
+        const noteHeaders = [...periodHeaders, 'Note'];
+        const noteKeys = [...periodKeys, 'note'];
+        doc.setFontSize(8);
+        doc.text(`Cancelled Periods: ${staff.cancelled.count}`, 14, startY);
+        startY += 4;
+        addSectionTable(
+          'Cancelled Periods',
+          noteHeaders,
+          noteKeys,
+          staff.cancelled.periods,
+          [220, 38, 38],
+          [254, 242, 242],
+        );
+      }
+
+      // Replaced
+      if (staff.replaced?.periods?.length) {
+        doc.setFontSize(8);
+        doc.text(`Replacement Periods: ${staff.replaced.count}`, 14, startY);
+        startY += 4;
+        addSectionTable(
+          'Replacement Periods',
+          periodHeaders,
+          periodKeys,
+          staff.replaced.periods,
+          [22, 163, 74],
+          [240, 253, 244],
+        );
+      }
+
+      // Tasks
+      if (staff.tasks?.tasks?.length) {
+        doc.setFontSize(8);
+        doc.text(`Tasks: ${staff.tasks.count}`, 14, startY);
+        startY += 4;
+        addSectionTable(
+          'Tasks',
+          [
+            'Task Name',
+            'Due Date',
+            'Status',
+            'Delayed',
+            'Days Overdue',
+            'Remarks',
+          ],
+          [
+            'taskName',
+            'dueDateFormatted',
+            'status',
+            'isDelayed',
+            'daysOverdue',
+            'remarks',
+          ],
+          staff.tasks.tasks,
+          [124, 58, 237],
+          [245, 243, 255],
+        );
+      }
+
+      // Late Entry
+      if (staff.lateEntry?.entries?.length) {
+        doc.setFontSize(8);
+        doc.text(`Late Entries: ${staff.lateEntry.count}`, 14, startY);
+        startY += 4;
+        addSectionTable(
+          'Late Entry',
+          ['Date', 'Batch Code', 'Period', 'Delay (min)', 'Reason'],
+          ['dateFormatted', 'batchCode', 'periodNo', 'delayMinutes', 'reason'],
+          staff.lateEntry.entries,
+          [234, 88, 12],
+          [255, 247, 237],
+        );
+      }
+
+      // Early Leaving
+      if (staff.earlyLeaving?.entries?.length) {
+        doc.setFontSize(8);
+        doc.text(`Early Leaving: ${staff.earlyLeaving.count}`, 14, startY);
+        startY += 4;
+        addSectionTable(
+          'Early Leaving',
+          ['Date', 'Batch Code', 'Period', 'Early By (min)', 'Reason'],
+          [
+            'dateFormatted',
+            'batchCode',
+            'periodNo',
+            'earlyByMinutes',
+            'reason',
+          ],
+          staff.earlyLeaving.entries,
+          [234, 88, 12],
+          [255, 247, 237],
+        );
+      }
+
+      // Attendance Marked
+      if (staff.attendanceMarked?.periods?.length) {
+        doc.setFontSize(8);
+        doc.text(
+          `Attendance Marked: ${staff.attendanceMarked.count}`,
+          14,
+          startY,
+        );
+        startY += 4;
+        addSectionTable(
+          'Attendance Marked',
+          [
+            'Date',
+            'Batch',
+            'Period',
+            'Subject',
+            'Present',
+            'Absent',
+            'Late',
+            'Total',
+          ],
+          [
+            'dateFormatted',
+            'batchCode',
+            'periodNo',
+            'subject',
+            'presentCount',
+            'absentCount',
+            'lateCount',
+            'total',
+          ],
+          staff.attendanceMarked.periods,
+          [20, 184, 166],
+          [240, 253, 250],
+        );
+      }
+
+      // Attendance Not Marked
+      if (staff.attendanceNotMarked?.periods?.length) {
+        doc.setFontSize(8);
+        doc.text(
+          `Attendance Not Marked: ${staff.attendanceNotMarked.count}`,
+          14,
+          startY,
+        );
+        startY += 4;
+        addSectionTable(
+          'Attendance Not Marked',
+          ['Date', 'Batch', 'Period', 'Subject'],
+          ['dateFormatted', 'batchCode', 'periodNo', 'subject'],
+          staff.attendanceNotMarked.periods,
+          [245, 158, 11],
+          [255, 251, 235],
+        );
+      }
+
+      // Assignments
+      if (staff.assignments?.rows?.length) {
+        doc.setFontSize(8);
+        doc.text(`Assignments Enabled: ${staff.assignments.count}`, 14, startY);
+        startY += 4;
+        addSectionTable(
+          'Assignment Enabled Per Batch',
+          [
+            'Batch',
+            'Batch Name',
+            'Subject',
+            'Test No',
+            'Enabled On',
+            'Students',
+            'Completed',
+            '%',
+          ],
+          [
+            'batchCode',
+            'batchName',
+            'subjectName',
+            'testNo',
+            'enabledAtFormatted',
+            'totalStudents',
+            'completed',
+            'completionPct',
+          ],
+          staff.assignments.rows,
+          [99, 102, 241],
+          [238, 242, 255],
+        );
+      }
+    }
+    doc.save('Faculty_Report.pdf');
+  }
+
+  private exportFacultyReportExcel(wb: any) {
+    for (const staff of this.facultyReportData) {
+      const sheetData: any[] = [];
+      const col1 = 'Section';
+
+      const addHeader = (text: string) => {
+        sheetData.push({ [col1]: text });
+      };
+      const addRow = (obj: any) => sheetData.push(obj);
+      const addEmpty = () => sheetData.push({});
+
+      addHeader(
+        `Staff: ${staff.staffName}${staff.staffCode ? ' (' + staff.staffCode + ')' : ''}`,
+      );
+      if (staff.centerName) addHeader(`Center: ${staff.centerName}`);
+      addEmpty();
+
+      const addSection = (
+        title: string,
+        count: number,
+        totalHours: string | null,
+        headers: string[],
+        keys: string[],
+        rows: any[],
+      ) => {
+        if (!rows?.length) return;
+        addHeader(`${title} (${count}${totalHours ? ' | ' + totalHours : ''})`);
+        // Column headers as first data row
+        const headerRow: any = {};
+        headers.forEach((h) => (headerRow[h] = h));
+        sheetData.push(headerRow);
+        rows.forEach((row) => {
+          const r: any = {};
+          keys.forEach((k, i) => {
+            r[headers[i]] = row[k] ?? '';
+          });
+          sheetData.push(r);
+        });
+        addEmpty();
+      };
+
+      if (staff.teaching?.periods?.length)
+        addSection(
+          'Teaching Hours',
+          staff.teaching.count,
+          staff.teaching.totalHours,
+          ['Date', 'Batch', 'Batch Code', 'Subject', 'From', 'To', 'Hours'],
+          [
+            'dateFormatted',
+            'batchName',
+            'batchCode',
+            'subject',
+            'fromTime',
+            'endTime',
+            'hours',
+          ],
+          staff.teaching.periods,
+        );
+
+      if (staff.cancelled?.periods?.length)
+        addSection(
+          'Cancelled Periods',
+          staff.cancelled.count,
+          staff.cancelled.totalHours,
+          [
+            'Date',
+            'Batch',
+            'Batch Code',
+            'Subject',
+            'From',
+            'To',
+            'Hours',
+            'Note',
+          ],
+          [
+            'dateFormatted',
+            'batchName',
+            'batchCode',
+            'subject',
+            'fromTime',
+            'endTime',
+            'hours',
+            'note',
+          ],
+          staff.cancelled.periods,
+        );
+
+      if (staff.replaced?.periods?.length)
+        addSection(
+          'Replacement Periods',
+          staff.replaced.count,
+          staff.replaced.totalHours,
+          ['Date', 'Batch', 'Batch Code', 'Subject', 'From', 'To', 'Hours'],
+          [
+            'dateFormatted',
+            'batchName',
+            'batchCode',
+            'subject',
+            'fromTime',
+            'endTime',
+            'hours',
+          ],
+          staff.replaced.periods,
+        );
+
+      if (staff.tasks?.tasks?.length)
+        addSection(
+          'Tasks',
+          staff.tasks.count,
+          null,
+          [
+            'Task Name',
+            'Due Date',
+            'Status',
+            'Delayed',
+            'Days Overdue',
+            'Remarks',
+          ],
+          [
+            'taskName',
+            'dueDateFormatted',
+            'status',
+            'isDelayed',
+            'daysOverdue',
+            'remarks',
+          ],
+          staff.tasks.tasks,
+        );
+
+      if (staff.lateEntry?.entries?.length)
+        addSection(
+          'Late Entry',
+          staff.lateEntry.count,
+          null,
+          ['Date', 'Batch Code', 'Period', 'Delay (min)', 'Reason'],
+          ['dateFormatted', 'batchCode', 'periodNo', 'delayMinutes', 'reason'],
+          staff.lateEntry.entries,
+        );
+
+      if (staff.earlyLeaving?.entries?.length)
+        addSection(
+          'Early Leaving',
+          staff.earlyLeaving.count,
+          null,
+          ['Date', 'Batch Code', 'Period', 'Early By (min)', 'Reason'],
+          [
+            'dateFormatted',
+            'batchCode',
+            'periodNo',
+            'earlyByMinutes',
+            'reason',
+          ],
+          staff.earlyLeaving.entries,
+        );
+
+      if (staff.attendanceMarked?.periods?.length)
+        addSection(
+          'Attendance Marked',
+          staff.attendanceMarked.count,
+          null,
+          [
+            'Date',
+            'Batch',
+            'Period',
+            'Subject',
+            'Present',
+            'Absent',
+            'Late',
+            'Total',
+          ],
+          [
+            'dateFormatted',
+            'batchCode',
+            'periodNo',
+            'subject',
+            'presentCount',
+            'absentCount',
+            'lateCount',
+            'total',
+          ],
+          staff.attendanceMarked.periods,
+        );
+
+      if (staff.attendanceNotMarked?.periods?.length)
+        addSection(
+          'Attendance Not Marked',
+          staff.attendanceNotMarked.count,
+          null,
+          ['Date', 'Batch', 'Period', 'Subject'],
+          ['dateFormatted', 'batchCode', 'periodNo', 'subject'],
+          staff.attendanceNotMarked.periods,
+        );
+
+      if (staff.assignments?.rows?.length)
+        addSection(
+          'Assignment Enabled Per Batch',
+          staff.assignments.count,
+          null,
+          [
+            'Batch',
+            'Batch Name',
+            'Subject',
+            'Test No',
+            'Enabled On',
+            'Students',
+            'Completed',
+            '%',
+          ],
+          [
+            'batchCode',
+            'batchName',
+            'subjectName',
+            'testNo',
+            'enabledAtFormatted',
+            'totalStudents',
+            'completed',
+            'completionPct',
+          ],
+          staff.assignments.rows,
+        );
+
+      const sheetName = (
+        staff.staffCode || staff.staffName.substring(0, 10)
+      ).substring(0, 31);
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(sheetData, { skipHeader: true }),
+        sheetName,
+      );
+    }
+  }
+
+  private customPdfExport(reportKey: string): boolean {
+    if (reportKey === 'batch-phase-allotment') {
+      this.exportPhaseAllotmentPdf();
+      return true;
+    }
+    if (reportKey === 'batch-subject-hours') {
+      this.exportSubjectHoursPdf();
+      return true;
+    }
+    if (reportKey === 'batch-assignment-report') {
+      this.exportAssignmentReportPdf();
+      return true;
+    }
+    if (reportKey === 'teacher-load') {
+      this.exportFacultyLoadPdf();
+      return true;
+    }
+    if (reportKey === 'teacher-faculty-report') {
+      this.exportFacultyReportPdf();
+      return true;
+    }
+    return false;
   }
 }
