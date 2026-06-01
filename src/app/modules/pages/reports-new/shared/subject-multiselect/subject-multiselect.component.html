@@ -1,0 +1,15 @@
+<div>
+    <label class="form-label fw-medium">
+        Subject
+        <span class="text-muted fw-normal small ms-1">(optional)</span>
+    </label>
+    <div *ngIf="loading" class="form-control form-control-sm text-muted">
+        <span class="spinner-border spinner-border-sm me-1"></span> Loading...
+    </div>
+    <select *ngIf="!loading" class="form-select form-select-sm" [ngModel]="selectedValue"
+        (ngModelChange)="onChange($event)">
+        <option value="">All</option>
+        <option *ngFor="let s of options" [value]="s.value">{{ s.label }}</option>
+    </select>
+    <small class="text-muted" *ngIf="!options.length && !loading && hint">{{ hint }}</small>
+</div>

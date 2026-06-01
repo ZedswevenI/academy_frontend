@@ -1,0 +1,90 @@
+<!-- teacher-attendance.component.html -->
+<div>
+    <div class="filter-panel">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-medium">Staff <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" [class.is-invalid]="touched && !selectedStaffId"
+                    [(ngModel)]="selectedStaffId">
+                    <option value="">Select Staff</option>
+                    <option *ngFor="let s of staffOptions" [value]="s.value">{{ s.label }}</option>
+                </select>
+                <div class="invalid-feedback">Please select a staff member.</div>
+            </div>
+            <div class="col-md-3">
+                <app-batch-multiselect [options]="batchOptions" label="Batch" [optional]="true"
+                    (selectionChange)="onBatchChange($event)"></app-batch-multiselect>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-medium">From Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" [class.is-invalid]="touched && !fromDate"
+                    [(ngModel)]="fromDate">
+                <div class="invalid-feedback">Required</div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-medium">To Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" [class.is-invalid]="touched && !toDate"
+                    [(ngModel)]="toDate">
+                <div class="invalid-feedback">Required</div>
+            </div>
+            <div class="col-md-2 d-flex gap-2 align-items-end">
+                <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="onGenerateClick()">
+                    <span *ngIf="!loading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                    <span *ngIf="loading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" *ngIf="rows.length" (click)="reset()">
+                    <i class="fa-solid fa-rotate-left me-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2">Generating report...</p>
+    </div>
+    <div *ngIf="summaryItems.length && !loading" class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3" *ngFor="let item of summaryItems">
+            <div class="summary-card">
+                <div class="summary-value">{{ item.value }}</div>
+                <div class="summary-label">{{ item.label }}</div>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="rows.length && !loading" class="d-flex gap-2 mb-3">
+        <button *ngIf="periodDetailRows.length" class="btn btn-outline-secondary btn-sm"
+            (click)="showPeriodDetail = !showPeriodDetail">
+            <i class="fa-solid fa-list me-1"></i> {{ showPeriodDetail ? 'Hide' : 'Show' }} Period Detail
+        </button>
+        <button class="btn btn-outline-danger btn-sm" (click)="exportPdf()"><i class="fa-solid fa-file-pdf me-1"></i>
+            Export PDF</button>
+        <button class="btn btn-export btn-sm" (click)="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export
+            Excel</button>
+    </div>
+    <app-report-table [columns]="columns" [rows]="rows" [loading]="loading" [dataLoaded]="dataLoaded"
+        emptyHint="No attendance marking data found for selected filters."></app-report-table>
+    <!-- Period detail panel -->
+    <div *ngIf="showPeriodDetail && periodDetailRows.length" class="report-table-card mt-3">
+        <h6 class="fw-semibold mb-3"><i class="fa-solid fa-list me-2 text-primary"></i>Period Detail</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th *ngFor="let col of periodColumns">{{ col.label }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of periodDetailRows">
+                        <td *ngFor="let col of periodColumns">
+                            <span *ngIf="col.key === 'isMarked'">
+                                <span class="badge" [class.bg-success]="row.isMarked" [class.bg-danger]="!row.isMarked">
+                                    {{ row.isMarked ? 'Yes' : 'No' }}
+                                </span>
+                            </span>
+                            <span *ngIf="col.key !== 'isMarked'">{{ row[col.key] ?? '-' }}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -20,8 +20,10 @@
   background-color: var(--btn-bg, #1d90ff) !important;
   border-color: var(--btn-bg, #1d90ff) !important;
   color: var(--btn-text, #ffffff) !important;
-  box-shadow: var(--btn-shadow,
-      0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
+  box-shadow: var(
+    --btn-shadow,
+    0px 8px 16px rgba(0, 102, 255, 0.25)
+  ) !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 8px;
@@ -46,8 +48,10 @@
   background-color: var(--btn-bg, #1d90ff) !important;
   border-color: var(--btn-bg, #1d90ff) !important;
   color: var(--btn-text, #ffffff) !important;
-  box-shadow: var(--btn-shadow,
-      0px 8px 16px rgba(0, 102, 255, 0.25)) !important;
+  box-shadow: var(
+    --btn-shadow,
+    0px 8px 16px rgba(0, 102, 255, 0.25)
+  ) !important;
   border-radius: 42px !important;
 }
 
@@ -129,8 +133,6 @@
 .cursor-pointer {
   cursor: pointer !important;
 }
-
-
 
 //common button styles
 .btn-icon {
@@ -305,4 +307,224 @@
   background-color: #0891b2 !important;
   border-color: #0891b2 !important;
   color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REPORTS MODULE — Global shared styles
+   Add these to your global styles.scss (not component scss)
+   because report-card and filter-panel styles are used across
+   multiple components and Angular view encapsulation blocks
+   component-scoped styles from reaching child components.
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── Tab bar ─────────────────────────────────────────────────────── */
+.report-container {
+  padding: 24px;
+}
+
+.report-header {
+  margin-bottom: 20px;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  &.active {
+    color: #1d4ed8;
+    border-bottom-color: #1d4ed8;
+    background: #eff6ff;
+  }
+}
+
+/* ── Report card grid ────────────────────────────────────────────── */
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.report-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+
+  &:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+
+    .report-card-arrow {
+      color: #2563eb;
+      transform: translateX(3px);
+    }
+  }
+
+  .report-card-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 10px;
+    background: #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      font-size: 18px;
+      color: #2563eb;
+    }
+  }
+
+  .report-card-body {
+    flex: 1;
+    min-width: 0;
+
+    .report-card-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+
+    .report-card-desc {
+      font-size: 12px;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .report-card-arrow {
+    color: #9ca3af;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+}
+
+/* ── Report view (after card selected) ───────────────────────────── */
+.report-view {
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Filter panel ────────────────────────────────────────────────── */
+.filter-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* ── Summary cards ───────────────────────────────────────────────── */
+.summary-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: center;
+
+  .summary-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1d4ed8;
+    line-height: 1.2;
+  }
+
+  .summary-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+}
+
+/* ── Report table card ───────────────────────────────────────────── */
+.report-table-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+/* ── Export button ───────────────────────────────────────────────── */
+.btn-export {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+
+  &:hover {
+    background: #15803d;
+    color: #fff;
+  }
+}
+
+/* ── Back button ─────────────────────────────────────────────────── */
+.btn-back {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+/* ── Multi-select option hover ───────────────────────────────────── */
+.batch-ms-option:hover,
+.staff-ms-option:hover,
+.student-ms-option:hover {
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+/* ── Generate button disabled ────────────────────────────────────── */
+.btn-create:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }

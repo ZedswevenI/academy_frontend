@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -11,17 +11,8 @@ import { AuthinterceptorService } from './service/interceptor/authinterceptor.se
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    HttpClientModule,
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule
-  ],
+  declarations: [AppComponent],
+  imports: [BrowserModule, AppRoutingModule, HttpClientModule, CommonModule, ReactiveFormsModule, FormsModule],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
@@ -32,4 +23,4 @@ import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
   ],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}

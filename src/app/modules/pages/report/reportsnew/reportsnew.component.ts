@@ -3549,7 +3549,6 @@ export class ReportsnewComponent implements OnInit {
   private exportFacultyReportPdf() {
     const doc = new jsPDF({ orientation: 'landscape' });
     let isFirst = true;
-
     const periodHeaders = [
       'Date',
       'Batch',
@@ -3568,34 +3567,47 @@ export class ReportsnewComponent implements OnInit {
       'endTime',
       'hours',
     ];
-
     for (const staff of this.facultyReportData) {
+      console.log('staff ', staff);
       if (!isFirst) doc.addPage();
       isFirst = false;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const dateRangeStr =
+        this.fromDate && this.toDate
+          ? `(${new Date(this.fromDate).toLocaleDateString('en-IN')} - ${new Date(this.toDate).toLocaleDateString('en-IN')})`
+          : this.fromDate
+            ? `(From ${new Date(this.fromDate).toLocaleDateString('en-IN')})`
+            : this.toDate
+              ? `(To ${new Date(this.toDate).toLocaleDateString('en-IN')})`
+              : '';
 
-      // Staff header
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('Faculty Report', 14, 14);
+      doc.text('Faculty Report', pageWidth / 2, 14, { align: 'center' });
+      if (dateRangeStr) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(dateRangeStr, pageWidth / 2, 20, { align: 'center' });
+      }
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text(
         `${staff.staffName}${staff.staffCode ? ' (' + staff.staffCode + ')' : ''}`,
         14,
-        22,
+        dateRangeStr ? 28 : 22,
       );
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      if (staff.centerName) doc.text(`Center: ${staff.centerName}`, 14, 28);
-      doc.text(
-        `Generated: ${new Date().toLocaleDateString('en-IN')}`,
-        200,
-        14,
-        { align: 'right' },
-      );
-
-      let startY = staff.centerName ? 34 : 30;
-
+      doc.text(`Employee Code: ${staff.empCode}`, 14, dateRangeStr ? 34 : 28);
+      if (staff.centerName)
+        doc.text(`Center: ${staff.centerName}`, 14, dateRangeStr ? 40 : 34);
+      let startY = staff.centerName
+        ? dateRangeStr
+          ? 46
+          : 40
+        : dateRangeStr
+          ? 42
+          : 36;
       const addSectionTable = (
         title: string,
         headers: string[],
@@ -3630,7 +3642,29 @@ export class ReportsnewComponent implements OnInit {
         });
         startY = (doc as any).lastAutoTable.finalY + 6;
       };
-
+      if (staff.summary?.length) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Summary', 14, startY);
+        startY += 4;
+        autoTable(doc, {
+          head: [['Nature of Work', 'Particulars']],
+          body: staff.summary.map((r: any) => [
+            r.nature,
+            String(r.particulars),
+          ]),
+          startY,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: {
+            fillColor: [30, 64, 175],
+            textColor: 255,
+            fontStyle: 'bold',
+          },
+          columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 60 } },
+          alternateRowStyles: { fillColor: [239, 246, 255] },
+        });
+        startY = (doc as any).lastAutoTable.finalY + 8;
+      }
       // Teaching
       if (staff.teaching?.periods?.length) {
         doc.setFontSize(8);
@@ -3650,7 +3684,6 @@ export class ReportsnewComponent implements OnInit {
           [239, 246, 255],
         );
       }
-
       // Cancelled
       if (staff.cancelled?.periods?.length) {
         const noteHeaders = [...periodHeaders, 'Note'];
@@ -3809,32 +3842,78 @@ export class ReportsnewComponent implements OnInit {
         doc.setFontSize(8);
         doc.text(`Assignments Enabled: ${staff.assignments.count}`, 14, startY);
         startY += 4;
+        // addSectionTable(
+        //   'Assignment Enabled Per Batch',
+        //   [
+        //     'Batch',
+        //     'Batch Name',
+        //     'Subject',
+        //     'Test No',
+        //     'Enabled On',
+        //     'Students',
+        //     'Completed',
+        //     '%',
+        //   ],
+        //   [
+        //     'batchCode',
+        //     'batchName',
+        //     'subjectName',
+        //     'testNo',
+        //     'enabledAtFormatted',
+        //     'totalStudents',
+        //     'completed',
+        //     'completionPct',
+        //   ],
+        //   staff.assignments.rows,
+        //   [99, 102, 241],
+        //   [238, 242, 255],
+        // );
         addSectionTable(
           'Assignment Enabled Per Batch',
           [
             'Batch',
             'Batch Name',
             'Subject',
-            'Test No',
+            'Topic',
+            'No. of Tests',
             'Enabled On',
             'Students',
-            'Completed',
-            '%',
           ],
           [
             'batchCode',
             'batchName',
             'subjectName',
-            'testNo',
+            'topicName',
+            'testCount',
             'enabledAtFormatted',
             'totalStudents',
-            'completed',
-            'completionPct',
           ],
           staff.assignments.rows,
           [99, 102, 241],
           [238, 242, 255],
         );
+        // ADD at end of staff loop before closing brace:
+        // Remarks box
+        if (startY > 160) {
+          doc.addPage();
+          startY = 14;
+        }
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Remarks/Explanation :', 14, startY);
+        startY += 4;
+        doc.setDrawColor(180, 180, 180);
+        doc.setFillColor(250, 250, 250);
+        doc.roundedRect(14, startY, pageWidth - 40, 40, 2, 2, 'FD');
+        startY += 46;
+        // Faculty signature
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setDrawColor(55, 65, 81);
+        doc.line(pageWidth - 80, startY + 10, pageWidth - 14, startY + 10);
+        doc.text('Faculty Signature With Date', pageWidth - 47, startY + 16, {
+          align: 'center',
+        });
       }
     }
     doc.save('Faculty_Report.pdf');
@@ -3844,19 +3923,16 @@ export class ReportsnewComponent implements OnInit {
     for (const staff of this.facultyReportData) {
       const sheetData: any[] = [];
       const col1 = 'Section';
-
       const addHeader = (text: string) => {
         sheetData.push({ [col1]: text });
       };
       const addRow = (obj: any) => sheetData.push(obj);
       const addEmpty = () => sheetData.push({});
-
       addHeader(
         `Staff: ${staff.staffName}${staff.staffCode ? ' (' + staff.staffCode + ')' : ''}`,
       );
       if (staff.centerName) addHeader(`Center: ${staff.centerName}`);
       addEmpty();
-
       const addSection = (
         title: string,
         count: number,
@@ -3867,7 +3943,6 @@ export class ReportsnewComponent implements OnInit {
       ) => {
         if (!rows?.length) return;
         addHeader(`${title} (${count}${totalHours ? ' | ' + totalHours : ''})`);
-        // Column headers as first data row
         const headerRow: any = {};
         headers.forEach((h) => (headerRow[h] = h));
         sheetData.push(headerRow);
@@ -3880,7 +3955,20 @@ export class ReportsnewComponent implements OnInit {
         });
         addEmpty();
       };
-
+      if (staff.summary?.length) {
+        addHeader('Summary');
+        sheetData.push({
+          'Nature of Work': 'Nature of Work',
+          Particulars: 'Particulars',
+        });
+        staff.summary.forEach((r: any) => {
+          sheetData.push({
+            'Nature of Work': r.nature,
+            Particulars: r.particulars,
+          });
+        });
+        addEmpty();
+      }
       if (staff.teaching?.periods?.length)
         addSection(
           'Teaching Hours',
@@ -3898,7 +3986,6 @@ export class ReportsnewComponent implements OnInit {
           ],
           staff.teaching.periods,
         );
-
       if (staff.cancelled?.periods?.length)
         addSection(
           'Cancelled Periods',
@@ -3926,7 +4013,6 @@ export class ReportsnewComponent implements OnInit {
           ],
           staff.cancelled.periods,
         );
-
       if (staff.replaced?.periods?.length)
         addSection(
           'Replacement Periods',
@@ -4034,6 +4120,32 @@ export class ReportsnewComponent implements OnInit {
         );
 
       if (staff.assignments?.rows?.length)
+        // addSection(
+        //   'Assignment Enabled Per Batch',
+        //   staff.assignments.count,
+        //   null,
+        //   [
+        //     'Batch',
+        //     'Batch Name',
+        //     'Subject',
+        //     'Test No',
+        //     'Enabled On',
+        //     'Students',
+        //     'Completed',
+        //     '%',
+        //   ],
+        //   [
+        //     'batchCode',
+        //     'batchName',
+        //     'subjectName',
+        //     'testNo',
+        //     'enabledAtFormatted',
+        //     'totalStudents',
+        //     'completed',
+        //     'completionPct',
+        //   ],
+        //   staff.assignments.rows,
+        // );
         addSection(
           'Assignment Enabled Per Batch',
           staff.assignments.count,
@@ -4042,21 +4154,19 @@ export class ReportsnewComponent implements OnInit {
             'Batch',
             'Batch Name',
             'Subject',
-            'Test No',
+            'Topic',
+            'No. of Tests',
             'Enabled On',
             'Students',
-            'Completed',
-            '%',
           ],
           [
             'batchCode',
             'batchName',
             'subjectName',
-            'testNo',
+            'topicName',
+            'testCount',
             'enabledAtFormatted',
             'totalStudents',
-            'completed',
-            'completionPct',
           ],
           staff.assignments.rows,
         );

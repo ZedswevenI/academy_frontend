@@ -1,0 +1,89 @@
+<!-- batch-late-entries.component.html -->
+<div>
+    <div class="filter-panel">
+        <div class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+                <app-batch-multiselect [options]="batchOptions" label="Batch" [optional]="true"
+                    (selectionChange)="onBatchChange($event)">
+                </app-batch-multiselect>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-medium">From Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" [class.is-invalid]="touched && !fromDate"
+                    [(ngModel)]="fromDate">
+                <div class="invalid-feedback">Required</div>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-medium">To Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" [class.is-invalid]="touched && !toDate"
+                    [(ngModel)]="toDate">
+                <div class="invalid-feedback">Required</div>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-medium">Person Type</label>
+                <select class="form-select form-select-sm" [(ngModel)]="filterType">
+                    <option value="">All</option>
+                    <option value="STAFF">Staff</option>
+                    <option value="STUDENT">Student</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-medium">Entry Type</label>
+                <select class="form-select form-select-sm" [(ngModel)]="filterEntryType">
+                    <option value="">All</option>
+                    <option value="LATE">Late</option>
+                    <option value="EARLY_LEAVE">Early Leave</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex gap-2 align-items-end">
+                <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="onGenerateClick()">
+                    <span *ngIf="!loading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                    <span *ngIf="loading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" *ngIf="rows.length" (click)="reset()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                </button>
+            </div>
+
+        </div>
+        <div class="mt-2" *ngIf="touched && (!fromDate || !toDate)">
+            <small class="text-danger">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                From Date and To Date are required.
+            </small>
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2">Generating report...</p>
+    </div>
+
+    <div *ngIf="summaryItems.length && !loading" class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3" *ngFor="let item of summaryItems">
+            <div class="summary-card">
+                <div class="summary-value">{{ item.value }}</div>
+                <div class="summary-label">{{ item.label }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="rows.length && !loading" class="d-flex gap-2 mb-3">
+        <button class="btn btn-outline-danger btn-sm" (click)="exportPdf()">
+            <i class="fa-solid fa-file-pdf me-1"></i> Export PDF
+        </button>
+        <button class="btn btn-export btn-sm" (click)="exportExcel()">
+            <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+        </button>
+    </div>
+
+    <app-report-table [columns]="columns" [rows]="rows" [loading]="loading" [dataLoaded]="dataLoaded"
+        emptyHint="No late entries found for selected date range.">
+    </app-report-table>
+</div>

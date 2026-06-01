@@ -1103,6 +1103,29 @@
                     </div>
                 </div>
 
+                <!-- ADD inside staff loop, after staff banner div, before Teaching Hours section: -->
+                <div class="report-table-card mb-3" *ngIf="staff.summary?.length">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fa-solid fa-table me-2 text-primary"></i>Summary
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0" style="max-width:500px">
+                            <thead>
+                                <tr>
+                                    <th>Nature of Work</th>
+                                    <th>Particulars</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let row of staff.summary">
+                                    <td class="fw-medium">{{ row.nature }}</td>
+                                    <td>{{ row.particulars }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Teaching Hours -->
                 <ng-container *ngIf="staff.teaching?.periods?.length">
                     <div class="report-table-card mb-3">
@@ -1414,7 +1437,7 @@
                         </div>
                         <div class="table-responsive">
                             <table class="table table-sm table-hover align-middle mb-0">
-                                <thead>
+                                <!-- <thead>
                                     <tr>
                                         <th>Batch</th>
                                         <th>Batch Name</th>
@@ -1425,8 +1448,8 @@
                                         <th>Completed</th>
                                         <th>%</th>
                                     </tr>
-                                </thead>
-                                <tbody>
+                                </thead> -->
+                                <!-- <tbody>
                                     <tr *ngFor="let a of staff.assignments.rows">
                                         <td>{{ a.batchCode }}</td>
                                         <td>{{ a.batchName || '-' }}</td>
@@ -1436,6 +1459,28 @@
                                         <td>{{ a.totalStudents }}</td>
                                         <td>{{ a.completed }}</td>
                                         <td>{{ a.completionPct }}%</td>
+                                    </tr>
+                                </tbody> -->
+                                <thead>
+                                    <tr>
+                                        <th>Batch</th>
+                                        <th>Batch Name</th>
+                                        <th>Subject</th>
+                                        <th>Topic</th>
+                                        <th>No. of Tests</th>
+                                        <th>Enabled On</th>
+                                        <th>Students</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let a of staff.assignments.rows">
+                                        <td>{{ a.batchCode }}</td>
+                                        <td>{{ a.batchName || '-' }}</td>
+                                        <td>{{ a.subjectName || '-' }}</td>
+                                        <td>{{ a.topicName || '-' }}</td>
+                                        <td>{{ a.testCount }}</td>
+                                        <td>{{ a.enabledAtFormatted }}</td>
+                                        <td>{{ a.totalStudents }}</td>
                                     </tr>
                                 </tbody>
                             </table>

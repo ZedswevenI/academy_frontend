@@ -250,6 +250,11 @@ const routes: Routes = [
     path: 'exams',
     canActivate: [RoleGuard],
     loadChildren: () => import('../pages/exams/exam.module').then(m => m.ExamModule)
+  },
+  {
+    path: 'reportnew',
+    canActivate: [RoleGuard],
+    loadChildren: () => import('../pages/reports-new/reports-new.module').then(m => m.ReportsNewModule)
   }
 ];
 
