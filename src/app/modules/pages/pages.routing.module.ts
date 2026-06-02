@@ -255,7 +255,8 @@ const routes: Routes = [
     path: 'reportnew',
     canActivate: [RoleGuard],
     loadChildren: () => import('../pages/reports-new/reports-new.module').then(m => m.ReportsNewModule)
-  }
+  },
+  { path: 'invigilation', loadChildren: () => import('../pages/invigilation/invigilation.module').then(m => m.InvigilationModule) }
 ];
 
 @NgModule({

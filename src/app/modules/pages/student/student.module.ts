@@ -8,9 +8,10 @@ import { StudentRoutingModule } from './student.routing.module';
 import { StudentViewComponent } from './student-view/student-view.component';
 import { GridListComponent } from './grid-list/grid-list.component';
 import { TableListComponent } from './table-list/table-list.component';
+import { RpaimportComponent } from './rpaimport/rpaimport.component';
 
 @NgModule({
-  declarations: [StudentComponent, StudentViewComponent, GridListComponent, TableListComponent],
+  declarations: [StudentComponent, StudentViewComponent, GridListComponent, TableListComponent, RpaimportComponent],
   imports: [CommonModule, StudentRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
   exports: []
 })

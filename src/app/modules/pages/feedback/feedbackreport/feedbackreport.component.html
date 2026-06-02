@@ -1,6 +1,5 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
         <!-- Header -->
         <div class="d-flex align-items-center gap-3 mb-4">
             <!-- <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
@@ -9,7 +8,7 @@
             <div class="flex-grow-1">
                 <h1 class="fw-bold mb-0" style="font-size:22px">
                     <i class="fa-solid fa-chart-bar me-2 text-primary"></i>
-                    Consolidated Feedback Report
+                    {{ reportTitle }}
                 </h1>
                 <div class="text-muted small mt-1" *ngIf="formData">
                     {{ formData.title }} ·
@@ -22,7 +21,7 @@
                 <i class="fa-solid fa-file-pdf btn-icon" *ngIf="!exporting"></i>
                 Export PDF
             </button>
-              <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+            <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
                 <i class="fa-solid fa-arrow-left btn-icon"></i>Back
             </button>
         </div>
@@ -40,8 +39,7 @@
 
                     <!-- Staff selection toggle chips -->
                     <div class="d-flex flex-wrap gap-2 mb-2">
-                        <button type="button" class="btn fs-16 fw-medium"
-                            [class.btn-create]="!selectedStaff.length"
+                        <button type="button" class="btn fs-16 fw-medium" [class.btn-create]="!selectedStaff.length"
                             [class.btn-late-entry]="selectedStaff.length" (click)="selectAllStaff()">
                             All Staff
                         </button>
@@ -119,7 +117,7 @@
                         <th class="text-start">Staff</th>
                         <th>Batch</th>
                         <th>Strength</th>
-                        <th>Responses</th>
+                        <th>Feedbacks</th>
                         <!-- Part A headers -->
                         <th *ngFor="let h of partAHeaders" class="table-primary text-primary"
                             style="font-size:11px;min-width:36px" [title]="h.fieldText">
@@ -138,7 +136,6 @@
                     <tr *ngFor="let r of reportRows">
                         <!-- Staff -->
                         <td>
-                            <div class="fw-semibold">{{ r.staffCode || '—' }}</div>
                             <div class="text-muted" style="font-size:10px" *ngIf="r.staffName">{{ r.staffName }}</div>
                             <div *ngIf="r.subjectName"
                                 class="badge bg-primary bg-opacity-10 text-primary rounded-pill mt-1"

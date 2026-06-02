@@ -11,7 +11,7 @@
           <i class="fa-solid fa-file-import"></i>
           <span>Import Students</span>
         </button> -->
-         <button *appHasRole="['L1']" class="btn btn-import fs-16 fw-medium" (click)="openBulkUpload()">
+        <button *appHasRole="['L1']" class="btn btn-import fs-16 fw-medium" (click)="openBulkUpload()">
           <i class="fa-solid fa-file-import btn-icon"></i>
           <span>Import Students</span>
         </button>
@@ -22,6 +22,9 @@
         <button *appHasRole="['L1']" class="btn btn-export fs-16 fw-medium" (click)="openImageUpload()">
           <i class="fa-solid fa-images btn-icon"></i>
           <span>Upload Photos</span>
+        </button>
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#rpaImportModal">
+          <i class="fa-solid fa-file-import me-1"></i> RPA Import
         </button>
         <div class="view-switch">
           <button class="view-btn" type="button" [ngClass]="{ active: activeTab === 'list' }" (click)="setTab('list')">
@@ -267,3 +270,4 @@
     </div>
   </div>
 </div>
+<app-rpaimport (imported)="onRpaImported()"></app-rpaimport>

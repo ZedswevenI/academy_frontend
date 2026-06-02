@@ -14,24 +14,22 @@ import autoTable from 'jspdf-autotable';
 })
 export class ConsolidatedReportComponent implements OnInit {
   tenantId: any;
-
-  // Staff selector
   staffList: any[] = [];
-  selectedStaff: string[] = []; // empty = all
+  selectedStaff: string[] = [];
   staffSearch = '';
   staffLoading = false;
-
-  // Date range
   fromDate = '';
   toDate = '';
-
-  // Report state
   loading = false;
   exporting = false;
   reportData: any = null;
   rows: any[] = [];
-  partHeaders: any = {}; // { A: [{label,fieldId,fieldText,maxScore}], B: [...] }
-  partKeys: string[] = []; // ['A','B'] or ['A','B','C']
+  partHeaders: any = {};
+  partKeys: string[] = [];
+  activeTab: 'scores' | 'remarks' = 'scores';
+  remarksLoading = false;
+  remarksExporting = false;
+  remarksData: any[] = [];
 
   constructor(
     private router: Router,
@@ -47,7 +45,6 @@ export class ConsolidatedReportComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Default date range — last 3 months
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth() - 3, 1);
     this.fromDate = start.toISOString().split('T')[0];
@@ -55,7 +52,6 @@ export class ConsolidatedReportComponent implements OnInit {
     this.loadStaffList();
   }
 
-  // ── Staff list ────────────────────────────────────────────────────────────
   loadStaffList(): void {
     this.staffLoading = true;
     this.commonApi
@@ -108,7 +104,6 @@ export class ConsolidatedReportComponent implements OnInit {
     );
   }
 
-  // ── Fetch report ──────────────────────────────────────────────────────────
   fetchReport(): void {
     if (!this.fromDate || !this.toDate) {
       this.alert.error('Please select a date range');
@@ -117,14 +112,12 @@ export class ConsolidatedReportComponent implements OnInit {
     this.loading = true;
     this.reportData = null;
     this.rows = [];
-
     const payload: any = {
       tenantId: this.tenantId,
       fromDate: new Date(this.fromDate).getTime(),
       toDate: new Date(this.toDate).getTime(),
     };
     if (this.selectedStaff.length) payload.staffIds = this.selectedStaff;
-
     this.commonApi
       .fetchData(payload, 'feedback', 'consolidated-report')
       .subscribe({
@@ -242,14 +235,48 @@ export class ConsolidatedReportComponent implements OnInit {
     this.router.navigate(['/app/feedback']);
   }
 
-  // ── PDF Export ────────────────────────────────────────────────────────────
+  get groupedByStaff(): any[] {
+    const map = new Map<string, any>();
+    this.rows.forEach((r) => {
+      const key = r.staffId + '::' + (r.subjectName || '');
+      if (!map.has(key)) {
+        map.set(key, {
+          staffId: r.staffId,
+          staffCode: r.staffCode || '—',
+          staffName: r.staffName || '',
+          subjectName: r.subjectName || null,
+          subjectCode: r.subjectCode || null,
+          rows: [],
+        });
+      }
+      map.get(key).rows.push(r);
+    });
+    return Array.from(map.values()).map((g) => ({
+      ...g,
+      avgPcts: this.calcStaffAvgPcts(g.rows),
+    }));
+  }
+
+  private calcStaffAvgPcts(rows: any[]): Record<string, string> {
+    const result: Record<string, string> = {};
+    this.partKeys.forEach((part) => {
+      const valid = rows.filter((r) => r.partPct?.[part] != null);
+      result[part] = valid.length
+        ? (
+            valid.reduce((s: number, r: any) => s + r.partPct[part], 0) /
+            valid.length
+          ).toFixed(1) + '%'
+        : '—';
+    });
+    return result;
+  }
+
   exportPdf(): void {
     if (!this.rows.length) {
       this.alert.error('No data to export');
       return;
     }
     this.exporting = true;
-
     try {
       const doc = new jsPDF({
         orientation: 'landscape',
@@ -257,8 +284,10 @@ export class ConsolidatedReportComponent implements OnInit {
         format: 'a4',
       });
       const pageW = doc.internal.pageSize.getWidth();
-      const ml = 8,
-        mr = 8;
+      const pageH = doc.internal.pageSize.getHeight();
+      const ml = 2,
+        mr = 2;
+      const usableW = pageW - ml - mr;
       const bold = (s: number) => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(s);
@@ -267,7 +296,6 @@ export class ConsolidatedReportComponent implements OnInit {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(s);
       };
-
       const startFmt = this.fromDate
         ? new Date(this.fromDate).toLocaleDateString('en-IN', {
             day: '2-digit',
@@ -282,53 +310,6 @@ export class ConsolidatedReportComponent implements OnInit {
             year: 'numeric',
           })
         : '—';
-      const staffStr = this.selectedStaff.length
-        ? this.staffList
-            .filter((s) => this.selectedStaff.includes(s.staffId))
-            .map((s) => s.staffCode || s.staffName)
-            .join(', ')
-        : 'All Staff';
-      const batches = [...new Set(this.rows.map((r) => r.batchCode))].join(
-        ', ',
-      )
-      bold(13);
-      doc.text('CONSOLIDATED FEEDBACK REPORT', pageW / 2, 12, {
-        align: 'center',
-      });
-      normal(7.5);
-      doc.text('Staff: ' + staffStr + '  |  Batch: ' + batches, pageW / 2, 18, {
-        align: 'center',
-      });
-      doc.text(
-        'Feedback Period: ' + startFmt + ' to ' + endFmt,
-        pageW / 2,
-        23,
-        { align: 'center' },
-      );
-      doc.setDrawColor(0);
-      doc.setLineWidth(0.3);
-      doc.line(ml, 26, pageW - mr, 26);
-      const head: any[][] = [
-        [
-          {
-            content: 'STAFF',
-            styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
-          },
-          {
-            content: 'BATCH',
-            styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
-          },
-          { content: 'PHASE', styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 } },
-          {
-            content: 'STRENGTH',
-            styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
-          },
-          {
-            content: 'RESPONSES',
-            styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
-          },
-        ],
-      ];
       const partColors: Record<string, { fill: number[]; text: number[] }> = {
         A: { fill: [219, 234, 254], text: [30, 64, 175] },
         B: { fill: [254, 249, 195], text: [146, 64, 14] },
@@ -339,13 +320,68 @@ export class ConsolidatedReportComponent implements OnInit {
         B: { fill: [255, 251, 235], text: [146, 64, 14] },
         C: { fill: [236, 253, 245], text: [6, 95, 70] },
       };
+      const fixedW = 40;
+      const scoreColCount = this.partKeys.reduce(
+        (s, p) => s + (this.partHeaders[p]?.length || 0),
+        0,
+      );
+      const pctColCount = this.partKeys.length;
+      // const dynW = Math.max(
+      //   7,
+      //   Math.floor((usableW - fixedW) / (scoreColCount + pctColCount)),
+      // );
+      const reservedForPct = pctColCount * 12;
+      const dynW = Math.max(
+        6,
+        Math.floor((usableW - fixedW - reservedForPct) / scoreColCount),
+      );
+      const columnStyles: Record<number, any> = {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 18 },
+      };
+      let colIdx = 2;
+      this.partKeys.forEach((part) => {
+        (this.partHeaders[part] || []).forEach(() => {
+          columnStyles[colIdx++] = { cellWidth: dynW + 2 };
+        });
+      });
+      this.partKeys.forEach(() => {
+        columnStyles[colIdx++] = { cellWidth: dynW + 2 };
+      });
+      const totalCols = 2 + scoreColCount + pctColCount;
+      const colHeaderRow: any[] = [
+        // {
+        //   content: 'BATCH',
+        //   styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+        // },
+        // {
+        //   content: 'PHASE',
+        //   styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+        // },
+        // {
+        //   content: 'STRENGTH',
+        //   styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+        // },
+        // {
+        //   content: 'RESPONSES',
+        //   styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+        // },
+        {
+          content: 'BATCH / PHASE',
+          styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+        },
+        {
+          content: 'STR / RES',
+          styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+        },
+      ];
       this.partKeys.forEach((part) => {
         const col = partColors[part] || {
           fill: [241, 245, 249],
           text: [55, 65, 81],
         };
         (this.partHeaders[part] || []).forEach((h: any) => {
-          head[0].push({
+          colHeaderRow.push({
             content: h.label,
             styles: {
               halign: 'center',
@@ -353,6 +389,7 @@ export class ConsolidatedReportComponent implements OnInit {
               fontSize: 6,
               fillColor: col.fill,
               textColor: col.text,
+              overflow: 'hidden'
             },
           });
         });
@@ -362,7 +399,7 @@ export class ConsolidatedReportComponent implements OnInit {
           fill: [241, 245, 249],
           text: [55, 65, 81],
         };
-        head[0].push({
+        colHeaderRow.push({
           content: this.partPctLabel(part),
           styles: {
             halign: 'center',
@@ -373,67 +410,220 @@ export class ConsolidatedReportComponent implements OnInit {
           },
         });
       });
-      const body: any[][] = this.rows.map((r: any) => {
-        const row: any[] = [
+
+      const drawPageHeader = (g: any) => {
+        bold(13);
+        doc.text(this.reportTitle.toUpperCase(), pageW / 2, 10, {
+          align: 'center',
+        });
+        normal(7.5);
+        const staffLine = [
+          g.staffCode && g.staffCode.length < 20 ? g.staffCode : '',
+          g.staffName,
+          g.subjectName ? '(' + g.subjectName + ')' : '',
+        ]
+          .filter(Boolean)
+          .join('  ');
+        doc.text('Staff: ' + staffLine, pageW / 2, 16, { align: 'center' });
+        doc.text(
+          'Feedback Period: ' + startFmt + ' to ' + endFmt,
+          pageW / 2,
+          21,
+          { align: 'center' },
+        );
+        doc.setDrawColor(0);
+        doc.setLineWidth(0.3);
+        doc.line(ml, 24, pageW - mr, 24);
+      };
+
+      const groups = this.groupedByStaff;
+      groups.forEach((g, gIndex) => {
+        if (gIndex > 0) doc.addPage();
+        drawPageHeader(g);
+        // const bannerContent = [
+        //   g.staffCode !== '—' ? g.staffCode : '',
+        //   g.staffName,
+        //   g.subjectName ? '·  ' + g.subjectName : '',
+        // ]
+        //   .filter(Boolean)
+        //   .join('   ');
+        const bannerContent = [
+          g.staffCode && g.staffCode.length < 20 ? g.staffCode : '',
+          g.staffName,
+          g.subjectName ? '·  ' + g.subjectName : '',
+        ]
+          .filter(Boolean)
+          .join('   ');
+        const staffHead: any[][] = [
+          [
+            {
+              content: bannerContent,
+              colSpan: totalCols,
+              styles: {
+                fontStyle: 'bold',
+                fontSize: 9,
+                fillColor: [30, 41, 59],
+                textColor: [255, 255, 255],
+                halign: 'left',
+                cellPadding: 3,
+              },
+            },
+          ],
+          colHeaderRow,
+        ];
+        const body: any[][] = [];
+        g.rows.forEach((r: any) => {
+          const row: any[] = [
+            // {
+            //   content: r.batchCode,
+            //   styles: { halign: 'center', fontSize: 6.5 },
+            // },
+            // {
+            //   content: r.phase || '—',
+            //   styles: { halign: 'center', fontSize: 6.5 },
+            // },
+            // {
+            //   content: r.strength,
+            //   styles: { halign: 'center', fontSize: 6.5 },
+            // },
+            // {
+            //   content: r.responseCount,
+            //   styles: { halign: 'center', fontSize: 6.5 },
+            // },
+            {
+              content: r.batchCode + '\n' + (r.phase || '—'),
+              styles: { halign: 'center', fontSize: 6.5 },
+            },
+            {
+              content: r.strength + ' / ' + r.responseCount,
+              styles: { halign: 'center', fontSize: 6.5 },
+            },
+          ];
+
+          this.partKeys.forEach((part) => {
+            const bg =
+              part === 'A'
+                ? [239, 246, 255]
+                : part === 'B'
+                  ? [255, 251, 235]
+                  : [240, 253, 244];
+            (r.partScores?.[part] || []).forEach((v: any) => {
+              row.push({
+                content: v != null ? v.toFixed(2) : '—',
+                styles: { halign: 'center', fontSize: 6, fillColor: bg },
+              });
+            });
+          });
+          this.partKeys.forEach((part) => {
+            const pct = r.partPct?.[part];
+            const col = pctColors[part] || {
+              fill: [241, 245, 249],
+              text: [55, 65, 81],
+            };
+            const tColor =
+              pct == null
+                ? [150, 150, 150]
+                : pct >= 90
+                  ? [22, 101, 52]
+                  : pct >= 75
+                    ? [37, 99, 235]
+                    : pct >= 50
+                      ? [161, 98, 7]
+                      : [153, 27, 27];
+            row.push({
+              content: pct != null ? pct.toFixed(1) + '%' : '—',
+              styles: {
+                halign: 'center',
+                fontStyle: 'bold',
+                fontSize: 7,
+                textColor: tColor,
+                fillColor: col.fill,
+              },
+            });
+          });
+
+          body.push(row);
+        });
+        const staffAvgRow: any[] = [
           {
-            content: r.staffCode || '—',
-            styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 },
-          },
-          { content: r.batchCode, styles: { halign: 'center', fontSize: 6.5 } },
-          { content: r.phase || '—', styles: { halign: 'center', fontSize: 6.5 } },
-          { content: r.strength, styles: { halign: 'center', fontSize: 6.5 } },
-          {
-            content: r.responseCount,
-            styles: { halign: 'center', fontSize: 6.5 },
+            content: 'Staff Average',
+            colSpan: 2,
+            styles: {
+              halign: 'right',
+              fontStyle: 'bold',
+              fontSize: 7,
+              fillColor: [241, 245, 249],
+            },
           },
         ];
         this.partKeys.forEach((part) => {
-          const bg =
-            part === 'A'
-              ? [239, 246, 255]
-              : part === 'B'
-                ? [255, 251, 235]
-                : [240, 253, 244];
-          (r.partScores?.[part] || []).forEach((v: any) => {
-            row.push({
-              content: v != null ? v.toFixed(2) : '—',
-              styles: { halign: 'center', fontSize: 6, fillColor: bg },
-            });
-          });
+          (this.partHeaders[part] || []).forEach(() =>
+            staffAvgRow.push({
+              content: '',
+              styles: { fillColor: [241, 245, 249] },
+            }),
+          );
         });
         this.partKeys.forEach((part) => {
-          const pct = r.partPct?.[part];
           const col = pctColors[part] || {
             fill: [241, 245, 249],
             text: [55, 65, 81],
           };
-          const tColor =
-            pct == null
-              ? [150, 150, 150]
-              : pct >= 90
-                ? [22, 101, 52]
-                : pct >= 75
-                  ? [37, 99, 235]
-                  : pct >= 50
-                    ? [161, 98, 7]
-                    : [153, 27, 27];
-          row.push({
-            content: pct != null ? pct.toFixed(1) + '%' : '—',
+          staffAvgRow.push({
+            content: g.avgPcts[part] || '—',
             styles: {
               halign: 'center',
               fontStyle: 'bold',
               fontSize: 7,
-              textColor: tColor,
               fillColor: col.fill,
+              textColor: col.text,
             },
           });
         });
-        return row;
+        body.push(staffAvgRow);
+        autoTable(doc, {
+          startY: 26,
+          head: staffHead,
+          body,
+          theme: 'grid',
+          styles: {
+            fontSize: 6.5,
+            cellPadding: 1.5,
+            lineColor: [210, 210, 210],
+            lineWidth: 0.2,
+          },
+          headStyles: {
+            fillColor: [30, 41, 59],
+            textColor: 255,
+            fontSize: 7,
+            cellPadding: 2,
+            halign: 'center',
+          },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          margin: { left: ml, right: mr },
+          columnStyles,
+        });
+        const staffFinalY = (doc as any).lastAutoTable?.finalY || 180;
+        normal(7);
+        doc.setTextColor(100, 100, 100);
+        const staffSummary = this.partKeys
+          .map((p) => this.partPctLabel(p) + ': ' + (g.avgPcts[p] || '—'))
+          .join('  |  ');
+        doc.text(
+          g.staffName +
+            (g.subjectName ? ' (' + g.subjectName + ')' : '') +
+            '  —  ' +
+            staffSummary,
+          pageW / 2,
+          staffFinalY + 6,
+          { align: 'center' },
+        );
       });
+      const lastFinalY = (doc as any).lastAutoTable?.finalY || 180;
       const summaryRow: any[] = [
         {
           content: 'OVERALL AVERAGE',
-          colSpan: 4,
+          colSpan: 2,
           styles: {
             halign: 'right',
             fontStyle: 'bold',
@@ -455,9 +645,8 @@ export class ConsolidatedReportComponent implements OnInit {
           fill: [241, 245, 249],
           text: [55, 65, 81],
         };
-        const avg = this.avgPcts[part] || '—';
         summaryRow.push({
-          content: avg,
+          content: this.avgPcts[part] || '—',
           styles: {
             halign: 'center',
             fontStyle: 'bold',
@@ -467,11 +656,11 @@ export class ConsolidatedReportComponent implements OnInit {
           },
         });
       });
-      body.push(summaryRow);
+
       autoTable(doc, {
-        startY: 28,
-        head,
-        body,
+        startY: lastFinalY + 10,
+        head: [],
+        body: [summaryRow],
         theme: 'grid',
         styles: {
           fontSize: 6.5,
@@ -479,34 +668,24 @@ export class ConsolidatedReportComponent implements OnInit {
           lineColor: [210, 210, 210],
           lineWidth: 0.2,
         },
-        headStyles: {
-          fillColor: [30, 41, 59],
-          textColor: 255,
-          fontSize: 7,
-          cellPadding: 2,
-          halign: 'center',
-        },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
         margin: { left: ml, right: mr },
-        columnStyles: {
-          0: { cellWidth: 14 },
-          1: { cellWidth: 22 },
-          2: { cellWidth: 13 },
-          3: { cellWidth: 16 },
-        },
+        columnStyles,
       });
 
-      const finalY = (doc as any).lastAutoTable?.finalY || 180;
+      const overallFinalY =
+        (doc as any).lastAutoTable?.finalY || lastFinalY + 20;
       normal(7);
       doc.setTextColor(100, 100, 100);
-      const summaryLine = this.partKeys
+      const overallSummary = this.partKeys
         .map((p) => this.partPctLabel(p) + ': ' + (this.avgPcts[p] || '—'))
         .join('  |  ');
-      doc.text('Overall  ' + summaryLine, pageW / 2, finalY + 7, {
+      doc.text('Overall  ' + overallSummary, pageW / 2, overallFinalY + 7, {
         align: 'center',
       });
+
+      // ── Save ──────────────────────────────────────────────────────────────────
       doc.save(
-        'Feedback_Consolidated_Report_' +
+        'Feedback_Report_' +
           startFmt.replace(/ /g, '_') +
           '_to_' +
           endFmt.replace(/ /g, '_') +
@@ -514,6 +693,194 @@ export class ConsolidatedReportComponent implements OnInit {
       );
     } finally {
       this.exporting = false;
+    }
+  }
+
+  get reportTitle(): string {
+    if (this.selectedStaff.length === 1) {
+      const s = this.staffList.find(
+        (x: any) => x.staffId === this.selectedStaff[0],
+      );
+      return (s?.staffName || 'Faculty') + ' — Feedback Report';
+    }
+    return 'Consolidated Feedback Report';
+  }
+
+  switchToRemarks(): void {
+    this.activeTab = 'remarks';
+    if (!this.remarksData.length && !this.remarksLoading) {
+      this.fetchRemarks();
+    }
+  }
+
+  fetchRemarks(): void {
+    if (!this.fromDate || !this.toDate) {
+      this.alert.error('Please select a date range');
+      return;
+    }
+    this.remarksLoading = true;
+    this.remarksData = [];
+
+    const payload: any = {
+      tenantId: this.tenantId,
+      fromDate: new Date(this.fromDate).getTime(),
+      toDate: new Date(this.toDate).getTime(),
+    };
+    if (this.selectedStaff.length) payload.staffIds = this.selectedStaff;
+
+    this.commonApi.fetchData(payload, 'feedback', 'remarks-report').subscribe({
+      next: (res: any) => {
+        this.remarksLoading = false;
+        this.remarksData = res?.data || [];
+        if (!this.remarksData.length)
+          this.alert.error('No remarks found for the selected filters');
+      },
+      error: (err: any) => {
+        this.remarksLoading = false;
+        this.alert.error(err?.error?.message || 'Failed to load remarks');
+      },
+    });
+  }
+
+  getTotalRemarks(staff: any): number {
+    return (staff.batches || []).reduce(
+      (s: number, b: any) =>
+        s +
+        (b.phases || []).reduce(
+          (ps: number, p: any) => ps + (p.remarks?.length || 0),
+          0,
+        ),
+      0,
+    );
+  }
+
+  exportRemarksPdf(): void {
+    if (!this.remarksData.length) {
+      this.alert.error('No remarks to export');
+      return;
+    }
+    this.remarksExporting = true;
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      const pageW = doc.internal.pageSize.getWidth();
+      const ml = 12,
+        mr = 12,
+        maxW = pageW - ml - mr;
+      const bold = (s: number) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(s);
+      };
+      const normal = (s: number) => {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(s);
+      };
+      const indent = 4;
+
+      const startFmt = this.fromDate
+        ? new Date(this.fromDate).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : '—';
+      const endFmt = this.toDate
+        ? new Date(this.toDate).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : '—';
+
+      bold(13);
+      doc.text('STAFF REMARKS REPORT', pageW / 2, 14, { align: 'center' });
+      normal(8);
+      doc.text('Period: ' + startFmt + ' to ' + endFmt, pageW / 2, 20, {
+        align: 'center',
+      });
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.3);
+      doc.line(ml, 23, pageW - mr, 23);
+
+      let curY = 27;
+      const checkPage = (needed = 10) => {
+        if (curY + needed > 282) {
+          doc.addPage();
+          curY = 15;
+        }
+      };
+
+      this.remarksData.forEach((staff: any) => {
+        checkPage(14);
+        doc.setFillColor(30, 41, 59);
+        doc.rect(ml, curY - 4, maxW, 8, 'F');
+        bold(9);
+        doc.setTextColor(255, 255, 255);
+        doc.text(
+          (staff.staffCode ? staff.staffCode + '  ' : '') + staff.staffName,
+          ml + 2,
+          curY + 0.5,
+        );
+        curY += 8;
+
+        (staff.batches || []).forEach((batch: any) => {
+          checkPage(10);
+          doc.setFillColor(219, 234, 254);
+          doc.rect(ml + indent, curY - 4, maxW - indent, 7, 'F');
+          bold(8);
+          doc.setTextColor(30, 64, 175);
+          doc.text('Batch: ' + batch.batchCode, ml + indent + 2, curY);
+          curY += 7;
+
+          (batch.phases || []).forEach((phase: any) => {
+            checkPage(8);
+            normal(7.5);
+            doc.setTextColor(100, 100, 100);
+            doc.text(
+              phase.phaseLabel +
+                '  (' +
+                phase.remarks.length +
+                ' remark' +
+                (phase.remarks.length !== 1 ? 's' : '') +
+                ')',
+              ml + indent * 2,
+              curY,
+            );
+            curY += 6;
+
+            phase.remarks.forEach((r: any, idx: number) => {
+              checkPage(8);
+              normal(7);
+              doc.setTextColor(50, 50, 50);
+              const lines = doc.splitTextToSize(
+                idx + 1 + '. ' + (r.remark || ''),
+                maxW - indent * 3 - 2,
+              );
+              lines.forEach((line: string) => {
+                checkPage(6);
+                doc.text(line, ml + indent * 3, curY);
+                curY += 5;
+              });
+            });
+            curY += 3;
+          });
+          curY += 4;
+        });
+        curY += 5;
+      });
+
+      doc.save(
+        'Staff_Remarks_Report_' +
+          startFmt.replace(/ /g, '_') +
+          '_to_' +
+          endFmt.replace(/ /g, '_') +
+          '.pdf',
+      );
+    } finally {
+      this.remarksExporting = false;
     }
   }
 }

@@ -65,8 +65,11 @@ export class TestComponent implements OnInit, OnDestroy {
     { label: 'Tamil', value: 'ta' },
   ];
   classOptions = [
-    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
-    { label: '12th Pass', value: 13 }
+    ...Array.from({ length: 7 }, (_, i) => ({
+      label: `Class ${i + 6}`,
+      value: i + 6,
+    })),
+    { label: '12th Pass', value: 13 },
   ];
   showPublishResultModal = false;
   publishResultNote = '';
@@ -99,12 +102,108 @@ export class TestComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       show: (row: any) => !!row.isImported,
+      // dropdown: [
+      //   {
+      //     text: 'View Questions',
+      //     icon: 'fa-solid fa-list-ol',
+      //     show: (row: any) => !!row.isImported,
+      //     callback: (row: any) => this.viewQuestions(row),
+      //   },
+      //   {
+      //     text: 'Edit Exam',
+      //     icon: 'fa-regular fa-pen-to-square',
+      //     show: (row: any) =>
+      //       row.status === 'result_published' ||
+      //       row.status === 'completed' ||
+      //       !!row.isImported,
+      //     callback: (row: any) => this.editExam(row),
+      //   },
+      //   {
+      //     text: 'Duplicate Exam',
+      //     icon: 'fa-regular fa-copy',
+      //     callback: (row: any) => this.promptDuplicateExam(row),
+      //   },
+      //   {
+      //     text: 'Add Question',
+      //     icon: 'fa-solid fa-plus',
+      //     show: (row: any) => row.status !== 'draft' || !!row.isImported,
+      //     callback: (row: any) => this.addQuestions(row),
+      //   },
+      //   {
+      //     text: 'Import Questions',
+      //     icon: 'fa-solid fa-file-import',
+      //     show: (row: any) => row.status !== 'draft' || !!row.isImported,
+      //     callback: (row: any) => this.importQuestions(row),
+      //   },
+      //   {
+      //     text: 'Import Answers',
+      //     icon: 'fa-solid fa-clipboard-check',
+      //     show: (row: any) => !!row.isImported,
+      //     callback: (row: any) => this.importAnswers(row),
+      //   },
+      //   {
+      //     text: 'Rearrange Questions',
+      //     icon: 'fa-solid fa-reorder',
+      //     show: (row: any) =>
+      //       row.status === 'result_published' ||
+      //       row.status === 'completed' ||
+      //       !!row.isImported,
+      //     callback: (row: any) => this.rearrange(row),
+      //   },
+      //   {
+      //     text: 'Publish Exam',
+      //     icon: 'fa-solid fa-paper-plane',
+      //     show: (row: any) => row.status !== 'draft' || !!row.isImported,
+      //     callback: (row: any) => this.publishExam(row),
+      //   },
+      //   {
+      //     text: 'Assign Batch',
+      //     icon: 'fa-solid fa-users',
+      //     show: (row: any) => row.status === 'result_published',
+      //     callback: (row: any) => this.openBatchModal(row),
+      //   },
+      //   {
+      //     text: 'Publish Result',
+      //     icon: 'fa-solid fa-bullhorn',
+      //     show: (row: any) =>
+      //       row.status !== 'published' &&
+      //       !(row.graces && row.graces.length > 0),
+      //     callback: (row: any) => this.publishResult(row),
+      //   },
+      //   {
+      //     text: 'Result',
+      //     icon: 'fa-solid fa-chart-bar',
+      //     show: (row: any) => row.status !== 'result_published',
+      //     callback: (row: any) => this.viewResult(row),
+      //   },
+      //   {
+      //     text: 'Reevaluate',
+      //     icon: 'fa-solid fa-arrows-rotate',
+      //     show: (row: any) => row.status !== 'result_published',
+      //     callback: (row: any) => this.reevaluateResults(row),
+      //   },
+      //   {
+      //     text: 'Grace Marks',
+      //     icon: 'fa-solid fa-gift',
+      //     show: (row: any) => row.status === 'draft',
+      //     callback: (row: any) => this.openGraceModal(row),
+      //   },
+      //   {
+      //     text: 'Delete',
+      //     icon: 'fa-regular fa-trash-can',
+      //     show: (row: any) => row.status === 'result_published',
+      //     callback: (row: any) => this.deleteExam(row),
+      //   },
+      // ],
       dropdown: [
         {
           text: 'View Questions',
           icon: 'fa-solid fa-list-ol',
           show: (row: any) => !!row.isImported,
-          callback: (row: any) => this.viewQuestions(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.viewQuestions(row);
+          },
         },
         {
           text: 'Edit Exam',
@@ -113,30 +212,45 @@ export class TestComponent implements OnInit, OnDestroy {
             row.status === 'result_published' ||
             row.status === 'completed' ||
             !!row.isImported,
-          callback: (row: any) => this.editExam(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.editExam(row);
+          },
         },
         {
           text: 'Duplicate Exam',
           icon: 'fa-regular fa-copy',
-          callback: (row: any) => this.promptDuplicateExam(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.promptDuplicateExam(row);
+          },
         },
         {
           text: 'Add Question',
           icon: 'fa-solid fa-plus',
           show: (row: any) => row.status !== 'draft' || !!row.isImported,
-          callback: (row: any) => this.addQuestions(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.addQuestions(row);
+          },
         },
         {
           text: 'Import Questions',
           icon: 'fa-solid fa-file-import',
           show: (row: any) => row.status !== 'draft' || !!row.isImported,
-          callback: (row: any) => this.importQuestions(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.importQuestions(row);
+          },
         },
         {
           text: 'Import Answers',
           icon: 'fa-solid fa-clipboard-check',
           show: (row: any) => !!row.isImported,
-          callback: (row: any) => this.importAnswers(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.importAnswers(row);
+          },
         },
         {
           text: 'Rearrange Questions',
@@ -145,19 +259,28 @@ export class TestComponent implements OnInit, OnDestroy {
             row.status === 'result_published' ||
             row.status === 'completed' ||
             !!row.isImported,
-          callback: (row: any) => this.rearrange(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.rearrange(row);
+          },
         },
         {
           text: 'Publish Exam',
           icon: 'fa-solid fa-paper-plane',
           show: (row: any) => row.status !== 'draft' || !!row.isImported,
-          callback: (row: any) => this.publishExam(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.publishExam(row);
+          },
         },
         {
           text: 'Assign Batch',
           icon: 'fa-solid fa-users',
           show: (row: any) => row.status === 'result_published',
-          callback: (row: any) => this.openBatchModal(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.openBatchModal(row);
+          },
         },
         {
           text: 'Publish Result',
@@ -165,31 +288,46 @@ export class TestComponent implements OnInit, OnDestroy {
           show: (row: any) =>
             row.status !== 'published' &&
             !(row.graces && row.graces.length > 0),
-          callback: (row: any) => this.publishResult(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.publishResult(row);
+          },
         },
         {
           text: 'Result',
           icon: 'fa-solid fa-chart-bar',
           show: (row: any) => row.status !== 'result_published',
-          callback: (row: any) => this.viewResult(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.viewResult(row);
+          },
         },
         {
           text: 'Reevaluate',
           icon: 'fa-solid fa-arrows-rotate',
           show: (row: any) => row.status !== 'result_published',
-          callback: (row: any) => this.reevaluateResults(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.reevaluateResults(row);
+          },
         },
         {
           text: 'Grace Marks',
           icon: 'fa-solid fa-gift',
           show: (row: any) => row.status === 'draft',
-          callback: (row: any) => this.openGraceModal(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.openGraceModal(row);
+          },
         },
         {
           text: 'Delete',
           icon: 'fa-regular fa-trash-can',
           show: (row: any) => row.status === 'result_published',
-          callback: (row: any) => this.deleteExam(row),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.deleteExam(row);
+          },
         },
       ],
     },
@@ -230,7 +368,7 @@ export class TestComponent implements OnInit, OnDestroy {
       testType: [''],
       status: [''],
       medium: [''],
-      classNo: [null]
+      classNo: [null],
     });
   }
 
@@ -467,15 +605,37 @@ export class TestComponent implements OnInit, OnDestroy {
     this.examToDuplicate = row;
     this.showDuplicateModal = true;
   }
+
   duplicateExam(withQuestions: boolean) {
     if (!this.examToDuplicate) return;
-
     this.loading = true;
     const d = this.examToDuplicate;
     const suffix = ' - Copy';
-
-    // Prepare payload
-    const payload: any = {
+    // const payload: any = {
+    //   entiId: localStorage.getItem('tenantId'),
+    //   examCode: `${d.examCode}${suffix}`,
+    //   examName: `${d.examName}${suffix}`,
+    //   password: d.password || '123456',
+    //   description: d.description,
+    //   testType: d.testType,
+    //   medium: d.medium,
+    //   duration: d.duration,
+    //   totalMarks: d.totalMarks,
+    //   totalQuestions: d.totalQuestions,
+    //   startTime: Date.now() + 86400000,
+    //   endTime: Date.now() + 86400000 + d.duration * 60000,
+    //   autoPublishAt: null,
+    //   instructionId: d.instructionId,
+    //   calculatorType: d.calculatorType,
+    //   sections: (d.sections || []).map((s: any) => ({
+    //     sectionCode: s.sectionCode,
+    //     sectionName: s.sectionName,
+    //     subjectId: s.subjectId?._id || s.subjectId,
+    //     numberOfQuestions: s.numberOfQuestions,
+    //     sortOrder: s.sortOrder,
+    //   })),
+    // };
+    const basePayload: any = {
       entiId: localStorage.getItem('tenantId'),
       examCode: `${d.examCode}${suffix}`,
       examName: `${d.examName}${suffix}`,
@@ -486,26 +646,62 @@ export class TestComponent implements OnInit, OnDestroy {
       duration: d.duration,
       totalMarks: d.totalMarks,
       totalQuestions: d.totalQuestions,
-      // Default to tomorrow to avoid validation errors
       startTime: Date.now() + 86400000,
       endTime: Date.now() + 86400000 + d.duration * 60000,
       autoPublishAt: null,
-      instructionId: d.instructionId,
+      instructionId: d.instructionId?._id || d.instructionId || null,
       calculatorType: d.calculatorType,
-      sections: (d.sections || []).map((s: any) => ({
-        sectionCode: s.sectionCode,
-        sectionName: s.sectionName,
-        subjectId: s.subjectId?._id || s.subjectId,
-        numberOfQuestions: s.numberOfQuestions,
-        sortOrder: s.sortOrder,
-      })),
+      classNo: d.classNo || null,
     };
 
-    const endpoint = withQuestions ? 'duplicate' : 'create';
-    if (withQuestions) {
-      payload.refExamId = d.examId;
-    }
+    let endpoint: string;
+    let payload: any;
 
+    if (withQuestions) {
+      endpoint = 'duplicate';
+      payload = {
+        ...basePayload,
+        refExamId: d.examId,
+      };
+    } else {
+      endpoint = 'create';
+      payload = {
+        ...basePayload,
+        sections: (d.sections || [])
+          .map((s: any) => ({
+            sectionCode: s.sectionCode,
+            sectionName: s.sectionName,
+            subjectId:
+              s.subjectId?._id ||
+              (typeof s.subjectId === 'string' ? s.subjectId : null),
+            numberOfQuestions: s.numberOfQuestions,
+            sortOrder: s.sortOrder,
+          }))
+          .filter((s: any) => !!s.subjectId),
+      };
+    }
+    // const endpoint = withQuestions ? 'duplicate' : 'create';
+    // if (withQuestions) {
+    //   payload.refExamId = d.examId;
+    // }
+    // this.commonApi.fetchData(payload, 'exam', endpoint).subscribe({
+    //   next: (res: any) => {
+    //     this.loading = false;
+    //     if (res?.status) {
+    //       this.alert.success(
+    //         `Exam duplicated successfully ${withQuestions ? 'with' : 'without'} questions`,
+    //       );
+    //       this.closeDuplicateModal();
+    //       this.fetchTableData(this.lastTableParams);
+    //     } else {
+    //       this.alert.error(res?.message || 'Error duplicating exam');
+    //     }
+    //   },
+    //   error: (err: any) => {
+    //     this.loading = false;
+    //     this.alert.error(err?.error?.message || 'Error duplicating exam');
+    //   },
+    // });
     this.commonApi.fetchData(payload, 'exam', endpoint).subscribe({
       next: (res: any) => {
         this.loading = false;
@@ -515,6 +711,23 @@ export class TestComponent implements OnInit, OnDestroy {
           );
           this.closeDuplicateModal();
           this.fetchTableData(this.lastTableParams);
+          const newExam = res.data;
+          if (newExam?.examId) {
+            this.router.navigate(['/app/exams/exams/question-view'], {
+              state: {
+                questions: {
+                  examId: newExam.examId,
+                  examCode: newExam.examCode,
+                  examName: newExam.examName,
+                  status: newExam.status,
+                  sections: newExam.sections || [],
+                  totalQuestions: newExam.totalQuestions,
+                  totalMarks: newExam.totalMarks,
+                  classNo: newExam.classNo || null,
+                },
+              },
+            });
+          }
         } else {
           this.alert.error(res?.message || 'Error duplicating exam');
         }
@@ -525,35 +738,39 @@ export class TestComponent implements OnInit, OnDestroy {
       },
     });
   }
+
   closeDuplicateModal() {
     this.showDuplicateModal = false;
     this.examToDuplicate = null;
   }
+
   importQuestions(row: any) {
     this.router.navigate(['/app/exams/exams/question-import'], {
       state: { questions: row },
     });
   }
+
   importAnswers(row: any) {
     this.router.navigate(['/app/exams/exams/answer-import'], {
       state: { exam: row },
     });
   }
+
   importMarks() {
     this.router.navigate(['/app/exams/exams/marks-import']);
   }
+
   addQuestions(row: any) {
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: { question: row },
     });
   }
+
   viewResult(row: any) {
     this.router.navigate(['/app/exams/exams/result-batch'], {
       state: { exam: row },
     });
   }
-
-  /* ================= BATCH ENABLE/DISABLE ================= */
 
   openBatchModal(row: any) {
     this.batchAssignRow = row;
@@ -574,13 +791,9 @@ export class TestComponent implements OnInit, OnDestroy {
   loadBatches() {
     this.batchLoading = true;
     const entiId = localStorage.getItem('tenantId');
-
-    // Load all batches and already assigned batches in parallel
     this.commonApi.fetchData({ entiId }, 'batch', 'list?list=full').subscribe({
       next: (allRes: any) => {
         this.allBatches = allRes?.data || [];
-
-        // Now load assigned batches for this exam
         this.commonApi
           .fetchData(
             { entiId, examId: this.batchAssignRow.examId },
@@ -621,25 +834,19 @@ export class TestComponent implements OnInit, OnDestroy {
   saveBatchChanges() {
     const entiId = localStorage.getItem('tenantId');
     const examId = this.batchAssignRow.examId;
-
-    // Newly selected (not previously enabled) -> assign
     const toAssign = Array.from(this.selectedBatchIds).filter(
       (id) => !this.enabledBatchIds.has(id),
     );
-    // Previously enabled but now unchecked -> disable
     const toDisable = Array.from(this.enabledBatchIds).filter(
       (id) => !this.selectedBatchIds.has(id),
     );
-
     if (!toAssign.length && !toDisable.length) {
       this.alert.error('No changes to save');
       return;
     }
-
     this.batchAssigning = true;
     let pending = 0;
     let hasError = false;
-
     const checkDone = () => {
       pending--;
       if (pending <= 0) {
@@ -650,7 +857,6 @@ export class TestComponent implements OnInit, OnDestroy {
         }
       }
     };
-
     if (toAssign.length) {
       pending++;
       this.commonApi
@@ -674,7 +880,6 @@ export class TestComponent implements OnInit, OnDestroy {
           },
         });
     }
-
     if (toDisable.length) {
       pending++;
       this.commonApi
@@ -700,8 +905,6 @@ export class TestComponent implements OnInit, OnDestroy {
     }
   }
 
-  /* ================= PRINT ================= */
-
   printTest(row: any) {
     this.selectedRow = row;
     this.showPrintModal = true;
@@ -716,18 +919,15 @@ export class TestComponent implements OnInit, OnDestroy {
     try {
       const filters = this.filterForm.value;
       const query: any = { page: 1, limit: 25 };
-
       if (filters.testType) query.testType = filters.testType;
       if (filters.status) query.status = filters.status;
       if (filters.medium) query.medium = filters.medium;
-
       const queryString = Object.keys(query)
         .map(
           (key) =>
             `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`,
         )
         .join('&');
-
       const res: any = await firstValueFrom(
         this.commonApi.fetchData(
           { entiId: localStorage.getItem('tenantId') },
@@ -735,7 +935,6 @@ export class TestComponent implements OnInit, OnDestroy {
           `list?${queryString}`,
         ),
       );
-
       if (res?.status && res?.data?.length) {
         return res.data.map((item: any) => item.examId);
       }
@@ -747,30 +946,24 @@ export class TestComponent implements OnInit, OnDestroy {
 
   async printAllFilteredTests(withAnswer: boolean): Promise<void> {
     this.loading = true;
-
     const examIds = await this.fetchAllExamIds();
-
     if (!examIds.length) {
       this.alert.error('No exams found to print');
       this.loading = false;
       return;
     }
-
     this.selectedExamIds = examIds;
     await this.printQuestions(withAnswer);
   }
 
   async printQuestions(withAnswer: boolean): Promise<void> {
     if (!this.selectedExamIds?.length) return;
-
     this.closePrintModal();
     this.loading = true;
-
     try {
       const allTestsData = await Promise.all(
         this.selectedExamIds.map(async (examId) => {
           const { meta, questions } = await this.fetchExamQuestions(examId);
-
           const processed = await Promise.all(
             questions.map(async (q: any) => {
               const questionHtml = await this.replaceDownloadUrls(
@@ -793,19 +986,15 @@ export class TestComponent implements OnInit, OnDestroy {
               };
             }),
           );
-
           return { examId, meta, questions: processed };
         }),
       );
-
       const validTests = allTestsData.filter((t) => t.questions.length > 0);
-
       if (!validTests.length) {
         this.alert.error('No questions found');
         this.loading = false;
         return;
       }
-
       this.buildPrintWindow(validTests, withAnswer);
     } catch (err) {
       console.error('Print error:', err);
@@ -1350,7 +1539,19 @@ export class TestComponent implements OnInit, OnDestroy {
     this.fetchTableData({ page: 1, pageSize: 10 });
   }
 
-  private forceCloseDropdowns(): void {
+  // private forceCloseDropdowns(): void {
+  //   document
+  //     .querySelectorAll('.dropdown-menu.show')
+  //     .forEach((menu) => menu.classList.remove('show'));
+  //   document
+  //     .querySelectorAll('body > .dropdown-menu')
+  //     .forEach((menu) => menu.remove());
+  //   document
+  //     .querySelectorAll('.dropdown-toggle[aria-expanded="true"]')
+  //     .forEach((toggle) => toggle.setAttribute('aria-expanded', 'false'));
+  // }
+
+  forceCloseDropdowns(): void {
     document
       .querySelectorAll('.dropdown-menu.show')
       .forEach((menu) => menu.classList.remove('show'));
@@ -1360,6 +1561,9 @@ export class TestComponent implements OnInit, OnDestroy {
     document
       .querySelectorAll('.dropdown-toggle[aria-expanded="true"]')
       .forEach((toggle) => toggle.setAttribute('aria-expanded', 'false'));
+    document
+      .querySelectorAll('.dropdown.show')
+      .forEach((d) => d.classList.remove('show'));
   }
 
   onRowSelected(row: any) {
