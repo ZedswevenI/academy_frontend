@@ -149,12 +149,12 @@ export const MENU_ITEMS: MenuItem[] = [
     route: '/app/report',
     roles: ['L1', 'L5']
   },
-  // {
-  //   label: 'Chat',
-  //   icon: 'fa-solid fa-comments',
-  //   route: '/app/chat',
-  //   roles: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7']
-  // },
+  {
+    label: 'Invigilation',
+    icon: 'fa-solid fa-person-chalkboard',
+    route: '/app/invigilation',
+    roles: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7']
+  },
   {
     label: 'Communication',
     icon: 'fa-solid fa-envelope-open-text',

@@ -17,18 +17,12 @@ export class FeedbackreportComponent implements OnInit {
   tenantId: any;
   formId = '';
   formData: any = null;
-
-  // Filter form
   filterForm!: FormGroup;
   loading = false;
   exporting = false;
-
-  // Staff selection
-  staffList: any[] = []; // all staffAssignments from the form
-  selectedStaff: string[] = []; // selected staffIds, empty = all
+  staffList: any[] = [];
+  selectedStaff: string[] = [];
   staffSearch = '';
-
-  // Report data
   reportData: any = null;
   reportRows: any[] = [];
   partAHeaders: any[] = [];
@@ -60,7 +54,6 @@ export class FeedbackreportComponent implements OnInit {
     this.loadForm();
   }
 
-  // Load form details to get staff list and date range
   loadForm(): void {
     this.commonApi
       .fetchData(
@@ -73,28 +66,21 @@ export class FeedbackreportComponent implements OnInit {
           if (res?.status) {
             this.formData = res.data;
             this.staffList = res.data.staffAssignments || [];
-
             this.breadcrump.set([
               { label: 'Feedback', link: '/app/feedback' },
               { label: res.data.title },
               { label: 'Report' },
             ]);
-
-            // Pre-fill dates from form
             this.filterForm.patchValue({
               startDate: this.tsToDate(res.data.startDate),
               endDate: this.tsToDate(res.data.endDate),
             });
-
-            // Auto-load report on open
             this.fetchReport();
           }
         },
         error: () => this.alert.error('Error loading form'),
       });
   }
-
-  // Staff selection helpers
   get filteredStaffList(): any[] {
     if (!this.staffSearch.trim()) return this.staffList;
     const q = this.staffSearch.toLowerCase();
@@ -121,7 +107,8 @@ export class FeedbackreportComponent implements OnInit {
 
   selectAllStaff(): void {
     this.selectedStaff = [];
-  } // empty = all
+  }
+
   clearStaffFilter(): void {
     this.selectedStaff = [];
   }
@@ -247,9 +234,10 @@ export class FeedbackreportComponent implements OnInit {
 
       // Header
       bold(13);
-      doc.text('CONSOLIDATED FEEDBACK REPORT', pageW / 2, 12, {
-        align: 'center',
-      });
+      // doc.text('CONSOLIDATED FEEDBACK REPORT', pageW / 2, 12, {
+      //   align: 'center',
+      // });
+      doc.text(this.reportTitle.toUpperCase(), pageW / 2, 12, { align: 'center' });
       normal(7.5);
       doc.text(
         'Staff: ' + staffStr + '  |  Batch: ' + batchStr,
@@ -536,4 +524,12 @@ export class FeedbackreportComponent implements OnInit {
       year: 'numeric',
     });
   }
+
+  get reportTitle(): string {
+  if (this.selectedStaff.length === 1) {
+    const s = this.staffList.find((x: any) => x.staffId === this.selectedStaff[0]);
+    return (s?.staffName || 'Faculty') + ' — Feedback Report';
+  }
+  return 'Consolidated Feedback Report';
+}
 }

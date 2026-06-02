@@ -15,22 +15,17 @@ export class StudentComponent {
   activeTab: 'list' | 'grid' = 'list';
   tenantId = localStorage.getItem('tenantId') || '';
   userId = localStorage.getItem('userId') || '';
-
-  // Bulk Excel Upload
   showBulkUpload = false;
   bulkFileName = '';
   bulkPreviewRows: any[] = [];
   bulkHasInvalidRows = false;
   bulkInvalidCount = 0;
   bulkUploading = false;
-
-  // Bulk Image Upload
   showImageUpload = false;
   imageFiles: File[] = [];
   imagePreviewList: { name: string; admissionNo: string; preview: string }[] =
     [];
   imageUploading = false;
-
   hasSearched = false;
   listLoading = false;
   programOptions: any[] = [];
@@ -77,7 +72,7 @@ export class StudentComponent {
             value: p.programId || p._id,
           }));
         },
-        error: () => { },
+        error: () => {},
       });
 
     this.commonApi
@@ -89,7 +84,7 @@ export class StudentComponent {
             value: c.centerId || c._id,
           }));
         },
-        error: () => { },
+        error: () => {},
       });
   }
 
@@ -362,5 +357,8 @@ export class StudentComponent {
           this.alert.error(err?.error?.message || 'Image upload failed');
         },
       });
+  }
+
+  onRpaImported(): void {
   }
 }

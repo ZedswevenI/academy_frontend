@@ -45,24 +45,16 @@ export class QuestionCreateNewComponent implements OnInit {
   recId: string = '';
   entiId: string;
   private imageUrlMap = new Map<string, string>();
-
-  /* ================= EXAM CONTEXT ================= */
   examId = '';
   examData: any = null;
   sections: any[] = [];
   selectedSubjectId = '';
-
-  /* ================= BANK MODE: SUBJECT / TOPIC / SUBTOPIC ================= */
   subjects: any[] = [];
   subjectOptions: any[] = [];
-
-  /* ================= PASSAGES & TAGS ================= */
   passages: any[] = [];
-  allPassages: any[] = []; // unfiltered for popup
+  allPassages: any[] = [];
   tagInput = '';
   tags: string[] = [];
-
-  // ── NTA defaults per question type ────────────────────────────────────────
   private ntaDefaults: Record<
     string,
     { pos: number; neg: number; partial: boolean }
@@ -77,8 +69,6 @@ export class QuestionCreateNewComponent implements OnInit {
     passage_qns: { pos: 4, neg: 1, partial: false },
     matrix: { pos: 8, neg: 0, partial: true },
   };
-
-  // Types that HIDE partial marking toggle
   private noPartialTypes = new Set([
     'mcq_single',
     'integer',
@@ -87,7 +77,6 @@ export class QuestionCreateNewComponent implements OnInit {
     'subjective',
     'short_answer',
   ]);
-
   questionTypes = [
     { value: 'mcq_single', label: 'MCQ (Single Answer)' },
     { value: 'mcq_multi', label: 'MCQ (Multiple Answers)' },
@@ -98,6 +87,8 @@ export class QuestionCreateNewComponent implements OnInit {
     { value: 'passage_qns', label: 'Text Based' },
     { value: 'matrix', label: 'Matrix Type (Match Questions)' },
   ];
+  matrixLeftCount: number = 4;
+  matrixRightCount: number = 4;
 
   constructor(
     private fb: FormBuilder,
@@ -167,7 +158,6 @@ export class QuestionCreateNewComponent implements OnInit {
       positiveMarks: [4, [Validators.required, Validators.min(0)]],
       negativeMarks: [1, [Validators.required, Validators.min(0)]],
       hasPartialMarking: [false],
-      // MCQ Multi partial marking fields (NTA configurable)
       partialMarkPerCorrect: [1, [Validators.min(0)]],
       wrongPenalty: [2, [Validators.min(0)]],
       numericMin: [null],
@@ -186,13 +176,6 @@ export class QuestionCreateNewComponent implements OnInit {
     });
   }
 
-  // onSectionChange(): void {
-  //   const sectionId = this.questionForm.get('sectionId')?.value;
-  //   const section = this.sections.find((s: any) => s.sectionId === sectionId);
-  //   this.selectedSubjectId = section?.subjectId || '';
-  //   this.loadPassages();
-  // }
-
   onSectionChange(): void {
     const sectionId = this.questionForm.get('sectionId')?.value;
     const section = this.sections.find((s: any) => s.sectionId === sectionId);
@@ -210,7 +193,7 @@ export class QuestionCreateNewComponent implements OnInit {
       .fetchData(
         { entiId: this.entiId, subjectId },
         'exam/questions',
-        'preview-question-no', // ← read-only, no counter increment
+        'preview-question-no',
       )
       .subscribe({
         next: (res: any) => {
@@ -242,14 +225,10 @@ export class QuestionCreateNewComponent implements OnInit {
       this.addOption();
       this.addOption();
     }
-
     this.handleOptionalToggles();
-
     this.questionForm.get('questionType')?.valueChanges.subscribe((type) => {
       this.onQuestionTypeChange(type);
     });
-
-    // Re-filter passages when bank subject/class changes
     this.questionForm.get('bankSubjectId')?.valueChanges.subscribe(() => {
       this.loadPassages();
     });
@@ -258,14 +237,10 @@ export class QuestionCreateNewComponent implements OnInit {
     });
   }
 
-  /* ================= NTA DEFAULTS ================= */
-
   showPartialMarkingToggle(): boolean {
     const qt = this.getSelectedQuestionType();
     return !this.noPartialTypes.has(qt);
   }
-
-  /* ================= BANK MODE MASTERS ================= */
 
   private loadBankMasters(): void {
     const body = { entiId: this.entiId };
@@ -285,22 +260,16 @@ export class QuestionCreateNewComponent implements OnInit {
     if (subjectId) this.fetchAndSetQuestionNo(subjectId);
   }
 
-  /* ================= LOAD PASSAGES ================= */
-
   loadPassages(): void {
-    // Build filter based on context
     const classNo = this.isBankMode
       ? this.questionForm.get('classNo')?.value
       : this.examData?.classNo || null;
-
     const subjectId = this.isBankMode
       ? this.questionForm.get('bankSubjectId')?.value
       : this.selectedSubjectId || null;
-
     let query = 'list?list=full&status=active';
     if (classNo) query += `&classNo=${classNo}`;
     if (subjectId) query += `&subjectId=${subjectId}`;
-
     this.commonApi
       .fetchData({ entiId: this.entiId }, 'exam/passage', query)
       .subscribe({
@@ -311,8 +280,6 @@ export class QuestionCreateNewComponent implements OnInit {
         error: () => this.alert.error('Error loading passages'),
       });
   }
-
-  /* ================= TAGS ================= */
 
   addTag(): void {
     const tag = this.tagInput.trim().toLowerCase();
@@ -330,8 +297,6 @@ export class QuestionCreateNewComponent implements OnInit {
   removeTag(index: number): void {
     this.tags.splice(index, 1);
   }
-
-  /* ================= IMAGE HELPERS ================= */
 
   async replaceDownloadUrls(html: string): Promise<string> {
     if (!html || !html.includes('<img')) return html;
@@ -360,8 +325,6 @@ export class QuestionCreateNewComponent implements OnInit {
     return updatedHtml;
   }
 
-  /* ================= LOAD QUESTION FOR EDIT ================= */
-
   async loadQuestionForEdit() {
     const body = { entiId: this.entiId, recId: this.recId };
     try {
@@ -375,7 +338,6 @@ export class QuestionCreateNewComponent implements OnInit {
           q.instructionHtml,
         );
         const solutionHtml = await this.replaceDownloadUrls(q.solutionHtml);
-
         this.questionForm.patchValue({
           sectionId: q.sectionId || '',
           questionId: q.questionId || '',
@@ -412,21 +374,29 @@ export class QuestionCreateNewComponent implements OnInit {
           subTopicId: q.subTopicId || '',
           classNo: q.classNo || null,
         });
-
         this.onSectionChange();
-
         setTimeout(() => {
           const questionEditor = document.getElementById('questionEditor');
           if (questionEditor) questionEditor.innerHTML = questionHtml || '';
-          if (q.questionType === 'subjective' || q.questionType === 'numeric') {
+          if (q.solutionHtml) {
+            const solutionEditor = document.getElementById('solutionEditor');
+            if (solutionEditor) solutionEditor.innerHTML = solutionHtml || '';
+          }
+          if (q.instructionHtml) {
+            const instructionEditor =
+              document.getElementById('instructionEditor');
+            if (instructionEditor)
+              instructionEditor.innerHTML = instructionHtml || '';
+          }
+          if (
+            ['subjective', 'numeric', 'short_answer'].includes(q.questionType)
+          ) {
             const subjectiveEditor =
               document.getElementById('subjectiveEditor');
             if (subjectiveEditor)
               subjectiveEditor.innerHTML = q.correctAnswer || '';
           }
         }, 0);
-
-        // Load options
         if (q.questionOptions?.length) {
           this.options.clear();
           for (let i = 0; i < q.questionOptions.length; i++) {
@@ -447,55 +417,71 @@ export class QuestionCreateNewComponent implements OnInit {
             }, 0);
           }
         }
-
-        // Load matrix
         if (q.questionType === 'matrix' && q.leftColumn?.length) {
           this.matrixLeft.clear();
           this.matrixRight.clear();
-
-          // Parse correctAnswer: "A:P(2);B:Q(2)" format
-          const answerMap: Record<string, { keys: string[]; marks: number }> =
-            {};
+          const answerMap: Record<
+            string,
+            { keys: string[]; marks: number; negMark: number }
+          > = {};
           if (q.correctAnswer) {
             q.correctAnswer.split(';').forEach((pStr: string) => {
-              const match = pStr.match(/^([^:]+):([^(]+)\(([^)]+)\)$/);
+              const match = pStr.match(
+                /^([^:]+):([^(]+)\(([^,)]+)(?:,([^)]+))?\)$/,
+              );
               if (match) {
-                const lKey = match[1].trim();
-                const rKey = match[2].trim();
-                const marks = parseFloat(match[3]);
-                if (!answerMap[lKey]) answerMap[lKey] = { keys: [], marks };
-                answerMap[lKey].keys.push(rKey);
+                const lKey = match[1].trim().toUpperCase();
+                const rKeysRaw = match[2].trim().toUpperCase();
+                const marks = parseFloat(match[3]) || 0;
+                const negMark =
+                  match[4] !== undefined ? parseFloat(match[4]) : 0;
+                if (!answerMap[lKey])
+                  answerMap[lKey] = { keys: [], marks, negMark };
+                const rKeys = rKeysRaw.split(',').filter(Boolean);
+                for (const rk of rKeys) {
+                  for (const singleKey of rk.split('').filter(Boolean)) {
+                    if (!answerMap[lKey].keys.includes(singleKey)) {
+                      answerMap[lKey].keys.push(singleKey);
+                    }
+                  }
+                }
               }
             });
           }
-
-          for (let i = 0; i < q.leftColumn.length; i++) {
+          const leftCount = q.leftColumn.length;
+          const rightCount = q.rightColumn?.length || 0;
+          const defaultPairMarks = q.positiveMarks / (leftCount || 1);
+          this.matrixLeftCount = leftCount;
+          this.matrixRightCount = rightCount;
+          for (let i = 0; i < leftCount; i++) {
             const leftHtml = await this.replaceDownloadUrls(
               q.leftColumn[i]?.text || '',
             );
-            const rightHtml = await this.replaceDownloadUrls(
-              q.rightColumn?.[i]?.text || '',
-            );
             const lKey = String.fromCharCode(65 + i);
-            const defaultPairMarks = q.positiveMarks / q.leftColumn.length;
-
             this.matrixLeft.push(
               this.fb.group({
                 text: leftHtml,
                 selectedMatches: [answerMap[lKey]?.keys || []],
                 pairMarks: [answerMap[lKey]?.marks ?? defaultPairMarks],
+                negativeMark: [answerMap[lKey]?.negMark ?? 0],
               }),
             );
-            this.matrixRight.push(this.fb.group({ text: rightHtml }));
-
             setTimeout(() => {
               const leftEditor = document.getElementById(
                 'matrixLeftEditor-' + i,
               );
+              if (leftEditor) leftEditor.innerHTML = leftHtml || '';
+            }, 0);
+          }
+          for (let i = 0; i < rightCount; i++) {
+            const rightHtml = await this.replaceDownloadUrls(
+              q.rightColumn[i]?.text || '',
+            );
+            this.matrixRight.push(this.fb.group({ text: rightHtml }));
+            setTimeout(() => {
               const rightEditor = document.getElementById(
                 'matrixRightEditor-' + i,
               );
-              if (leftEditor) leftEditor.innerHTML = leftHtml || '';
               if (rightEditor) rightEditor.innerHTML = rightHtml || '';
             }, 0);
           }
@@ -505,8 +491,6 @@ export class QuestionCreateNewComponent implements OnInit {
       console.error(err);
     }
   }
-
-  /* ================= OPTIONAL TOGGLES ================= */
 
   handleOptionalToggles(): void {
     this.questionForm
@@ -527,14 +511,14 @@ export class QuestionCreateNewComponent implements OnInit {
       });
   }
 
-  /* ================= FORM ARRAYS ================= */
-
   get options(): FormArray {
     return this.questionForm.get('questionOptions') as FormArray;
   }
+
   get matrixLeft(): FormArray {
     return this.questionForm.get('matrixLeft') as FormArray;
   }
+
   get matrixRight(): FormArray {
     return this.questionForm.get('matrixRight') as FormArray;
   }
@@ -556,15 +540,47 @@ export class QuestionCreateNewComponent implements OnInit {
         text: '',
         selectedMatches: [[]],
         pairMarks: [defaultPairMarks],
+        negativeMark: [0],
       }),
     );
     this.matrixRight.push(this.fb.group({ text: '' }));
   }
 
+  generateMatrix(): void {
+    const leftCount = Math.max(
+      1,
+      Math.min(8, parseInt(String(this.matrixLeftCount), 10) || 4),
+    );
+    const rightCount = Math.max(
+      1,
+      Math.min(8, parseInt(String(this.matrixRightCount), 10) || 4),
+    );
+    const defaultPairMarks = parseFloat(
+      (
+        (this.questionForm.get('positiveMarks')?.value || 8) / leftCount
+      ).toFixed(2),
+    );
+    this.matrixLeft.clear();
+    this.matrixRight.clear();
+    for (let i = 0; i < leftCount; i++) {
+      this.matrixLeft.push(
+        this.fb.group({
+          text: '',
+          selectedMatches: [[]],
+          pairMarks: [defaultPairMarks],
+          negativeMark: [0],
+        }),
+      );
+    }
+    for (let i = 0; i < rightCount; i++) {
+      this.matrixRight.push(this.fb.group({ text: '' }));
+    }
+  }
+
   removeMatrixPair(index: number): void {
     if (this.matrixLeft.length > 1) {
       this.matrixLeft.removeAt(index);
-      this.matrixRight.removeAt(index);
+      // this.matrixRight.removeAt(index);
     }
   }
 
@@ -573,8 +589,6 @@ export class QuestionCreateNewComponent implements OnInit {
     const count = this.matrixLeft.length || 1;
     return parseFloat((pos / count).toFixed(2));
   }
-
-  /* ================= MATRIX TOTAL MARKS VALIDATION ================= */
 
   getMatrixPairMarksTotal(): number {
     return this.matrixLeft.controls.reduce(
@@ -588,8 +602,6 @@ export class QuestionCreateNewComponent implements OnInit {
     return this.getMatrixPairMarksTotal() > pos;
   }
 
-  /* ================= MCQ MULTI PARTIAL MARKS VALIDATION ================= */
-
   mcqPartialMarksExceeded(): boolean {
     const qt = this.getSelectedQuestionType();
     if (qt !== 'mcq_multi') return false;
@@ -602,10 +614,7 @@ export class QuestionCreateNewComponent implements OnInit {
     return perCorrect * correctCount > pos;
   }
 
-  /* ================= QUESTION TYPE CHANGE ================= */
-
   onQuestionTypeChange(type: string): void {
-    // Apply NTA defaults
     const defaults = this.ntaDefaults[type];
     if (defaults) {
       this.questionForm.patchValue({
@@ -614,13 +623,12 @@ export class QuestionCreateNewComponent implements OnInit {
         hasPartialMarking: defaults.partial,
       });
     }
-
     if (type === 'matrix') {
       this.options.clear();
+      this.matrixLeftCount = 4;
+      this.matrixRightCount = 4;
       if (this.matrixLeft.length === 0) {
-        this.addMatrixPair();
-        this.addMatrixPair();
-        this.addMatrixPair();
+        this.generateMatrix();
       }
     } else if (type === 'mcq_single' || type === 'mcq_multi') {
       this.matrixLeft.clear();
@@ -639,7 +647,6 @@ export class QuestionCreateNewComponent implements OnInit {
   }
 
   onOptionChange(index: number, type: string): void {
-    // FIX: was 'mcq-single', now correctly 'mcq_single'
     if (type === 'mcq_single') {
       this.options.controls.forEach((control, i) => {
         if (i !== index) control.get('isCorrect')?.setValue(false);
@@ -651,12 +658,9 @@ export class QuestionCreateNewComponent implements OnInit {
     return this.questionForm.get('questionType')?.value || 'mcq_single';
   }
 
-  /* ================= VALIDATION HELPERS ================= */
 
   private validateBeforeSubmit(): boolean {
     const qt = this.getSelectedQuestionType();
-
-    // MCQ validations
     if (qt === 'mcq_single' || qt === 'mcq_multi') {
       const correctCount = this.options.controls.filter(
         (c) => c.get('isCorrect')?.value,
@@ -670,8 +674,6 @@ export class QuestionCreateNewComponent implements OnInit {
         return false;
       }
     }
-
-    // Integer validation
     if (qt === 'integer') {
       const val = this.questionForm.get('integerAnswer')?.value;
       if (val === null || val === undefined || val === '') {
@@ -683,8 +685,6 @@ export class QuestionCreateNewComponent implements OnInit {
         return false;
       }
     }
-
-    // Numeric validation
     if (qt === 'numeric') {
       const min = this.questionForm.get('numericMin')?.value;
       const max = this.questionForm.get('numericMax')?.value;
@@ -702,8 +702,6 @@ export class QuestionCreateNewComponent implements OnInit {
         return false;
       }
     }
-
-    // Matrix validation
     if (qt === 'matrix') {
       const anyUnmatched = this.matrixLeft.controls.some(
         (c) => !c.get('selectedMatches')?.value?.length,
@@ -721,19 +719,15 @@ export class QuestionCreateNewComponent implements OnInit {
         return false;
       }
     }
-
-    // MCQ multi partial marks validation
     if (this.mcqPartialMarksExceeded()) {
       this.alert.error(
         'Partial marks per correct × number of correct options exceeds total positive marks',
       );
       return false;
     }
-
     return true;
   }
 
-  /* ================= SUBMIT ================= */
 
   onSubmit(): void {
     if (!this.questionForm.valid) {
@@ -742,17 +736,14 @@ export class QuestionCreateNewComponent implements OnInit {
       return;
     }
     if (!this.validateBeforeSubmit()) return;
-
     if (this.isBankMode) {
       this.submitBankQuestion();
       return;
     }
-
     if (!this.selectedSubjectId) {
       this.alert.error('Please select a section first');
       return;
     }
-
     this.prepareQuestionData().then((payload) => {
       const formValue = this.questionForm.value;
       const finalPayload: any = {
@@ -765,7 +756,6 @@ export class QuestionCreateNewComponent implements OnInit {
         status: 'active',
         ...payload,
       };
-
       if (this.isEditMode) {
         finalPayload['recId'] = this.recId;
         this.commonApi
@@ -810,7 +800,6 @@ export class QuestionCreateNewComponent implements OnInit {
     }
   }
 
-  // FIX: Bank mode edit now calls update instead of always creating
   private submitBankQuestion(): void {
     this.prepareQuestionData().then((payload) => {
       const formValue = this.questionForm.value;
@@ -824,9 +813,7 @@ export class QuestionCreateNewComponent implements OnInit {
         status: 'active',
         ...payload,
       };
-
       if (this.isEditMode) {
-        // EDIT bank question — call update
         finalPayload['recId'] = this.recId;
         this.commonApi
           .fetchData(finalPayload, 'exam/questions', 'update')
@@ -841,7 +828,6 @@ export class QuestionCreateNewComponent implements OnInit {
               this.alert.error(err.error?.message || 'Update failed'),
           });
       } else {
-        // CREATE bank question
         this.commonApi
           .fetchData(finalPayload, 'exam/questions/bank', 'create')
           .subscribe({
@@ -857,8 +843,6 @@ export class QuestionCreateNewComponent implements OnInit {
       }
     });
   }
-
-  /* ================= EDITOR COMMANDS ================= */
 
   execCommandFor(
     editorId: string,
@@ -898,8 +882,6 @@ export class QuestionCreateNewComponent implements OnInit {
     const target = event.target as HTMLDivElement;
     group.patchValue({ text: target.innerHTML });
   }
-
-  /* ================= IMAGE UPLOAD ================= */
 
   extractBase64Images(html: string): { images: string[]; cleanedHtml: string } {
     const images: string[] = [];
@@ -1036,12 +1018,9 @@ export class QuestionCreateNewComponent implements OnInit {
     return images;
   }
 
-  /* ================= PREPARE QUESTION DATA ================= */
-
   async prepareQuestionData(): Promise<any> {
     const formValue = this.questionForm.value;
     const questionType = formValue.questionType;
-
     const questionText = await this.replaceImagesWithUrls(
       formValue.questionText,
     );
@@ -1050,13 +1029,6 @@ export class QuestionCreateNewComponent implements OnInit {
     const questionHtml = this.restoreOriginalUrls(questionText);
     const instructionHtml = this.restoreOriginalUrls(instruction);
     const solutionHtml = this.restoreOriginalUrls(solution);
-    // const passageId = formValue.enablePassage ? formValue.passageId : null;
-    // const selectedPassage = passageId
-    //   ? this.passages.find(
-    //       (p: any) => p._id === passageId || p.passageId === passageId,
-    //     )
-    //   : null;
-    // const passageHtml = selectedPassage?.passageHtml || '';
     const passageId = formValue.enablePassage ? formValue.passageId : null;
     const passageHtml = formValue.enablePassage
       ? formValue.passageText || ''
@@ -1065,7 +1037,6 @@ export class QuestionCreateNewComponent implements OnInit {
       ...this.extractImageUrls(questionHtml),
       ...this.extractImageUrls(solutionHtml),
     ];
-
     const baseData: any = {
       enablePassage: formValue.enablePassage,
       enableInstruction: formValue.enableInstruction,
@@ -1083,7 +1054,6 @@ export class QuestionCreateNewComponent implements OnInit {
       passageHtml,
       images: allImages,
     };
-
     if (questionType === 'numeric') {
       baseData.numericMin = formValue.numericMin;
       baseData.numericMax = formValue.numericMax;
@@ -1091,7 +1061,6 @@ export class QuestionCreateNewComponent implements OnInit {
       baseData.numericMin = null;
       baseData.numericMax = null;
     }
-
     switch (questionType) {
       case 'mcq_single':
       case 'mcq_multi': {
@@ -1104,7 +1073,6 @@ export class QuestionCreateNewComponent implements OnInit {
             const replaced = await this.replaceImagesWithUrls(opt.text);
             const restored = this.restoreOriginalUrls(replaced);
             const key = String.fromCharCode(65 + idx);
-            // For mcq_multi: partialMark per correct option (NTA configurable)
             const partialMark =
               questionType === 'mcq_multi' &&
               formValue.hasPartialMarking &&
@@ -1119,17 +1087,13 @@ export class QuestionCreateNewComponent implements OnInit {
             };
           }),
         );
-
         processedOptions.forEach((opt) =>
           allImages.push(...this.extractImageUrls(opt.textHtml)),
         );
         baseData.images = allImages;
-
-        // For mcq_multi NTA: negativeMarks is the wrongPenalty (full question penalty)
         if (questionType === 'mcq_multi' && formValue.hasPartialMarking) {
           baseData.negativeMarks = wrongPenalty;
         }
-
         const correctKeys = processedOptions
           .filter((opt) => opt.isCorrect)
           .map((opt) => opt.key);
@@ -1139,16 +1103,13 @@ export class QuestionCreateNewComponent implements OnInit {
           correctAnswer: correctKeys.join(';'),
         };
       }
-
       case 'true_false':
         return {
           ...baseData,
           correctAnswer: String(formValue.trueFalseAnswer),
           questionOptions: [],
         };
-
       case 'integer': {
-        // Integer: plain integer value, no rich text
         const intVal = parseInt(String(formValue.integerAnswer), 10);
         return {
           ...baseData,
@@ -1156,7 +1117,6 @@ export class QuestionCreateNewComponent implements OnInit {
           questionOptions: [],
         };
       }
-
       case 'numeric':
       case 'subjective': {
         const sampleAnswer = await this.replaceImagesWithUrls(
@@ -1168,7 +1128,6 @@ export class QuestionCreateNewComponent implements OnInit {
           questionOptions: [],
         };
       }
-
       case 'short_answer': {
         return {
           ...baseData,
@@ -1176,10 +1135,8 @@ export class QuestionCreateNewComponent implements OnInit {
           questionOptions: [],
         };
       }
-
       case 'passage_qns':
         return { ...baseData, questionOptions: [] };
-
       case 'matrix': {
         const leftColumn = await Promise.all(
           formValue.matrixLeft.map(async (item: any, i: number) => ({
@@ -1193,34 +1150,29 @@ export class QuestionCreateNewComponent implements OnInit {
             text: await this.replaceImagesWithUrls(item.text),
           })),
         );
-
-        // Build correctAnswer in backend format: "A:P(2);A:Q(2);B:R(2)"
-        // Each left key can match multiple right keys — one entry per pair with marks
         const correctPairs: string[] = [];
         formValue.matrixLeft.forEach((item: any, i: number) => {
           const lKey = String.fromCharCode(65 + i);
           const pairMarks = parseFloat(item.pairMarks) || 0;
-          const matches = item.selectedMatches || [];
-          matches.forEach((rKey: string) => {
-            correctPairs.push(`${lKey}:${rKey}(${pairMarks})`);
-          });
+          const negativeMark = parseFloat(item.negativeMark) || 0;
+          const matches: string[] = item.selectedMatches || [];
+          if (matches.length === 0) return;
+          const rKeys = matches.join(',');
+          correctPairs.push(`${lKey}:${rKeys}(${pairMarks},${negativeMark})`);
         });
-
         return {
           ...baseData,
+          hasPartialMarking: true,
           leftColumn,
           rightColumn,
           correctAnswer: correctPairs.join(';'),
           questionOptions: [],
         };
       }
-
       default:
         return { ...baseData, questionOptions: [] };
     }
   }
-
-  /* ================= RESET ================= */
 
   resetForm(): void {
     this.questionForm.reset({
@@ -1237,8 +1189,6 @@ export class QuestionCreateNewComponent implements OnInit {
     this.addOption();
     this.addOption();
   }
-
-  /* ================= OPTION TOOLBAR ================= */
 
   execOptionCommand(index: number, command: string) {
     const editor = document.getElementById(
@@ -1287,11 +1237,10 @@ export class QuestionCreateNewComponent implements OnInit {
       (window as any).MathJax.typesetPromise([editor]);
   }
 
-  /* ================= MATRIX HELPERS ================= */
-
   getMatrixLeftKey(index: number): string {
     return String.fromCharCode(65 + index);
   }
+
   getMatrixRightKey(index: number): string {
     return String.fromCharCode(80 + index);
   }
@@ -1317,8 +1266,6 @@ export class QuestionCreateNewComponent implements OnInit {
   get allMatrixRightKeys(): string[] {
     return this.matrixRight.controls.map((_, i) => this.getMatrixRightKey(i));
   }
-
-  /* ================= MATRIX TOOLBAR ================= */
 
   execMatrixLeftCommand(index: number, command: string) {
     const editor = document.getElementById(
@@ -1473,8 +1420,6 @@ export class QuestionCreateNewComponent implements OnInit {
     }
   }
 
-  /* ================= PASSAGE POPUP ================= */
-
   openPassagePopup(): void {
     this.showPassagePopup = true;
   }
@@ -1492,8 +1437,6 @@ export class QuestionCreateNewComponent implements OnInit {
   closePassagePopup(): void {
     this.showPassagePopup = false;
   }
-
-  /* ================= PREVIEW ================= */
 
   openPreview(title: string, editorId: string): void {
     const editor = document.getElementById(editorId);
@@ -1628,5 +1571,10 @@ export class QuestionCreateNewComponent implements OnInit {
   get safePassageHtml(): SafeHtml {
     const html = this.questionForm.get('passageText')?.value || '';
     return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
+
+  getLargerArray(): any[] {
+    const count = Math.max(this.matrixLeft.length, this.matrixRight.length);
+    return Array(count).fill(null);
   }
 }

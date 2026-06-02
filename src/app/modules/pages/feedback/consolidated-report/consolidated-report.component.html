@@ -1,35 +1,31 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
         <!-- Header -->
         <div class="d-flex align-items-center gap-3 mb-4">
-            <!-- <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
-                <i class="fa-solid fa-arrow-left me-1"></i>Back
-            </button> -->
             <div class="flex-grow-1">
                 <h1 class="fw-bold mb-0" style="font-size:22px">
                     <i class="fa-solid fa-chart-bar me-2 text-primary"></i>
-                    Consolidated Feedback Report
+                    {{ reportTitle }}
                 </h1>
                 <div class="text-muted small mt-1">
                     Select staff and date range to generate the report
                 </div>
             </div>
-            <button class="btn btn-export fs-16 fw-medium" (click)="exportPdf()"
-                [disabled]="exporting || !rows.length">
-                <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2"></span>
-                <i class="fa-solid fa-file-pdf btn-icon" *ngIf="!exporting"></i>
+            <!-- Tab-aware export button -->
+            <button class="btn btn-export fs-16 fw-medium"
+                (click)="activeTab === 'remarks' ? exportRemarksPdf() : exportPdf()" [disabled]="(activeTab === 'scores' && (exporting || !rows.length)) ||
+                            (activeTab === 'remarks' && (remarksExporting || !remarksData.length))">
+                <span *ngIf="exporting || remarksExporting" class="spinner-border spinner-border-sm me-2"></span>
+                <i class="fa-solid fa-file-pdf btn-icon" *ngIf="!exporting && !remarksExporting"></i>
                 Export PDF
             </button>
-             <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+            <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
                 <i class="fa-solid fa-arrow-left btn-icon"></i>Back
             </button>
         </div>
-
         <!-- Filter panel -->
         <div class="border rounded-3 p-3 mb-4">
             <div class="row g-3">
-
                 <!-- Date range -->
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">From Date</label>
@@ -39,33 +35,25 @@
                     <label class="form-label small fw-semibold">To Date</label>
                     <input type="date" class="form-control form-control-sm rounded-3" [(ngModel)]="toDate">
                 </div>
-
                 <!-- Staff selection -->
                 <div class="col-md-7">
                     <label class="form-label small fw-semibold">
                         Staff Selection
                         <span class="text-muted fw-normal ms-1">({{ staffLabel }})</span>
                     </label>
-
-                    <!-- Search -->
                     <div class="mb-2">
                         <input type="text" class="form-control form-control-sm rounded-3"
                             placeholder="Search staff by name or code..." [(ngModel)]="staffSearch"
                             [ngModelOptions]="{standalone: true}">
                     </div>
-
-                    <!-- Staff chips -->
                     <div class="d-flex flex-wrap gap-1" style="max-height:100px;overflow-y:auto">
-                        <!-- All Staff chip -->
-                        <button type="button" class="btn fs-16 fw-medium"
-                            [class.btn-create]="!selectedStaff.length"
+                        <button type="button" class="btn fs-16 fw-medium" [class.btn-create]="!selectedStaff.length"
                             [class.btn-late-entry]="selectedStaff.length" (click)="selectAll()">
                             <i class="fa-solid fa-users me-1"></i>All
                         </button>
-                        <!-- Individual staff chips -->
                         <button *ngFor="let s of filteredStaffList" type="button" class="btn fs-16 fw-medium"
-                            [class.btn-edit]="isSelected(s.staffId)"
-                            [class.btn-late-entry]="!isSelected(s.staffId)" (click)="toggleStaff(s.staffId)">
+                            [class.btn-edit]="isSelected(s.staffId)" [class.btn-late-entry]="!isSelected(s.staffId)"
+                            (click)="toggleStaff(s.staffId)">
                             <i class="fa-solid fa-check me-1" *ngIf="isSelected(s.staffId)" style="font-size:10px"></i>
                             {{ s.staffCode || s.staffName }}
                             <span *ngIf="s.subjectName" class="opacity-75 ms-1" style="font-size:10px">· {{
@@ -79,161 +67,239 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Generate button -->
                 <div class="col-md-1 d-flex align-items-end">
                     <button class="btn btn-create fs-16 fw-medium" (click)="fetchReport()" [disabled]="loading">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
-                        <span *ngIf="!loading"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <span *ngIf="!loading">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
                     </button>
                 </div>
-
             </div>
         </div>
-
-        <!-- Loading -->
-        <div *ngIf="loading" class="text-center py-5">
-            <div class="spinner-border text-primary"></div>
-            <div class="text-muted small mt-2">Generating report...</div>
+        <!-- Tabs -->
+        <div class="d-flex gap-2 mb-3">
+            <button class="btn fs-16 fw-medium" [class.btn-create]="activeTab === 'scores'"
+                [class.btn-late-entry]="activeTab !== 'scores'" (click)="activeTab = 'scores'">
+                <i class="fa-solid fa-chart-bar me-1"></i>Scores Report
+            </button>
+            <button class="btn fs-16 fw-medium" [class.btn-create]="activeTab === 'remarks'"
+                [class.btn-late-entry]="activeTab !== 'remarks'" (click)="switchToRemarks()">
+                <i class="fa-solid fa-comment-dots me-1"></i>Staff Remarks
+            </button>
         </div>
-
-        <!-- No data -->
-        <div *ngIf="!loading && reportData && !rows.length" class="text-center py-5 border rounded-3 text-muted">
-            <i class="fa-solid fa-inbox fa-2x opacity-25 mb-2 d-block"></i>
-            No feedback data found for the selected filters
-        </div>
-
-        <!-- Results -->
-        <ng-container *ngIf="!loading && rows.length">
-
-            <!-- Summary KPIs -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-2 col-4">
-                    <div class="p-3 border rounded-3 text-center">
-                        <div class="fw-bold text-primary" style="font-size:22px">
-                            {{ rows.length }}
+        <ng-container *ngIf="activeTab === 'scores'">
+            <!-- Loading -->
+            <div *ngIf="loading" class="text-center py-5">
+                <div class="spinner-border text-primary"></div>
+                <div class="text-muted small mt-2">Generating report...</div>
+            </div>
+            <!-- No data -->
+            <div *ngIf="!loading && reportData && !rows.length" class="text-center py-5 border rounded-3 text-muted">
+                <i class="fa-solid fa-inbox fa-2x opacity-25 mb-2 d-block"></i>
+                No feedback data found for the selected filters
+            </div>
+            <!-- Results -->
+            <ng-container *ngIf="!loading && rows.length">
+                <!-- Summary KPIs -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-2 col-4">
+                        <div class="p-3 border rounded-3 text-center">
+                            <div class="fw-bold text-primary" style="font-size:22px">
+                                {{ rows.length }}
+                            </div>
+                            <div class="text-muted small">Rows</div>
                         </div>
-                        <div class="text-muted small">Rows</div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <div class="p-3 border rounded-3 text-center">
+                            <div class="fw-bold text-secondary" style="font-size:22px">
+                                {{ totalResponses }}
+                            </div>
+                            <div class="text-muted small">Responses</div>
+                        </div>
+                    </div>
+                    <div *ngFor="let part of partKeys" class="col-md-2 col-4">
+                        <div class="p-3 border rounded-3 text-center" [style.background]="partPctBg(part)">
+                            <div class="fw-bold" style="font-size:22px">
+                                {{ avgPcts[part] || '—' }}
+                            </div>
+                            <div class="text-muted small">Avg {{ partPctLabel(part) }}</div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-2 col-4">
-                    <div class="p-3 border rounded-3 text-center">
-                        <div class="fw-bold text-secondary" style="font-size:22px">
-                            {{ totalResponses }}
+                <!-- One table per staff -->
+                <ng-container *ngFor="let g of groupedByStaff">
+                    <!-- Staff heading bar -->
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-2"
+                        style="background:#1e293b;color:#fff">
+                        <span class="fw-bold">
+                            {{ g.staffCode !== '—' ? g.staffCode : '' }}
+                        </span>
+                        <span>{{ g.staffName }}</span>
+                        <span *ngIf="g.subjectName" class="badge bg-white text-primary rounded-pill ms-1"
+                            style="font-size:11px">{{ g.subjectName }}</span>
+                        <span class="ms-auto text-white-50 small">
+                            {{ g.rows.length }} batch row(s)
+                        </span>
+                    </div>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-sm align-middle" style="font-size:12px">
+                            <thead>
+                                <tr class="text-center">
+                                    <th class="table-dark text-start" style="min-width:90px">Staff</th>
+                                    <th class="table-dark">Batch</th>
+                                    <th class="table-dark">Strength</th>
+                                    <th class="table-dark">Responses</th>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <th *ngFor="let h of partHeaders[part]" [title]="h.fieldText"
+                                            [style.background]="partHeaderBg(part)"
+                                            [style.color]="partHeaderColor(part)"
+                                            style="font-size:11px;min-width:36px;font-weight:600">
+                                            {{ h.label }}
+                                        </th>
+                                    </ng-container>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <th [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)"
+                                            style="font-weight:600;min-width:52px">
+                                            {{ partPctLabel(part) }}
+                                        </th>
+                                    </ng-container>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let r of g.rows">
+                                    <td>
+                                        <div class="fw-semibold">
+                                            {{ r.staffCode || '—' }}
+                                        </div>
+                                        <div class="text-muted" style="font-size:10px"
+                                            *ngIf="r.staffName && r.staffName !== r.staffCode">
+                                            {{ r.staffName }}
+                                        </div>
+                                        <div *ngIf="r.subjectName"
+                                            class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
+                                            style="font-size:9px;margin-top:2px">
+                                            {{ r.subjectName }}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">{{ r.batchCode }}</td>
+                                    <td class="text-center">{{ r.strength }}</td>
+                                    <td class="text-center">{{ r.responseCount }}</td>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <td *ngFor="let v of getPartScores(r, part)" class="text-center"
+                                            [style.background]="partCellBg(part)">
+                                            <span [class]="scoreClass(v)">
+                                                {{ v != null ? v.toFixed(2) : '—' }}
+                                            </span>
+                                        </td>
+                                    </ng-container>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <td class="text-center" [style.background]="partPctBg(part)">
+                                            <span [class]="pctClass(getPartPct(r, part))">
+                                                {{ getPartPct(r, part) != null
+                                                ? (getPartPct(r, part)!.toFixed(1) + '%')
+                                                : '—' }}
+                                            </span>
+                                        </td>
+                                    </ng-container>
+                                </tr>
+                            </tbody>
+                            <!-- Per-staff average footer -->
+                            <tfoot>
+                                <tr class="table-light fw-bold text-center">
+                                    <td colspan="4" class="text-end pe-3">
+                                        Staff Average
+                                    </td>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <td *ngFor="let h of partHeaders[part]" [style.background]="partCellBg(part)">
+                                        </td>
+                                    </ng-container>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <td [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)">
+                                            {{ g.avgPcts[part] || '—' }}
+                                        </td>
+                                    </ng-container>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </ng-container>
+                <!-- Legend -->
+                <div class="d-flex flex-wrap gap-3 mt-3 pt-3 border-top small text-muted">
+                    <span>
+                        <i class="fa-solid fa-circle text-success me-1"></i>≥ 9.0 Excellent
+                    </span>
+                    <span>
+                        <i class="fa-solid fa-circle text-primary me-1"></i>≥ 7.0 Good
+                    </span>
+                    <span>
+                        <i class="fa-solid fa-circle text-warning me-1"></i>≥ 5.0 Average
+                    </span>
+                    <span>
+                        <i class="fa-solid fa-circle text-danger me-1"></i>&lt; 5.0 Poor
+                    </span>
+                    <span class="ms-auto text-muted" style="font-size:11px">
+                        {{ reportData?.totalForms || 0 }} form(s) included in this report
+                    </span>
+                </div>
+            </ng-container>
+        </ng-container>
+        <!-- END SCORES TAB -->
+        <ng-container *ngIf="activeTab === 'remarks'">
+            <!-- Loading -->
+            <div *ngIf="remarksLoading" class="text-center py-5">
+                <div class="spinner-border text-primary"></div>
+                <div class="text-muted small mt-2">Loading remarks...</div>
+            </div>
+            <!-- No data -->
+            <div *ngIf="!remarksLoading && !remarksData.length" class="text-center py-5 border rounded-3 text-muted">
+                <i class="fa-solid fa-comment-slash fa-2x opacity-25 mb-2 d-block"></i>
+                No remarks found for the selected filters
+            </div>
+            <!-- Remarks content -->
+            <ng-container *ngIf="!remarksLoading && remarksData.length">
+                <div *ngFor="let staff of remarksData" class="mb-4">
+                    <!-- Staff heading bar -->
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-3"
+                        style="background:#1e293b;color:#fff">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                        <span class="fw-bold">{{ staff.staffCode || '' }}</span>
+                        <span>{{ staff.staffName }}</span>
+                        <span class="ms-auto badge bg-white text-dark">
+                            {{ getTotalRemarks(staff) }} remark(s)
+                        </span>
+                    </div>
+                    <div *ngFor="let batch of staff.batches" class="ms-3 mb-3">
+                        <!-- Batch heading -->
+                        <div class="fw-semibold px-2 py-1 rounded-2 mb-2"
+                            style="background:#dbeafe;color:#1e40af;font-size:13px">
+                            <i class="fa-solid fa-users me-1"></i>
+                            Batch: {{ batch.batchCode }}
                         </div>
-                        <div class="text-muted small">Responses</div>
+                        <div *ngFor="let phase of batch.phases" class="ms-3 mb-3">
+                            <!-- Phase label -->
+                            <div class="text-muted small fw-semibold mb-2">
+                                <i class="fa-solid fa-layer-group me-1"></i>
+                                {{ phase.phaseLabel }}
+                                <span class="badge bg-secondary rounded-pill ms-1">
+                                    {{ phase.remarks.length }}
+                                </span>
+                            </div>
+                            <!-- Remarks list -->
+                            <div *ngFor="let r of phase.remarks; let i = index"
+                                class="p-2 bg-light rounded-3 border-start border-3 border-primary mb-2"
+                                style="font-size:13px">
+                                <span class="text-muted me-2" style="font-size:11px">
+                                    {{ i + 1 }}.
+                                </span>
+                                {{ r.remark }}
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div *ngFor="let part of partKeys" class="col-md-2 col-4">
-                    <div class="p-3 border rounded-3 text-center" [style.background]="partPctBg(part)">
-                        <div class="fw-bold" style="font-size:22px" [class]="pctClass(null)">
-                            {{ avgPcts[part] || '—' }}
-                        </div>
-                        <div class="text-muted small">Avg {{ partPctLabel(part) }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Report table -->
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm align-middle" style="font-size:12px">
-                    <thead>
-                        <tr class="text-center">
-                            <th class="table-dark text-start" style="min-width:90px">Staff</th>
-                            <th class="table-dark">Batch</th>
-                            <th class="table-dark">Strength</th>
-                            <th class="table-dark">Responses</th>
-
-                            <!-- Part question headers -->
-                            <ng-container *ngFor="let part of partKeys">
-                                <th *ngFor="let h of partHeaders[part]" [title]="h.fieldText"
-                                    [style.background]="partHeaderBg(part)" [style.color]="partHeaderColor(part)"
-                                    style="font-size:11px;min-width:36px;font-weight:600">
-                                    {{ h.label }}
-                                </th>
-                            </ng-container>
-
-                            <!-- Part % headers -->
-                            <ng-container *ngFor="let part of partKeys">
-                                <th [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)"
-                                    style="font-weight:600;min-width:52px">
-                                    {{ partPctLabel(part) }}
-                                </th>
-                            </ng-container>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr *ngFor="let r of rows">
-                            <!-- Staff info -->
-                            <td>
-                                <div class="fw-semibold">{{ r.staffCode || '—' }}</div>
-                                <div class="text-muted" style="font-size:10px"
-                                    *ngIf="r.staffName && r.staffName !== r.staffCode">
-                                    {{ r.staffName }}
-                                </div>
-                                <div *ngIf="r.subjectName"
-                                    class="badge bg-primary bg-opacity-10 text-primary rounded-pill"
-                                    style="font-size:9px;margin-top:2px">
-                                    {{ r.subjectName }}
-                                </div>
-                            </td>
-                            <td class="text-center">{{ r.batchCode }}</td>
-                            <td class="text-center">{{ r.strength }}</td>
-                            <td class="text-center">{{ r.responseCount }}</td>
-
-                            <!-- Per-question scores per part -->
-                            <ng-container *ngFor="let part of partKeys">
-                                <td *ngFor="let v of getPartScores(r, part)" class="text-center"
-                                    [style.background]="partCellBg(part)">
-                                    <span [class]="scoreClass(v)">
-                                        {{ v != null ? v.toFixed(2) : '—' }}
-                                    </span>
-                                </td>
-                            </ng-container>
-
-                            <!-- Part % per part -->
-                            <ng-container *ngFor="let part of partKeys">
-                                <td class="text-center" [style.background]="partPctBg(part)">
-                                    <span [class]="pctClass(getPartPct(r, part))">
-                                        {{ getPartPct(r, part) != null
-                                        ? (getPartPct(r, part)!.toFixed(1) + '%')
-                                        : '—' }}
-                                    </span>
-                                </td>
-                            </ng-container>
-                        </tr>
-                    </tbody>
-
-                    <!-- Overall average footer -->
-                    <tfoot>
-                        <tr class="table-light fw-bold text-center">
-                            <td colspan="4" class="text-end pe-3">Overall Average</td>
-                            <ng-container *ngFor="let part of partKeys">
-                                <td *ngFor="let h of partHeaders[part]" [style.background]="partCellBg(part)">
-                                </td>
-                            </ng-container>
-                            <ng-container *ngFor="let part of partKeys">
-                                <td [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)">
-                                    {{ avgPcts[part] || '—' }}
-                                </td>
-                            </ng-container>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-
-            <!-- Legend -->
-            <div class="d-flex flex-wrap gap-3 mt-3 pt-3 border-top small text-muted">
-                <span><i class="fa-solid fa-circle text-success me-1"></i>≥ 9.0 Excellent</span>
-                <span><i class="fa-solid fa-circle text-primary me-1"></i>≥ 7.0 Good</span>
-                <span><i class="fa-solid fa-circle text-warning me-1"></i>≥ 5.0 Average</span>
-                <span><i class="fa-solid fa-circle text-danger me-1"></i>&lt; 5.0 Poor</span>
-                <span class="ms-auto text-muted" style="font-size:11px">
-                    {{ reportData?.totalForms || 0 }} form(s) included in this report
-                </span>
-            </div>
-
+            </ng-container>
         </ng-container>
     </div>
 </div>

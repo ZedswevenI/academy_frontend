@@ -12,10 +12,10 @@ interface ParsedQuestion {
   questionText: string;
   questionHtml: string;
   options: Array<{ label: string; text: string; html: string }>;
-  qtype: string; // normalized backend type
-  qtypeRaw: string; // original tag from DOCX for display
+  qtype: string;
+  qtypeRaw: string;
   difficulty: string;
-  answer: string; // raw answer string from [ans] tag
+  answer: string;
   positiveMarks: number;
   negativeMarks: number;
   hasPartialMarking: boolean;
@@ -27,7 +27,6 @@ interface ParsedQuestion {
   matrixRight: string[];
 }
 
-// ── NTA defaults per question type ──────────────────────────────────────────
 const NTA_DEFAULTS: Record<
   string,
   { pos: number; neg: number; partial: boolean }
@@ -43,7 +42,6 @@ const NTA_DEFAULTS: Record<
   matrix: { pos: 8, neg: 0, partial: true },
 };
 
-// ── Normalize DOCX qtype tag to backend type ─────────────────────────────────
 function normalizeQtype(raw: string): string {
   const v = (raw || '').trim().toLowerCase().replace(/[-\s]/g, '_');
   if (['mcq_single', 'mcq', 'single', 'mcq_s'].includes(v)) return 'mcq_single';
@@ -53,43 +51,47 @@ function normalizeQtype(raw: string): string {
   if (['numeric', 'numerical', 'num'].includes(v)) return 'numeric';
   if (['true_false', 'true/false', 'tf', 'truefalse', 'boolean'].includes(v))
     return 'true_false';
-  if (['subjective', 'subj', 'long_answer', 'long'].includes(v))
+  if (
+    [
+      'subjective',
+      'subj',
+      'long_answer',
+      'long',
+      'text_based',
+      'text',
+    ].includes(v)
+  )
     return 'subjective';
   if (['short_answer', 'short', 'fill'].includes(v)) return 'short_answer';
   if (['passage_qns', 'passage', 'text_based'].includes(v))
     return 'passage_qns';
   if (['matrix', 'match', 'matrix_match'].includes(v)) return 'matrix';
-  return 'mcq_single'; // fallback
+  return 'mcq_single';
 }
 
-// ── Build correctAnswer string in backend format ─────────────────────────────
-function buildCorrectAnswer(qtype: string, rawAnswer: string): string {
+function buildCorrectAnswer(
+  qtype: string,
+  rawAnswer: string,
+  positiveMarks?: number,
+  leftCount?: number,
+): string {
   const ans = (rawAnswer || '').trim();
   switch (qtype) {
     case 'mcq_single':
-      // "a" or "A" → "A"
       return ans.toUpperCase().split(/[,;\s]/)[0] || '';
-
     case 'mcq_multi':
-      // "a,b" or "A;B" or "a b" → "A;B"
       return ans
         .toUpperCase()
         .split(/[,;\s]+/)
         .filter(Boolean)
         .join(';');
-
     case 'true_false':
-      // "true"/"t"/"1"/"yes" → "true", else "false"
       return ['true', 't', '1', 'yes', 'y'].includes(ans.toLowerCase())
         ? 'true'
         : 'false';
-
     case 'integer':
-      // "42" → "42"
       return String(parseInt(ans, 10) || 0);
-
     case 'numeric':
-      // "42.5" or "42.5-45.5" → as-is
       return ans;
     case 'matrix': {
       const pairs = ans
@@ -97,16 +99,22 @@ function buildCorrectAnswer(qtype: string, rawAnswer: string): string {
         .split(',')
         .map((p) => p.trim())
         .filter(Boolean);
-      return pairs
-        .map((pair) => {
-          const [lKey, rKey] = pair.split(':').map((s) => s.trim());
-          return `${lKey}:${rKey}(2)`;
-        })
+      const perPairMarks =
+        leftCount && leftCount > 0
+          ? parseFloat(((positiveMarks || 8) / leftCount).toFixed(2))
+          : 2;
+      const grouped: Record<string, string[]> = {};
+      for (const pair of pairs) {
+        const [lKey, rKey] = pair.split(':').map((s) => s.trim());
+        if (!lKey || !rKey) continue;
+        if (!grouped[lKey]) grouped[lKey] = [];
+        if (!grouped[lKey].includes(rKey)) grouped[lKey].push(rKey);
+      }
+      return Object.entries(grouped)
+        .map(([lKey, rKeys]) => `${lKey}:${rKeys.join(',')}(${perPairMarks},0)`)
         .join(';');
     }
-
     default:
-      // subjective, short_answer, matrix → raw text
       return ans;
   }
 }
@@ -124,15 +132,12 @@ export class QuestionImportNewComponent implements OnInit {
   sections: any[] = [];
   selectedSectionId = '';
   isBankMode = false;
-
-  /* ── Bank mode fields ── */
   subjects: any[] = [];
   subjectOptions: any[] = [];
   selectedSubjectId = '';
   selectedTopicId = '';
   selectedSubTopicId = '';
   selectedClassNo: number | null = null;
-
   classOptions = [
     ...Array.from({ length: 7 }, (_, i) => ({
       label: `Class ${i + 6}`,
@@ -140,8 +145,6 @@ export class QuestionImportNewComponent implements OnInit {
     })),
     { label: '12th Pass', value: 13 },
   ];
-
-  /* ── State ── */
   selectedFile: File | null = null;
   parsedQuestions: ParsedQuestion[] = [];
   errorMessage = '';
@@ -199,8 +202,6 @@ export class QuestionImportNewComponent implements OnInit {
     this.selectedSubjectId = subjectId;
   }
 
-  /* ── File ── */
-
   onFileSelected(event: any) {
     const file = event.target.files[0];
     if (file && file.name.endsWith('.docx')) {
@@ -247,8 +248,6 @@ export class QuestionImportNewComponent implements OnInit {
     });
   }
 
-  /* ── Images ── */
-
   private async extractImages(zip: JSZip): Promise<Map<string, string>> {
     const images = new Map<string, string>();
     const files = Object.keys(zip.files).filter((f) =>
@@ -279,8 +278,6 @@ export class QuestionImportNewComponent implements OnInit {
     return map;
   }
 
-  /* ── Paragraph extraction ── */
-
   private extractParagraphs(
     xmlDoc: Document,
     images: Map<string, string>,
@@ -288,7 +285,6 @@ export class QuestionImportNewComponent implements OnInit {
   ): string[] {
     const paragraphs: string[] = [];
     const pNodes = xmlDoc.getElementsByTagNameNS('*', 'p');
-
     for (let i = 0; i < pNodes.length; i++) {
       let html = '';
       const textNodes = pNodes[i].getElementsByTagNameNS('*', 't');
@@ -313,8 +309,6 @@ export class QuestionImportNewComponent implements OnInit {
     return paragraphs;
   }
 
-  /* ── Core Parser ── */
-
   private parseQuestions(
     xml: string,
     images: Map<string, string>,
@@ -328,7 +322,6 @@ export class QuestionImportNewComponent implements OnInit {
     let questionTextLines: string[] = [];
     let inSolution = false;
     let solutionLines: string[] = [];
-
     const saveCurrentQuestion = () => {
       if (!current) return;
       if (questionTextLines.length > 0) {
@@ -342,18 +335,13 @@ export class QuestionImportNewComponent implements OnInit {
       }
       questions.push(current);
     };
-
     for (let i = 0; i < paragraphs.length; i++) {
       const p = paragraphs[i];
-
-      // ── New question ──────────────────────────────────────────────────────
       if (p.startsWith('[Q]')) {
         saveCurrentQuestion();
-
         const qtypeRaw = 'mcq_single';
         const qtype = 'mcq_single';
         const ntaDef = NTA_DEFAULTS[qtype];
-
         current = {
           id: questions.length + 1,
           questionText: '',
@@ -376,24 +364,18 @@ export class QuestionImportNewComponent implements OnInit {
         questionTextLines = [];
         solutionLines = [];
         inSolution = false;
-
-        // Capture text on same line as [Q] tag
         const qText = p.replace('[Q]', '').trim();
         if (qText) questionTextLines.push(qText);
         continue;
       }
 
       if (!current) continue;
-
-      // ── qtype tag ─────────────────────────────────────────────────────────
       if (p.startsWith('[qtype]')) {
         const rawType = p.replace('[qtype]', '').trim();
         current.qtypeRaw = rawType;
         current.qtype = normalizeQtype(rawType);
         const ntaDef = NTA_DEFAULTS[current.qtype];
         if (ntaDef) {
-          // Only apply NTA defaults if marks not already overridden by [Marks] tag
-          // We apply here and [Marks] tag will override if present later
           current.positiveMarks = ntaDef.pos;
           current.negativeMarks = ntaDef.neg;
           current.hasPartialMarking = ntaDef.partial;
@@ -401,22 +383,16 @@ export class QuestionImportNewComponent implements OnInit {
         inSolution = false;
         continue;
       }
-
-      // ── Difficulty ────────────────────────────────────────────────────────
       if (p.startsWith('[DIFFICULTY]')) {
         current.difficulty = p.replace('[DIFFICULTY]', '').trim().toLowerCase();
         inSolution = false;
         continue;
       }
-
-      // ── Answer ────────────────────────────────────────────────────────────
       if (p.startsWith('[ans]')) {
         current.answer = p.replace('[ans]', '').trim();
         inSolution = false;
         continue;
       }
-
-      // ── Marks ─────────────────────────────────────────────────────────────
       if (p.startsWith('[Marks]')) {
         const marksStr = p.replace('[Marks]', '').trim();
         const parts = marksStr.split(',').map((s) => parseFloat(s.trim()));
@@ -427,8 +403,6 @@ export class QuestionImportNewComponent implements OnInit {
         inSolution = false;
         continue;
       }
-
-      // ── NumericMin / NumericMax ───────────────────────────────────────────
       if (p.startsWith('[numericMin]')) {
         current.numericMin =
           parseFloat(p.replace('[numericMin]', '').trim()) || null;
@@ -441,23 +415,17 @@ export class QuestionImportNewComponent implements OnInit {
         inSolution = false;
         continue;
       }
-
-      // ── SortId ────────────────────────────────────────────────────────────
       if (p.startsWith('[sortid]')) {
         current.sortid = p.replace('[sortid]', '').trim();
         inSolution = false;
         continue;
       }
-
-      // ── Solution start ────────────────────────────────────────────────────
       if (p.startsWith('[soln]')) {
         inSolution = true;
         const solText = p.replace('[soln]', '').trim();
         if (solText) solutionLines.push(`<p>${solText}</p>`);
         continue;
       }
-
-      // ── Matrix left column ────────────────────────────────────────────────
       if (p.startsWith('[matrixLeft]')) {
         const text = p.replace('[matrixLeft]', '').trim();
         if (!current.matrixLeft) current.matrixLeft = [];
@@ -465,8 +433,6 @@ export class QuestionImportNewComponent implements OnInit {
         inSolution = false;
         continue;
       }
-
-      // ── Matrix right column ───────────────────────────────────────────────
       if (p.startsWith('[matrixRight]')) {
         const text = p.replace('[matrixRight]', '').trim();
         if (!current.matrixRight) current.matrixRight = [];
@@ -474,14 +440,10 @@ export class QuestionImportNewComponent implements OnInit {
         inSolution = false;
         continue;
       }
-
-      // ── If inside solution — accumulate lines ─────────────────────────────
       if (inSolution) {
         solutionLines.push(`<p>${p}</p>`);
         continue;
       }
-
-      // ── Inline options: "(A) opt1 (B) opt2 (C) opt3 (D) opt4" ────────────
       const inlineOptions = this.extractInlineOptions(p);
       if (inlineOptions.length >= 2) {
         inlineOptions.forEach((opt) => {
@@ -493,8 +455,6 @@ export class QuestionImportNewComponent implements OnInit {
         });
         continue;
       }
-
-      // ── Single option marker: (A), (B), (C), (D) ─────────────────────────
       const singleOptionMatch = p.match(/^\(([A-Da-d])\)\s*/);
       if (singleOptionMatch) {
         const label = singleOptionMatch[1].toUpperCase();
@@ -502,25 +462,16 @@ export class QuestionImportNewComponent implements OnInit {
         current.options.push({ label, text, html: this.convertToHtml(text) });
         continue;
       }
-
-      // ── Skip question numbers like "1." ───────────────────────────────────
       if (/^\d+\.\s*$/.test(p)) continue;
-
-      // ── Skip section headers ──────────────────────────────────────────────
       if (
         p.includes('[PHYSICS]') ||
         p.includes('[CHEMISTRY]') ||
         p.includes('[MATHS]')
       )
         continue;
-
-      // ── Otherwise — question text line ────────────────────────────────────
       questionTextLines.push(p);
     }
-
-    // Save last question
     saveCurrentQuestion();
-
     return questions;
   }
 
@@ -556,11 +507,17 @@ export class QuestionImportNewComponent implements OnInit {
     return html;
   }
 
-  /* ── UI helpers ── */
 
   getCorrectOptionLabels(q: ParsedQuestion): string {
     if (!q.answer) return '—';
-    return buildCorrectAnswer(q.qtype, q.answer) || q.answer;
+    return (
+      buildCorrectAnswer(
+        q.qtype,
+        q.answer,
+        q.positiveMarks,
+        q.matrixLeft?.length,
+      ) || q.answer
+    );
   }
 
   getQuestionTypeLabel(qtype: string): string {
@@ -586,8 +543,6 @@ export class QuestionImportNewComponent implements OnInit {
     this.selectedTopicId = '';
     this.selectedSubTopicId = '';
   }
-
-  /* ── Image upload ── */
 
   async prepareFile(base64: string): Promise<File> {
     const compressed = await this.compressBase64Image(base64, 60);
@@ -672,8 +627,6 @@ export class QuestionImportNewComponent implements OnInit {
     return updatedHtml;
   }
 
-  /* ── Build payload ── */
-
   async buildBulkQuestionPayload(): Promise<any> {
     const questions = await Promise.all(
       this.parsedQuestions.map(async (q) => {
@@ -681,7 +634,12 @@ export class QuestionImportNewComponent implements OnInit {
         const solutionHtml = q.solutionHtml
           ? await this.replaceImagesWithUrls(q.solutionHtml)
           : '';
-        const correctAnswer = buildCorrectAnswer(q.qtype, q.answer);
+        const correctAnswer = buildCorrectAnswer(
+          q.qtype,
+          q.answer,
+          q.positiveMarks,
+          q.matrixLeft?.length,
+        );
         let processedOptions: any[] = [];
         if (
           ['mcq_single', 'mcq_multi', 'true_false', 'passage_qns'].includes(
@@ -701,7 +659,7 @@ export class QuestionImportNewComponent implements OnInit {
           processedOptions = await Promise.all(
             q.options.map(async (opt, idx) => {
               const textHtml = await this.replaceImagesWithUrls(opt.html);
-              const key = opt.label.toUpperCase(); // always A,B,C,D
+              const key = opt.label.toUpperCase();
               const isCorrect = correctKeys.includes(key);
               const partialMark = q.qtype === 'mcq_multi' && isCorrect ? 1 : 0;
               return { key, textHtml, isCorrect, partialMark };
@@ -738,7 +696,7 @@ export class QuestionImportNewComponent implements OnInit {
           questionOptions: processedOptions,
           leftColumn:
             q.matrixLeft?.map((text, i) => ({
-              key: String.fromCharCode(65 + i), 
+              key: String.fromCharCode(65 + i),
               text: text.replace(/^[A-Za-z]\.\s*/, '').trim(),
             })) || [],
           rightColumn:
@@ -755,8 +713,6 @@ export class QuestionImportNewComponent implements OnInit {
 
     return { questions };
   }
-
-  /* ── Submit ── */
 
   async submitAllQuestions() {
     if (!this.isBankMode && !this.selectedSectionId) {
@@ -775,13 +731,10 @@ export class QuestionImportNewComponent implements OnInit {
       this.alert.error('Please select a class');
       return;
     }
-
     this.isProcessing = true;
     const payload = await this.buildBulkQuestionPayload();
     const entiId = this.tenantId;
-
     if (this.isBankMode) {
-      // Add bank-level metadata to each question
       payload.questions = payload.questions.map((q: any) => ({
         ...q,
         subjectId: this.selectedSubjectId || undefined,
@@ -789,7 +742,6 @@ export class QuestionImportNewComponent implements OnInit {
         subTopicId: this.selectedSubTopicId.trim() || undefined,
         classNo: this.selectedClassNo || undefined,
       }));
-
       this.commonApi
         .fetchData({ entiId, ...payload }, 'exam/questions/bank', 'bulk-create')
         .subscribe({
@@ -810,7 +762,6 @@ export class QuestionImportNewComponent implements OnInit {
           },
         });
     } else {
-      // Exam mode — get subjectId from selected section
       const selectedSection = this.sections.find(
         (s: any) => s.sectionId === this.selectedSectionId,
       );
@@ -818,13 +769,10 @@ export class QuestionImportNewComponent implements OnInit {
         selectedSection?.subjectId?._id ||
         selectedSection?.subjectId ||
         undefined;
-
-      // Add subjectId to each question
       payload.questions = payload.questions.map((q: any) => ({
         ...q,
         subjectId: subjectId || undefined,
       }));
-
       this.commonApi
         .fetchData(
           {
@@ -863,7 +811,6 @@ export class QuestionImportNewComponent implements OnInit {
       .concat((question.answer || '').toUpperCase().split(';'))
       .map((k) => k.trim())
       .filter(Boolean);
-    // deduplicate
     const uniqueKeys = [...new Set(keys)];
     return uniqueKeys.includes(optionLabel.toUpperCase());
   }
@@ -879,8 +826,6 @@ export class QuestionImportNewComponent implements OnInit {
     <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   </Types>`,
     );
-
-    // Root rels
     zip.file(
       '_rels/.rels',
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -888,16 +833,12 @@ export class QuestionImportNewComponent implements OnInit {
     <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
   </Relationships>`,
     );
-
-    // Word rels
     zip.file(
       'word/_rels/document.xml.rels',
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   </Relationships>`,
     );
-
-    // Document XML — one question per type
     zip.file(
       'word/document.xml',
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -956,7 +897,7 @@ export class QuestionImportNewComponent implements OnInit {
       <w:p><w:r><w:t>[soln] When a ball is thrown upward kinetic energy converts to potential energy and back.</w:t></w:r></w:p>
 
       <w:p><w:r><w:t>[Q] The SI unit of force is</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] short_answer</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[qtype] text_based</w:t></w:r></w:p>
       <w:p><w:r><w:t>[DIFFICULTY] easy</w:t></w:r></w:p>
       <w:p><w:r><w:t>[ans] Newton</w:t></w:r></w:p>
       <w:p><w:r><w:t>[Marks] 4,0</w:t></w:r></w:p>

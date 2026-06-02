@@ -186,6 +186,8 @@ export class TestViewComponent implements OnInit {
   graceForm!: FormGroup;
   graceQuestions: any[] = [];
   graceQuestionsLoading = false;
+  actualTotalMarks = 0;
+  marksMismatch = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -611,7 +613,18 @@ export class TestViewComponent implements OnInit {
               if (!map[subjectKey]) map[subjectKey] = {};
               map[subjectKey][type] = (map[subjectKey][type] || 0) + 1;
             });
+            // this.sectionTypeCountMap = map;
             this.sectionTypeCountMap = map;
+
+            // Compute actual total marks from questions
+            const actualMarks = questions.reduce(
+              (sum: number, q: any) => sum + (parseFloat(q.positiveMarks) || 0),
+              0,
+            );
+            this.actualTotalMarks = actualMarks;
+            this.marksMismatch =
+              !!this.examData?.totalMarks &&
+              actualMarks !== parseFloat(this.examData.totalMarks);
           }
         },
         error: (err) =>

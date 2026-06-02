@@ -1,0 +1,51 @@
+<div class="staff-ms-wrapper" style="position:relative">
+    <label class="form-label fw-medium">
+        {{ label }}
+        <span class="text-muted fw-normal small ms-1" *ngIf="optional">(optional)</span>
+        <span class="text-danger" *ngIf="!optional">*</span>
+    </label>
+
+    <button type="button"
+        class="form-select form-select-sm text-start d-flex justify-content-between align-items-center"
+        style="background-image:none" [class.is-invalid]="showError" (click)="toggleDropdown()">
+        <span class="text-truncate">{{ selectionLabel }}</span>
+        <i class="fa-solid fa-chevron-down ms-2 small"></i>
+    </button>
+
+    <div class="invalid-feedback" *ngIf="showError">
+        Please select at least one staff member.
+    </div>
+
+    <div *ngIf="open" class="border rounded shadow bg-white"
+        style="position:absolute;z-index:1050;width:100%;top:calc(100% + 2px);left:0">
+
+        <div class="px-2 pt-2 pb-1 border-bottom">
+            <input class="form-control form-control-sm" placeholder="Search staff..." [(ngModel)]="search"
+                (click)="$event.stopPropagation()">
+        </div>
+
+        <div style="max-height:220px;overflow-y:auto">
+            <div class="d-flex align-items-center px-3 py-2 border-bottom staff-ms-option" style="cursor:pointer"
+                (click)="toggleAll()">
+                <input type="checkbox" class="form-check-input me-2" [checked]="allSelected"
+                    [indeterminate]="selectedIds.length > 0 && !allSelected" readonly>
+                <span class="fw-medium">All Staff</span>
+            </div>
+
+            <div *ngFor="let s of filtered" class="d-flex align-items-center px-3 py-2 staff-ms-option"
+                style="cursor:pointer" (click)="toggle(s.value)">
+                <input type="checkbox" class="form-check-input me-2" [checked]="isSelected(s.value)" readonly>
+                <span>{{ s.label }}</span>
+            </div>
+
+            <div *ngIf="!filtered.length" class="px-3 py-2 text-muted small">No results</div>
+        </div>
+
+        <div class="px-3 py-2 border-top bg-light d-flex justify-content-between">
+            <small class="text-muted">{{ selectedIds.length }} of {{ options.length }} selected</small>
+            <button class="btn btn-link btn-sm p-0 text-danger" *ngIf="selectedIds.length"
+                (click)="clear(); $event.stopPropagation()">Clear</button>
+        </div>
+    </div>
+</div>
+`

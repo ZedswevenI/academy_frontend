@@ -63,7 +63,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   bankFilterDifficulty = '';
   bankFilterQuestionType = '';
   bankFilterClassNo: number | null = null;
-
   classOptions = [
     ...Array.from({ length: 7 }, (_, i) => ({
       label: `Class ${i + 6}`,
@@ -89,6 +88,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     { label: 'Medium', value: 'medium' },
     { label: 'Hard', value: 'hard' },
   ];
+  selectedFilterSectionId = '';
 
   constructor(
     private commonApi: CommonapiService,
@@ -136,6 +136,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       this.loadExamDetails();
       this.loadQuestions();
     }
+  }
+
+  get filteredQuestions(): any[] {
+    if (!this.selectedFilterSectionId) return this.questions;
+    return this.questions.filter(
+      (q: any) => q.sectionId === this.selectedFilterSectionId,
+    );
   }
 
   loadExamDetails() {
@@ -256,6 +263,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
               }),
             )
           : [];
+        // const matchMap = this.parseMatrixCorrectAnswer(q.correctAnswer);
         const matchMap = this.parseMatrixCorrectAnswer(q.correctAnswer);
         // return {
         //   ...q,
@@ -293,50 +301,90 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           })),
           leftColumn,
           rightColumn,
+          // matrixMatches: leftColumn.map((l: any) => ({
+          //   key: l.key,
+          //   matches: matchMap[l.key] || [],
+          // })),
           matrixMatches: leftColumn.map((l: any) => ({
             key: l.key,
-            matches: matchMap[l.key] || [],
+            matches: matchMap[l.key]?.matches || [],
+            marks: matchMap[l.key]?.marks || 0,
+            negMark: matchMap[l.key]?.negMark || 0,
           })),
         };
       }),
     );
   }
 
-  // private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, string[]> {
-  //   const map: Record<string, string[]> = {};
+  // private parseMatrixCorrectAnswer(
+  //   correctAnswer: string,
+  // ): Record<string, { matches: string[]; marks: number; negMark: number }> {
+  //   const map: Record<
+  //     string,
+  //     { matches: string[]; marks: number; negMark: number }
+  //   > = {};
   //   if (!correctAnswer) return map;
   //   correctAnswer.split(';').forEach((pStr: string) => {
-  //     const [lK, rKs] = pStr.split(':');
-  //     if (lK && rKs) {
-  //       map[lK.trim()] = rKs.trim().split('');
+  //     const colonIdx = pStr.indexOf(':');
+  //     if (colonIdx === -1) return;
+  //     const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
+  //     let rPart = pStr.substring(colonIdx + 1).trim();
+  //     let marks = 0;
+  //     let negMark = 0;
+  //     const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
+  //     if (marksMatch) {
+  //       marks = parseFloat(marksMatch[1]) || 0;
+  //       negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
   //     }
+  //     rPart = rPart.replace(/\([^)]*\)/g, '').trim();
+  //     if (!lKey || !rPart) return;
+  //     if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
+  //     rPart
+  //       .toUpperCase()
+  //       .split('')
+  //       .filter(Boolean)
+  //       .forEach((rk) => {
+  //         if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
+  //       });
   //   });
   //   return map;
   // }
 
-  private parseMatrixCorrectAnswer(
-    correctAnswer: string,
-  ): Record<string, string[]> {
-    const map: Record<string, string[]> = {};
-    if (!correctAnswer) return map;
-    correctAnswer.split(';').forEach((pStr: string) => {
-      const colonIdx = pStr.indexOf(':');
-      if (colonIdx === -1) return;
-      const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
-      let rPart = pStr.substring(colonIdx + 1).trim();
-      rPart = rPart.replace(/\([^)]*\)/g, '').trim();
-      if (!lKey || !rPart) return;
-      if (!map[lKey]) map[lKey] = [];
-      rPart
-        .toUpperCase()
-        .split('')
-        .filter(Boolean)
-        .forEach((rk) => {
-          if (!map[lKey].includes(rk)) map[lKey].push(rk);
-        });
-    });
-    return map;
-  }
+  private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, { matches: string[], marks: number, negMark: number }> {
+  const map: Record<string, { matches: string[], marks: number, negMark: number }> = {};
+  if (!correctAnswer) return map;
+  correctAnswer.split(';').forEach((pStr: string) => {
+    const colonIdx = pStr.indexOf(':');
+    if (colonIdx === -1) return;
+    const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
+    let rPart = pStr.substring(colonIdx + 1).trim();
+
+    // Extract marks: (2,1) or (2)
+    let marks = 0;
+    let negMark = 0;
+    const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
+    if (marksMatch) {
+      marks = parseFloat(marksMatch[1]) || 0;
+      negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
+    }
+
+    // Strip marks brackets
+    rPart = rPart.replace(/\([^)]*\)/g, '').trim();
+    if (!lKey || !rPart) return;
+
+    if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
+
+    // Handle "P,T" (new) or "PQ" (legacy concatenated)
+    const parts = rPart.toUpperCase().split(',').filter(Boolean);
+    for (const part of parts) {
+      // Each part: single char "P" or legacy "PQ"
+      for (const rk of part.split('').filter(Boolean)) {
+        if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
+      }
+    }
+  });
+  return map;
+}
 
   private normalizeDelimiters(html: string): string {
     if (!html) return html;
@@ -1405,5 +1453,18 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       typeof q.questionHtml === 'string' ? q.questionHtml : '',
     ).substring(0, 50);
     return `${q.questionNo} ${text ? ' — ' + text + (text.length >= 50 ? '...' : '') : ''}`;
+  }
+
+  get actualTotalMarks(): number {
+    return this.questions.reduce(
+      (sum: number, q: any) => sum + (parseFloat(q.positiveMarks) || 0),
+      0,
+    );
+  }
+
+  get marksMismatch(): boolean {
+    const defined = parseFloat(this.questionData?.totalMarks) || 0;
+    if (!defined) return false;
+    return this.questions.length > 0 && this.actualTotalMarks !== defined;
   }
 }

@@ -1,0 +1,94 @@
+<!-- batch-phase-allotment.component.html -->
+<div>
+    <div class="filter-panel">
+        <div class="row g-3 align-items-end">
+
+            <!-- Program -->
+            <div class="col-md-3">
+                <label class="form-label fw-medium">Program</label>
+                <select class="form-select form-select-sm" (ngModelChange)="onProgramChange($event ? [$event] : [])"
+                    [ngModel]="selectedProgramIds[0] || ''">
+                    <option value="">All Programs</option>
+                    <option *ngFor="let p of programOptions" [value]="p.value">{{ p.label }}</option>
+                </select>
+            </div>
+
+            <!-- Batch — filtered by program -->
+            <div class="col-md-3">
+                <app-batch-multiselect [options]="filteredBatchOptions" label="Batch" [optional]="true"
+                    (selectionChange)="onBatchChange($event)">
+                </app-batch-multiselect>
+            </div>
+
+            <!-- Subject — filtered by batch -->
+            <div class="col-md-2">
+                <label class="form-label fw-medium">Subject</label>
+                <div *ngIf="subjectsLoading" class="form-control form-control-sm text-muted" style="font-size:12px">
+                    <span class="spinner-border spinner-border-sm me-1"></span> Loading...
+                </div>
+                <select *ngIf="!subjectsLoading" class="form-select form-select-sm" [(ngModel)]="filterSubjectId">
+                    <option value="">All</option>
+                    <option *ngFor="let s of subjectOptions" [value]="s.value">{{ s.label }}</option>
+                </select>
+                <small class="text-muted" *ngIf="!selectedBatchIds.length">Select batch first</small>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-md-4 d-flex gap-2 align-items-end">
+                <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="onGenerateClick()">
+                    <span *ngIf="!loading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                    <span *ngIf="loading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" *ngIf="rows.length" (click)="reset()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2">Generating report...</p>
+    </div>
+
+    <div *ngIf="rows.length && !loading" class="d-flex gap-2 mb-3">
+        <button class="btn btn-outline-danger btn-sm" (click)="exportPdf()">
+            <i class="fa-solid fa-file-pdf me-1"></i> Export PDF
+        </button>
+        <button class="btn btn-export btn-sm" (click)="exportExcel()">
+            <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+        </button>
+    </div>
+
+    <!-- Table — with total row highlighting -->
+    <div class="report-table-card" *ngIf="rows.length && !loading">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-muted">{{ rows.length }} records</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th *ngFor="let col of columns">{{ col.label }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of rows">
+                        <td *ngFor="let col of columns">
+                            <span [class.text-muted]="row.phaseName === 'Unassigned'"
+                                [style.font-style]="row.phaseName === 'Unassigned' ? 'italic' : ''">
+                                {{ row[col.key] ?? '-' }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div *ngIf="!loading && dataLoaded && !rows.length" class="text-center text-muted py-5">
+        <i class="fa-solid fa-inbox fs-1 d-block mb-3 opacity-50"></i>
+        <p>No phase allotment data found.</p>
+    </div>
+</div>

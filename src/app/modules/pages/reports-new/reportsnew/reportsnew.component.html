@@ -1,0 +1,26 @@
+<!-- reportsnew.component.html -->
+<div class="report-container">
+
+    <!-- Header -->
+    <div class="report-header">
+        <div>
+            <h4 class="fw-bold mb-0">
+                <i class="fa-solid fa-chart-line me-2"></i>Reports
+            </h4>
+            <small class="text-muted">Batch, Student, Teacher & Assignment reports</small>
+        </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+        <button *ngFor="let tab of tabs" class="tab-btn" [class.active]="activeTab === tab.key"
+            (click)="switchTab(tab)">
+            <i [class]="tab.icon + ' me-1'"></i>
+            {{ tab.label }}
+        </button>
+    </div>
+
+    <!-- Tab content via router outlet -->
+    <router-outlet></router-outlet>
+
+</div>
