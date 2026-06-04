@@ -211,8 +211,8 @@ export class ConsolidatedReportComponent implements OnInit {
       const valid = this.rows.filter((r) => r.partPct?.[part] != null);
       result[part] = valid.length
         ? (
-            valid.reduce((s, r) => s + r.partPct[part], 0) / valid.length
-          ).toFixed(1) + '%'
+          valid.reduce((s, r) => s + r.partPct[part], 0) / valid.length
+        ).toFixed(1) + '%'
         : '—';
     });
     return result;
@@ -263,9 +263,9 @@ export class ConsolidatedReportComponent implements OnInit {
       const valid = rows.filter((r) => r.partPct?.[part] != null);
       result[part] = valid.length
         ? (
-            valid.reduce((s: number, r: any) => s + r.partPct[part], 0) /
-            valid.length
-          ).toFixed(1) + '%'
+          valid.reduce((s: number, r: any) => s + r.partPct[part], 0) /
+          valid.length
+        ).toFixed(1) + '%'
         : '—';
     });
     return result;
@@ -298,17 +298,17 @@ export class ConsolidatedReportComponent implements OnInit {
       };
       const startFmt = this.fromDate
         ? new Date(this.fromDate).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
         : '—';
       const endFmt = this.toDate
         ? new Date(this.toDate).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
         : '—';
       const partColors: Record<string, { fill: number[]; text: number[] }> = {
         A: { fill: [219, 234, 254], text: [30, 64, 175] },
@@ -321,32 +321,31 @@ export class ConsolidatedReportComponent implements OnInit {
         C: { fill: [236, 253, 245], text: [6, 95, 70] },
       };
       const fixedW = 40;
+      const pctW = 14; // fixed width for each % column
       const scoreColCount = this.partKeys.reduce(
         (s, p) => s + (this.partHeaders[p]?.length || 0),
         0,
       );
       const pctColCount = this.partKeys.length;
-      // const dynW = Math.max(
-      //   7,
-      //   Math.floor((usableW - fixedW) / (scoreColCount + pctColCount)),
-      // );
-      const reservedForPct = pctColCount * 12;
+      // dynW fills only the space left after fixed cols and pct cols
       const dynW = Math.max(
-        6,
-        Math.floor((usableW - fixedW - reservedForPct) / scoreColCount),
+        5,
+        Math.floor((usableW - fixedW - pctColCount * pctW) / Math.max(scoreColCount, 1)),
       );
       const columnStyles: Record<number, any> = {
         0: { cellWidth: 22 },
         1: { cellWidth: 18 },
       };
       let colIdx = 2;
+      // Score columns — dynamic width
       this.partKeys.forEach((part) => {
         (this.partHeaders[part] || []).forEach(() => {
-          columnStyles[colIdx++] = { cellWidth: dynW + 2 };
+          columnStyles[colIdx++] = { cellWidth: dynW };
         });
       });
+      // Pct columns — fixed reserved width
       this.partKeys.forEach(() => {
-        columnStyles[colIdx++] = { cellWidth: dynW + 2 };
+        columnStyles[colIdx++] = { cellWidth: pctW };
       });
       const totalCols = 2 + scoreColCount + pctColCount;
       const colHeaderRow: any[] = [
@@ -380,16 +379,16 @@ export class ConsolidatedReportComponent implements OnInit {
           fill: [241, 245, 249],
           text: [55, 65, 81],
         };
-        (this.partHeaders[part] || []).forEach((h: any) => {
+        (this.partHeaders[part] || []).forEach((_h: any, qIdx: number) => {
           colHeaderRow.push({
-            content: h.label,
+            content: part + (qIdx + 1),   // A1, A2 … B1, B2 …
             styles: {
               halign: 'center',
               fontStyle: 'bold',
               fontSize: 6,
               fillColor: col.fill,
               textColor: col.text,
-              overflow: 'hidden'
+              overflow: 'linebreak',
             },
           });
         });
@@ -507,12 +506,15 @@ export class ConsolidatedReportComponent implements OnInit {
                 : part === 'B'
                   ? [255, 251, 235]
                   : [240, 253, 244];
-            (r.partScores?.[part] || []).forEach((v: any) => {
+            const headerLen = (this.partHeaders[part] || []).length;
+            const scores = r.partScores?.[part] || [];
+            for (let qi = 0; qi < headerLen; qi++) {
+              const v = scores[qi] != null ? scores[qi] : null;
               row.push({
                 content: v != null ? v.toFixed(2) : '—',
                 styles: { halign: 'center', fontSize: 6, fillColor: bg },
               });
-            });
+            }
           });
           this.partKeys.forEach((part) => {
             const pct = r.partPct?.[part];
@@ -611,9 +613,9 @@ export class ConsolidatedReportComponent implements OnInit {
           .join('  |  ');
         doc.text(
           g.staffName +
-            (g.subjectName ? ' (' + g.subjectName + ')' : '') +
-            '  —  ' +
-            staffSummary,
+          (g.subjectName ? ' (' + g.subjectName + ')' : '') +
+          '  —  ' +
+          staffSummary,
           pageW / 2,
           staffFinalY + 6,
           { align: 'center' },
@@ -625,7 +627,7 @@ export class ConsolidatedReportComponent implements OnInit {
           content: 'OVERALL AVERAGE',
           colSpan: 2,
           styles: {
-            halign: 'right',
+            halign: 'left',
             fontStyle: 'bold',
             fontSize: 7,
             fillColor: [241, 245, 249],
@@ -686,10 +688,10 @@ export class ConsolidatedReportComponent implements OnInit {
       // ── Save ──────────────────────────────────────────────────────────────────
       doc.save(
         'Feedback_Report_' +
-          startFmt.replace(/ /g, '_') +
-          '_to_' +
-          endFmt.replace(/ /g, '_') +
-          '.pdf',
+        startFmt.replace(/ /g, '_') +
+        '_to_' +
+        endFmt.replace(/ /g, '_') +
+        '.pdf',
       );
     } finally {
       this.exporting = false;
@@ -782,17 +784,17 @@ export class ConsolidatedReportComponent implements OnInit {
 
       const startFmt = this.fromDate
         ? new Date(this.fromDate).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
         : '—';
       const endFmt = this.toDate
         ? new Date(this.toDate).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
         : '—';
 
       bold(13);
@@ -841,11 +843,11 @@ export class ConsolidatedReportComponent implements OnInit {
             doc.setTextColor(100, 100, 100);
             doc.text(
               phase.phaseLabel +
-                '  (' +
-                phase.remarks.length +
-                ' remark' +
-                (phase.remarks.length !== 1 ? 's' : '') +
-                ')',
+              '  (' +
+              phase.remarks.length +
+              ' remark' +
+              (phase.remarks.length !== 1 ? 's' : '') +
+              ')',
               ml + indent * 2,
               curY,
             );
@@ -874,10 +876,10 @@ export class ConsolidatedReportComponent implements OnInit {
 
       doc.save(
         'Staff_Remarks_Report_' +
-          startFmt.replace(/ /g, '_') +
-          '_to_' +
-          endFmt.replace(/ /g, '_') +
-          '.pdf',
+        startFmt.replace(/ /g, '_') +
+        '_to_' +
+        endFmt.replace(/ /g, '_') +
+        '.pdf',
       );
     } finally {
       this.remarksExporting = false;

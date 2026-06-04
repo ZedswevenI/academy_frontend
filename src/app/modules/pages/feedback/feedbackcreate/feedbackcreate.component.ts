@@ -413,7 +413,7 @@ export class FeedbackcreateComponent implements OnInit {
       description: [''],
       templateId: ['', Validators.required],
       batchCode: ['', Validators.required],
-      phase:       [null], 
+      phase: [null],
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
     });
@@ -611,8 +611,8 @@ export class FeedbackcreateComponent implements OnInit {
     }
 
     const f = this.feedbackForm.value;
-    if (new Date(f.endDate).getTime() <= new Date(f.startDate).getTime()) {
-      this.alert.error('End date must be after start date');
+    if (new Date(f.endDate).getTime() < new Date(f.startDate).getTime()) {
+      this.alert.error('End date must be before start date');
       return;
     }
 
@@ -625,6 +625,9 @@ export class FeedbackcreateComponent implements OnInit {
       subjectCode: s.subjectCode,
     }));
 
+    const endDateObj = new Date(f.endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
     const payload: any = {
       tenantId: this.tenantId,
       userId: localStorage.getItem('userId'),
@@ -635,7 +638,7 @@ export class FeedbackcreateComponent implements OnInit {
       staffAssignments,
       assignedBatches: [this.selectedBatchCode],
       startDate: new Date(f.startDate).getTime(),
-      endDate: new Date(f.endDate).getTime(),
+      endDate: endDateObj.getTime(),
     };
     if (this.isEditMode) payload.formId = this.formId;
 
