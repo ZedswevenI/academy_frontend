@@ -9,9 +9,11 @@ import { StudentViewComponent } from './student-view/student-view.component';
 import { GridListComponent } from './grid-list/grid-list.component';
 import { TableListComponent } from './table-list/table-list.component';
 import { RpaimportComponent } from './rpaimport/rpaimport.component';
+import { AlumniimportComponent } from './alumniimport/alumniimport.component';
+import { BoardexamimportComponent } from './boardexamimport/boardexamimport.component';
 
 @NgModule({
-  declarations: [StudentComponent, StudentViewComponent, GridListComponent, TableListComponent, RpaimportComponent],
+  declarations: [StudentComponent, StudentViewComponent, GridListComponent, TableListComponent, RpaimportComponent, AlumniimportComponent, BoardexamimportComponent],
   imports: [CommonModule, StudentRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
   exports: []
 })

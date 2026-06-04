@@ -3,7 +3,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import * as XLSX from 'xlsx';
 
-type ImportRow = { admissionNo: string; studentRpa: string };
+type ImportRow = { admissionNo: string; studentRpa: string[] };
 type ImportSummary = {
   totalRows: number;
   validRows: number;
@@ -28,8 +28,11 @@ export class RpaimportComponent {
   selectedFile: File | null = null;
   submitting = false;
   summary: ImportSummary | null = null;
-  unmatchedList: { admissionNo: string; studentRpa: string; reason: string }[] =
-    [];
+  unmatchedList: {
+    admissionNo: string;
+    studentRpa: string[];
+    reason: string;
+  }[] = [];
   step: 'upload' | 'preview' | 'done' = 'upload';
 
   @Output() imported = new EventEmitter<void>();
@@ -54,15 +57,28 @@ export class RpaimportComponent {
   downloadSample(): void {
     const wb = XLSX.utils.book_new();
     const data = [
-      { 'Enrollment No': '9020642590040', 'Student RPA': 'AIR2000' },
-      { 'Enrollment No': '9020642590041', 'Student RPA': 'AIR8520S' },
-      { 'Enrollment No': '9020642590042', 'Student RPA': 'AIR8965230' },
+      {
+        'Enrollment No': '9020642590040',
+        'Student RPA 1': 'AIR2000',
+        'Student RPA 2': 'AIR8520S',
+        'Student RPA 3': '',
+      },
+      {
+        'Enrollment No': '9020642590041',
+        'Student RPA 1': 'AIR8965230',
+        'Student RPA 2': '',
+        'Student RPA 3': '',
+      },
+      {
+        'Enrollment No': '9020642590042',
+        'Student RPA 1': 'AIR1234',
+        'Student RPA 2': 'AIR5678',
+        'Student RPA 3': 'AIR9012',
+      },
     ];
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(data),
-      'RPA Import',
-    );
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.sheet_add_aoa(ws, [['* Add more columns: Student RPA 4, Student RPA 5 ... as needed']], { origin: -1 });
+    XLSX.utils.book_append_sheet(wb, ws, 'RPA Import');
     XLSX.writeFile(wb, 'rpa_import_sample.xlsx');
   }
 
@@ -96,49 +112,54 @@ export class RpaimportComponent {
         if (!raw.length) {
           errors.push('File is empty');
         }
+        const allHeaders = Object.keys(raw[0] || {});
+        const rpaColKeys = allHeaders.filter((h) =>
+          /^Student\s*RPA\s*\d+$/i.test(h.trim()),
+        );
+
+        if (!rpaColKeys.length && raw.length) {
+          errors.push(
+            'No RPA ID columns found. Expected columns like "RPA ID 1", "RPA ID 2" ...',
+          );
+        }
+        rpaColKeys.sort((a, b) => {
+          const numA = parseInt(a.replace(/\D/g, ''), 10);
+          const numB = parseInt(b.replace(/\D/g, ''), 10);
+          return numA - numB;
+        });
         raw.forEach((r, idx) => {
           const rowNo = idx + 2;
           const admissionNo = String(
-            r['Admission No'] ||
-            r['EnrollmentNo'] ||
-            r['enrollmentno'] ||
-            r['enrollment no'] ||
             r['Enrollment No'] ||
-            r['EnrollmentNo'] ||
+              r['Admission No'] ||
+              r['EnrollmentNo'] ||
+              r['enrollment no'] ||
               r['admissionNo'] ||
               r['ADMISSION NO'] ||
-              r['admission_no'] ||
               '',
           ).trim();
-          const studentRpa = String(
-            r['RPA ID'] ||
-            r['student Rpa'] ||
-            r['studentRPA'] ||
-            r['student RPA'] ||
-            r['Student RPA'] ||
-              r['studentRpa'] ||
-              r['RPA Id'] ||
-              r['rpaId'] ||
-              r['RPA_ID'] ||
-              '',
-          ).trim();
-          if (!admissionNo && !studentRpa) return;
+          const rpaArr: string[] = rpaColKeys
+            .map((col) => String(r[col] || '').trim())
+            .filter(Boolean);
+          if (!admissionNo && !rpaArr.length) return;
           if (!admissionNo) {
-            errors.push(`Row ${rowNo}: Admission No is empty`);
+            errors.push(`Row ${rowNo}: Enrollment No is empty`);
             return;
           }
-          if (!studentRpa) {
-            errors.push(`Row ${rowNo} (${admissionNo}): RPA ID is empty`);
+          if (!rpaArr.length) {
+            errors.push(
+              `Row ${rowNo} (${admissionNo}): No RPA ID values found`,
+            );
             return;
           }
           if (seen.has(admissionNo.toLowerCase())) {
             errors.push(
-              `Row ${rowNo}: Duplicate Admission No "${admissionNo}"`,
+              `Row ${rowNo}: Duplicate Enrollment No "${admissionNo}"`,
             );
             return;
           }
           seen.add(admissionNo.toLowerCase());
-          rows.push({ admissionNo, studentRpa });
+          rows.push({ admissionNo, studentRpa: rpaArr });
         });
         this.parsedRows = rows;
         this.parseErrors = errors;
@@ -186,14 +207,16 @@ export class RpaimportComponent {
           this.summary = res.summary;
           this.unmatchedList = res.unmatchedList || [];
           this.step = 'done';
-          if (res.summary?.updated > 0) {
-            this.imported.emit();
-          }
+          if (res.summary?.updated > 0) this.imported.emit();
         },
         error: (err: any) => {
           this.alert.error(err?.error?.message || 'Import failed');
           this.submitting = false;
         },
       });
+  }
+
+  rpaDisplay(rpa: string[]): string {
+    return Array.isArray(rpa) ? rpa.join(', ') : String(rpa || '');
   }
 }

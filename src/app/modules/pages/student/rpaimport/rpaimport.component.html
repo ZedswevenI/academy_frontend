@@ -1,8 +1,6 @@
 <div class="modal fade" id="rpaImportModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" style="max-width:580px">
         <div class="modal-content rounded-4">
-
-            <!-- Header -->
             <div class="modal-header border-bottom">
                 <h5 class="modal-title fw-bold">
                     <i class="fa-solid fa-file-import me-2 text-primary"></i>RPA Import
@@ -10,34 +8,32 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="reset()"></button>
             </div>
             <div class="modal-body p-4">
-                <!-- ══════════ STEP 1: UPLOAD ══════════ -->
                 <ng-container *ngIf="step === 'upload'">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <p class="text-muted small mb-0">
-                            Upload an Excel file with <strong>Enrollment No</strong> and <strong>Student RPA</strong>
-                            columns.
+                            Upload an Excel file with <strong>Enrollment No</strong> and
+                            <strong>Student RPA</strong> columns.<br>
+                            <!-- CHANGE: mention comma-separated -->
+                            <span class="text-info small">Multiple Student RPAs can be mentioned in separate
+                                columns.</span>
                         </p>
                         <button class="btn btn-sm btn-outline-success flex-shrink-0 ms-3" (click)="downloadSample()">
                             <i class="fa-solid fa-download me-1"></i>Sample
                         </button>
                     </div>
-                    <!-- Upload zone -->
                     <div class="upload-zone"
                         [class.upload-zone--success]="selectedFile && !parseErrors.length && !parseLoading"
                         [class.upload-zone--error]="parseErrors.length > 0" (click)="fileInput.click()">
-                        <!-- Idle -->
                         <ng-container *ngIf="!selectedFile && !parseLoading">
                             <i class="fa-solid fa-cloud-arrow-up text-muted fs-2 mb-2 d-block"></i>
                             <p class="mb-0 fw-medium text-muted">Click to upload .xlsx file</p>
-                            <small class="text-muted">Columns: Admission No · RPA ID</small>
+                            <small class="text-muted">Columns: Enrollment No · Student RPA(Columns)</small>
                         </ng-container>
-                        <!-- Parsing -->
                         <ng-container *ngIf="parseLoading">
                             <span class="spinner-border text-primary d-block mx-auto mb-2"
                                 style="width:2rem;height:2rem"></span>
                             <p class="mb-0 text-muted">Parsing file...</p>
                         </ng-container>
-                        <!-- Loaded with errors -->
                         <ng-container *ngIf="selectedFile && !parseLoading && parseErrors.length">
                             <i class="fa-solid fa-triangle-exclamation text-danger fs-2 mb-2 d-block"></i>
                             <p class="mb-1 fw-medium text-danger">{{ parseErrors.length }} error(s) found</p>
@@ -47,7 +43,6 @@
                                 <i class="fa-solid fa-rotate-left me-1"></i>Try again
                             </button>
                         </ng-container>
-                        <!-- Loaded, no errors (goes to preview automatically) -->
                         <ng-container *ngIf="selectedFile && !parseLoading && !parseErrors.length">
                             <i class="fa-solid fa-file-excel text-success fs-2 mb-2 d-block"></i>
                             <p class="mb-1 fw-medium">{{ fileName }}</p>
@@ -55,7 +50,6 @@
                         </ng-container>
                     </div>
                     <input #fileInput type="file" accept=".xlsx,.xls" class="d-none" (change)="onFileChange($event)">
-                    <!-- Error list -->
                     <div *ngIf="parseErrors.length"
                         class="mt-3 p-3 rounded border border-danger bg-danger bg-opacity-10">
                         <p class="fw-semibold text-danger small mb-2">
@@ -66,7 +60,7 @@
                         </ul>
                     </div>
                 </ng-container>
-                <!-- ══════════ STEP 2: PREVIEW ══════════ -->
+                <!-- STEP 2: PREVIEW -->
                 <ng-container *ngIf="step === 'preview'">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
@@ -83,22 +77,23 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Admission No</th>
-                                    <th>RPA ID</th>
+                                    <!-- CHANGE: header updated -->
+                                    <th>Student RPA(s)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr *ngFor="let r of parsedRows; let i = index">
                                     <td class="text-muted">{{ i + 1 }}</td>
                                     <td class="fw-medium">{{ r.admissionNo }}</td>
-                                    <td>{{ r.studentRpa }}</td>
+                                    <!-- CHANGE: display array as comma-separated string -->
+                                    <td>{{ rpaDisplay(r.studentRpa) }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </ng-container>
-                <!-- ══════════ STEP 3: DONE ══════════ -->
+                <!-- STEP 3: DONE -->
                 <ng-container *ngIf="step === 'done' && summary">
-                    <!-- Summary cards -->
                     <div class="row g-3 mb-3">
                         <div class="col-4 text-center">
                             <div class="p-3 rounded-3 bg-success bg-opacity-10">
@@ -119,25 +114,25 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Unmatched list -->
                     <div *ngIf="unmatchedList.length" class="mt-2">
                         <p class="small fw-semibold text-warning mb-2">
                             <i class="fa-solid fa-triangle-exclamation me-1"></i>
-                            {{ unmatchedList.length }} admission no(s) not found in student profiles:
+                            {{ unmatchedList.length }} admission no(s) not found:
                         </p>
                         <div class="table-responsive" style="max-height:160px;overflow-y:auto">
                             <table class="table table-sm table-bordered mb-0" style="font-size:12px">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Admission No</th>
-                                        <th>RPA ID</th>
+                                        <th>Student RPA(s)</th>
                                         <th>Reason</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr *ngFor="let r of unmatchedList" class="table-warning">
                                         <td>{{ r.admissionNo }}</td>
-                                        <td>{{ r.studentRpa }}</td>
+                                        <!-- CHANGE: display array -->
+                                        <td>{{ rpaDisplay(r.studentRpa) }}</td>
                                         <td class="text-muted">{{ r.reason }}</td>
                                     </tr>
                                 </tbody>
@@ -145,37 +140,27 @@
                         </div>
                     </div>
                 </ng-container>
-            </div><!-- /modal-body -->
-            <!-- Footer -->
+            </div>
             <div class="modal-footer border-top">
-                <!-- Upload step -->
                 <ng-container *ngIf="step === 'upload'">
-                    <button class="btn btn-close-custom fs-16 fw-medium" data-bs-dismiss="modal" (click)="reset()">
-                        Cancel
-                    </button>
+                    <button class="btn btn-close-custom fs-16 fw-medium" data-bs-dismiss="modal"
+                        (click)="reset()">Cancel</button>
                 </ng-container>
-                <!-- Preview step -->
                 <ng-container *ngIf="step === 'preview'">
                     <button class="btn btn-close-custom fs-16 fw-medium" (click)="clearFile()">
                         <i class="fa-solid fa-arrow-left me-1"></i>Back
                     </button>
                     <button class="btn btn-create fs-16 fw-medium" [disabled]="submitting" (click)="submit()">
-                        <span *ngIf="!submitting">
-                            <i class="fa-solid fa-file-import me-1"></i>Import {{ parsedRows.length }} Rows
-                        </span>
-                        <span *ngIf="submitting">
-                            <span class="spinner-border spinner-border-sm me-1"></span>Importing...
-                        </span>
+                        <span *ngIf="!submitting"><i class="fa-solid fa-file-import me-1"></i>Import {{
+                            parsedRows.length }} Rows</span>
+                        <span *ngIf="submitting"><span
+                                class="spinner-border spinner-border-sm me-1"></span>Importing...</span>
                     </button>
                 </ng-container>
-                <!-- Done step -->
                 <ng-container *ngIf="step === 'done'">
-                    <button class="btn btn-close-custom fs-16 fw-medium" (click)="reset()">
-                        Import Another File
-                    </button>
-                    <button class="btn btn-create fs-16 fw-medium" data-bs-dismiss="modal" (click)="reset()">
-                        Done
-                    </button>
+                    <button class="btn btn-close-custom fs-16 fw-medium" (click)="reset()">Import Another File</button>
+                    <button class="btn btn-create fs-16 fw-medium" data-bs-dismiss="modal"
+                        (click)="reset()">Done</button>
                 </ng-container>
             </div>
         </div>
