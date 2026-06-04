@@ -147,13 +147,13 @@
         </div><!-- /modal-body -->
         <div class="app-modal-footer d-flex justify-content-end gap-2">
             <ng-container *ngIf="step === 'upload'">
-                <button class="btn btn-close-custom fs-16 fw-medium" (click)="close()">Cancel</button>
+                <button class="btn btn-close-custom fs-16 fw-medium mb-3 me-3" (click)="close()">Cancel</button>
             </ng-container>
             <ng-container *ngIf="step === 'preview'">
-                <button class="btn btn-close-custom fs-16 fw-medium" (click)="clearFile()">
+                <button class="btn btn-close-custom fs-16 fw-medium mb-3 me-2" (click)="clearFile()">
                     <i class="fa-solid fa-arrow-left me-1"></i>Back
                 </button>
-                <button class="btn btn-create fs-16 fw-medium" [disabled]="submitting || !canSubmit" (click)="submit()">
+                <button class="btn btn-create fs-16 fw-medium mb-3 me-3" [disabled]="submitting || !canSubmit" (click)="submit()">
                     <span *ngIf="!submitting"><i class="fa-solid fa-file-import me-1"></i>Import {{ parsedRows.length }}
                         Rows</span>
                     <span *ngIf="submitting"><span
@@ -161,8 +161,8 @@
                 </button>
             </ng-container>
             <ng-container *ngIf="step === 'done'">
-                <button class="btn btn-close-custom fs-16 fw-medium" (click)="reset()">Import Another</button>
-                <button class="btn btn-create fs-16 fw-medium" (click)="close()">Done</button>
+                <button class="btn btn-close-custom fs-16 fw-medium mb-3 me-2" (click)="reset()">Import Another</button>
+                <button class="btn btn-create fs-16 fw-medium mb-3 me-3" (click)="close()">Done</button>
             </ng-container>
         </div>
     </div>
