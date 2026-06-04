@@ -10,9 +10,10 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="avatar-wrap me-3">
-                        <img *ngIf="photoUrl" [src]="photoUrl" class="rounded-circle object-fit-cover border"
-                            style="width:56px;height:56px;" alt="Photo" />
-                        <div *ngIf="!photoUrl" class="avatar">
+                        <img *ngIf="photoObjectUrl" [src]="photoObjectUrl"
+                            class="rounded-circle object-fit-cover border" style="width:56px;height:56px;"
+                            alt="Photo" />
+                        <div *ngIf="!photoObjectUrl" class="avatar">
                             {{ getInitials(student.basic?.name) }}
                         </div>
                     </div>
@@ -51,6 +52,15 @@
                     </button>
                     <button class="btn btn-edit fs-16 fw-medium" *appHasRole="['L1']" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen btn-icon"></i> Edit Profile
+                    </button>
+                    <button *appHasRole="['L1']" class="btn fs-16 fw-medium"
+                        [ngClass]="student.basic?.isTabletBlocked ? 'btn-success' : 'btn-danger'"
+                        [disabled]="tabletLockLoading" (click)="toggleTabletLock()">
+                        <span *ngIf="tabletLockLoading" class="spinner-border spinner-border-sm btn-icon"></span>
+                        <i *ngIf="!tabletLockLoading" class="btn-icon"
+                            [ngClass]="student.basic?.isTabletBlocked ? 'fa-solid fa-lock-open' : 'fa-solid fa-lock'">
+                        </i>
+                        {{ student.basic?.isTabletBlocked ? 'Unlock Tablet' : 'Lock Tablet' }}
                     </button>
                     <button class="btn btn-back fs-16 fw-medium" routerLink="/app/student">
                         <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Students
@@ -110,6 +120,22 @@
                             <span>Late Entries</span>
                             <strong>{{ lateEntries.length || 0 }}</strong>
                         </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tablet Access</span>
+                            <span class="badge" [ngClass]="student.basic?.isTabletBlocked ? 'bg-danger' : 'bg-success'">
+                                {{ student.basic?.isTabletBlocked ? 'Blocked' : 'Enabled' }}
+                            </span>
+                        </div><!-- RPA IDs -->
+                        <ng-container *ngIf="student.basic?.studentRpa?.length">
+                            <hr>
+                            <p class="mb-1"><strong>RPA</strong></p>
+                            <div class="d-flex mb-2">
+                                <span *ngFor="let rpa of student.basic.studentRpa"
+                                    class="badge bg-primary  mx-1 text-white">
+                                    {{ rpa }}
+                                </span>
+                            </div>
+                        </ng-container>
                         <!-- <div class="d-flex justify-content-between mb-2">
                             <span>Fees Paid</span>
                             <span class="fw-semibold text-success">
@@ -168,6 +194,21 @@
                                     <span class="badge bg-secondary ms-1" *ngIf="dataArray4.length">
                                         {{ dataArray4.length }}
                                     </span>
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" [class.active]="activeViewTab==='boardexams'"
+                                    (click)="activeViewTab='boardexams'">
+                                    <i class="fa-solid fa-school me-1"></i>Board Marks
+                                    <span class="badge bg-secondary ms-1" *ngIf="boardExams.length">{{ boardExams.length
+                                        }}</span>
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" [class.active]="activeViewTab==='alumni'"
+                                    (click)="activeViewTab='alumni'">
+                                    <i class="fa-solid fa-trophy me-1"></i>Alumni Info
+                                    <span class="badge bg-warning text-dark ms-1" *ngIf="alumniData">1</span>
                                 </button>
                             </li>
                         </ul>
@@ -356,6 +397,278 @@
                                 [data]="dataArray4" [showaction]="false" [searchPlaceholder]="'Search remarks...'">
                             </custom-table>
                         </div>
+                        <div *ngIf="activeViewTab === 'boardexams'">
+                            <div *ngIf="!boardExams.length" class="text-center text-muted py-4">
+                                <i class="fa-solid fa-school fa-2x mb-2 d-block opacity-30"></i>
+                                No board exam records found.
+                            </div>
+                            <div *ngIf="boardExams.length">
+                                <div *ngFor="let exam of boardExams" class="border rounded-3 p-3 mb-3">
+                                    <!-- Exam header -->
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <div class="fw-semibold">{{ exam.boardExamName || '—' }}</div>
+                                            <div class="text-muted small" *ngIf="exam.schoolId">School ID: {{
+                                                exam.schoolId }}</div>
+                                        </div>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border fs-6"
+                                            *ngIf="exam.total != null">
+                                            Total: {{ exam.total }}
+                                        </span>
+                                    </div>
+                                    <!-- Subject scores grid -->
+                                    <div class="row g-2">
+                                        <div class="col-6 col-md-3" *ngIf="exam.s1 != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ exam.s1 }}</div>
+                                                <div class="small text-muted">Subject 1</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="exam.s2 != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ exam.s2 }}</div>
+                                                <div class="small text-muted">Subject 2</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="exam.s3 != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ exam.s3 }}</div>
+                                                <div class="small text-muted">Subject 3</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="exam.s4 != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ exam.s4 }}</div>
+                                                <div class="small text-muted">Subject 4</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="exam.s5 != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ exam.s5 }}</div>
+                                                <div class="small text-muted">Subject 5</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="exam.s6 != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ exam.s6 }}</div>
+                                                <div class="small text-muted">Subject 6</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="exam.s7 != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ exam.s7 }}</div>
+                                                <div class="small text-muted">Subject 7</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── ALUMNI / ENTRANCE EXAMS TAB ─────────────────────────────────────────── -->
+                        <div *ngIf="activeViewTab === 'alumni'">
+
+                            <div *ngIf="alumniLoading" class="text-center py-4">
+                                <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                <p class="mt-2 text-muted small">Loading entrance exam data...</p>
+                            </div>
+
+                            <div *ngIf="!alumniLoading && !alumniData" class="text-center text-muted py-4">
+                                <i class="fa-solid fa-trophy fa-2x mb-2 d-block opacity-30"></i>
+                                No entrance exam records found.
+                            </div>
+
+                            <div *ngIf="!alumniLoading && alumniData">
+
+                                <!-- JEE Main card -->
+                                <div *ngIf="alumniData.jeeMain" class="border rounded-3 p-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-semibold mb-0">
+                                            <i class="fa-solid fa-atom me-2 text-primary"></i>JEE Main
+                                        </h6>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <span *ngIf="alumniData.jeeMain.rank" class="badge bg-secondary">Rank: {{
+                                                alumniData.jeeMain.rank }}</span>
+                                            <span *ngIf="alumniData.jeeMain.selected === 'YES'"
+                                                class="badge bg-success">Selected</span>
+                                            <span *ngIf="alumniData.jeeMain.selected === 'NO'"
+                                                class="badge bg-danger">Not Selected</span>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.jeeMain.physics != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ alumniData.jeeMain.physics }}</div>
+                                                <div class="small text-muted">Physics</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.jeeMain.chemistry != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-success">{{ alumniData.jeeMain.chemistry }}
+                                                </div>
+                                                <div class="small text-muted">Chemistry</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.jeeMain.maths != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-warning">{{ alumniData.jeeMain.maths }}</div>
+                                                <div class="small text-muted">Maths</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.jeeMain.total != null">
+                                            <div class="border rounded p-2 text-center bg-primary bg-opacity-10">
+                                                <div class="fw-bold text-primary fs-5">{{ alumniData.jeeMain.total }}
+                                                </div>
+                                                <div class="small text-muted">Total</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- JEE Advanced card -->
+                                <div *ngIf="alumniData.jeeAdv" class="border rounded-3 p-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-semibold mb-0">
+                                            <i class="fa-solid fa-flask me-2 text-success"></i>JEE Advanced
+                                        </h6>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <span *ngIf="alumniData.jeeAdv.grandTotal != null"
+                                                class="badge bg-success">Grand Total: {{ alumniData.jeeAdv.grandTotal
+                                                }}</span>
+                                            <span *ngIf="alumniData.jeeAdv.rank" class="badge bg-secondary">Rank: {{
+                                                alumniData.jeeAdv.rank }}</span>
+                                            <span *ngIf="alumniData.jeeAdv.selected === 'YES'"
+                                                class="badge bg-success">Selected</span>
+                                            <span *ngIf="alumniData.jeeAdv.selected === 'NO'"
+                                                class="badge bg-danger">Not Selected</span>
+                                        </div>
+                                    </div>
+                                    <!-- Paper 1 -->
+                                    <div *ngIf="alumniData.jeeAdv.paper1" class="mb-2">
+                                        <div class="small fw-semibold text-muted mb-1">Paper 1</div>
+                                        <div class="row g-2">
+                                            <div class="col-6 col-md-3"
+                                                *ngIf="alumniData.jeeAdv.paper1.physics != null">
+                                                <div class="border rounded p-2 text-center">
+                                                    <div class="fw-bold text-primary">{{
+                                                        alumniData.jeeAdv.paper1.physics }}</div>
+                                                    <div class="small text-muted">Physics</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3"
+                                                *ngIf="alumniData.jeeAdv.paper1.chemistry != null">
+                                                <div class="border rounded p-2 text-center">
+                                                    <div class="fw-bold text-success">{{
+                                                        alumniData.jeeAdv.paper1.chemistry }}</div>
+                                                    <div class="small text-muted">Chemistry</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3" *ngIf="alumniData.jeeAdv.paper1.maths != null">
+                                                <div class="border rounded p-2 text-center">
+                                                    <div class="fw-bold text-warning">{{ alumniData.jeeAdv.paper1.maths
+                                                        }}</div>
+                                                    <div class="small text-muted">Maths</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3" *ngIf="alumniData.jeeAdv.paper1.total != null">
+                                                <div class="border rounded p-2 text-center bg-success bg-opacity-10">
+                                                    <div class="fw-bold text-success fs-5">{{
+                                                        alumniData.jeeAdv.paper1.total }}</div>
+                                                    <div class="small text-muted">Total</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Paper 2 -->
+                                    <div *ngIf="alumniData.jeeAdv.paper2">
+                                        <div class="small fw-semibold text-muted mb-1">Paper 2</div>
+                                        <div class="row g-2">
+                                            <div class="col-6 col-md-3"
+                                                *ngIf="alumniData.jeeAdv.paper2.physics != null">
+                                                <div class="border rounded p-2 text-center">
+                                                    <div class="fw-bold text-primary">{{
+                                                        alumniData.jeeAdv.paper2.physics }}</div>
+                                                    <div class="small text-muted">Physics</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3"
+                                                *ngIf="alumniData.jeeAdv.paper2.chemistry != null">
+                                                <div class="border rounded p-2 text-center">
+                                                    <div class="fw-bold text-success">{{
+                                                        alumniData.jeeAdv.paper2.chemistry }}</div>
+                                                    <div class="small text-muted">Chemistry</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3" *ngIf="alumniData.jeeAdv.paper2.maths != null">
+                                                <div class="border rounded p-2 text-center">
+                                                    <div class="fw-bold text-warning">{{ alumniData.jeeAdv.paper2.maths
+                                                        }}</div>
+                                                    <div class="small text-muted">Maths</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3" *ngIf="alumniData.jeeAdv.paper2.total != null">
+                                                <div class="border rounded p-2 text-center bg-success bg-opacity-10">
+                                                    <div class="fw-bold text-success fs-5">{{
+                                                        alumniData.jeeAdv.paper2.total }}</div>
+                                                    <div class="small text-muted">Total</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- NEET card -->
+                                <div *ngIf="alumniData.neet" class="border rounded-3 p-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-semibold mb-0">
+                                            <i class="fa-solid fa-stethoscope me-2 text-danger"></i>NEET
+                                        </h6>
+                                        <span *ngIf="alumniData.neet.rank" class="badge bg-secondary">Rank: {{
+                                            alumniData.neet.rank }}</span>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.neet.physics != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-primary">{{ alumniData.neet.physics }}</div>
+                                                <div class="small text-muted">Physics</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.neet.chemistry != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-success">{{ alumniData.neet.chemistry }}</div>
+                                                <div class="small text-muted">Chemistry</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.neet.biology != null">
+                                            <div class="border rounded p-2 text-center">
+                                                <div class="fw-bold text-warning">{{ alumniData.neet.biology }}</div>
+                                                <div class="small text-muted">Biology</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3" *ngIf="alumniData.neet.total != null">
+                                            <div class="border rounded p-2 text-center bg-danger bg-opacity-10">
+                                                <div class="fw-bold text-danger fs-5">{{ alumniData.neet.total }}</div>
+                                                <div class="small text-muted">Total</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- College info -->
+                                    <div *ngIf="alumniData.neet.collegeName || alumniData.neet.course"
+                                        class="mt-3 p-2 bg-light rounded">
+                                        <div class="small" *ngIf="alumniData.neet.collegeName">
+                                            <i class="fa-solid fa-hospital me-1 text-danger"></i>
+                                            <strong>College:</strong> {{ alumniData.neet.collegeName }}
+                                        </div>
+                                        <div class="small mt-1" *ngIf="alumniData.neet.course">
+                                            <i class="fa-solid fa-book-medical me-1 text-danger"></i>
+                                            <strong>Course:</strong> {{ alumniData.neet.course }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>

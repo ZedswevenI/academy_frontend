@@ -1,9 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import * as XLSX from 'xlsx';
+// ── Import child modal components so we can call open() on them ──────────────
+import { RpaimportComponent } from '../rpaimport/rpaimport.component';
+import { BoardexamimportComponent } from '../boardexamimport/boardexamimport.component';
+import { AlumniimportComponent } from '../alumniimport/alumniimport.component';
+
+declare const bootstrap: any; // Bootstrap global (already loaded in your app)
 
 @Component({
   selector: 'app-student',
@@ -12,25 +18,34 @@ import * as XLSX from 'xlsx';
   styleUrl: './student.component.scss',
 })
 export class StudentComponent {
+  // ── ViewChild refs to child modal components ──────────────────────────────
+  @ViewChild('rpaImportRef') rpaImportRef!: RpaimportComponent;
+  @ViewChild('boardExamImportRef')
+  boardExamImportRef!: BoardexamimportComponent;
+  @ViewChild('alumniImportRef') alumniImportRef!: AlumniimportComponent;
+
   activeTab: 'list' | 'grid' = 'list';
   tenantId = localStorage.getItem('tenantId') || '';
   userId = localStorage.getItem('userId') || '';
+
+  // ── Bulk Excel upload state ───────────────────────────────────────────────
   showBulkUpload = false;
   bulkFileName = '';
   bulkPreviewRows: any[] = [];
   bulkHasInvalidRows = false;
   bulkInvalidCount = 0;
   bulkUploading = false;
+
+  // ── ZIP photo upload state ────────────────────────────────────────────────
   showImageUpload = false;
-  imageFiles: File[] = [];
-  imagePreviewList: { name: string; admissionNo: string; preview: string }[] =
-    [];
+  zipFile: File | null = null;
   imageUploading = false;
+  zipUploadResult: any = null;
+
+  // ── Filters / search ─────────────────────────────────────────────────────
   hasSearched = false;
-  listLoading = false;
   programOptions: any[] = [];
   centerOptions: any[] = [];
-  batchOptions: any[] = [];
   filters = {
     search: '',
     programId: '',
@@ -54,12 +69,12 @@ export class StudentComponent {
     this.breadcrump.set([{ label: 'Student' }]);
   }
 
-  setTab(tab: 'list' | 'grid') {
-    this.activeTab = tab;
-  }
-
   ngOnInit(): void {
     this.loadFilterOptions();
+  }
+
+  setTab(tab: 'list' | 'grid') {
+    this.activeTab = tab;
   }
 
   loadFilterOptions() {
@@ -68,13 +83,12 @@ export class StudentComponent {
       .subscribe({
         next: (r: any) => {
           this.programOptions = (r?.data || []).map((p: any) => ({
-            label: `${p.programCodes || p.programCodes} - ${p.programName || p.name}`,
+            label: `${p.programCodes} - ${p.programName || p.name}`,
             value: p.programId || p._id,
           }));
         },
         error: () => {},
       });
-
     this.commonApi
       .fetchData({ entiId: this.tenantId }, 'ims', 'center/list?list=full')
       .subscribe({
@@ -90,7 +104,6 @@ export class StudentComponent {
 
   triggerSearch() {
     this.hasSearched = true;
-    // Create a new object reference so Angular's ngOnChanges detects the change in child components
     this.filters = { ...this.filters };
   }
 
@@ -105,17 +118,48 @@ export class StudentComponent {
     this.hasSearched = false;
   }
 
-  // ===================== BULK EXCEL UPLOAD =====================
+  // ══════════════════════════════════════════════════════════════════════════
+  // IMPORT DROPDOWN  — open each modal
+  // ══════════════════════════════════════════════════════════════════════════
 
   openBulkUpload() {
     this.showBulkUpload = true;
     this.resetBulkUpload();
   }
-
   closeBulkUpload() {
     if (this.bulkUploading) return;
     this.showBulkUpload = false;
   }
+
+  openImageUpload() {
+    this.showImageUpload = true;
+    this.resetImageUpload();
+  }
+  closeImageUpload() {
+    if (this.imageUploading) return;
+    this.showImageUpload = false;
+  }
+
+  /** Opens the RPA bootstrap modal via the child component */
+  openRpaImport() {
+    this.rpaImportRef?.reset();
+    const el = document.getElementById('rpaImportModal');
+    if (el) new bootstrap.Modal(el).show();
+  }
+
+  /** Calls open() on the board exam import child component */
+  openBoardExamImport() {
+    this.boardExamImportRef?.open();
+  }
+
+  /** Calls open() on the alumni import child component */
+  openAlumniImport() {
+    this.alumniImportRef?.open();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // BULK EXCEL UPLOAD (Student Details)
+  // ══════════════════════════════════════════════════════════════════════════
 
   resetBulkUpload() {
     this.bulkFileName = '';
@@ -133,6 +177,7 @@ export class StudentComponent {
         Email: 'john@example.com',
         'Parent Name': 'Jane Doe',
         'Parent Mobile': '9876543211',
+        'School ID': 'SCH001',
       },
       {
         'Enrolment Number': 'ADM002',
@@ -141,11 +186,15 @@ export class StudentComponent {
         Email: 'alice@example.com',
         'Parent Name': 'Bob Smith',
         'Parent Mobile': '9876543221',
+        'School ID': 'SCH002',
       },
     ];
-    const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Students');
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(rows),
+      'Students',
+    );
     XLSX.writeFile(wb, 'Student_Bulk_Update_Sample.xlsx');
   }
 
@@ -153,25 +202,20 @@ export class StudentComponent {
     if (this.bulkUploading) return;
     const file: File = ev?.target?.files?.[0];
     if (!file) return;
-
     const name = (file.name || '').toLowerCase();
     if (!name.endsWith('.xlsx') && !name.endsWith('.xls')) {
       this.alert.error('Please upload a valid Excel file (.xlsx / .xls)');
       return;
     }
-
     this.bulkFileName = file.name;
-
     const reader = new FileReader();
     reader.onload = (e: any) => {
       try {
-        const data = e.target.result;
-        const wb = XLSX.read(data, { type: 'binary' });
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rawRows: any[] = XLSX.utils.sheet_to_json(ws, {
           defval: '',
         }) as any[];
-
         this.bulkPreviewRows = rawRows.map((r: any, idx: number) => {
           const admissionNo = String(
             r['Enrolment Number'] || r['Admission No'] || '',
@@ -181,10 +225,12 @@ export class StudentComponent {
           const email = String(r['Email'] || '').trim();
           const parentName = String(r['Parent Name'] || '').trim();
           const parentMobile = String(r['Parent Mobile'] || '').trim();
-
+          // ── NEW: School ID ─────────────────────────────────────────────
+          const studentSchoolId = String(
+            r['School ID'] || r['studentSchoolId'] || '',
+          ).trim();
           const errors: string[] = [];
           if (!admissionNo) errors.push('Missing Enrolment Number');
-
           return {
             _rowNo: idx + 2,
             _valid: errors.length === 0,
@@ -195,10 +241,10 @@ export class StudentComponent {
             email,
             parentName,
             parentMobile,
+            studentSchoolId,
             _raw: r,
           };
         });
-
         const invalid = this.bulkPreviewRows.filter((r) => !r._valid);
         this.bulkInvalidCount = invalid.length;
         this.bulkHasInvalidRows = invalid.length > 0;
@@ -207,7 +253,6 @@ export class StudentComponent {
         this.bulkPreviewRows = [];
       }
     };
-
     reader.onerror = () => this.alert.error('Unable to read file');
     reader.readAsBinaryString(file);
   }
@@ -219,146 +264,96 @@ export class StudentComponent {
       this.bulkHasInvalidRows
     )
       return;
-
     const students = this.bulkPreviewRows.map((r) => r._raw);
-
-    const payload = {
-      tenantId: this.tenantId,
-      userId: this.userId,
-      students,
-    };
-
     this.bulkUploading = true;
-    this.commonApi.fetchData(payload, 'student', 'bulk-update').subscribe({
-      next: (res: any) => {
-        this.bulkUploading = false;
-        if (res?.status) {
-          const data = res.data || {};
-          this.alert.success(
-            `Bulk update: ${data.successCount || 0} success, ${data.failedCount || 0} failed`,
-          );
-          this.showBulkUpload = false;
-          this.resetBulkUpload();
-        } else {
-          this.alert.error(res?.message || 'Bulk update failed');
-        }
-      },
-      error: (err: any) => {
-        this.bulkUploading = false;
-        this.alert.error(err?.error?.message || 'Bulk update failed');
-      },
-    });
+    this.commonApi
+      .fetchData(
+        { tenantId: this.tenantId, userId: this.userId, students },
+        'student',
+        'bulk-update',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.bulkUploading = false;
+          if (res?.status) {
+            const d = res.data || {};
+            this.alert.success(
+              `Bulk update: ${d.successCount || 0} success, ${d.failedCount || 0} failed`,
+            );
+            this.showBulkUpload = false;
+            this.resetBulkUpload();
+          } else {
+            this.alert.error(res?.message || 'Bulk update failed');
+          }
+        },
+        error: (err: any) => {
+          this.bulkUploading = false;
+          this.alert.error(err?.error?.message || 'Bulk update failed');
+        },
+      });
   }
 
-  // ===================== BULK IMAGE UPLOAD =====================
-
-  openImageUpload() {
-    this.showImageUpload = true;
-    this.resetImageUpload();
-  }
-
-  closeImageUpload() {
-    if (this.imageUploading) return;
-    this.showImageUpload = false;
-  }
+  // ══════════════════════════════════════════════════════════════════════════
+  // ZIP PHOTO UPLOAD  (replaces old multi-file upload)
+  // ══════════════════════════════════════════════════════════════════════════
 
   resetImageUpload() {
-    this.imageFiles = [];
-    this.imagePreviewList = [];
+    this.zipFile = null;
+    this.zipUploadResult = null;
   }
 
-  downloadImageSample() {
-    // Create a simple text file with instructions
-    const content = `Bulk Image Upload Instructions
-================================
-
-1. Name each image file with the student's Admission/Enrolment Number.
-   Example: ADM001.jpg, ADM002.png, 90202590001.jpg
-
-2. Supported formats: JPG, JPEG, PNG
-
-3. Maximum 100 images per upload.
-
-4. The system will match the filename to the student record automatically.
-`;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'Image_Upload_Instructions.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  onImagesSelected(ev: any) {
+  onZipSelected(ev: any) {
     if (this.imageUploading) return;
-    const files: FileList = ev?.target?.files;
-    if (!files || files.length === 0) return;
-
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    this.imageFiles = [];
-    this.imagePreviewList = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      if (!validTypes.includes(f.type)) continue;
-
-      const admissionNo = f.name.replace(/\.[^/.]+$/, '').trim();
-      this.imageFiles.push(f);
-      this.imagePreviewList.push({
-        name: f.name,
-        admissionNo,
-        preview: URL.createObjectURL(f),
-      });
+    const file: File = ev?.target?.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      this.alert.error('Please upload a .zip file');
+      (ev.target as HTMLInputElement).value = '';
+      return;
     }
-
-    if (this.imageFiles.length === 0) {
-      this.alert.error('No valid image files selected (JPG/PNG only)');
-    }
+    this.zipFile = file;
+    this.zipUploadResult = null;
   }
 
-  removeImage(index: number) {
-    if (this.imageUploading) return;
-    URL.revokeObjectURL(this.imagePreviewList[index].preview);
-    this.imageFiles.splice(index, 1);
-    this.imagePreviewList.splice(index, 1);
-  }
-
-  confirmImageUpload() {
-    if (this.imageUploading || this.imageFiles.length === 0) return;
-
+  confirmZipUpload() {
+    if (this.imageUploading || !this.zipFile) return;
     const formData = new FormData();
-    formData.append('tenantId', this.tenantId);
+    formData.append('entiId', this.tenantId);
     formData.append('userId', this.userId);
-
-    for (const file of this.imageFiles) {
-      formData.append('images', file, file.name);
-    }
-
+    formData.append('zip', this.zipFile, this.zipFile.name);
     this.imageUploading = true;
     this.commonApi
-      .uploadImage(formData, 'student', 'bulk-image-upload')
+      .uploadImage(formData, 'student', 'zip-image-upload')
       .subscribe({
         next: (res: any) => {
           this.imageUploading = false;
           if (res?.status) {
-            const data = res.data || {};
+            this.zipUploadResult = res.data || {};
+            const d = this.zipUploadResult;
             this.alert.success(
-              `Image upload: ${data.successCount || 0} success, ${data.failedCount || 0} failed`,
+              `ZIP upload: ${d.successCount || 0} uploaded, ${d.failedCount || 0} failed`,
             );
-            this.showImageUpload = false;
-            this.resetImageUpload();
           } else {
-            this.alert.error(res?.message || 'Image upload failed');
+            this.alert.error(res?.message || 'Upload failed');
           }
         },
         error: (err: any) => {
           this.imageUploading = false;
-          this.alert.error(err?.error?.message || 'Image upload failed');
+          this.alert.error(err?.error?.message || 'Upload failed');
         },
       });
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // IMPORT CALLBACKS
+  // ══════════════════════════════════════════════════════════════════════════
   onRpaImported(): void {
+    /* optionally refresh list */
+  }
+  onBoardExamImported(): void {
+    /* optionally refresh list */
+  }
+  onAlumniImported(): void {
+    /* optionally refresh list */
   }
 }

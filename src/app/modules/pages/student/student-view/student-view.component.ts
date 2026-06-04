@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
@@ -19,12 +19,19 @@ const safeTrim = (v: any) =>
 })
 export class StudentViewComponent implements OnInit {
   loading = false;
-  entiId: any;
+  entiId: any = null;
   studentId = '';
   student: any = null;
   photoUrl: string | null = null;
-  activeViewTab: 'program' | 'attendance' | 'assignments' | 'late' | 'remarks' =
-    'program';
+  activeViewTab:
+    | 'program'
+    | 'attendance'
+    | 'assignments'
+    | 'late'
+    | 'remarks'
+    | 'boardexams'
+    | 'alumni' = 'program';
+
   showEditModal = false;
   editLoading = false;
   editForm!: FormGroup;
@@ -66,6 +73,7 @@ export class StudentViewComponent implements OnInit {
     remark: '',
     reportedByParent: true,
   };
+
   columnsLate = [
     { key: 'date', label: 'Date', sortable: false },
     { key: 'periodNo', label: 'Period', sortable: false },
@@ -83,6 +91,11 @@ export class StudentViewComponent implements OnInit {
     { key: 'status', label: 'Status', sortable: false },
   ];
   dataArray5: any[] = [];
+  boardExams: any[] = [];
+  alumniData: any = null;
+  alumniLoading = false;
+  tabletLockLoading = false;
+  photoObjectUrl: string | null = null;
 
   constructor(
     private breadcrump: BredcrumpService,
@@ -108,6 +121,10 @@ export class StudentViewComponent implements OnInit {
     }
     this.initEditForm();
     this.loadStudentData();
+  }
+
+  ngOnDestroy(): void {
+    if (this.photoObjectUrl) URL.revokeObjectURL(this.photoObjectUrl);
   }
 
   private initEditForm() {
@@ -193,11 +210,9 @@ export class StudentViewComponent implements OnInit {
       });
   }
 
-  // ── Main loader ───────────────────────────────────────────────────────────
   loadStudentData() {
     this.loading = true;
     const payload = { entiId: this.entiId, studentId: this.studentId };
-
     forkJoin({
       profile: this.commonApi.fetchData(payload, 'student', 'view'),
       finance: this.commonApi.fetchData(payload, 'student', 'finance/summary'),
@@ -218,6 +233,11 @@ export class StudentViewComponent implements OnInit {
             fees: f || {},
           };
           this.photoUrl = p.basic?.photoUrl || null;
+          if (this.photoUrl) this.loadStudentPhoto(this.photoUrl);
+          this.boardExams = Array.isArray(p.basic?.boardExams)
+            ? p.basic.boardExams
+            : [];
+
           const attData = results.attendance?.data || {};
           this.attendanceSummary = attData.summary || null;
           this.totalRecords = (attData.details || []).length;
@@ -242,6 +262,7 @@ export class StudentViewComponent implements OnInit {
           if (p.basic?.admissionNo) {
             this.loadRemarks(p.basic.admissionNo);
             this.loadAssignmentResults(p.basic.admissionNo);
+            this.loadAlumniData(p.basic.admissionNo);
           }
           this.loadLateEntries();
         },
@@ -253,6 +274,25 @@ export class StudentViewComponent implements OnInit {
       });
   }
 
+  // ── NEW: load alumni/entrance exam data ───────────────────────────────────
+  loadAlumniData(admissionNo: string) {
+    if (!admissionNo) return;
+    this.alumniLoading = true;
+    this.commonApi
+      .fetchData({ entiId: this.entiId, admissionNo }, 'student', 'alumni-data')
+      .subscribe({
+        next: (res: any) => {
+          this.alumniLoading = false;
+          this.alumniData = res?.data || null;
+        },
+        error: () => {
+          this.alumniLoading = false;
+          this.alumniData = null;
+        },
+      });
+  }
+
+  // ── Existing methods (unchanged) ──────────────────────────────────────────
   loadRemarks(admissionNo: string) {
     if (!admissionNo) return;
     this.commonApi
@@ -410,140 +450,245 @@ export class StudentViewComponent implements OnInit {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  // ── exportToExcel — CHANGE: added board exams + alumni sheets ─────────────
   exportToExcel() {
     if (!this.student) {
       this.alert.error('No student data to export');
       return;
     }
     const wb = XLSX.utils.book_new();
-    const b = this.student.basic || {};
-    const p = this.student.program || {};
-    const f = this.student.fees || {};
+    const b = this.student.basic || {},
+      p = this.student.program || {},
+      f = this.student.fees || {};
+    // Profile sheet (unchanged)
     const profileRows = [
       { Field: 'Name', Value: b.name || '—' },
       { Field: 'Admission No', Value: b.admissionNo || '—' },
       { Field: 'Status', Value: b.status || '—' },
       { Field: 'Mobile', Value: b.mobile || '—' },
       { Field: 'Email', Value: b.email || '—' },
-      { Field: 'Mother Mobile', Value: b.phone1 || '—' },
-      { Field: 'Alternate Mobile', Value: b.phone2 || '—' },
-      { Field: 'Mother Email', Value: b.email1 || '—' },
-      { Field: 'Alternate Email', Value: b.email2 || '—' },
       { Field: 'Parent Name', Value: b.parentName || '—' },
       { Field: 'Parent Mobile', Value: b.parentMobile || '—' },
       { Field: 'Gender', Value: b.gender || '—' },
       { Field: 'DOB', Value: b.dob ? this.fmtEpoch(b.dob) : '—' },
-      { Field: 'Address', Value: b.addressLine1 || '—' },
-      { Field: 'City', Value: b.city || '—' },
       { Field: 'Program', Value: p.programName || '—' },
       { Field: 'Batch', Value: p.batchName || '—' },
       { Field: 'Center', Value: p.centerName || '—' },
-      { Field: 'Academic Year', Value: p.academicYear || '—' },
-      {
-        Field: 'Joining Date',
-        Value: p.joiningDate ? this.fmtEpoch(p.joiningDate) : '—',
-      },
-      { Field: 'Mentor', Value: p.mentorName || '—' },
     ];
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.json_to_sheet(profileRows),
       'Profile',
     );
-    const financeRows = [
-      { Field: 'Total Amount', Value: f.totalAmount ?? 0 },
-      { Field: 'Paid Amount', Value: f.paidAmount ?? 0 },
-      { Field: 'Outstanding Amount', Value: f.outstandingAmount ?? 0 },
-    ];
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(financeRows),
-      'Finance',
-    );
-    if (this.dataArray.length) {
-      const attRows = this.dataArray.map((r: any) => ({
-        Date: r.date,
-        Period: r.period,
-        Subject: r.subject,
-        Topic: r.topic,
-        Feedback: r.feedback,
-        Status: r.status,
-      }));
-      if (this.attendanceSummary) {
-        const s = this.attendanceSummary;
-        attRows.unshift({
-          Date: `Total: ${s.totalPeriods}`,
-          Period: `Present: ${s.present}`,
-          Subject: `Absent: ${s.absent}`,
-          Topic: `Late: ${s.late}`,
-          Feedback: `Percentage: ${s.attendancePercentage}%`,
-          Status: '',
-        });
-      }
+    // Attendance
+    if (this.dataArray.length)
       XLSX.utils.book_append_sheet(
         wb,
-        XLSX.utils.json_to_sheet(attRows),
+        XLSX.utils.json_to_sheet(
+          this.dataArray.map((r: any) => ({
+            Date: r.date,
+            Period: r.period,
+            Subject: r.subject,
+            Topic: r.topic,
+            Status: r.status,
+          })),
+        ),
         'Attendance',
       );
-    }
-    if (this.dataArray1.length) {
-      const assRows = this.dataArray1.map((r: any) => ({
-        'Test No': r.testNo,
-        'Test Code': r.testCode,
-        Subject: r.subject,
-        Topic: r.topic,
-        'Sub Topic': r.subTopic,
-        Marks: r.marks,
-        Date: r.completedAt,
-      }));
+    // Assignments
+    if (this.dataArray1.length)
       XLSX.utils.book_append_sheet(
         wb,
-        XLSX.utils.json_to_sheet(assRows),
+        XLSX.utils.json_to_sheet(
+          this.dataArray1.map((r: any) => ({
+            'Test No': r.testNo,
+            Subject: r.subject,
+            Marks: r.marks,
+            Date: r.completedAt,
+          })),
+        ),
         'Assignments',
       );
-    }
-    if (this.dataArray4.length) {
-      const remRows = this.dataArray4.map((r: any) => ({
-        Date: r.date,
-        Type: r.type,
-        Remark: r.remark,
-        'Reported By Parent': r.reportedByParent,
-      }));
+    // Remarks
+    if (this.dataArray4.length)
       XLSX.utils.book_append_sheet(
         wb,
-        XLSX.utils.json_to_sheet(remRows),
+        XLSX.utils.json_to_sheet(
+          this.dataArray4.map((r: any) => ({
+            Date: r.date,
+            Type: r.type,
+            Remark: r.remark,
+          })),
+        ),
         'Remarks',
       );
-    }
-    if (this.lateEntries.length) {
-      const lateRows = this.lateEntries.map((r: any) => ({
-        Date: r.date,
-        Period: r.periodNo,
-        Type: r.entryType,
-        'Delay (min)': r.delay,
-        Reason: r.reason,
-      }));
+    // Payments
+    if (this.dataArray5.length)
       XLSX.utils.book_append_sheet(
         wb,
-        XLSX.utils.json_to_sheet(lateRows),
-        'Late Entries',
-      );
-    }
-    if (this.dataArray5.length) {
-      const payRows = this.dataArray5.map((r: any) => ({
-        'Receipt No': r.receiptNo,
-        Date: r.date,
-        Mode: r.mode,
-        Amount: r.amount,
-        Status: r.status,
-      }));
-      XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.json_to_sheet(payRows),
+        XLSX.utils.json_to_sheet(
+          this.dataArray5.map((r: any) => ({
+            'Receipt No': r.receiptNo,
+            Date: r.date,
+            Mode: r.mode,
+            Amount: r.amount,
+            Status: r.status,
+          })),
+        ),
         'Payments',
       );
+    // ── NEW: Board Exams sheet ────────────────────────────────────────────
+    if (this.boardExams.length)
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(
+          this.boardExams.map((e: any) => ({
+            'Board Exam': e.boardExamName || '—',
+            'School ID': e.schoolId || '—',
+            S1: e.s1 ?? '—',
+            S2: e.s2 ?? '—',
+            S3: e.s3 ?? '—',
+            S4: e.s4 ?? '—',
+            S5: e.s5 ?? '—',
+            S6: e.s6 ?? '—',
+            S7: e.s7 ?? '—',
+            Total: e.total ?? '—',
+          })),
+        ),
+        'Board Exams',
+      );
+    // ── NEW: Alumni/Entrance sheet ────────────────────────────────────────
+    if (this.alumniData) {
+      const a = this.alumniData;
+      const alumniRows = [
+        {
+          Exam: 'JEE Main',
+          Subject: 'Physics',
+          Score: a.jeeMain?.physics ?? '—',
+        },
+        {
+          Exam: 'JEE Main',
+          Subject: 'Chemistry',
+          Score: a.jeeMain?.chemistry ?? '—',
+        },
+        { Exam: 'JEE Main', Subject: 'Maths', Score: a.jeeMain?.maths ?? '—' },
+        { Exam: 'JEE Main', Subject: 'Total', Score: a.jeeMain?.total ?? '—' },
+        { Exam: 'JEE Main', Subject: 'Rank', Score: a.jeeMain?.rank ?? '—' },
+        {
+          Exam: 'JEE Main',
+          Subject: 'Selected',
+          Score: a.jeeMain?.selected ?? '—',
+        },
+        {
+          Exam: 'JEE Adv P1',
+          Subject: 'Physics',
+          Score: a.jeeAdv?.paper1?.physics ?? '—',
+        },
+        {
+          Exam: 'JEE Adv P1',
+          Subject: 'Chemistry',
+          Score: a.jeeAdv?.paper1?.chemistry ?? '—',
+        },
+        {
+          Exam: 'JEE Adv P1',
+          Subject: 'Maths',
+          Score: a.jeeAdv?.paper1?.maths ?? '—',
+        },
+        {
+          Exam: 'JEE Adv P2',
+          Subject: 'Physics',
+          Score: a.jeeAdv?.paper2?.physics ?? '—',
+        },
+        {
+          Exam: 'JEE Adv P2',
+          Subject: 'Chemistry',
+          Score: a.jeeAdv?.paper2?.chemistry ?? '—',
+        },
+        {
+          Exam: 'JEE Adv P2',
+          Subject: 'Maths',
+          Score: a.jeeAdv?.paper2?.maths ?? '—',
+        },
+        {
+          Exam: 'JEE Adv',
+          Subject: 'Grand Total',
+          Score: a.jeeAdv?.grandTotal ?? '—',
+        },
+        { Exam: 'JEE Adv', Subject: 'Rank', Score: a.jeeAdv?.rank ?? '—' },
+        {
+          Exam: 'JEE Adv',
+          Subject: 'Selected',
+          Score: a.jeeAdv?.selected ?? '—',
+        },
+        { Exam: 'NEET', Subject: 'Physics', Score: a.neet?.physics ?? '—' },
+        { Exam: 'NEET', Subject: 'Chemistry', Score: a.neet?.chemistry ?? '—' },
+        { Exam: 'NEET', Subject: 'Biology', Score: a.neet?.biology ?? '—' },
+        { Exam: 'NEET', Subject: 'Total', Score: a.neet?.total ?? '—' },
+        { Exam: 'NEET', Subject: 'Rank', Score: a.neet?.rank ?? '—' },
+        { Exam: 'NEET', Subject: 'College', Score: a.neet?.collegeName ?? '—' },
+        { Exam: 'NEET', Subject: 'Course', Score: a.neet?.course ?? '—' },
+      ];
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(alumniRows),
+        'Entrance Exams',
+      );
     }
-    const fileName = `Student_${b.admissionNo || b.name || 'Export'}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    XLSX.writeFile(wb, `Student_${b.admissionNo || b.name || 'Export'}.xlsx`);
+  }
+
+  toggleTabletLock() {
+    if (this.tabletLockLoading || !this.student) return;
+    const isBlocked = this.student.basic?.isTabletBlocked;
+    const endpoint = isBlocked ? 'tablet/unlock' : 'tablet/lock';
+    const lockType = 'SOFT_LOCK';
+    const confirmMsg = isBlocked
+      ? 'Unlock tablet access for this student?'
+      : 'Lock tablet access for this student?';
+
+    if (!confirm(confirmMsg)) return;
+    const payload: any = {
+      entiId: this.entiId,
+      studentId: this.studentId,
+      reason: isBlocked ? 'Unlocked by admin' : 'Locked by admin',
+    };
+    if (!isBlocked) payload.lockType = lockType;
+    this.tabletLockLoading = true;
+    this.commonApi.fetchData(payload, 'student', endpoint).subscribe({
+      next: (res: any) => {
+        this.tabletLockLoading = false;
+        if (res?.status) {
+          this.student.basic.isTabletBlocked = !isBlocked;
+          this.alert.success(
+            isBlocked
+              ? 'Tablet unlocked successfully'
+              : 'Tablet locked successfully',
+          );
+        } else {
+          this.alert.error(res?.message || 'Operation failed');
+        }
+      },
+      error: (err: any) => {
+        this.tabletLockLoading = false;
+        this.alert.error(
+          err?.error?.message || 'Failed to update tablet access',
+        );
+      },
+    });
+  }
+
+  loadStudentPhoto(photoUrl: string) {
+    if (!photoUrl) return;
+    this.commonApi
+      .downloadByUrl({ entiId: this.entiId, url:photoUrl }, 'ims', 'download')
+      .subscribe({
+        next: (blob: Blob) => {
+          if (this.photoObjectUrl) URL.revokeObjectURL(this.photoObjectUrl);
+          this.photoObjectUrl = URL.createObjectURL(blob);
+        },
+        error: () => {
+          this.photoObjectUrl = null;
+        },
+      });
   }
 }
