@@ -177,7 +177,6 @@ export class AlumniimportComponent {
             return;
           }
           seen.add(enrollmentNumber.toLowerCase());
-          // ── Map columns to dot-notation keys ─────────────────────────────
           const mapped: AlumniRow = { enrollmentNumber };
           for (const { header, key } of COLUMN_MAP) {
             const val = r[header];

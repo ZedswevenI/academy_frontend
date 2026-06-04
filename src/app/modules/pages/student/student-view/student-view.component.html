@@ -10,9 +10,10 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="avatar-wrap me-3">
-                        <img *ngIf="photoUrl" [src]="photoUrl" class="rounded-circle object-fit-cover border"
-                            style="width:56px;height:56px;" alt="Photo" />
-                        <div *ngIf="!photoUrl" class="avatar">
+                        <img *ngIf="photoObjectUrl" [src]="photoObjectUrl"
+                            class="rounded-circle object-fit-cover border" style="width:56px;height:56px;"
+                            alt="Photo" />
+                        <div *ngIf="!photoObjectUrl" class="avatar">
                             {{ getInitials(student.basic?.name) }}
                         </div>
                     </div>
@@ -124,7 +125,17 @@
                             <span class="badge" [ngClass]="student.basic?.isTabletBlocked ? 'bg-danger' : 'bg-success'">
                                 {{ student.basic?.isTabletBlocked ? 'Blocked' : 'Enabled' }}
                             </span>
-                        </div>
+                        </div><!-- RPA IDs -->
+                        <ng-container *ngIf="student.basic?.studentRpa?.length">
+                            <hr>
+                            <p class="mb-1"><strong>RPA</strong></p>
+                            <div class="d-flex mb-2">
+                                <span *ngFor="let rpa of student.basic.studentRpa"
+                                    class="badge bg-primary  mx-1 text-white">
+                                    {{ rpa }}
+                                </span>
+                            </div>
+                        </ng-container>
                         <!-- <div class="d-flex justify-content-between mb-2">
                             <span>Fees Paid</span>
                             <span class="fw-semibold text-success">

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
@@ -95,6 +95,7 @@ export class StudentViewComponent implements OnInit {
   alumniData: any = null;
   alumniLoading = false;
   tabletLockLoading = false;
+  photoObjectUrl: string | null = null;
 
   constructor(
     private breadcrump: BredcrumpService,
@@ -120,6 +121,10 @@ export class StudentViewComponent implements OnInit {
     }
     this.initEditForm();
     this.loadStudentData();
+  }
+
+  ngOnDestroy(): void {
+    if (this.photoObjectUrl) URL.revokeObjectURL(this.photoObjectUrl);
   }
 
   private initEditForm() {
@@ -228,6 +233,7 @@ export class StudentViewComponent implements OnInit {
             fees: f || {},
           };
           this.photoUrl = p.basic?.photoUrl || null;
+          if (this.photoUrl) this.loadStudentPhoto(this.photoUrl);
           this.boardExams = Array.isArray(p.basic?.boardExams)
             ? p.basic.boardExams
             : [];
@@ -669,5 +675,20 @@ export class StudentViewComponent implements OnInit {
         );
       },
     });
+  }
+
+  loadStudentPhoto(photoUrl: string) {
+    if (!photoUrl) return;
+    this.commonApi
+      .downloadByUrl({ entiId: this.entiId, url:photoUrl }, 'ims', 'download')
+      .subscribe({
+        next: (blob: Blob) => {
+          if (this.photoObjectUrl) URL.revokeObjectURL(this.photoObjectUrl);
+          this.photoObjectUrl = URL.createObjectURL(blob);
+        },
+        error: () => {
+          this.photoObjectUrl = null;
+        },
+      });
   }
 }
