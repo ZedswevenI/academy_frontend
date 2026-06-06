@@ -32,7 +32,7 @@
       {{ s.sectionName }}
       <span class="badge ms-1" [class.bg-white]="selectedSectionId === s.sectionId"
         [class.text-dark]="selectedSectionId === s.sectionId" [class.bg-secondary]="selectedSectionId !== s.sectionId">
-        {{ sectionQuestionsMap[s.sectionId]?.length || 0 }}
+        {{ (sectionQuestionsMap[s.sectionId] || []).length }}
       </span>
     </button>
   </div>

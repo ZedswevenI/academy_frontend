@@ -5,7 +5,9 @@
 .qa-container {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
 
   // ============================================================
   // HEADER
@@ -113,7 +115,11 @@
           margin-bottom: 0.5rem;
 
           .badge {
-            background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%) !important;
+            background: linear-gradient(
+              135deg,
+              #0d6efd 0%,
+              #0b5ed7 100%
+            ) !important;
             color: white !important;
             font-weight: 700;
           }
@@ -290,7 +296,6 @@
       .card-header {
         border-bottom: 1px solid #dee2e6;
         padding: 1.5rem;
-
         h5 {
           color: #1a1a1a;
           font-size: 1.125rem;
@@ -299,29 +304,37 @@
 
       .card-body {
         padding: 1.5rem;
-
         // LaTeX Content
+        // .qa-latex-content {
+        //   margin-bottom: 1rem;
+        //   font-size: 1rem;
+        //   line-height: 1.6;
+        //   :deep() {
+        //     .katex-display {
+        //       margin: 1rem 0;
+        //     }
+        //     .katex {
+        //       font-size: 1.1em;
+        //     }
+        //     .MathJax_Display {
+        //       margin: 1rem 0;
+        //     }
+        //   }
+        // }
         .qa-latex-content {
           margin-bottom: 1rem;
           font-size: 1rem;
           line-height: 1.6;
-
-          // Support for KaTeX/MathJax
-          :deep() {
-            .katex-display {
-              margin: 1rem 0;
-            }
-
-            .katex {
-              font-size: 1.1em;
-            }
-
-            .MathJax_Display {
-              margin: 1rem 0;
-            }
+          ::ng-deep .katex-display {
+            margin: 1rem 0;
+          }
+          ::ng-deep .katex {
+            font-size: 1.1em;
+          }
+          ::ng-deep .MathJax_Display {
+            margin: 1rem 0;
           }
         }
-
         // Options
         .qa-options {
           .qa-option-item {
@@ -490,7 +503,7 @@
     margin: 15px 0;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    
+
     &:hover {
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
@@ -500,13 +513,13 @@
   .katex {
     margin: 0 2px;
     font-size: 1em;
-    
+
     // Better spacing around operators
     .mop {
       margin-left: 0.1667em;
       margin-right: 0.1667em;
     }
-    
+
     // Better fraction styling
     .frac-line {
       border-bottom-width: 1px;
@@ -517,7 +530,7 @@
   .katex-inline-custom {
     display: inline;
     margin: 0 2px;
-    
+
     .katex {
       margin: 0;
     }
@@ -530,15 +543,15 @@
     overflow-x: auto;
     overflow-y: hidden;
     padding: 0.5rem 0;
-    
+
     // Better padding on sides for overflow
     padding-left: 10px;
     padding-right: 10px;
-    
+
     .katex {
       margin: 0;
     }
-    
+
     // Scrollbar styling for better appearance
     &::-webkit-scrollbar {
       height: 6px;
@@ -563,8 +576,9 @@
     border-collapse: collapse;
     width: 100%;
     margin: 15px 0;
-    
-    td, th {
+
+    td,
+    th {
       border: 1px solid #ddd;
       padding: 8px 12px;
       text-align: center;
@@ -586,19 +600,20 @@
     background-color: #f4f4f4;
     padding: 2px 6px;
     border-radius: 3px;
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", monospace;
     font-size: 0.9em;
     color: #d63384;
   }
 
   // Lists - for steps, reactions, etc.
-  ol, ul {
+  ol,
+  ul {
     margin-left: 20px;
     margin-top: 10px;
-    
+
     li {
       margin-bottom: 8px;
-      
+
       // Better formatting for items with math
       p {
         margin: 5px 0;
@@ -726,7 +741,8 @@
     }
 
     // Lists in solution (steps, mechanism, etc.)
-    ol, ul {
+    ol,
+    ul {
       margin-left: 20px;
 
       li {
@@ -772,7 +788,8 @@
     table {
       font-size: 0.9em;
 
-      td, th {
+      td,
+      th {
         padding: 6px 8px;
       }
     }
@@ -830,7 +847,8 @@
       margin: 0.8rem 0;
     }
 
-    ol, ul {
+    ol,
+    ul {
       margin-left: 15px;
 
       li {
@@ -886,7 +904,8 @@
     }
 
     table {
-      td, th {
+      td,
+      th {
         border-color: #444;
       }
 

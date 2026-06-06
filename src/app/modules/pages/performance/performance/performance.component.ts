@@ -4,6 +4,15 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import {
+  buildCPTPageHtml,
+  buildSchoolPageHtml,
+  openPrintWindow,
+  PrintStudent,
+  SectionStats,
+  wrapAllPages,
+  exportToPdf,
+} from '../print.helper';
 
 @Component({
   selector: 'app-performance',
@@ -16,20 +25,15 @@ export class PerformanceComponent implements OnInit {
   roleLevel = '';
   canSync = false;
   canOverride = false;
-
-  // Filters
   batch_options: any[] = [];
   year_options: any[] = [];
   selectedBatchId = '';
   selectedBatchCode = '';
   selectedYear = '';
-
-  // Table state
   loading = false;
   syncing = false;
   dataArray: any[] = [];
   totalRecords = 0;
-
   columnsArray = [
     { key: 'admissionNo', label: 'Adm No', sortable: false },
     { key: 'studentName', label: 'Student', sortable: false },
@@ -40,10 +44,7 @@ export class PerformanceComponent implements OnInit {
     { key: 'batchRank', label: 'Rank', sortable: false },
   ];
   actions: any[] = [];
-
   syncingStudentId = '';
-
-  // Override modal
   overrideStudent: any = null;
   overrideSubjects: any[] = [];
   overrideForm = {
@@ -54,6 +55,8 @@ export class PerformanceComponent implements OnInit {
     attempts: '',
   };
   overrideSaving = false;
+  printingAllCPT = false;
+  printingAllSchool = false;
 
   constructor(
     private router: Router,
@@ -375,10 +378,193 @@ export class PerformanceComponent implements OnInit {
     if (el) (window as any).bootstrap.Modal.getInstance(el)?.hide();
   }
 
-
-   onRowSelected(row: any) {
-      this.router.navigate(['/app/performance/student', row.studentId], {
+  onRowSelected(row: any) {
+    this.router.navigate(['/app/performance/student', row.studentId], {
       state: { batchId: this.selectedBatchId, academicYear: this.selectedYear },
+    });
+  }
+
+  async printAllCPT(): Promise<void> {
+    if (!this.selectedBatchId || !this.selectedYear) {
+      this.alert.error('Select batch and year first');
+      return;
+    }
+    this.printingAllCPT = true;
+    try {
+      const students = await this.fetchAllBatchStudents();
+      if (!students.length) {
+        this.alert.error('No students found');
+        return;
+      }
+      const allPages: string[] = [];
+      for (const s of students) {
+        const [mockExams, profile] = await Promise.all([
+          this.fetchStudentMockExams(s.studentId),
+          this.fetchStudentProfile(s.studentId),
+        ]);
+        if (!mockExams.length) continue;
+        const batchStatsMap = new Map<string, SectionStats[]>();
+        for (const exam of mockExams) {
+          if (!exam.examId) continue;
+          try {
+            const res: any = await this.commonApi
+              .fetchData(
+                {
+                  entiId: this.tenantId,
+                  examId: exam.examId,
+                  batchId: this.selectedBatchId,
+                },
+                'exam',
+                'result/batch-subject-stats',
+              )
+              .toPromise();
+            if (res?.status) batchStatsMap.set(exam.examId, res.data || []);
+          } catch (e) {}
+        }
+        const printStudent: PrintStudent = {
+          studentName: profile?.basic?.name || s.studentName || '—',
+          admissionNo: profile?.basic?.admissionNo || s.admissionNo || '—',
+          classNo: profile?.basic?.classNo || null,
+          programName: profile?.program?.programName || '—',
+          batchCode: this.selectedBatchCode || '—',
+        };
+        const pageHtml = await buildCPTPageHtml(
+          printStudent,
+          mockExams,
+          batchStatsMap,
+        );
+        allPages.push(pageHtml);
+      }
+      if (!allPages.length) {
+        this.alert.error('No data to print');
+        return;
+      }
+      const html = wrapAllPages(allPages, 'cpt');
+      await exportToPdf(
+        html,
+        `CPT_Batch_${this.selectedBatchCode}_${this.selectedYear}.pdf`,
+      );
+    } finally {
+      this.printingAllCPT = false;
+    }
+  }
+
+  async printAllSchool(): Promise<void> {
+    if (!this.selectedBatchId || !this.selectedYear) {
+      this.alert.error('Select batch and year first');
+      return;
+    }
+    this.printingAllSchool = true;
+    try {
+      const students = await this.fetchAllBatchStudents();
+      if (!students.length) {
+        this.alert.error('No students found');
+        return;
+      }
+      const allPages: string[] = [];
+      for (const s of students) {
+        const [schoolExams, profile] = await Promise.all([
+          this.fetchStudentSchoolExams(s.studentId),
+          this.fetchStudentProfile(s.studentId),
+        ]);
+        if (!schoolExams.length) continue;
+        const printStudent: PrintStudent = {
+          studentName: profile?.basic?.name || s.studentName || '—',
+          admissionNo: profile?.basic?.admissionNo || s.admissionNo || '—',
+          classNo: profile?.basic?.classNo || null,
+          programName: profile?.program?.programName || '—',
+          batchCode: this.selectedBatchCode || '—',
+        };
+        // allPages.push(buildSchoolPageHtml(printStudent, schoolExams));
+        const pageHtml = await buildSchoolPageHtml(printStudent, schoolExams);
+        allPages.push(pageHtml);
+      }
+      if (!allPages.length) {
+        this.alert.error('No data to print');
+        return;
+      }
+      // openPrintWindow(wrapAllPages(allPages, 'school'));
+      const html = wrapAllPages(allPages, 'school');
+      await exportToPdf(
+        html,
+        `School_Batch_${this.selectedBatchCode}_${this.selectedYear}.pdf`,
+      );
+    } finally {
+      this.printingAllSchool = false;
+    }
+  }
+
+  private fetchAllBatchStudents(): Promise<any[]> {
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData(
+          {
+            entiId: this.tenantId,
+            batchId: this.selectedBatchId,
+            academicYear: this.selectedYear,
+            page: 1,
+            limit: 200,
+          },
+          'performance',
+          'batch/list',
+        )
+        .subscribe({
+          next: (res: any) => resolve(res?.data || []),
+          error: () => resolve([]),
+        });
+    });
+  }
+
+  private fetchStudentMockExams(studentId: string): Promise<any[]> {
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData(
+          {
+            entiId: this.tenantId,
+            studentId,
+            academicYear: this.selectedYear,
+            page: 1,
+            limit: 100,
+          },
+          'performance',
+          'student/mock-list',
+        )
+        .subscribe({
+          next: (res: any) => resolve(res?.data || []),
+          error: () => resolve([]),
+        });
+    });
+  }
+
+  private fetchStudentSchoolExams(studentId: string): Promise<any[]> {
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData(
+          {
+            entiId: this.tenantId,
+            studentId,
+            academicYear: this.selectedYear,
+            page: 1,
+            limit: 100,
+          },
+          'performance',
+          'student/school-list',
+        )
+        .subscribe({
+          next: (res: any) => resolve(res?.data || []),
+          error: () => resolve([]),
+        });
+    });
+  }
+
+  private fetchStudentProfile(studentId: string): Promise<any> {
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData({ entiId: this.tenantId, studentId }, 'ims/student', 'view')
+        .subscribe({
+          next: (res: any) => resolve(res?.data || null),
+          error: () => resolve(null),
+        });
     });
   }
 }

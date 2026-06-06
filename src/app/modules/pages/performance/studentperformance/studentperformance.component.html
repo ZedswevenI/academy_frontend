@@ -11,9 +11,6 @@
         <div class="bg-white rounded-4 shadow-sm p-4 mb-3">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="d-flex align-items-center gap-3">
-                    <!-- <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
-                        <i class="fa-solid fa-arrow-left me-1"></i>Back
-                    </button> -->
                     <div>
                         <h1 class="fw-bold mb-0" style="font-size:22px;">
                             {{ student?.admissionNo || studentId }}
@@ -27,6 +24,17 @@
                         <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
                         {{ syncing ? 'Syncing...' : 'Sync' }}
+                    </button>
+                    <button class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingCPT" (click)="printCPT()">
+                        <span *ngIf="exportingCPT" class="spinner-border spinner-border-sm me-1"></span>
+                        <i *ngIf="!exportingCPT" class="fa-solid fa-file-pdf me-1"></i>
+                        {{ exportingCPT ? 'Exporting...' : 'Z7i Performance' }}
+                    </button>
+                    <button class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingSchool"
+                        (click)="printSchool()">
+                        <span *ngIf="exportingSchool" class="spinner-border spinner-border-sm me-1"></span>
+                        <i *ngIf="!exportingSchool" class="fa-solid fa-file-pdf me-1"></i>
+                        {{ exportingSchool ? 'Exporting...' : 'School Performance' }}
                     </button>
                     <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
                         <i class="fa-solid fa-arrow-left btn-icon"></i>Back
