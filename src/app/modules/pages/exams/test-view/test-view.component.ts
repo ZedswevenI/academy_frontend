@@ -1446,9 +1446,24 @@ export class TestViewComponent implements OnInit {
     });
   }
 
+  // editExam() {
+  //   this.router.navigate(['/app/exams/exams/create'], {
+  //     state: { test: this.examData },
+  //   });
+  // }
+
   editExam() {
+    const examToEdit = {
+      ...this.examData,
+      instructionId:
+        this.examData.instructionId?._id || this.examData.instructionId || null,
+      sections: (this.examData.sections || []).map((s: any) => ({
+        ...s,
+        subjectId: s.subjectId?._id || s.subjectId || null,
+      })),
+    };
     this.router.navigate(['/app/exams/exams/create'], {
-      state: { test: this.examData },
+      state: { test: examToEdit },
     });
   }
 

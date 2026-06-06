@@ -102,99 +102,6 @@ export class TestComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       show: (row: any) => !!row.isImported,
-      // dropdown: [
-      //   {
-      //     text: 'View Questions',
-      //     icon: 'fa-solid fa-list-ol',
-      //     show: (row: any) => !!row.isImported,
-      //     callback: (row: any) => this.viewQuestions(row),
-      //   },
-      //   {
-      //     text: 'Edit Exam',
-      //     icon: 'fa-regular fa-pen-to-square',
-      //     show: (row: any) =>
-      //       row.status === 'result_published' ||
-      //       row.status === 'completed' ||
-      //       !!row.isImported,
-      //     callback: (row: any) => this.editExam(row),
-      //   },
-      //   {
-      //     text: 'Duplicate Exam',
-      //     icon: 'fa-regular fa-copy',
-      //     callback: (row: any) => this.promptDuplicateExam(row),
-      //   },
-      //   {
-      //     text: 'Add Question',
-      //     icon: 'fa-solid fa-plus',
-      //     show: (row: any) => row.status !== 'draft' || !!row.isImported,
-      //     callback: (row: any) => this.addQuestions(row),
-      //   },
-      //   {
-      //     text: 'Import Questions',
-      //     icon: 'fa-solid fa-file-import',
-      //     show: (row: any) => row.status !== 'draft' || !!row.isImported,
-      //     callback: (row: any) => this.importQuestions(row),
-      //   },
-      //   {
-      //     text: 'Import Answers',
-      //     icon: 'fa-solid fa-clipboard-check',
-      //     show: (row: any) => !!row.isImported,
-      //     callback: (row: any) => this.importAnswers(row),
-      //   },
-      //   {
-      //     text: 'Rearrange Questions',
-      //     icon: 'fa-solid fa-reorder',
-      //     show: (row: any) =>
-      //       row.status === 'result_published' ||
-      //       row.status === 'completed' ||
-      //       !!row.isImported,
-      //     callback: (row: any) => this.rearrange(row),
-      //   },
-      //   {
-      //     text: 'Publish Exam',
-      //     icon: 'fa-solid fa-paper-plane',
-      //     show: (row: any) => row.status !== 'draft' || !!row.isImported,
-      //     callback: (row: any) => this.publishExam(row),
-      //   },
-      //   {
-      //     text: 'Assign Batch',
-      //     icon: 'fa-solid fa-users',
-      //     show: (row: any) => row.status === 'result_published',
-      //     callback: (row: any) => this.openBatchModal(row),
-      //   },
-      //   {
-      //     text: 'Publish Result',
-      //     icon: 'fa-solid fa-bullhorn',
-      //     show: (row: any) =>
-      //       row.status !== 'published' &&
-      //       !(row.graces && row.graces.length > 0),
-      //     callback: (row: any) => this.publishResult(row),
-      //   },
-      //   {
-      //     text: 'Result',
-      //     icon: 'fa-solid fa-chart-bar',
-      //     show: (row: any) => row.status !== 'result_published',
-      //     callback: (row: any) => this.viewResult(row),
-      //   },
-      //   {
-      //     text: 'Reevaluate',
-      //     icon: 'fa-solid fa-arrows-rotate',
-      //     show: (row: any) => row.status !== 'result_published',
-      //     callback: (row: any) => this.reevaluateResults(row),
-      //   },
-      //   {
-      //     text: 'Grace Marks',
-      //     icon: 'fa-solid fa-gift',
-      //     show: (row: any) => row.status === 'draft',
-      //     callback: (row: any) => this.openGraceModal(row),
-      //   },
-      //   {
-      //     text: 'Delete',
-      //     icon: 'fa-regular fa-trash-can',
-      //     show: (row: any) => row.status === 'result_published',
-      //     callback: (row: any) => this.deleteExam(row),
-      //   },
-      // ],
       dropdown: [
         {
           text: 'View Questions',
@@ -611,30 +518,6 @@ export class TestComponent implements OnInit, OnDestroy {
     this.loading = true;
     const d = this.examToDuplicate;
     const suffix = ' - Copy';
-    // const payload: any = {
-    //   entiId: localStorage.getItem('tenantId'),
-    //   examCode: `${d.examCode}${suffix}`,
-    //   examName: `${d.examName}${suffix}`,
-    //   password: d.password || '123456',
-    //   description: d.description,
-    //   testType: d.testType,
-    //   medium: d.medium,
-    //   duration: d.duration,
-    //   totalMarks: d.totalMarks,
-    //   totalQuestions: d.totalQuestions,
-    //   startTime: Date.now() + 86400000,
-    //   endTime: Date.now() + 86400000 + d.duration * 60000,
-    //   autoPublishAt: null,
-    //   instructionId: d.instructionId,
-    //   calculatorType: d.calculatorType,
-    //   sections: (d.sections || []).map((s: any) => ({
-    //     sectionCode: s.sectionCode,
-    //     sectionName: s.sectionName,
-    //     subjectId: s.subjectId?._id || s.subjectId,
-    //     numberOfQuestions: s.numberOfQuestions,
-    //     sortOrder: s.sortOrder,
-    //   })),
-    // };
     const basePayload: any = {
       entiId: localStorage.getItem('tenantId'),
       examCode: `${d.examCode}${suffix}`,
@@ -680,28 +563,6 @@ export class TestComponent implements OnInit, OnDestroy {
           .filter((s: any) => !!s.subjectId),
       };
     }
-    // const endpoint = withQuestions ? 'duplicate' : 'create';
-    // if (withQuestions) {
-    //   payload.refExamId = d.examId;
-    // }
-    // this.commonApi.fetchData(payload, 'exam', endpoint).subscribe({
-    //   next: (res: any) => {
-    //     this.loading = false;
-    //     if (res?.status) {
-    //       this.alert.success(
-    //         `Exam duplicated successfully ${withQuestions ? 'with' : 'without'} questions`,
-    //       );
-    //       this.closeDuplicateModal();
-    //       this.fetchTableData(this.lastTableParams);
-    //     } else {
-    //       this.alert.error(res?.message || 'Error duplicating exam');
-    //     }
-    //   },
-    //   error: (err: any) => {
-    //     this.loading = false;
-    //     this.alert.error(err?.error?.message || 'Error duplicating exam');
-    //   },
-    // });
     this.commonApi.fetchData(payload, 'exam', endpoint).subscribe({
       next: (res: any) => {
         this.loading = false;

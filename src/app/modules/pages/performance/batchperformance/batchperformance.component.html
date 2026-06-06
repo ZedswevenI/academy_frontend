@@ -14,6 +14,19 @@
                     </div>
                 </div>
             </div>
+            <div class="d-flex gap-2" *ngIf="overview">
+                <button class="btn btn-export fs-16 fw-medium" [disabled]="printingAllCPT" (click)="printAllCPT()">
+                    <span *ngIf="printingAllCPT" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!printingAllCPT" class="fa-solid fa-file-pdf me-1"></i>
+                    {{ printingAllCPT ? 'Exporting...' : 'Z7i Performance' }}
+                </button>
+                <button class="btn btn-export fs-16 fw-medium" [disabled]="printingAllSchool"
+                    (click)="printAllSchool()">
+                    <span *ngIf="printingAllSchool" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!printingAllSchool" class="fa-solid fa-file-pdf me-1"></i>
+                    {{ printingAllSchool ? 'Exporting...' : 'School Performance' }}
+                </button>
+            </div>
         </div>
         <div *ngIf="!overview && batch_options.length" class="row g-3">
             <div class="col-md-4">

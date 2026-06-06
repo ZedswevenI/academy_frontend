@@ -4,6 +4,14 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import {
+  buildCPTPrintHtml,
+  buildSchoolPrintHtml,
+  openPrintWindow,
+  PrintStudent,
+  SectionStats,
+  exportToPdf,
+} from '../print.helper';
 
 @Component({
   selector: 'app-studentperformance',
@@ -14,42 +22,34 @@ import { AuthService } from '../../../../service/auth/auth.service';
 export class StudentperformanceComponent implements OnInit {
   tenantId = localStorage.getItem('tenantId') || '';
   roleLevel = '';
-  canAddRemark = false; // L1, L3, L4
-  canDeleteRemark = false; // L1, L3
-
+  canAddRemark = false;
+  canDeleteRemark = false;
   studentId = '';
   academicYear = '';
   batchId = '';
-
-  // Main data
   loading = false;
   syncing = false;
-  student: any = null; // summary record
+  student: any = null;
   assignments: any[] = [];
   staffFeedback: any[] = [];
-
-  // Tabs
-  activeTab = 'assignment'; // assignment | mock | school | remarks
-
-  // Mock exams tab
+  activeTab = 'assignment';
   mockExams: any[] = [];
   mockPage = 1;
   mockPageSize = 20;
   mockTotal = 0;
   mockLoading = false;
-  expandedMockId = ''; // which exam row is expanded
-
-  // School exams tab
+  expandedMockId = '';
   schoolExams: any[] = [];
   schoolPage = 1;
   schoolPageSize = 20;
   schoolTotal = 0;
   schoolLoading = false;
   expandedSchoolId = '';
-
-  // Add remark
   remarkText = '';
   remarkSaving = false;
+  studentProfile: any = null;
+  exportingCPT = false;
+  exportingSchool = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -64,29 +64,25 @@ export class StudentperformanceComponent implements OnInit {
     this.roleLevel = this.auth.getRole();
     this.canAddRemark = ['L1', 'L3', 'L4'].includes(this.roleLevel);
     this.canDeleteRemark = ['L1', 'L3'].includes(this.roleLevel);
-
     this.studentId = this.route.snapshot.paramMap.get('id') || '';
     const state = history.state;
     this.batchId = state?.batchId || '';
     this.academicYear = state?.academicYear || '';
-
     if (!this.studentId) {
       this.router.navigate(['/app/performance']);
       return;
     }
-
     this.breadcrump.set([
       { label: 'Performance', link: '/app/performance' },
       { label: 'Student Detail' },
     ]);
-
     this.loadFull();
   }
 
-  // ── Load full performance ──────────────────────────────────────────────────
   loadFull(): void {
     if (!this.academicYear) return;
     this.loading = true;
+    this.loadStudentProfile();
     this.commonApi
       .fetchData(
         {
@@ -113,14 +109,12 @@ export class StudentperformanceComponent implements OnInit {
       });
   }
 
-  // ── Tab switch ────────────────────────────────────────────────────────────
   setTab(tab: string): void {
     this.activeTab = tab;
     if (tab === 'mock' && !this.mockExams.length) this.loadMockExams();
     if (tab === 'school' && !this.schoolExams.length) this.loadSchoolExams();
   }
 
-  // ── Mock exams (paginated) ────────────────────────────────────────────────
   loadMockExams(): void {
     this.mockLoading = true;
     this.commonApi
@@ -156,7 +150,6 @@ export class StudentperformanceComponent implements OnInit {
     this.expandedMockId = this.expandedMockId === examId ? '' : examId;
   }
 
-  // ── School exams (paginated) ──────────────────────────────────────────────
   loadSchoolExams(): void {
     this.schoolLoading = true;
     this.commonApi
@@ -192,7 +185,6 @@ export class StudentperformanceComponent implements OnInit {
     this.expandedSchoolId = this.expandedSchoolId === examId ? '' : examId;
   }
 
-  // ── Sync student ──────────────────────────────────────────────────────────
   syncStudent(): void {
     this.syncing = true;
     this.commonApi
@@ -224,7 +216,6 @@ export class StudentperformanceComponent implements OnInit {
       });
   }
 
-  // ── Staff remarks ─────────────────────────────────────────────────────────
   addRemark(): void {
     if (!this.remarkText.trim()) {
       this.alert.error('Remarks cannot be empty');
@@ -284,7 +275,6 @@ export class StudentperformanceComponent implements OnInit {
       });
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
   goBack(): void {
     this.router.navigate(['/app/performance']);
   }
@@ -337,5 +327,138 @@ export class StudentperformanceComponent implements OnInit {
   }
   get schoolPageRange(): number[] {
     return Array.from({ length: this.schoolPages }, (_, i) => i + 1);
+  }
+
+  private loadStudentProfile(): Promise<void> {
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData(
+          { entiId: this.tenantId, studentId: this.studentId },
+          'ims/student',
+          'view',
+        )
+        .subscribe({
+          next: (res: any) => {
+            if (res?.status) this.studentProfile = res.data;
+            resolve();
+          },
+          error: () => resolve(),
+        });
+    });
+  }
+
+  private getPrintStudent(): PrintStudent {
+    return {
+      studentName:
+        this.studentProfile?.basic?.name || this.student?.admissionNo || '—',
+      admissionNo:
+        this.studentProfile?.basic?.admissionNo ||
+        this.student?.admissionNo ||
+        '—',
+      classNo: this.studentProfile?.basic?.classNo || null,
+      programName: this.studentProfile?.program?.programName || '—',
+      batchCode: this.studentProfile?.program?.batchName || this.batchId || '—',
+    };
+  }
+
+  async printCPT(): Promise<void> {
+    if (!this.studentProfile) await this.loadStudentProfile();
+    let exams = this.mockExams;
+    if (!exams.length) exams = await this.fetchAllMockExams();
+    if (!exams.length) {
+      this.alert.error('No exam data to print');
+      return;
+    }
+    const batchStatsMap = new Map<string, SectionStats[]>();
+    this.exportingCPT = true;
+    for (const exam of exams) {
+      if (!exam.examId) continue;
+      try {
+        const res: any = await this.commonApi
+          .fetchData(
+            {
+              entiId: this.tenantId,
+              examId: exam.examId,
+              batchId: this.batchId,
+            },
+            'exam',
+            'result/batch-subject-stats',
+          )
+          .toPromise();
+        if (res?.status) batchStatsMap.set(exam.examId, res.data || []);
+      } catch (e) {
+      } finally {
+        this.exportingCPT = false;
+      }
+    }
+    const html = await buildCPTPrintHtml(
+      this.getPrintStudent(),
+      exams,
+      batchStatsMap,
+    );
+    const name = `CPT_${this.studentProfile?.basic?.admissionNo || this.studentId}.pdf`;
+    await exportToPdf(html, name);
+  }
+
+  async printSchool(): Promise<void> {
+    this.exportingSchool = true;
+    try {
+      if (!this.studentProfile) await this.loadStudentProfile();
+      let exams = this.schoolExams;
+      if (!exams.length) exams = await this.fetchAllSchoolExams();
+      if (!exams.length) {
+        this.alert.error('No school exam data to print');
+        return;
+      }
+      const html = buildSchoolPrintHtml(this.getPrintStudent(), exams);
+      const name = `School_${this.studentProfile?.basic?.admissionNo || this.studentId}.pdf`;
+      await exportToPdf(html, name);
+    } catch (err) {
+      this.alert.error('Failed to export PDF');
+    } finally {
+      this.exportingSchool = false;
+    }
+  }
+
+  private fetchAllMockExams(): Promise<any[]> {
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData(
+          {
+            entiId: this.tenantId,
+            studentId: this.studentId,
+            academicYear: this.academicYear,
+            page: 1,
+            limit: 100,
+          },
+          'performance',
+          'student/mock-list',
+        )
+        .subscribe({
+          next: (res: any) => resolve(res?.data || []),
+          error: () => resolve([]),
+        });
+    });
+  }
+
+  private fetchAllSchoolExams(): Promise<any[]> {
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData(
+          {
+            entiId: this.tenantId,
+            studentId: this.studentId,
+            academicYear: this.academicYear,
+            page: 1,
+            limit: 100,
+          },
+          'performance',
+          'student/school-list',
+        )
+        .subscribe({
+          next: (res: any) => resolve(res?.data || []),
+          error: () => resolve([]),
+        });
+    });
   }
 }
