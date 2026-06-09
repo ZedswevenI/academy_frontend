@@ -86,8 +86,16 @@ export class InvigilationComponent implements OnInit {
       page: page,
       limit: pageSize
     };
-    if (this.filterFromDate) payload.fromDate = new Date(this.filterFromDate).setHours(0, 0, 0, 0);
-    if (this.filterToDate) payload.toDate = new Date(this.filterToDate).setHours(23, 59, 59, 999);
+    // if (this.filterFromDate) payload.fromDate = new Date(this.filterFromDate).setHours(0, 0, 0, 0);
+    // if (this.filterToDate) payload.toDate = new Date(this.filterToDate).setHours(23, 59, 59, 999);
+    if (this.filterFromDate) {
+      const [y, m, d] = this.filterFromDate.split('-').map(Number);
+      payload.fromDate = Date.UTC(y, m - 1, d);
+    }
+    if (this.filterToDate) {
+      const [y, m, d] = this.filterToDate.split('-').map(Number);
+      payload.toDate = Date.UTC(y, m - 1, d + 1) - 1;
+    }
     if (this.filterSession) payload.session = this.filterSession;
     if (this.filterExamName) payload.examName = this.filterExamName;
     this.commonApi.fetchData(payload, 'invigi', 'list').subscribe({

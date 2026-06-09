@@ -13,9 +13,7 @@ import { AuthService } from '../../../../service/auth/auth.service';
   styleUrls: ['./knowledge-create.component.scss']
 })
 export class KnowledgeCreateComponent implements OnInit {
-
   knowledgeForm!: FormGroup;
-
   tenantId: any;
   materialId: string | null = null;
   isEditMode = false;
@@ -23,13 +21,10 @@ export class KnowledgeCreateComponent implements OnInit {
   loading = false;
   todayDate = new Date().toISOString().split('T')[0];
   minUntilDate = this.todayDate;
-
   uploadedFiles: any[] = [];
-
   class_options = Array.from({ length: 8 }, (_, i) => ({
     label: (i + 6) === 13 ? '12th Pass' : (i + 6).toString(), value: i + 6
   }));
-
   batch_options: any[] = [];
   subjects: any[] = [];
   topics: any[] = [];
@@ -38,8 +33,6 @@ export class KnowledgeCreateComponent implements OnInit {
   allBatches: any[] = [];
   allTopics: any[] = [];
   allSubTopics: any[] = [];
-
-  // Multi-batch selection
   selectedBatchCodes: string[] = [];
   selectAllBatches = false;
   studentBatchCode = '';
@@ -90,17 +83,13 @@ export class KnowledgeCreateComponent implements OnInit {
         this.getBatchList()
       ]);
     }
-    
-    // Always load topics/subtopics as they are needed for lookup even for teachers
     if (role === 'L4') {
        await Promise.all([
         this.loadAllTopics(),
         this.loadAllSubTopics()
       ]);
     }
-
     this.registerValueChanges();
-
     if (this.isEditMode && this.editMaterial) {
       await this.patchEditData(this.editMaterial);
     }
@@ -113,20 +102,14 @@ export class KnowledgeCreateComponent implements OnInit {
         next: (res: any) => {
           if (res.status && res.data) {
             const data = res.data;
-
-            // Classes
             this.class_options = (data.classes || []).map((c: any) => ({
               label: c.classNo === 13 ? '12th Pass' : c.classNo.toString(),
               value: c.classNo
             }));
-
-            // Subjects
             this.subjects = (data.subjects || []).map((s: any) => ({
               label: s.subjectName,
               value: s.subjectId
             }));
-
-            // Batches
             this.batch_options = (data.batches || []).map((b: any) => ({
               label: b.batchName,
               value: b.batchCode

@@ -36,7 +36,7 @@ export class InvigilationcreateComponent implements OnInit {
 
   readonly sessionOptions = [
     { value: 'MORNING', label: 'Morning' },
-    { value: 'AFTERNOON', label: 'Afternoon' }
+    { value: 'AFTERNOON', label: 'Afternoon' },
   ];
 
   constructor(
@@ -55,11 +55,7 @@ export class InvigilationcreateComponent implements OnInit {
   private loadRecord(): void {
     this.loading = true;
     this.commonApi
-      .fetchData(
-        { entiId: this.tenantId },
-        'invigi',
-        `get/${this.editId}`,
-      )
+      .fetchData({ entiId: this.tenantId }, 'invigi', `get/${this.editId}`)
       .subscribe({
         next: (res: any) => {
           const d = res.data;
@@ -225,7 +221,9 @@ export class InvigilationcreateComponent implements OnInit {
     this.touched = true;
     if (!this.isFormValid) return;
     this.saving = true;
-    const epochDate = new Date(this.examDate).setHours(0, 0, 0, 0);
+    // const epochDate = new Date(this.examDate).setHours(0, 0, 0, 0);
+    const [year, month, day] = this.examDate.split('-').map(Number);
+    const epochDate = Date.UTC(year, month - 1, day);
     const payload: any = {
       entiId: this.tenantId,
       examName: this.examName.trim(),
