@@ -81,6 +81,7 @@ export class FeedbackreportComponent implements OnInit {
         error: () => this.alert.error('Error loading form'),
       });
   }
+
   get filteredStaffList(): any[] {
     if (!this.staffSearch.trim()) return this.staffList;
     const q = this.staffSearch.toLowerCase();
@@ -119,18 +120,15 @@ export class FeedbackreportComponent implements OnInit {
     return this.selectedStaff.length + ' staff selected';
   }
 
-  // Fetch report
   fetchReport(): void {
     this.loading = true;
     this.reportData = null;
     this.reportRows = [];
-
     const payload: any = {
       tenantId: this.tenantId,
       formId: this.formId,
     };
     if (this.selectedStaff.length) payload.staffIds = this.selectedStaff;
-
     this.commonApi.fetchData(payload, 'feedback', 'report').subscribe({
       next: (res: any) => {
         this.loading = false;
@@ -150,7 +148,6 @@ export class FeedbackreportComponent implements OnInit {
     });
   }
 
-  // Score cell colour class
   scoreClass(val: number | null): string {
     if (val == null) return 'text-muted';
     if (val >= 9) return 'text-success fw-semibold';
@@ -167,7 +164,6 @@ export class FeedbackreportComponent implements OnInit {
     return 'text-danger fw-bold';
   }
 
-  // Summary stats
   get avgTea(): string {
     const v = this.reportRows.filter((r) => r.teaPct != null);
     if (!v.length) return '—';
@@ -184,14 +180,12 @@ export class FeedbackreportComponent implements OnInit {
     return this.reportRows.reduce((s, r) => s + (r.responseCount || 0), 0);
   }
 
-  // ── PDF Export ────────────────────────────────────────────────────────────
   exportPdf(): void {
     if (!this.reportRows.length) {
       this.alert.error('No data to export');
       return;
     }
     this.exporting = true;
-
     try {
       const doc = new jsPDF({
         orientation: 'landscape',
@@ -209,7 +203,6 @@ export class FeedbackreportComponent implements OnInit {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(s);
       };
-
       const startFmt = this.formData?.startDate
         ? new Date(this.formData.startDate).toLocaleDateString('en-IN', {
             day: '2-digit',
@@ -231,12 +224,7 @@ export class FeedbackreportComponent implements OnInit {
             .map((s) => s.staffCode || s.staffName)
             .join(', ')
         : 'All Staff';
-
-      // Header
       bold(13);
-      // doc.text('CONSOLIDATED FEEDBACK REPORT', pageW / 2, 12, {
-      //   align: 'center',
-      // });
       doc.text(this.reportTitle.toUpperCase(), pageW / 2, 12, { align: 'center' });
       normal(7.5);
       doc.text(
@@ -254,11 +242,8 @@ export class FeedbackreportComponent implements OnInit {
       doc.setDrawColor(0);
       doc.setLineWidth(0.3);
       doc.line(ml, 26, pageW - mr, 26);
-
-      // Table head
       const aHdrs = this.partAHeaders;
       const bHdrs = this.partBHeaders;
-
       const head: any[][] = [
         [
           {
@@ -319,8 +304,6 @@ export class FeedbackreportComponent implements OnInit {
           },
         ],
       ];
-
-      // Table body
       const body: any[][] = this.reportRows.map((r: any) => {
         const teaColor =
           r.teaPct == null
@@ -392,8 +375,6 @@ export class FeedbackreportComponent implements OnInit {
           },
         ];
       });
-
-      // Summary row
       const avgTeaNum = this.reportRows.filter((r) => r.teaPct != null);
       const avgReaNum = this.reportRows.filter((r) => r.reaPct != null);
       const tAvg = avgTeaNum.length
@@ -408,7 +389,6 @@ export class FeedbackreportComponent implements OnInit {
             avgReaNum.length
           ).toFixed(1) + '%'
         : '—';
-
       body.push([
         {
           content: 'OVERALL AVERAGE',
@@ -449,7 +429,6 @@ export class FeedbackreportComponent implements OnInit {
           },
         },
       ]);
-
       autoTable(doc, {
         startY: 28,
         head,
@@ -477,7 +456,6 @@ export class FeedbackreportComponent implements OnInit {
           3: { cellWidth: 16 },
         },
       });
-
       const finalY = (doc as any).lastAutoTable?.finalY || 180;
       normal(7);
       doc.setTextColor(100, 100, 100);
@@ -496,7 +474,6 @@ export class FeedbackreportComponent implements OnInit {
         finalY + 13,
         { align: 'center' },
       );
-
       const title = (this.formData?.title || 'Feedback').replace(
         /[^a-z0-9]/gi,
         '_',

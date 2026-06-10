@@ -390,8 +390,7 @@
         <ng-container *ngIf="!reportLoading && reportRows.length">
             <!-- Export button -->
             <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-export fs-16 fw-medium" (click)="downloadReport()"
-                    [disabled]="reportLoading">
+                <button class="btn btn-export fs-16 fw-medium" (click)="downloadReport()" [disabled]="reportLoading">
                     <i class="fa-solid fa-file-pdf btn-icon"></i>Export PDF
                 </button>
             </div>
@@ -419,7 +418,7 @@
                     <tbody>
                         <tr *ngFor="let r of reportRows">
                             <td>
-                                <div class="fw-semibold">{{ r.staffCode || '—' }}</div>
+                                <!-- <div class="fw-semibold">{{ r.staffCode || '—' }}</div> -->
                                 <div class="text-muted" style="font-size:10px" *ngIf="r.staffName">
                                     {{ r.staffName }}
                                 </div>

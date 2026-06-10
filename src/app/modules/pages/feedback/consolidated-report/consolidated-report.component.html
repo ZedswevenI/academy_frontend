@@ -134,9 +134,9 @@
                     <!-- Staff heading bar -->
                     <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-2"
                         style="background:#1e293b;color:#fff">
-                        <span class="fw-bold">
+                        <!-- <span class="fw-bold">
                             {{ g.staffCode !== '—' ? g.staffCode : '' }}
-                        </span>
+                        </span> -->
                         <span>{{ g.staffName }}</span>
                         <span *ngIf="g.subjectName" class="badge bg-white text-primary rounded-pill ms-1"
                             style="font-size:11px">{{ g.subjectName }}</span>
@@ -171,9 +171,9 @@
                             <tbody>
                                 <tr *ngFor="let r of g.rows">
                                     <td>
-                                        <div class="fw-semibold">
+                                        <!-- <div class="fw-semibold">
                                             {{ r.staffCode || '—' }}
-                                        </div>
+                                        </div> -->
                                         <div class="text-muted" style="font-size:10px"
                                             *ngIf="r.staffName && r.staffName !== r.staffCode">
                                             {{ r.staffName }}

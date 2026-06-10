@@ -2,9 +2,6 @@
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
         <!-- Header -->
         <div class="d-flex align-items-center gap-3 mb-4">
-            <!-- <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
-                <i class="fa-solid fa-arrow-left btn-icon"></i>Back
-            </button> -->
             <div class="flex-grow-1">
                 <h1 class="fw-bold mb-0" style="font-size:22px">
                     <i class="fa-solid fa-chart-bar me-2 text-primary"></i>
@@ -25,18 +22,15 @@
                 <i class="fa-solid fa-arrow-left btn-icon"></i>Back
             </button>
         </div>
-
         <!-- Filters -->
         <div class="border rounded-3 p-3 mb-4 bg-light">
             <div class="row g-3 align-items-end">
-
                 <!-- Staff selection -->
                 <div class="col-md-6">
                     <label class="form-label small fw-semibold mb-2">
                         <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>
                         Staff Filter
                     </label>
-
                     <!-- Staff selection toggle chips -->
                     <div class="d-flex flex-wrap gap-2 mb-2">
                         <button type="button" class="btn fs-16 fw-medium" [class.btn-create]="!selectedStaff.length"
@@ -52,13 +46,11 @@
                                 s.subjectName }}</span>
                         </button>
                     </div>
-
                     <div class="text-muted small">
                         <i class="fa-solid fa-circle-info me-1"></i>
                         {{ staffSelectionLabel }}
                     </div>
                 </div>
-
                 <!-- Apply button -->
                 <div class="col-md-2">
                     <button class="btn btn-create fs-16 fw-medium" (click)="fetchReport()" [disabled]="loading">
@@ -68,19 +60,16 @@
                 </div>
             </div>
         </div>
-
         <!-- Loading -->
         <div *ngIf="loading" class="text-center py-5">
             <div class="spinner-border text-primary"></div>
             <div class="text-muted small mt-2">Generating report...</div>
         </div>
-
         <!-- No data -->
         <div *ngIf="!loading && !reportRows.length && reportData" class="text-center py-5 text-muted border rounded-3">
             <i class="fa-solid fa-inbox fa-2x opacity-25 mb-2 d-block"></i>
             No data found for the selected filters
         </div>
-
         <!-- Summary KPIs -->
         <div *ngIf="!loading && reportRows.length" class="row g-3 mb-4">
             <div class="col-md-3 col-6">
@@ -108,7 +97,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Report table -->
         <div *ngIf="!loading && reportRows.length" class="table-responsive">
             <table class="table table-bordered table-sm align-middle" style="font-size:12px;min-width:900px">
@@ -186,7 +174,6 @@
                 </tfoot>
             </table>
         </div>
-
         <!-- Legend -->
         <div *ngIf="!loading && reportRows.length" class="d-flex flex-wrap gap-3 mt-3 pt-3 border-top small text-muted">
             <span><i class="fa-solid fa-circle text-success me-1"></i>≥ 9.0 Excellent</span>
@@ -202,6 +189,5 @@
                 Effectiveness
             </span>
         </div>
-
     </div>
 </div>
