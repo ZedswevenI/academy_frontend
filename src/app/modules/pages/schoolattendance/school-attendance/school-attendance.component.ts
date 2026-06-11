@@ -14,6 +14,7 @@ import { AuthService } from '../../../../service/auth/auth.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-school-attendance',
@@ -56,6 +57,11 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
   monthOptions: { label: string; value: string }[] = [];
   finalisedSet = new Set<string>();
   finalisingBatch: string | null = null;
+  statusReport: any[] = [];
+  statusReportLoading = false;
+  showStatusReport = false;
+  statusReportFrom = '';
+  statusReportTo = '';
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -955,6 +961,240 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
           this.finalisingBatch = null;
           this.alert.error(err?.error?.message || 'Failed to finalise');
         },
+      });
+  }
+
+  loadBatchStatusReport(): void {
+    const tenantId = localStorage.getItem('tenantId');
+    this.statusReportLoading = true;
+    const payload: any = { entiId: tenantId };
+    if (this.statusReportFrom) {
+      const [y, m, d] = this.statusReportFrom.split('-').map(Number);
+      payload.fromDate = Date.UTC(y, m - 1, d);
+    }
+    if (this.statusReportTo) {
+      const [y, m, d] = this.statusReportTo.split('-').map(Number);
+      payload.toDate = Date.UTC(y, m - 1, d);
+    }
+    this.commonApi
+      .fetchData(payload, 'batch', 'school-attendance/batch-status-report')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.statusReportLoading = false;
+          this.statusReport = res?.data || [];
+          this.showStatusReport = true;
+        },
+        error: (err: any) => {
+          this.statusReportLoading = false;
+          this.alert.error(err?.error?.message || 'Failed to load report');
+        },
+      });
+  }
+
+  closeStatusReport(): void {
+    this.showStatusReport = false;
+    this.statusReport = [];
+    this.statusReportFrom = '';
+    this.statusReportTo = '';
+  }
+
+  getStatusBadgeClass(status: string): string {
+    const map: any = {
+      MARKED: 'bg-success-subtle text-success border-success-subtle',
+      FINALISED: 'bg-primary-subtle text-primary border-primary-subtle',
+      NOT_MARKED: 'bg-danger-subtle text-danger border-danger-subtle',
+      HOLIDAY: 'bg-warning-subtle text-warning border-warning-subtle',
+      WEEK_OFF: 'bg-warning-subtle text-warning border-warning-subtle',
+      LEAVE: 'bg-secondary-subtle text-secondary border-secondary-subtle',
+    };
+    return map[status] || 'bg-secondary-subtle text-secondary';
+  }
+
+  getStatusIcon(status: string): string {
+    const map: any = {
+      MARKED: 'fa-circle-check',
+      FINALISED: 'fa-lock',
+      NOT_MARKED: 'fa-circle-xmark',
+      HOLIDAY: 'fa-umbrella-beach',
+      WEEK_OFF: 'fa-umbrella-beach',
+      LEAVE: 'fa-calendar-minus',
+    };
+    return map[status] || 'fa-circle-question';
+  }
+
+  formatDayTooltip(day: any): string {
+    const d = new Date(day.date);
+    const dateStr = `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
+    if (day.status === 'NOT_MARKED') return `${dateStr} — Not Marked`;
+    if (['HOLIDAY', 'WEEK_OFF', 'LEAVE'].includes(day.status))
+      return `${dateStr} — ${day.holidayName || day.status}`;
+    const parts = [`${dateStr} — ${day.status}`];
+    if (day.markedByName) parts.push(`By: ${day.markedByName}`);
+    if (day.presentCount != null)
+      parts.push(
+        `P:${day.presentCount} A:${day.absentCount} L:${day.lateCount}`,
+      );
+    return parts.join(' | ');
+  }
+
+  exportStatusReportToExcel(): void {
+    if (!this.statusReport.length) return;
+    const rows: any[] = [];
+    for (const b of this.statusReport) {
+      for (const day of b.days) {
+        const d = new Date(day.date);
+        const dateStr = `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
+        rows.push({
+          'Batch Code': b.batchCode,
+          'Batch Name': b.batchName,
+          Class: b.classNo ? `Class ${b.classNo}` : '',
+          Section: b.section || '',
+          'Academic Year': b.academicYear || '',
+          'Class Teacher': b.classTeacher?.name || '',
+          Date: dateStr,
+          Status: day.status,
+          'Holiday Name': day.holidayName || '',
+          'Marked By': day.markedByName || '',
+          'Marked By Role': day.markedByRole || '',
+          Finalised: day.isFinalised ? 'Yes' : 'No',
+          'Finalised By': day.finalisedByName || '',
+          'Total Students': day.totalStudents || 0,
+          Present: day.presentCount || 0,
+          Absent: day.absentCount || 0,
+          Late: day.lateCount || 0,
+          Remarks: day.remarks || '',
+        });
+      }
+      rows.push({
+        'Batch Code': b.batchCode,
+        'Batch Name': `SUMMARY — ${b.batchName}`,
+        Class: '',
+        Section: '',
+        'Academic Year': b.academicYear || '',
+        'Class Teacher': b.classTeacher?.name || '',
+        Date: '',
+        Status: '',
+        'Holiday Name': '',
+        'Marked By': '',
+        'Marked By Role': '',
+        Finalised: '',
+        'Finalised By': '',
+        'Total Students': '',
+        Present: '',
+        Absent: '',
+        Late: '',
+        Remarks: `Total:${b.summary.totalDays} Marked:${b.summary.marked} Finalised:${b.summary.finalised} Not Marked:${b.summary.notMarked} Holiday:${b.summary.holiday}`,
+      });
+      rows.push({});
+    }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 12 },
+      { wch: 22 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 10 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 24 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Batch Status Report');
+    const fromLabel = this.statusReportFrom || 'all';
+    const toLabel = this.statusReportTo || 'all';
+    XLSX.writeFile(
+      wb,
+      `Batch_Attendance_Report_${fromLabel}_to_${toLabel}.xlsx`,
+    );
+  }
+
+  exportDailyStatusToExcel(
+    type: 'all' | 'marked' | 'not_marked' | 'holiday' = 'all',
+  ): void {
+    const tenantId = localStorage.getItem('tenantId');
+    this.commonApi
+      .fetchData(
+        {
+          entiId: tenantId,
+          fromDate: this.selectedDate,
+          toDate: this.selectedDate,
+        },
+        'batch',
+        'school-attendance/batch-status-report',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          const allData: any[] = res?.data || [];
+          let filtered = allData;
+          if (type === 'marked')
+            filtered = allData.filter((b) =>
+              ['MARKED', 'FINALISED'].includes(b.days[0]?.status),
+            );
+          if (type === 'not_marked')
+            filtered = allData.filter(
+              (b) => b.days[0]?.status === 'NOT_MARKED',
+            );
+          if (type === 'holiday')
+            filtered = allData.filter((b) =>
+              ['HOLIDAY', 'WEEK_OFF', 'LEAVE'].includes(b.days[0]?.status),
+            );
+          if (!filtered.length) return;
+          const rows = filtered.map((b: any) => {
+            const day = b.days[0] || {};
+            return {
+              'Batch Code': b.batchCode,
+              'Batch Name': b.batchName,
+              Class: b.classNo ? `Class ${b.classNo}` : '',
+              Section: b.section || '',
+              'Class Teacher': b.classTeacher?.name || '',
+              Status: day.status || 'NOT_MARKED',
+              'Holiday Name': day.holidayName || '',
+              'Marked By': day.markedByName || '',
+              Finalised: day.isFinalised ? 'Yes' : 'No',
+              'Finalised By': day.finalisedByName || '',
+              'Total Students': day.totalStudents || 0,
+              Present: day.presentCount || 0,
+              Absent: day.absentCount || 0,
+              Late: day.lateCount || 0,
+            };
+          });
+          const ws = XLSX.utils.json_to_sheet(rows);
+          ws['!cols'] = [
+            { wch: 14 },
+            { wch: 28 },
+            { wch: 8 },
+            { wch: 8 },
+            { wch: 22 },
+            { wch: 12 },
+            { wch: 16 },
+            { wch: 20 },
+            { wch: 10 },
+            { wch: 20 },
+            { wch: 14 },
+            { wch: 8 },
+            { wch: 8 },
+            { wch: 8 },
+          ];
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Attendance Status');
+          XLSX.writeFile(
+            wb,
+            `School_Attendance_${type.toUpperCase()}_${this.selectedDateLabel.replace(/ /g, '_')}.xlsx`,
+          );
+        },
+        error: () => {},
       });
   }
 }

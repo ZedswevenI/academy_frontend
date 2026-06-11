@@ -1,6 +1,5 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
         <!-- Header -->
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h1 class="fw-bold mb-0" style="font-size:30px;">
@@ -11,7 +10,6 @@
                 {{ selectedDateLabel }}
             </span>
         </div>
-
         <!-- Week navigation — AO/L1 only -->
         <div *ngIf="isAO" class="d-flex align-items-center gap-2 mb-2">
             <button class="btn btn-sm btn-outline-secondary" (click)="prevWeek()">
@@ -21,7 +19,6 @@
                 Next week <i class="fa-solid fa-chevron-right"></i>
             </button>
         </div>
-
         <!-- Week date picker -->
         <div class="row g-2 mb-4">
             <div class="col" *ngFor="let d of dates">
@@ -40,10 +37,8 @@
                 </div>
             </div>
         </div>
-
         <!-- Content area -->
         <div *ngIf="selectedDate">
-
             <!-- Loading -->
             <div *ngIf="loading" class="text-center py-5 text-muted">
                 <div class="spinner-border spinner-border-sm me-2"></div>
@@ -67,7 +62,6 @@
                     <div class="fw-semibold">No periods scheduled for this day</div>
                 </div>
                 <div *ngIf="originalData.length > 0 && !(isTeacher && isPastDate)">
-
                     <!-- Summary bar -->
                     <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
                         <span *ngIf="pendingCount > 0"
@@ -79,12 +73,8 @@
                             <i class="fa-solid fa-circle-check me-1"></i>{{ markedCount }} marked
                         </span>
                         <div class="dropdown ms-auto" *ngIf="originalData.length > 0">
-                            <!-- <button class="btn btn-sm btn-success dropdown-toggle fw-semibold px-3 py-2" type="button"
-                                id="exportMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fa-solid fa-file-excel me-1"></i> Export Excel
-                            </button> -->
-                            <button class="btn btn-export fs-16 fw-medium" type="button"
-                                id="exportMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-export fs-16 fw-medium" type="button" id="exportMenu"
+                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="exportMenu">
@@ -121,15 +111,12 @@
                             <i class="fa-solid fa-eye me-1"></i>Viewing upcoming schedule — mark attendance on the day
                         </span>
                     </div>
-
                     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
                         [searchPlaceholder]="'Search batch, subject, faculty...'" [totalRecords]="totalRecords"
                         (requestData)="loadTableData($event)">
                     </custom-table>
                 </div>
-
             </ng-container>
-
         </div>
     </div>
 </div>

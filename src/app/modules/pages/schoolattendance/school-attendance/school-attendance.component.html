@@ -2,13 +2,55 @@
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
         <!-- Header -->
         <div class="d-flex align-items-center justify-content-between mb-3">
+            <!-- Left: Title -->
             <h1 class="fw-bold mb-0" style="font-size: 30px">
                 <i class="fa-solid fa-school me-2"></i>School Attendance
             </h1>
-            <span *ngIf="selectedDateLabel" class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2"
-                style="font-size: 0.85rem">
-                {{ selectedDateLabel }}
-            </span>
+            <!-- Right: Badge + Export + Report -->
+            <div class="d-flex align-items-center gap-2">
+                <span *ngIf="selectedDateLabel" class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2"
+                    style="font-size: 0.85rem">
+                    {{ selectedDateLabel }}
+                </span>
+                <div class="dropdown" *ngIf="selectedDate && !isFutureDate && batches.length">
+                    <button class="btn btn-export fs-16 fw-medium dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center cursor-pointer"
+                                (click)="exportDailyStatusToExcel('all')">
+                                <i class="fa-solid fa-list me-2 text-primary"></i> Download All
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center cursor-pointer"
+                                (click)="exportDailyStatusToExcel('marked')">
+                                <i class="fa-solid fa-circle-check me-2 text-success"></i> Download Marked
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center cursor-pointer"
+                                (click)="exportDailyStatusToExcel('not_marked')">
+                                <i class="fa-solid fa-clock me-2 text-warning"></i> Download Not Marked
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center cursor-pointer"
+                                (click)="exportDailyStatusToExcel('holiday')">
+                                <i class="fa-solid fa-umbrella-beach me-2 text-warning"></i> Download Holidays
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <button class="btn btn-create" (click)="loadBatchStatusReport()">
+                    <i class="fa-solid fa-chart-column me-1"></i>School Attendance Report
+                </button>
+            </div>
         </div>
         <div class="d-flex align-items-center gap-2 mb-2">
             <button class="btn btn-sm btn-outline-secondary" (click)="prevWeek()">
@@ -192,32 +234,6 @@
                             </div>
                         </div>
                         <!-- Action buttons -->
-                        <!-- <div class="d-flex gap-2">
-                            <div *ngIf="isHoliday(b.batchCode)"
-                                class="flex-grow-1 text-center py-1 rounded-2 small fw-semibold"
-                                style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A">
-                                <i class="fa-solid fa-umbrella-beach me-1"></i>Holiday — No Attendance
-                            </div>
-                            <button *ngIf="!isHoliday(b.batchCode)" class="btn btn-sm flex-grow-1" [ngClass]="{
-                'btn-success':           canMarkBatch(b) && !isMarked(b.batchCode),
-                'btn-outline-primary':   canMarkBatch(b) &&  isMarked(b.batchCode),
-                'btn-outline-secondary': !canMarkBatch(b)
-              }" (click)="goToMark(b)">
-                                <i class="fa-solid me-1" [ngClass]="{
-                  'fa-clipboard-check': canMarkBatch(b) && !isMarked(b.batchCode),
-                  'fa-pen-to-square':   canMarkBatch(b) &&  isMarked(b.batchCode),
-                  'fa-eye':             !canMarkBatch(b)
-                }"></i>
-                                <span *ngIf="canMarkBatch(b) && !isMarked(b.batchCode)">Mark</span>
-                                <span *ngIf="canMarkBatch(b) &&  isMarked(b.batchCode)">Edit</span>
-                                <span *ngIf="!canMarkBatch(b)">View</span>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" title="Download Monthly Report"
-                                (click)="openPrintModal(b)">
-                                <i class="fa-solid fa-file-pdf text-danger"></i>
-                            </button>
-                        </div> -->
-                        <!-- Action buttons -->
                         <div class="d-flex gap-2">
                             <div *ngIf="isHoliday(b.batchCode)"
                                 class="flex-grow-1 text-center py-1 rounded-2 small fw-semibold" style="
@@ -276,7 +292,6 @@
         </div>
     </div>
 </div>
-
 <!-- ═══ PRINT MODAL ══════════════════════════════════════════════════════════ -->
 <div class="modal-backdrop fade show" *ngIf="showPrintModal"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="showPrintModal">
@@ -316,6 +331,132 @@
                     <i class="fa-solid fa-file-pdf me-1" *ngIf="!printLoading"></i>
                     Download PDF
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ BATCH STATUS REPORT MODAL ════════════════════════════════════════════ -->
+<div class="modal-backdrop fade show" *ngIf="showStatusReport"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showStatusReport">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow">
+
+            <div class="modal-header border-0 pb-0">
+                <div class="flex-grow-1">
+                    <h6 class="modal-title fw-bold mb-1">
+                        <i class="fa-solid fa-chart-column me-2 text-primary"></i>Batch Attendance Status Report
+                    </h6>
+                    <!-- Date range filter -->
+                    <div class="d-flex gap-2 align-items-center mt-2 flex-wrap">
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="small text-muted mb-0">From</label>
+                            <input type="date" class="form-control form-control-sm" style="width:150px"
+                                [(ngModel)]="statusReportFrom">
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="small text-muted mb-0">To</label>
+                            <input type="date" class="form-control form-control-sm" style="width:150px"
+                                [(ngModel)]="statusReportTo">
+                        </div>
+                        <button class="btn btn-sm btn-primary" (click)="loadBatchStatusReport()"
+                            [disabled]="statusReportLoading">
+                            <span *ngIf="statusReportLoading" class="spinner-border spinner-border-sm me-1"></span>
+                            <i class="fa-solid fa-rotate me-1" *ngIf="!statusReportLoading"></i>
+                            {{ statusReportLoading ? 'Loading...' : 'Refresh' }}
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="closeStatusReport()">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+                <button class="btn-close ms-2" (click)="closeStatusReport()"></button>
+            </div>
+            <div class="modal-body pt-2" style="max-height:70vh;overflow-y:auto">
+                <!-- Loading -->
+                <div *ngIf="statusReportLoading" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div>Loading...
+                </div>
+                <!-- No data -->
+                <div *ngIf="!statusReportLoading && !statusReport.length"
+                    class="text-center py-5 text-muted border rounded-3">
+                    <i class="fa-solid fa-inbox fa-2x opacity-25 mb-2 d-block"></i>
+                    No data found
+                </div>
+                <!-- Report table -->
+                <div *ngIf="!statusReportLoading && statusReport.length" class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size:13px">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>#</th>
+                                <th>Batch</th>
+                                <th>Class</th>
+                                <th>Class Teacher</th>
+                                <th class="text-center">Total Days</th>
+                                <th class="text-center text-success">Marked</th>
+                                <th class="text-center text-primary">Finalised</th>
+                                <th class="text-center text-danger">Not Marked</th>
+                                <th class="text-center text-warning">Holiday</th>
+                                <th>Day-wise Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let b of statusReport; let i = index">
+                                <td class="text-muted">{{ i + 1 }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ b.batchName }}</div>
+                                    <div class="text-muted" style="font-size:11px">{{ b.batchCode }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary border"
+                                        *ngIf="b.classNo">Class {{ b.classNo }}</span>
+                                    <span class="badge bg-info-subtle text-info border ms-1" *ngIf="b.section">{{
+                                        b.section }}</span>
+                                </td>
+                                <td>
+                                    <span *ngIf="b.classTeacher?.name">
+                                        <i class="fa-solid fa-user-tie me-1 text-muted"></i>{{ b.classTeacher.name }}
+                                    </span>
+                                    <span *ngIf="!b.classTeacher?.name" class="text-muted small">—</span>
+                                </td>
+                                <td class="text-center fw-semibold">{{ b.summary?.totalDays || 0 }}</td>
+                                <td class="text-center">
+                                    <span class="fw-semibold text-success">{{ b.summary?.marked || 0 }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-semibold text-primary">{{ b.summary?.finalised || 0 }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-semibold text-danger">{{ b.summary?.notMarked || 0 }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-semibold text-warning">{{ b.summary?.holiday || 0 }}</span>
+                                </td>
+                                <!-- Day-wise chips -->
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1" style="max-width:320px">
+                                        <span *ngFor="let day of b.days" class="badge border"
+                                            [ngClass]="getStatusBadgeClass(day.status)" [title]="formatDayTooltip(day)"
+                                            style="font-size:10px;cursor:default">
+                                            <i class="fa-solid me-1" [ngClass]="getStatusIcon(day.status)"></i>
+                                            {{ day.date | date:'d MMM' : 'UTC' }}
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <small class="text-muted me-auto">
+                    {{ statusReport.length }} batch(es)
+                </small>
+                <button class="btn btn-import fw-medium fs-16" (click)="exportStatusReportToExcel()"
+                    [disabled]="!statusReport.length">
+                    <i class="fa-solid fa-file-excel me-1"></i>Export Excel
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="closeStatusReport()">Close</button>
             </div>
         </div>
     </div>
