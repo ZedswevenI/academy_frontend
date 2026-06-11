@@ -1,0 +1,127 @@
+<nav class="topbar">
+  <!-- Left: mobile toggle + logo -->
+  <div class="topbar-left">
+    <button class="icon-btn mobile-toggle d-lg-none" (click)="toggle()" aria-label="Menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="brand">
+      <img src="assets/z7i_logo.png" alt="Logo" class="brand-logo">
+    </div>
+  </div>
+  <!-- Right: actions + user -->
+  <div class="topbar-right">
+    <button class="icon-btn has-dot" title="Notifications">
+      <i class="fa-regular fa-bell"></i>
+      <span class="dot"></span>
+    </button>
+    <div class="divider d-none d-md-block"></div>
+    <!-- User pill -->
+    <div class="dropdown user-dropdown">
+      <button type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false" class="user-pill">
+        <div class="user-avatar">{{ (username || 'U') | slice:0:1 }}</div>
+        <div class="user-text d-none d-sm-flex">
+          <span class="user-name">{{ username }}</span>
+          <span class="user-role">{{ userole }}</span>
+        </div>
+        <i class="fa-solid fa-chevron-down chev d-none d-sm-inline"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end user-menu" aria-labelledby="userMenuButton">
+        <li class="user-menu-header">
+          <div class="user-avatar big">{{ (username || 'U') | slice:0:1 }}</div>
+          <div>
+            <div class="user-menu-name">{{ username }}</div>
+            <div class="user-menu-meta">{{ useremail }}</div>
+            <span class="user-menu-role">{{ userole }}</span>
+          </div>
+        </li>
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+        <li><a class="dropdown-item" href="javascript:void(0)" (click)="openChangePassword()">
+            <i class="fa-solid fa-key me-2"></i>Change Password
+          </a></li>
+        <li>
+          <button class="logout-item" (click)="logout()">
+            <i class="fa-solid fa-right-from-bracket me-2"></i>Log Out
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true" #changePwdModal>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold">
+          <i class="fa-solid fa-key me-2"></i>Change Password
+        </h6>
+        <button type="button" class="btn-close" (click)="closeChangePassword()"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Server error -->
+        <div *ngIf="cpServerError" class="alert alert-danger py-2 mb-3">
+          {{ cpServerError }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-medium">Current Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+            <input [type]="cpShow.current ? 'text' : 'password'" class="form-control"
+              placeholder="Enter current password" [(ngModel)]="cpForm.currentPassword"
+              [class.is-invalid]="cpTouched && !cpForm.currentPassword" />
+            <button type="button" class="input-group-text bg-white border-start-0"
+              (click)="cpShow.current = !cpShow.current">
+              <i class="fa-regular" [ngClass]="cpShow.current ? 'fa-eye-slash' : 'fa-eye'"></i>
+            </button>
+            <div class="invalid-feedback">Current password is required.</div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-medium">New Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock-open"></i></span>
+            <input [type]="cpShow.newPwd ? 'text' : 'password'" class="form-control" placeholder="Min. 8 characters"
+              [(ngModel)]="cpForm.newPassword"
+              [class.is-invalid]="cpTouched && (!cpForm.newPassword || cpForm.newPassword.length < 8)" />
+            <button type="button" class="input-group-text bg-white border-start-0"
+              (click)="cpShow.newPwd = !cpShow.newPwd">
+              <i class="fa-regular" [ngClass]="cpShow.newPwd ? 'fa-eye-slash' : 'fa-eye'"></i>
+            </button>
+            <div class="invalid-feedback">Minimum 8 characters required.</div>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label fw-medium">Confirm New Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock-open"></i></span>
+            <input [type]="cpShow.confirm ? 'text' : 'password'" class="form-control"
+              placeholder="Re-enter new password" [(ngModel)]="cpForm.confirmPassword"
+              [class.is-invalid]="cpTouched && cpForm.newPassword !== cpForm.confirmPassword" />
+            <button type="button" class="input-group-text bg-white border-start-0"
+              (click)="cpShow.confirm = !cpShow.confirm">
+              <i class="fa-regular" [ngClass]="cpShow.confirm ? 'fa-eye-slash' : 'fa-eye'"></i>
+            </button>
+            <div class="invalid-feedback">Passwords do not match.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" (click)="closeChangePassword()"
+          [disabled]="cpLoading">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="submitChangePassword()" [disabled]="cpLoading">
+          <span *ngIf="cpLoading" class="spinner-border spinner-border-sm me-1"></span>
+          {{ cpLoading ? 'Updating...' : 'Update Password' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

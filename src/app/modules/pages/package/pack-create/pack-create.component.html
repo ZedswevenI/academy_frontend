@@ -1,0 +1,93 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <!-- Header -->
+        <div class="d-flex flex-column gap-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                    <i class="fa-solid fa-box-open me-2"></i>
+                    {{ isEditMode ? 'Edit Study Material' : 'Create Study Material' }}
+                </h1>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <form [formGroup]="packageForm">
+                <div class="row g-3">
+
+                    <!-- Package Code -->
+                    <div class="col-md-6">
+                        <formfield label="Package Code" formControlName="packageCode"
+                            [control]="packageForm.get('packageCode')"
+                            placeholder="e.g. PKG-PHY-9-01" [required]="!isEditMode">
+                        </formfield>
+                    </div>
+
+                    <!-- Class -->
+                    <div class="col-md-6">
+                        <selectbox label="Class" placeholder="Select Class" [options]="class_options"
+                            formControlName="classNo" [control]="packageForm.get('classNo')"
+                            [required]="!isEditMode">
+                        </selectbox>
+                    </div>
+
+                    <!-- Subject -->
+                    <div class="col-md-6">
+                        <selectbox label="Subject" placeholder="Select Subject" [options]="subject_options"
+                            formControlName="subjectId" [control]="packageForm.get('subjectId')"
+                            [required]="!isEditMode">
+                        </selectbox>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="col-md-6">
+                        <formfield label="Title" formControlName="title"
+                            [control]="packageForm.get('title')"
+                            placeholder="Enter Package Title" [required]="true">
+                        </formfield>
+                    </div>
+
+                    <!-- Description (create only) -->
+                    <div class="col-md-12" *ngIf="!isEditMode">
+                        <description label="Description" formControlName="description"
+                            [control]="packageForm.get('description')"
+                            placeholder="Enter description (optional)">
+                        </description>
+                    </div>
+
+                    <!-- File Upload -->
+                    <div class="col-md-6">
+                        <importfiles label="Attachment" [required]="true" [multiple]="false"
+                            accept=".pdf"
+                            (filesChanged)="onFileSelected($event)">
+                        </importfiles>
+                        <div *ngIf="uploading" class="text-muted small mt-1">
+                            <span class="spinner-border spinner-border-sm me-1"></span>Uploading...
+                        </div>
+                        <div *ngIf="attachmentUrl && !uploading" class="mt-2">
+                            <a (click)="downloadFile(attachmentUrl)" target="_blank" class="small text-primary">
+                                <i class="fa-solid fa-paperclip me-1"></i>View Attachment
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Actions -->
+                <div class="col-12 text-end mt-4">
+                    <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="cancel()">
+                        Back
+                    </button>
+                    <button type="button" class="btn btn-create fs-16 fw-medium"
+                        [disabled]="packageForm.invalid || loading || uploading"
+                        (click)="submit()">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update' : 'Submit') }}
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</div>

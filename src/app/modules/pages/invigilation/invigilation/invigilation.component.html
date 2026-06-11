@@ -1,0 +1,98 @@
+<div class="container-fluid p-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="fw-bold mb-0"><i class="fa-solid fa-user-shield me-2"></i>Invigilation</h5>
+            <small class="text-muted">Manage exam invigilation duty assignments</small>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-success btn-sm" (click)="downloadSample()">
+                <i class="fa-solid fa-download me-1"></i> Sample Excel
+            </button>
+            <button class="btn btn-create fs-16 fw-medium" (click)="create()">
+                <i class="fa-solid fa-plus me-1"></i> Add Invigilation
+            </button>
+        </div>
+    </div>
+    <!-- Filter card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">From Date</label>
+                    <input type="date" class="form-control form-control-sm" [(ngModel)]="filterFromDate">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">To Date</label>
+                    <input type="date" class="form-control form-control-sm" [(ngModel)]="filterToDate">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">Session</label>
+                    <select class="form-select form-select-sm" [(ngModel)]="filterSession">
+                        <option value="">All Sessions</option>
+                        <option *ngFor="let s of sessionOptions" [value]="s.value">{{ s.label }}</option>
+                    </select>
+                </div>
+                <!-- <div class="col-md-3">
+                    <label class="form-label fw-medium mb-1">Exam Name</label>
+                    <input type="text" class="form-control form-control-sm" placeholder="Search exam name..."
+                        [(ngModel)]="filterExamName" (keyup.enter)="search()">
+                </div> -->
+                <div class="col-md-3 d-flex gap-2">
+                    <!-- <button class="btn btn-create fs-16 fw-medium" (click)="search()" [disabled]="loading">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> Search
+                    </button> -->
+                    <button class="btn btn-outline-secondary btn-sm"
+                        *ngIf="filterFromDate || filterToDate || filterSession || filterExamName"
+                        (click)="clearFilter()">
+                        <i class="fa-solid fa-xmark me-1"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2 mb-0">Loading...</p>
+    </div>
+    <!-- Table card -->
+    <div class="card shadow-sm">
+        <div class="mt-4">
+            <custom-table [columns]="columnsArray" [data]="records" [actions]="actions" success="PUBLISHED"
+                [totalRecords]="total" [searchPlaceholder]="'Search exam name, session...'"
+                (requestData)="loadTableData($event)" (rowClick)="view($event)">
+            </custom-table>
+        </div>
+    </div>
+</div>
+<!-- Delete confirm modal -->
+<div class="modal-backdrop fade show" *ngIf="deleteTarget" style="z-index:1040"></div>
+<div class="modal d-block" *ngIf="deleteTarget" style="z-index:1050" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold">
+                    <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Delete Invigilation?
+                </h6>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">
+                    Are you sure you want to delete
+                    <strong>"{{ deleteTarget.examName }}"</strong>
+                    – {{ deleteTarget.examDateFormatted }} ({{ sessionLabel(deleteTarget.session) }})?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary btn-sm" (click)="cancelDelete()">Cancel</button>
+                <button class="btn btn-danger btn-sm" [disabled]="deleteLoading" (click)="doDelete()">
+                    <span *ngIf="!deleteLoading">Delete</span>
+                    <span *ngIf="deleteLoading">
+                        <span class="spinner-border spinner-border-sm me-1"></span>Deleting...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,687 @@
+<div class="container-fluid py-4">
+  <!-- Header Card -->
+  <div class="card shadow-sm mb-4">
+    <div *ngIf="marksMismatch" class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>
+        Total marks of assigned questions
+        (<strong>{{ actualTotalMarks }}</strong>) does not match
+        exam total marks (<strong>{{ questionData?.totalMarks }}</strong>).
+        Difference: <strong>{{ questionData?.totalMarks - actualTotalMarks }}</strong> marks unassigned.
+      </span>
+    </div>
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-0">Questions List</h5>
+        <!-- <small class="text-muted">
+          Total Questions: {{ questions.length }}
+        </small> -->
+        <small class="text-muted">
+          {{ actualQuestionCount }} / {{ questionData?.totalQuestions || '∞' }} Questions
+          <span *ngIf="questionData?.totalQuestions && actualQuestionCount >= questionData?.totalQuestions"
+            class="badge bg-danger ms-2">Limit Reached</span>
+          <span *ngIf="questionData?.totalQuestions && actualQuestionCount < questionData?.totalQuestions"
+            class="badge bg-success ms-2">
+            {{ questionData.totalQuestions - actualQuestionCount }} slots remaining
+          </span>
+        </small>
+      </div>
+      <div class="col-md-6 text-end">
+        <!-- Section filter -->
+        <!-- <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-outline-success btn-sm me-2"
+          (click)="openBankModal()">
+          <i class="fas fa-database me-1"></i> Map from Bank
+        </button> -->
+        <button *ngIf="!authService.assignmentRole() && isDraft && canAddQuestion"
+          class="btn btn-outline-success btn-sm me-2" (click)="openBankModal()">
+          <i class="fas fa-database me-1"></i> Map from Bank
+        </button>
+        <!-- <button *ngIf="!authService.assignmentRole() && isDraft" class="btn btn-primary btn-sm me-2"
+          (click)="addNewQuestion()">
+          + Add Question
+        </button> -->
+        <button *ngIf="!authService.assignmentRole() && isDraft && canAddQuestion" class="btn btn-primary btn-sm me-2"
+          (click)="addNewQuestion()">
+          + Add Question
+        </button>
+        <span *ngIf="!authService.assignmentRole() && isDraft && !canAddQuestion"
+          class="badge bg-danger fs-13 me-2 py-2 px-3">
+          Question limit reached
+        </span>
+        <button *ngIf="!authService.assignmentRole()" class="btn btn-import fs-16 fw-medium me-2"
+          (click)="importAnswers()">
+          <i class="fa-solid fa-cloud-arrow-up me-1"></i> Import Answers
+        </button>
+        <div class="btn-group me-2">
+          <button type="button" class="btn btn-create fs-16 fw-medium btn-sm dropdown-toggle py-2"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa-solid fa-print"></i> Print
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" (click)="printQuestions(false)">
+                📄 Without Answer
+                <small class="text-muted">(for students)</small>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" (click)="printQuestions(true)">
+                📄 With Answer <small class="text-muted">(answer key)</small>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+          Back
+        </button>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-3 mb-2 ms-3 flex-wrap">
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 fw-bold small">Filter by Section:</label>
+        <select class="form-select form-select-sm" style="width:200px;" [(ngModel)]="selectedFilterSectionId">
+          <option value="">All Sections</option>
+          <option *ngFor="let s of questionData?.sections" [value]="s.sectionId">
+            {{ s.sectionName }}
+            ({{ getSectionActualCount(s.sectionId) }}/{{ s.numberOfQuestions }})
+          </option>
+        </select>
+      </div>
+      <small class="text-muted">
+        Showing {{ filteredQuestions.length }} of {{ questions.length }} questions
+      </small>
+    </div>
+  </div>
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+  </div>
+  <!-- Active Grace Marks Banner -->
+  <div *ngIf="!loading && questionData?.graces?.length" class="mb-4">
+    <div *ngFor="let g of questionData.graces">
+      <div *ngIf="g.isActive"
+        class="alert alert-warning border-warning shadow-sm d-flex justify-content-between align-items-center py-2 px-3">
+        <div>
+          <i class="fa-solid fa-gift me-2 text-warning"></i>
+          <strong class="text-dark">Grace Applied:</strong>
+          <span class="badge bg-warning text-dark ms-2 fw-bold">
+            +{{ g.graceMarks }} Marks
+          </span>
+          <!-- <span class="text-muted fs-13 ms-2" *ngIf="g.questionId">Q: {{ g.questionId }}</span> -->
+          <span class="text-muted fs-13 ms-2" *ngIf="g.questionId">
+            {{ getQuestionNumberForGrace(g.questionId) }}
+          </span>
+          <span class="ms-3 text-muted italic fs-13" *ngIf="g.note">"{{ g.note }}"</span>
+        </div>
+        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle"
+          (click)="removeGraceFromQuestion(g.graceId)" [disabled]="graceRemovingGraceId === g.graceId"
+          title="Remove Grace">
+          <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== g.graceId"></i>
+          <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === g.graceId"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- Question Cards -->
+  <div *ngFor="let q of filteredQuestions; let i = index" class="card mb-4 shadow-sm">
+    <!-- Card Header -->
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <strong>Question {{ i + 1 }}</strong>
+        <span class="badge bg-secondary ms-2 fw-normal" *ngIf="q.questionNo">
+          {{ q.questionNo }}
+        </span>
+        <!-- Question Type -->
+        <span class="badge bg-info ms-2">
+          {{ formatQuestionType(q.questionType) }}
+        </span>
+        <!-- Difficulty -->
+        <span class="badge bg-secondary ms-2">
+          {{ q.difficulty }}
+        </span>
+        <!-- Marks -->
+        <span class="badge bg-success ms-2"> +{{ q.positiveMarks }} </span>
+        <span class="badge bg-danger ms-2"> -{{ q.negativeMarks }} </span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Draft actions -->
+        <ng-container *ngIf="isDraft">
+          <button class="btn btn-sm btn-outline-primary" (click)="editQuestion(q)">Edit</button>
+          <button class="btn btn-sm btn-outline-danger" (click)="deleteQuestion(q)">Delete</button>
+        </ng-container>
+        <!-- Update Answer -->
+        <button class="btn btn-edit fs-16 fw-medium" (click)="openAnswerModal(q)">
+          <i class="fa-solid fa-pen-to-square btn-icon"></i> Update Answer
+        </button>
+        <!-- Grace Marks (published exams) -->
+        <ng-container *ngIf="!isDraft">
+          <ng-container *ngFor="let grace of [getGraceForQuestion(q.questionId)]">
+            <span *ngIf="grace" class="badge bg-warning text-dark py-2 px-3 border border-dark rounded-pill">
+              <i class="fa-solid fa-gift me-1"></i> +{{ grace.graceMarks }} Grace
+            </span>
+            <button *ngIf="grace" class="btn btn-sm btn-outline-danger rounded-circle border-0"
+              style="width: 24px; height: 24px; line-height: 1;" (click)="removeGraceFromQuestion(grace.graceId)"
+              [disabled]="graceRemovingGraceId === grace.graceId" title="Remove Grace">
+              <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== grace.graceId"></i>
+              <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === grace.graceId"></span>
+            </button>
+            <button *ngIf="!grace" class="btn btn-export fs-16 fw-medium" (click)="openGraceModal(q)"
+              [disabled]="graceApplying">
+              <i class="fa-solid fa-gift btn-icon"></i> Apply Grace
+            </button>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+    <!-- Card Body -->
+    <div class="card-body">
+      <!-- Passage (if enabled) -->
+      <div *ngIf="q.enablePassage && q.passageHtml && q.passageHtml.toString().length > 0"
+        class="mb-3 p-3 border rounded bg-light">
+        <div class="fw-bold text-primary mb-2">
+          <i class="fas fa-book me-1"></i> Passage
+        </div>
+        <div [innerHTML]="sanitizeHtml(q.passageHtml)"
+          style="word-wrap:break-word; overflow-wrap:break-word; white-space:normal;">
+        </div>
+      </div>
+      <!-- Question with LaTeX support and Images -->
+      <div class="mb-3 question-html" #questionContent [innerHTML]="q.questionHtml"></div>
+      <!-- Options -->
+      <div *ngIf="q.questionOptions?.length">
+        <!-- <div *ngFor="let opt of q.questionOptions; let j = index" class="option-box p-2 mb-2 rounded">
+          <div class="d-flex align-items-start">
+            <div class="me-2 fw-bold">{{ j + 1 }}.</div>
+            <div class="option-content" #optionContent [innerHTML]="opt.textHtml"></div>
+          </div>
+        </div> -->
+        <div *ngFor="let opt of q.questionOptions; let j = index"
+          class="option-box p-2 mb-2 rounded d-flex align-items-start" [class.border-success]="opt.isCorrect"
+          [class.bg-success-subtle]="opt.isCorrect">
+          <span class="badge me-2 mt-1" [class.bg-success]="opt.isCorrect" [class.bg-secondary]="!opt.isCorrect">
+            {{ opt.key || 'ABCDEFGH'[j] }}
+          </span>
+          <div class="option-content flex-grow-1" #optionContent [innerHTML]="opt.textHtml"></div>
+          <i *ngIf="opt.isCorrect" class="fas fa-check-circle text-success ms-2 mt-1"></i>
+        </div>
+      </div>
+      <!-- Matrix Match Display -->
+      <div *ngIf="q.questionType === 'matrix' && q.leftColumn?.length" class="matrix-section mt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="fw-bold mb-2 text-primary">Left Column</div>
+            <div *ngFor="let l of q.leftColumn" class="matrix-item d-flex align-items-start p-2 mb-2 border rounded">
+              <span class="badge bg-primary me-2">{{ l.key }}</span>
+              <div class="flex-grow-1" #matrixContent [innerHTML]="l.textHtml"></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-bold mb-2 text-success">Right Column</div>
+            <div *ngFor="let r of q.rightColumn" class="matrix-item d-flex align-items-start p-2 mb-2 border rounded">
+              <span class="badge bg-success me-2">{{ r.key }}</span>
+              <div class="flex-grow-1" #matrixContent [innerHTML]="r.textHtml"></div>
+            </div>
+          </div>
+        </div>
+        <!-- <div class="mt-3">
+          <strong class="text-primary">
+            <i class="fas fa-check-circle me-1"></i> Correct Matches:
+          </strong>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <span *ngFor="let m of q.matrixMatches" class="badge bg-light text-dark border px-3 py-2">
+              <span class="fw-bold text-primary">{{ m.key }}</span>
+              <i class="fas fa-arrow-right mx-2 text-muted"></i>
+              <span *ngIf="m.matches?.length; else noMatch" class="fw-bold text-success">
+                {{ m.matches.join(', ') }}
+              </span>
+              <ng-template #noMatch>
+                <span class="text-muted fst-italic">—</span>
+              </ng-template>
+            </span>
+          </div>
+        </div> -->
+        <div class="mt-3">
+          <strong class="text-primary">
+            <i class="fas fa-check-circle me-1"></i> Correct Matches:
+          </strong>
+          <div class="table-responsive mt-2">
+            <table class="table table-sm table-bordered align-middle mb-0" style="max-width:500px;">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:60px;">Left</th>
+                  <th>Matches</th>
+                  <th style="width:80px;">+ Marks</th>
+                  <th style="width:80px;">- Neg</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let m of q.matrixMatches">
+                  <td>
+                    <span class="badge bg-primary">{{ m.key }}</span>
+                  </td>
+                  <td>
+                    <span *ngIf="m.matches?.length; else noMatch">
+                      <span *ngFor="let rk of m.matches" class="badge bg-success me-1">{{ rk }}</span>
+                    </span>
+                    <ng-template #noMatch>
+                      <span class="text-muted fst-italic">—</span>
+                    </ng-template>
+                  </td>
+                  <td>
+                    <span class="badge bg-success">+{{ m.marks }}</span>
+                  </td>
+                  <td>
+                    <span class="badge bg-danger" *ngIf="m.negMark > 0">-{{ m.negMark }}</span>
+                    <span class="text-muted" *ngIf="!m.negMark">0</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- Correct Answer Display -->
+      <!-- <div *ngIf="q.questionType !== 'matrix'" class="mt-3 border-top pt-3">
+        <strong>Correct Answer:</strong>
+        <span class="ms-2">
+          {{ q.correctAnswer }}
+        </span>
+      </div> -->
+      <div class="mt-3 border-top pt-3">
+        <strong>Correct Answer:</strong>
+
+        <!-- MCQ — show selected option keys -->
+        <span *ngIf="q.questionType === 'mcq_single' || q.questionType === 'mcq_multi'"
+          class="ms-2 badge bg-success fs-6">
+          {{ q.correctAnswer }}
+        </span>
+        <!-- True/False -->
+        <span *ngIf="q.questionType === 'true_false'" class="ms-2 badge fs-6"
+          [class.bg-success]="q.correctAnswer === 'true'" [class.bg-danger]="q.correctAnswer === 'false'">
+          {{ q.correctAnswer === 'true' ? 'True' : 'False' }}
+        </span>
+        <!-- Integer -->
+        <span *ngIf="q.questionType === 'integer'" class="ms-2 badge bg-primary fs-6">
+          {{ q.correctAnswer }}
+        </span>
+        <!-- Numeric — show range -->
+        <span *ngIf="q.questionType === 'numeric'" class="ms-2">
+          <span class="badge bg-primary fs-6">{{ q.correctAnswer }}</span>
+          <span *ngIf="q.numericMin !== null && q.numericMax !== null" class="ms-2 text-muted small">
+            (Range: {{ q.numericMin }} — {{ q.numericMax }})
+          </span>
+        </span>
+        <!-- Subjective / Short Answer -->
+        <!-- <span *ngIf="q.questionType === 'subjective' || q.questionType === 'short_answer'"
+          class="ms-2 text-muted fst-italic">
+          {{ q.correctAnswer || '(manually evaluated)' }}
+        </span> -->
+        <span *ngIf="q.questionType === 'subjective' || q.questionType === 'short_answer'"
+          class="ms-2 text-muted fst-italic">
+          <span *ngIf="q.correctAnswer" [innerHTML]="sanitizeHtml(q.correctAnswer)"></span>
+          <span *ngIf="!q.correctAnswer">(manually evaluated)</span>
+        </span>
+        <!-- Matrix — handled above in matrix section -->
+        <span *ngIf="q.questionType === 'matrix'" class="ms-2 text-muted small">
+          See matrix matches above
+        </span>
+      </div>
+
+      <!-- Solution Display (if available) with LaTeX and Images -->
+      <!-- <div *ngIf="q.solutionHtml" class="mt-3 border-top pt-3 solution-section">
+        <strong>Solution:</strong>
+        <div class="mt-2 solution-content" #solutionContent [innerHTML]="q.solutionHtml"></div>
+      </div> -->
+      <div *ngIf="q.enableSolution && q.solutionHtml" class="mt-3 border-top pt-3 solution-section">
+        <div class="fw-bold text-info mb-2">
+          <i class="fas fa-lightbulb me-1"></i> Solution
+        </div>
+        <div class="p-3 bg-info bg-opacity-10 rounded" #solutionContent [innerHTML]="q.solutionHtml"
+          style="word-wrap:break-word; overflow-wrap:break-word;">
+        </div>
+      </div>
+      <!-- Instruction (if enabled) -->
+      <div *ngIf="q.enableInstruction && q.instructionHtml" class="mb-3 p-3 border rounded bg-warning bg-opacity-10">
+        <div class="fw-bold text-warning mb-2">
+          <i class="fas fa-info-circle me-1"></i> Instruction
+        </div>
+        <div [innerHTML]="sanitizeHtml(q.instructionHtml)" style="word-wrap:break-word; overflow-wrap:break-word;">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ================= UPDATE ANSWER MODAL ================= -->
+<div class="app-modal-backdrop" *ngIf="showAnswerModal" (click)="closeAnswerModal()">
+  <div class="app-modal" style="max-width: 520px" (click)="$event.stopPropagation()">
+    <div class="app-modal-header d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 fw-bold">
+        <i class="fa-solid fa-pen-to-square me-2 text-success"></i>Update Answer
+      </h6>
+      <button type="button" class="btn-close" (click)="closeAnswerModal()"></button>
+    </div>
+    <div class="app-modal-body" *ngIf="answerModalQuestion">
+      <p class="text-muted small mb-3">
+        Q{{ questions.indexOf(answerModalQuestion) + 1 }} —
+        <span class="badge bg-info text-dark">{{ formatQuestionType(answerModalQuestion.questionType) }}</span>
+      </p>
+      <!-- MCQ Single -->
+      <div
+        *ngIf="answerModalQuestion.questionType === 'mcq_single' || answerModalQuestion.questionType === 'mcq-single'">
+        <label class="form-label fw-bold small text-primary">Select Correct Option:</label>
+        <div *ngFor="let opt of answerModalEntry?.options; let j = index"
+          class="d-flex align-items-center p-2 mb-2 border rounded" [class.border-success]="opt.isCorrect"
+          [class.bg-light]="!opt.isCorrect" style="cursor:pointer" (click)="answerModalToggle(j)">
+          <input type="radio" class="form-check-input me-2" [checked]="opt.isCorrect" readonly>
+          <span class="badge me-2" [class.bg-success]="opt.isCorrect" [class.bg-secondary]="!opt.isCorrect">{{ opt.key
+            }}</span>
+          <span [innerHTML]="opt.textHtml || opt.text || opt.key"></span>
+        </div>
+      </div>
+      <!-- MCQ Multi -->
+      <div *ngIf="answerModalQuestion.questionType === 'mcq_multi' || answerModalQuestion.questionType === 'mcq-multi'">
+        <label class="form-label fw-bold small text-primary">Select Correct Options:</label>
+        <div *ngFor="let opt of answerModalEntry?.options; let j = index"
+          class="d-flex align-items-center p-2 mb-2 border rounded" [class.border-success]="opt.isCorrect"
+          [class.bg-light]="!opt.isCorrect" style="cursor:pointer" (click)="answerModalToggle(j)">
+          <input type="checkbox" class="form-check-input me-2" [checked]="opt.isCorrect" readonly>
+          <span class="badge me-2" [class.bg-success]="opt.isCorrect" [class.bg-secondary]="!opt.isCorrect">{{ opt.key
+            }}</span>
+          <span [innerHTML]="opt.textHtml || opt.text || opt.key"></span>
+        </div>
+      </div>
+      <!-- True / False -->
+      <div *ngIf="answerModalQuestion.questionType === 'true_false'">
+        <label class="form-label fw-bold small text-primary">Select Answer:</label>
+        <div class="d-flex gap-3 mt-1">
+          <div *ngFor="let val of ['true', 'false']" class="d-flex align-items-center p-2 px-4 border rounded"
+            [class.border-success]="answerModalEntry?.correctAnswer === val"
+            [class.bg-success]="answerModalEntry?.correctAnswer === val"
+            [class.bg-light]="answerModalEntry?.correctAnswer !== val" style="cursor:pointer"
+            (click)="answerModalEntry.correctAnswer = val">
+            <input type="radio" class="form-check-input me-2" [checked]="answerModalEntry?.correctAnswer === val"
+              readonly>
+            <span class="fw-medium" [class.text-white]="answerModalEntry?.correctAnswer === val">
+              {{ val === 'true' ? 'True' : 'False' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <!-- Integer / Numeric -->
+      <div *ngIf="answerModalQuestion.questionType === 'integer' || answerModalQuestion.questionType === 'numeric'">
+        <label class="form-label fw-bold small text-primary">Correct Answer:</label>
+        <input type="number" class="form-control" [(ngModel)]="answerModalEntry.correctAnswer"
+          placeholder="Enter value">
+      </div>
+      <!-- Matrix -->
+      <div *ngIf="answerModalQuestion.questionType === 'matrix'">
+        <label class="form-label fw-bold small text-primary">
+          Correct Matches <span class="text-muted fw-normal">(e.g. A:PQ;B:R)</span>
+        </label>
+        <input type="text" class="form-control" [(ngModel)]="answerModalEntry.correctAnswer" placeholder="A:PQ;B:R">
+      </div>
+
+      <!-- Subjective / Others -->
+      <!-- <div
+        *ngIf="answerModalQuestion.questionType === 'subjective' || answerModalQuestion.questionType === 'text-based'">
+        <label class="form-label fw-bold small text-primary">Correct Answer:</label>
+        <input type="text" class="form-control" [(ngModel)]="answerModalEntry.correctAnswer" placeholder="Enter answer">
+      </div> -->
+      <div *ngIf="answerModalQuestion.questionType === 'matrix'">
+        <label class="form-label fw-bold small text-primary">
+          Correct Matches
+          <span class="text-muted fw-normal small">(format: A:P(2,1);A:Q(2,1);B:R(2,0))</span>
+        </label>
+        <input type="text" class="form-control" [(ngModel)]="answerModalEntry.correctAnswer"
+          placeholder="A:P(2,1);B:Q(2,0)">
+        <small class="text-muted">
+          Format: LeftKey:RightKey(positiveMarks,negativeMark) per pair separated by ;
+        </small>
+      </div>
+      <div class="d-flex gap-2 justify-content-end mt-4">
+        <button class="btn btn-outline-secondary btn-sm" (click)="closeAnswerModal()">Cancel</button>
+        <button class="btn btn-success btn-sm" (click)="submitAnswerModal()" [disabled]="answerModalSaving">
+          <span class="spinner-border spinner-border-sm me-1" *ngIf="answerModalSaving"></span>
+          {{ answerModalSaving ? 'Saving...' : 'Save Answer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MINI GRACE MODAL ================= -->
+<div class="app-modal-backdrop" *ngIf="showGraceModal" (click)="closeGraceModal()">
+  <div class="app-modal" style="max-width: 420px" (click)="$event.stopPropagation()">
+    <div class="app-modal-header d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 fw-bold">
+        <i class="fa-solid fa-gift me-2 text-primary"></i>Apply Grace Mark
+      </h6>
+      <button type="button" class="btn-close" (click)="closeGraceModal()"></button>
+    </div>
+    <div class="app-modal-body">
+      <p class="text-muted small mb-3">
+        Question #{{ questions.indexOf(selectedGraceQuestion) + 1 }}
+      </p>
+      <div class="mb-3">
+        <label class="form-label fw-medium fs-13">Grace Marks <span class="text-danger">*</span></label>
+        <!-- <input type="number" class="form-control" [(ngModel)]="graceMarksInput" min="0" placeholder="e.g. 2" /> -->
+        <input type="number" class="form-control" [(ngModel)]="graceMarksInput" min="1" step="1" placeholder="e.g. 2" />
+        <small class="text-danger" *ngIf="graceMarksInput <= 0">
+          Grace marks must be greater than 0
+        </small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium fs-13">Note / Reason <span class="text-danger">*</span></label>
+        <textarea class="form-control" rows="3" [(ngModel)]="graceNoteInput"
+          placeholder="e.g. Wrong answer key"></textarea>
+      </div>
+      <div class="d-flex gap-2 justify-content-end">
+        <button class="btn btn-outline-secondary btn-sm" (click)="closeGraceModal()">
+          Cancel
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="applyGrace()" [disabled]="graceApplying">
+          <span class="spinner-border spinner-border-sm me-1" *ngIf="graceApplying"></span>
+          {{ graceApplying ? "Applying..." : "Apply Grace" }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MAP FROM BANK MODAL ================= -->
+<div class="modal-backdrop fade show" *ngIf="showBankModal" (click)="closeBankModal()"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showBankModal" (click)="$event.stopPropagation()">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="fas fa-database me-2"></i>Map Questions from Bank
+        </h5>
+        <button type="button" class="btn-close" (click)="closeBankModal()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Section selector -->
+        <div class="row mb-3">
+          <!-- <div class="col-md-4">
+            <label class="form-label fw-bold">Section <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="bankSectionId">
+              <option value="">Select Section</option>
+              <option *ngFor="let s of questionData?.sections" [value]="s.sectionId">
+                {{ s.sectionName }}
+              </option>
+            </select>
+          </div> -->
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Section <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="bankSectionId">
+              <option value="">Select Section</option>
+              <option *ngFor="let s of questionData?.sections" [value]="s.sectionId">
+                {{ s.sectionName }}
+                ({{ getSectionActualCount(s.sectionId) }}/{{ s.numberOfQuestions }})
+              </option>
+            </select>
+            <small class="text-muted" *ngIf="bankSectionId && !canAddToSection(bankSectionId)">
+              <span class="text-danger fw-bold">Section limit reached</span>
+            </small>
+          </div>
+          <div class="col-md-8 d-flex align-items-end justify-content-end">
+            <span class="badge bg-primary fs-6">{{ bankSelectedIds.size }} selected</span>
+          </div>
+        </div>
+        <hr />
+        <!-- Filters -->
+        <div class="row g-2 mb-3">
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterClassNo">
+              <option [ngValue]="null">All Classes</option>
+              <option *ngFor="let c of classOptions" [ngValue]="c.value">{{ c.label }}</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterSubjectId"
+              (ngModelChange)="onBankSubjectChange($event)">
+              <option value="">Subject</option>
+              <option *ngFor="let s of bankSubjectOptions" [value]="s.value">
+                {{ s.label }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterQuestionType">
+              <option value="">Type</option>
+              <option *ngFor="let qt of questionTypeOptions" [value]="qt.value">
+                {{ qt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select form-select-sm" [(ngModel)]="bankFilterDifficulty">
+              <option value="">Difficulty</option>
+              <option *ngFor="let d of difficultyOptions" [value]="d.value">
+                {{ d.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-3 d-flex gap-1">
+            <button class="btn btn-sm btn-primary flex-fill" (click)="searchBank()">
+              Search
+            </button>
+            <button class="btn btn-sm btn-outline-secondary flex-fill" (click)="clearBankFilters()">
+              Clear
+            </button>
+          </div>
+        </div>
+        <!-- Search -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <input class="form-control form-control-sm" placeholder="Search questions..." [(ngModel)]="bankSearch"
+              (keydown.enter)="searchBank()" />
+          </div>
+        </div>
+        <!-- Loading -->
+        <div *ngIf="bankLoading" class="text-center py-4">
+          <div class="spinner-border text-primary"></div>
+        </div>
+        <!-- Questions table -->
+        <div *ngIf="!bankLoading" class="table-responsive">
+          <table class="table table-hover table-sm align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 40px">
+                  <input type="checkbox" class="form-check-input" [checked]="allCurrentPageSelected"
+                    (change)="toggleSelectAll($event)" />
+                </th>
+                <th>Question No</th>
+                <th>Question</th>
+                <th style="width: 100px">Type</th>
+                <th style="width: 80px">Difficulty</th>
+                <th style="width: 70px">+Marks</th>
+                <th style="width: 80px">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let q of bankQuestions">
+                <td>
+                  <input type="checkbox" class="form-check-input" [checked]="bankSelectedIds.has(q._id)"
+                    (change)="toggleBankSelect(q._id)" />
+                </td>
+                <td>
+                  <span class="text-truncate d-inline-block" style="max-width: 400px">
+                    {{ q.questionNo }}
+                  </span>
+                </td>
+                <td>
+                  <span class="text-truncate d-inline-block" style="max-width: 400px">
+                    {{ q.questionPreview }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge bg-info text-dark">{{
+                    formatQuestionType(q.questionType)
+                    }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-secondary">{{ q.difficulty }}</span>
+                </td>
+                <td>+{{ q.positiveMarks }}</td>
+                <td>
+                  <!-- <button class="btn btn-sm btn-outline-success" [disabled]="bankMapping || !bankSectionId"
+                    (click)="mapSingleQuestion(q._id)">
+                    <i class="fas fa-plus"></i>
+                  </button> -->
+                  <button class="btn btn-sm btn-outline-success"
+                    [disabled]="bankMapping || !bankSectionId || !canAddToSection(bankSectionId)"
+                    (click)="mapSingleQuestion(q._id)">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!bankQuestions.length">
+                <td colspan="6" class="text-center text-muted py-4">
+                  No questions found
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <div *ngIf="bankTotalPages > 1" class="d-flex justify-content-center mt-2">
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" [class.disabled]="bankPage === 1">
+                <a class="page-link" (click)="onBankPageChange(bankPage - 1)">Prev</a>
+              </li>
+              <li *ngFor="let p of bankPageNumbers" class="page-item" [class.active]="p === bankPage">
+                <a class="page-link" (click)="onBankPageChange(p)">{{ p }}</a>
+              </li>
+              <li class="page-item" [class.disabled]="bankPage === bankTotalPages">
+                <a class="page-link" (click)="onBankPageChange(bankPage + 1)">Next</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeBankModal()">
+          Cancel
+        </button>
+        <!-- <button type="button" class="btn btn-success" [disabled]="
+            bankMapping || bankSelectedIds.size === 0 || !bankSectionId
+          " (click)="mapSelectedQuestions()"> -->
+        <button type="button" class="btn btn-success"
+          [disabled]="bankMapping || bankSelectedIds.size === 0 || !bankSectionId || !canAddToSection(bankSectionId)"
+          (click)="mapSelectedQuestions()">
+          <span *ngIf="bankMapping">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Mapping...
+          </span>
+          <span *ngIf="!bankMapping">
+            <i class="fas fa-check me-1"></i> Map
+            {{ bankSelectedIds.size }} Question(s)
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

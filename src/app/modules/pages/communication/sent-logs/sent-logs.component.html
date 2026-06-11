@@ -1,0 +1,114 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+    <div class="d-flex flex-column gap-4 py-2">
+      <div class="d-flex align-items-center justify-content-between">
+        <h1 class="fw-bold mb-0" style="font-size: 28px;">
+          <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Sent Logs
+        </h1>
+        <div class="d-flex">
+          <button class="btn btn-back fs-16 fw-medium me-2" type="button" (click)="toggleFilters()">
+            <i class="fa-solid fa-filter btn-icon"></i>
+            {{ showFilters ? 'Hide Filters' : 'Filters' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+        <div class="card-header bg-white border-0">
+          <form [formGroup]="filterForm" class="row g-3 align-items-end">
+            <div class="col-6 col-md-3">
+              <selectbox label="Channel" formControlName="channel" [control]="filterForm.get('channel')"
+                [options]="channelOptions" optionLabel="label" optionValue="value">
+              </selectbox>
+            </div>
+            <div class="col-6 col-md-3">
+              <selectbox label="Status" formControlName="status" [control]="filterForm.get('status')"
+                [options]="statusOptions" optionLabel="label" optionValue="value">
+              </selectbox>
+            </div>
+            <div class="col-md-6 d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
+                (click)="clearFilters()">Clear</button>
+              <button type="button" class="btn btn-create fs-16 fw-medium" (click)="applyFilters()">Search</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+      [success]="'Delivered'" [primary]="'Sent'" [warn]="'Queued'" [danger]="'Failed'" [totalRecords]="totalRecords"
+      [loading]="loading" [searchPlaceholder]="'Search recipient, admission no...'" (rowClick)="onRowSelected($event)">
+    </custom-table>
+
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-backdrop fade show" *ngIf="showDetailModal" (click)="closeDetailModal()"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showDetailModal">
+  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content" *ngIf="selectedLog">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="fa-solid fa-envelope me-2 text-primary"></i>Message Details
+        </h5>
+        <button type="button" class="btn-close" (click)="closeDetailModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-6">
+            <small class="text-muted d-block">Recipient</small>
+            <div class="fw-semibold">{{ selectedLog.recipient }}</div>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Admission No</small>
+            <div class="fw-semibold">{{ selectedLog.admissionNo }}</div>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Class / Batch</small>
+            <div class="fw-semibold">{{ selectedLog.className }} — {{ selectedLog.batch }}</div>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Template</small>
+            <div class="fw-semibold">{{ selectedLog.templateName }}</div>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Channel</small>
+            <span class="badge rounded-pill bg-secondary">{{ formatChannel(selectedLog.channel) }}</span>
+          </div>
+          <div class="col-6">
+            <small class="text-muted d-block">Status</small>
+            <span class="badge rounded-pill" [class.bg-success]="selectedLog.status === 'delivered'"
+              [class.bg-primary]="selectedLog.status === 'sent'" [class.bg-warning]="selectedLog.status === 'queued'"
+              [class.text-dark]="selectedLog.status === 'queued'" [class.bg-danger]="selectedLog.status === 'failed'">
+              {{ formatStatus(selectedLog.status) }}
+            </span>
+          </div>
+          <div class="col-12">
+            <small class="text-muted d-block">Sent At</small>
+            <div class="fw-semibold">{{ formatDate(selectedLog.sentAt) }}</div>
+          </div>
+          <div class="col-12" *ngIf="selectedLog.providerMessageId">
+            <small class="text-muted d-block">Provider Message ID</small>
+            <div class="fw-semibold">{{ selectedLog.providerMessageId }}</div>
+          </div>
+
+          <div class="col-12">
+            <small class="text-muted d-block">Retry Count</small>
+            <div class="fw-semibold">{{ selectedLog.retries || 0 }}</div>
+          </div>
+          <div class="col-12" *ngIf="selectedLog.error">
+            <div class="alert alert-danger mb-0 small">
+              <i class="fa-solid fa-circle-exclamation me-2"></i>{{ selectedLog.error }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-close-custom fs-16 fw-medium" (click)="closeDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

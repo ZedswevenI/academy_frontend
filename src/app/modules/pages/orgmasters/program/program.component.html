@@ -1,0 +1,695 @@
+<div class="program-page">
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1 fw-semibold">Program Master</h5>
+                <p class="mb-0 text-muted small">
+                    Configure programs with eligible class, start/end class, duration, version and subjects.
+                </p>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openImport()">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>Import Programs</span>
+                </button>
+
+                <button class="btn btn-create fs-16 fw-medium" (click)="add()">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Program</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body pt-0">
+            <custom-table [autoFitChars]="true" [columns]="columns" [data]="programData" [actions]="actions"
+                [showfilter]="false" [loading]="loading" [totalRecords]="totalRecords"
+                (requestData)="fetchTableData($event)" (rowClick)="onRowSelected($event)">
+            </custom-table>
+        </div>
+    </div>
+
+    <!-- ================= View Modal ================= -->
+    <div class="app-modal-backdrop" *ngIf="showView">
+        <div class="app-modal" style="max-width: 980px;">
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">Program View</h6>
+                    <span class="text-muted small">Complete program details</span>
+                </div>
+                <button type="button" class="btn-close" (click)="closeView()" aria-label="Close"></button>
+            </div>
+            <div class="app-modal-body" *ngIf="viewData as v">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small">Program Name</div>
+                        <div class="fw-semibold">{{ v.programName || '-' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Program Codes</div>
+                        <div class="fw-semibold">{{ v.programCodes || '-' }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="text-muted small">Stream / Target</div>
+                        <div class="fw-semibold">{{ v.target || '-' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Version</div>
+                        <div class="fw-semibold">{{ v.version || '-' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Status</div>
+                        <div class="fw-semibold">{{ v.status || '-' }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="text-muted small">Eligible Class</div>
+                        <div class="fw-semibold">{{ v.eligibleToClass ?? '-' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Starting Class</div>
+                        <div class="fw-semibold">{{ v.startingClass ?? '-' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Ending Class</div>
+                        <div class="fw-semibold">{{ v.endingClass ?? '-' }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="text-muted small">Duration (Years)</div>
+                        <div class="fw-semibold">{{ v.duration ?? '-' }}</div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="text-muted small">Subjects</div>
+                        <div class="fw-semibold" *ngIf="(v.subjects || []).length; else noSubs">
+                            <span class="badge bg-light text-dark border me-1 mb-1"
+                                *ngFor="let s of (v.subjects || [])">
+                                {{ s?.subjectName || s?.subjectCode || s?._id || s }}
+                            </span>
+                        </div>
+                        <ng-template #noSubs>-</ng-template>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Exam Category Mapping</div>
+                        <div *ngIf="(v.examMappings || []).length; else noMaps" class="border rounded p-2">
+                            <div class="small mb-1 text-muted">
+                                Total: <span class="fw-semibold">{{ (v.examMappings || []).length }}</span>
+                            </div>
+                            <div class="table-responsive">
+                                <!-- <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width:48px;">#</th>
+                                            <th>Category</th>
+                                            <th>Sub Category</th>
+                                            <th style="width:120px;">Sort</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let m of (v.examMappings || []); let i = index">
+                                            <td>{{ i + 1 }}</td>
+                                            <td>{{ getExamCategoryLabel(m?.categoryId) }}</td>
+                                            <td>{{ getExamSubCategoryLabel(m?.subCategoryId) }}</td>
+                                            <td>{{ m?.sortOrder ?? '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table> -->
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width:48px;">#</th>
+                                            <th>Category</th>
+                                            <th>Sub Category</th>
+                                            <th>Subjects</th>
+                                            <th style="width:80px;">Sort</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let m of (v.examMappings || []); let i = index">
+                                            <td>{{ i + 1 }}</td>
+                                            <td>{{ getExamCategoryLabel(m?.categoryId) }}</td>
+                                            <td>{{ getExamSubCategoryLabel(m?.subCategoryId) }}</td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border me-1 mb-1"
+                                                    *ngFor="let sid of (m?.subjectIds || [])">
+                                                    {{ getSubjectLabels([sid]) }}
+                                                </span>
+                                                <span *ngIf="!(m?.subjectIds?.length)">-</span>
+                                            </td>
+                                            <td>{{ m?.sortOrder ?? '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <ng-template #noMaps>-</ng-template>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeView()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Create/Edit Modal ================= -->
+    <div class="app-modal-backdrop" *ngIf="showForm">
+        <div class="app-modal" style="max-width: 1020px;">
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">
+                        {{ formMode === 'create' ? 'Create Program' : 'Edit Program' }}
+                    </h6>
+                    <span class="text-muted small">
+                        {{ formMode === 'create' ? 'Add a new program' : 'Update program details' }}
+                    </span>
+                </div>
+                <button type="button" class="btn-close" (click)="cancel()" aria-label="Close"></button>
+            </div>
+            <div class="app-modal-body">
+                <form [formGroup]="programForm" (ngSubmit)="save()">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <formfield label="Program Name" [required]="true" [control]="programForm.get('name')"
+                                formControlName="name" placeholder="ARISE - One Year Foundation"></formfield>
+                        </div>
+                        <div class="col-md-4">
+                            <formfield label="Program Code" [required]="true" [control]="programForm.get('code')"
+                                formControlName="code" placeholder="C6053"></formfield>
+                        </div>
+                        <div class="col-md-3">
+                            <selectbox label="Stream" [required]="true" [options]="streamOptions" optionLabel="label"
+                                optionValue="value" [control]="programForm.get('stream')" formControlName="stream">
+                            </selectbox>
+                        </div>
+                        <div class="col-md-3">
+                            <selectbox label="Eligible Class" [required]="true" [options]="eligibleClassOptions"
+                                [optionLabel]="'label'" [optionValue]="'value'"
+                                [control]="programForm.get('eligibleToClass')" formControlName="eligibleToClass">
+                            </selectbox>
+                        </div>
+                        <div class="col-md-3">
+                            <selectbox label="Starting Class" [required]="true" [options]="startingClassOptions"
+                                [optionLabel]="'label'" [optionValue]="'value'"
+                                [control]="programForm.get('startingClass')" formControlName="startingClass">
+                            </selectbox>
+                        </div>
+                        <div class="col-md-2">
+                            <selectbox label="Duration (Years)" [required]="true" [options]="durationOptions"
+                                [optionLabel]="'label'" [optionValue]="'value'" [control]="programForm.get('duration')"
+                                formControlName="duration"></selectbox>
+                        </div>
+                        <div class="col-md-2">
+                            <appreadonly label="Ending Class" [required]="false"
+                                [control]="programForm.get('endingClass')" formControlName="endingClass"
+                                placeholder="-"></appreadonly>
+                        </div>
+                        <div class="col-md-5">
+                            <formfield label="Version" [required]="true" [control]="programForm.get('version')"
+                                formControlName="version" placeholder="Special Sunday / Regular"></formfield>
+                        </div>
+                        <!-- <div class="col-md-3 d-flex align-items-center">
+                            <checkbox label="Active" [control]="programForm.get('isActive')" formControlName="isActive">
+                            </checkbox>
+                        </div> -->
+
+                        <!-- Subjects (kept) -->
+                        <div class="col-12">
+                            <div class="fw-semibold mb-2">Subjects</div>
+                            <div class="border rounded p-2" style="max-height: 210px; overflow: auto;">
+                                <div class="row g-2">
+                                    <div class="col-md-4" *ngFor="let s of subjectOptions">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" [id]="'sub_' + s.value"
+                                                [checked]="isSubjectChecked(s.value)"
+                                                (change)="toggleSubject(s.value, $any($event.target).checked)"
+                                                [disabled]="formMode === 'edit'" />
+                                            <label class="form-check-label" [for]="'sub_' + s.value">
+                                                <span class="fw-semibold">{{ s.label }}</span>
+                                                <span class="text-muted small" *ngIf="s.code">({{ s.code }})</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="small text-muted mt-2" *ngIf="!subjectOptions.length">
+                                    No subjects available. Please create subjects first.
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-1" *ngIf="formMode === 'edit'">
+                                Note: Subjects are locked in edit. Use <span class="fw-semibold">Add Subjects</span>
+                                action from list.
+                            </div>
+                        </div>
+
+                        <!-- ✅ REMOVED: Exam Category Mapping block from Create/Edit -->
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()">Cancel</button>
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="programForm.invalid">
+                            {{ formMode === 'create' ? 'Save Program' : 'Update Program' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Add Subjects Modal ================= -->
+    <div class="app-modal-backdrop" *ngIf="showSubjectsModal">
+        <div class="app-modal" style="max-width: 980px;">
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">Add Subjects to Program</h6>
+                    <span class="text-muted small">Only newly selected subjects will be appended.</span>
+                </div>
+                <button type="button" class="btn-close" (click)="closeSubjectsModal()" aria-label="Close"></button>
+            </div>
+
+            <div class="app-modal-body">
+                <div class="border rounded p-2" style="max-height: 360px; overflow:auto;">
+                    <div class="row g-2">
+                        <div class="col-md-4" *ngFor="let s of subjectOptions">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" [id]="'subm_' + s.value"
+                                    [checked]="isModalSubjectChecked(s.value)"
+                                    (change)="toggleModalSubject(s.value, $any($event.target).checked)"
+                                    [disabled]="existingSubjectIds.has(s.value)" />
+                                <label class="form-check-label" [for]="'subm_' + s.value">
+                                    <span class="fw-semibold">{{ s.label }}</span>
+                                    <span class="text-muted small" *ngIf="s.code">({{ s.code }})</span>
+                                    <span class="badge bg-light text-dark border ms-2"
+                                        *ngIf="existingSubjectIds.has(s.value)">Already Added</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
+                        (click)="closeSubjectsModal()">Cancel</button>
+                    <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmAddSubjects()"
+                        [disabled]="!modalSelectedSubjects.length || addingSubjects">
+                        <i class="fa-solid fa-plus me-1"></i>
+                        Add Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Exam Mapping Modal ================= -->
+    <div class="app-modal-backdrop" *ngIf="showExamMappingModal">
+        <div class="app-modal" style="max-width: 1040px;">
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">Program Exam Category Mapping</h6>
+                    <span class="text-muted small">Add mapping rows and save separately.</span>
+                </div>
+                <button type="button" class="btn-close" (click)="closeExamMappingModal()" aria-label="Close"></button>
+            </div>
+
+            <div class="app-modal-body" [formGroup]="examMapForm">
+                <div class="d-flex gap-2 justify-content-end mb-2">
+                    <button type="button" class="btn btn-import fs-16 fw-medium me-2" (click)="addExamMappingRow()">
+                        <i class="fa-solid fa-plus me-1"></i>
+                        Add Row
+                    </button>
+                    <button type="button" class="btn btn-create fs-16 fw-medium" (click)="saveExamMappings()"
+                        [disabled]="examMappingsFA.length === 0 || examMapForm.invalid || savingExamMappings">
+                        <i class="fa-solid fa-floppy-disk me-1"></i>
+                        Save
+                    </button>
+                </div>
+
+                <div class="border rounded p-2">
+                    <div *ngIf="!examCategoryOptions.length" class="small text-muted">
+                        No exam categories found. Create exam categories first.
+                    </div>
+
+                    <div class="table-responsive" *ngIf="examCategoryOptions.length">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <!-- <thead class="table-light">
+                                <tr>
+                                    <th style="width: 48px;">#</th>
+                                    <th style="min-width: 240px;">Exam Category</th>
+                                    <th style="min-width: 260px;">Exam Sub Category</th>
+                                    <th style="min-width:220px;">Subjects</th>
+                                    <th style="width: 140px;">Sort Order</th>
+                                    <th style="width: 80px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody formArrayName="examMappings">
+                                <tr *ngFor="let g of examMappingsFA.controls; let i = index" [formGroupName]="i">
+                                    <td>{{ i + 1 }}</td>
+
+                                    <td>
+                                        <select class="form-select form-select-sm" formControlName="categoryId"
+                                            (change)="onExamCategoryChanged(i)">
+                                            <option value="">-- Select --</option>
+                                            <option *ngFor="let c of examCategoryOptions" [value]="c.value">
+                                                {{ c.label }}
+                                            </option>
+                                        </select>
+
+                                        <div class="small text-danger mt-1"
+                                            *ngIf="g.get('categoryId')?.touched && g.get('categoryId')?.invalid">
+                                            Category required
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <select class="form-select form-select-sm" formControlName="subCategoryId">
+                                            <option value="">-- Select --</option>
+                                            <option *ngFor="let s of getSubCategoryOptionsForRow(i)" [value]="s.value">
+                                                {{ s.label }}
+                                            </option>
+                                        </select>
+
+                                        <div class="small text-danger mt-1"
+                                            *ngIf="g.get('subCategoryId')?.touched && g.get('subCategoryId')?.invalid">
+                                            Sub category required
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm"
+                                            formControlName="sortOrder" placeholder="0" />
+                                    </td>
+
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            (click)="removeExamMappingRow(i)">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <tr *ngIf="examMappingsFA.length === 0">
+                                    <td colspan="5" class="text-muted small py-3 text-center">
+                                        No mappings added.
+                                    </td>
+                                </tr>
+                            </tbody> -->
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:48px;">#</th>
+                                    <th style="min-width:200px;">Exam Category</th>
+                                    <th style="min-width:220px;">Exam Sub Category</th>
+                                    <th style="min-width:220px;">Subjects</th>
+                                    <th style="width:120px;">Sort Order</th>
+                                    <th style="width:60px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody formArrayName="examMappings">
+                                <tr *ngFor="let g of examMappingsFA.controls; let i = index" [formGroupName]="i">
+                                    <td>{{ i + 1 }}</td>
+                                    <td>
+                                        <select class="form-select form-select-sm" formControlName="categoryId"
+                                            (change)="onExamCategoryChanged(i)">
+                                            <option value="">-- Select --</option>
+                                            <option *ngFor="let c of examCategoryOptions" [value]="c.value">{{ c.label
+                                                }}</option>
+                                        </select>
+                                        <div class="small text-danger mt-1"
+                                            *ngIf="g.get('categoryId')?.touched && g.get('categoryId')?.invalid">
+                                            Category required
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" formControlName="subCategoryId">
+                                            <option value="">-- Select --</option>
+                                            <option *ngFor="let s of getSubCategoryOptionsForRow(i)" [value]="s.value">
+                                                {{ s.label }}
+                                            </option>
+                                        </select>
+                                        <div class="small text-danger mt-1"
+                                            *ngIf="g.get('subCategoryId')?.touched && g.get('subCategoryId')?.invalid">
+                                            Sub category required
+                                        </div>
+                                    </td>
+                                    <!-- Subjects — checkboxes per row -->
+                                    <td>
+                                        <div class="border rounded p-2"
+                                            style="max-height:140px; overflow-y:auto; min-width:200px;">
+                                            <div *ngIf="!examMappingSubjectOptions.length" class="text-muted small">
+                                                No subjects mapped to this program yet.
+                                            </div>
+                                            <div class="form-check" *ngFor="let s of examMappingSubjectOptions">
+                                                <input class="form-check-input" type="checkbox"
+                                                    [id]="'esub_' + i + '_' + s.value"
+                                                    [checked]="isRowSubjectChecked(i, s.value)"
+                                                    (change)="toggleRowSubject(i, s.value, $any($event.target).checked)" />
+                                                <label class="form-check-label small"
+                                                    [for]="'esub_' + i + '_' + s.value">
+                                                    {{ s.label }}
+                                                    <span class="text-muted" *ngIf="s.code">({{ s.code }})</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            {{ getRowSubjectIds(i).length }} selected
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm"
+                                            formControlName="sortOrder" placeholder="0" />
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            (click)="removeExamMappingRow(i)">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr *ngIf="examMappingsFA.length === 0">
+                                    <td colspan="6" class="text-muted small py-3 text-center">No mappings added.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="small text-muted mt-2">
+                        Note: Sort order will be normalized on save.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <delete [title]="'Delete Program'" [message]="deleteMessage" [(visible)]="deleteModalVisible"
+        (closed)="onDeleteModalClosed($event)">
+    </delete>
+</div>
+
+<!-- ================= Import Programs Modal ================= -->
+<div class="app-modal-backdrop" *ngIf="showImport">
+    <div class="app-modal" style="max-width: 1100px;">
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0 fw-semibold">Import Programs</h6>
+                <span class="text-muted small">
+                    Upload Excel file. Preview will be shown before importing.
+                </span>
+            </div>
+            <button type="button" class="btn-close" (click)="closeImport()" aria-label="Close"></button>
+        </div>
+
+        <div class="app-modal-body">
+            <!-- Top controls -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="downloadSampleExcel()">
+                        <i class="fa-solid fa-download me-1"></i> Download Sample
+                    </button>
+
+                    <div class="small text-muted">
+                        Supported: <span class="fw-semibold">.xlsx / .xls</span>
+                    </div>
+                </div>
+
+                <!-- import mode (kept; TS currently sends mode: upsert) -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="small text-muted">Mode</div>
+                    <select class="form-select form-select-sm" style="min-width: 140px;" [(ngModel)]="importMode"
+                        [ngModelOptions]="{standalone:true}">
+                        <option value="upsert">Upsert</option>
+                        <option value="insert">Insert</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- File picker -->
+            <div class="border rounded p-3 mb-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-7">
+                        <input type="file" class="form-control form-control-sm" accept=".xlsx,.xls"
+                            (change)="onExcelSelected($event)" />
+                        <div class="small text-muted mt-1" *ngIf="importFileName">
+                            Selected: <span class="fw-semibold">{{ importFileName }}</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5 text-md-end">
+                        <div class="small" *ngIf="importPreviewRows.length">
+                            Rows: <span class="fw-semibold">{{ importPreviewRows.length }}</span>
+                            <span class="mx-2">•</span>
+                            Invalid: <span class="fw-semibold text-danger">{{ importInvalidCount }}</span>
+                        </div>
+                        <div class="small text-danger mt-1" *ngIf="importHasInvalidRows">
+                            Fix invalid rows before importing.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview table -->
+            <div class="border rounded">
+                <div class="d-flex justify-content-between align-items-center p-2 border-bottom bg-light">
+                    <div class="fw-semibold">Preview</div>
+                    <div class="small text-muted" *ngIf="!importPreviewRows.length">
+                        Upload a file to see preview.
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 420px; overflow:auto;"
+                    *ngIf="importPreviewRows.length">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width:70px;">Row</th>
+                                <th style="min-width:220px;">Program Name</th>
+                                <th style="width:90px;">Eligible</th>
+                                <th style="width:90px;">Start</th>
+                                <th style="width:90px;">End</th>
+                                <th style="width:90px;">Duration</th>
+                                <th style="min-width:140px;">Code</th>
+                                <th style="width:90px;">Target</th>
+                                <th style="min-width:180px;">Version</th>
+                                <th style="width:90px;">Status</th>
+                                <th style="min-width:220px;">Errors</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let r of importPreviewRows">
+                                <td class="small">{{ r._rowNo }}</td>
+
+                                <td>
+                                    <div class="fw-semibold">{{ r.programName || '-' }}</div>
+                                </td>
+
+                                <td>{{ r.eligibleToClass ?? '-' }}</td>
+                                <td>{{ r.startingClass ?? '-' }}</td>
+                                <td>{{ r.endingClass ?? '-' }}</td>
+                                <td>{{ r.duration ?? '-' }}</td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ r.programCodes || '-' }}</span>
+                                </td>
+
+                                <td>{{ r.target || '-' }}</td>
+                                <td>{{ r.version || '-' }}</td>
+
+                                <td>
+                                    <span class="badge" [class.bg-success-subtle]="r.status === 'Active'"
+                                        [class.text-success]="r.status === 'Active'" [class.border]="true"
+                                        [class.border-success-subtle]="r.status === 'Active'"
+                                        [class.bg-secondary-subtle]="r.status !== 'Active'"
+                                        [class.text-secondary]="r.status !== 'Active'"
+                                        [class.border-secondary-subtle]="r.status !== 'Active'">
+                                        {{ r.status || '-' }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <ng-container *ngIf="r._errors?.length; else okRow">
+                                        <div class="small text-danger">
+                                            <div *ngFor="let e of r._errors">{{ e }}</div>
+                                        </div>
+                                    </ng-container>
+                                    <ng-template #okRow>
+                                        <span class="small text-success">OK</span>
+                                    </ng-template>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-3 text-center text-muted small" *ngIf="!importPreviewRows.length">
+                    No preview available.
+                </div>
+            </div>
+
+            <!-- Footer buttons -->
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeImport()">
+                    Cancel
+                </button>
+
+                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmImport()"
+                    [disabled]="!importPreviewRows.length || importHasInvalidRows">
+                    <i class="fa-solid fa-file-import me-1"></i>
+                    Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= Remove Subjects Modal ================= -->
+<div class="app-modal-backdrop" *ngIf="showRemoveSubjectsModal">
+    <div class="app-modal" style="max-width: 640px;">
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0 fw-semibold">Remove Subjects from Program</h6>
+                <span class="text-muted small">
+                    Removing a subject also removes its exam mappings for this program.
+                </span>
+            </div>
+            <button type="button" class="btn-close" (click)="closeRemoveSubjectsModal()" aria-label="Close"></button>
+        </div>
+
+        <div class="app-modal-body">
+            <div *ngIf="!removeSubjectsExisting.length" class="text-muted small py-3 text-center">
+                <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading subjects...
+            </div>
+
+            <div class="border rounded p-2" style="max-height:360px; overflow:auto;"
+                *ngIf="removeSubjectsExisting.length">
+                <div class="row g-2">
+                    <div class="col-md-4" *ngFor="let s of removeSubjectsExisting">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" [id]="'rem_' + s.value"
+                                [checked]="selectedSubjectsToRemove.has(s.value)"
+                                (change)="toggleRemoveSubject(s.value, $any($event.target).checked)" />
+                            <label class="form-check-label" [for]="'rem_' + s.value">
+                                <span class="fw-semibold">{{ s.label }}</span>
+                                <span class="text-muted small" *ngIf="s.code"> ({{ s.code }})</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-warning border-0 small mt-3 mb-0" *ngIf="selectedSubjectsToRemove.size">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                <strong>{{ selectedSubjectsToRemove.size }}</strong> subject(s) selected.
+                Any exam mappings tied to these subjects will also be removed.
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
+                    (click)="closeRemoveSubjectsModal()">Cancel</button>
+                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmRemoveSubjects()"
+                    [disabled]="!selectedSubjectsToRemove.size || removingSubjects">
+                    <i class="fa-solid fa-circle-minus me-1"></i>
+                    Remove Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

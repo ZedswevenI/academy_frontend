@@ -1,0 +1,140 @@
+.chat-container {
+  display: flex;
+  height: 80vh;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  overflow: hidden;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Avatar */
+.avatar.group {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #cfe2ff;
+  color: #084298;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* Sidebar */
+.chat-sidebar {
+  width: 300px;
+  background: #f0f0f0;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+.chat-header {
+  padding: 15px;
+  font-weight: bold;
+  border-bottom: 1px solid #ccc;
+  background: #ededed;
+}
+
+.chat-contact {
+  display: flex;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-contact:hover {
+  background: #ddd;
+}
+
+.chat-contact.active {
+  background: #ccc;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.contact-info {
+  margin-left: 10px;
+}
+
+.contact-name {
+  font-weight: bold;
+}
+
+.last-message {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Chat Window */
+.chat-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #e5ddd5;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message-sent {
+  align-self: flex-end;
+  background: #dcf8c6;
+  padding: 10px;
+  border-radius: 10px 10px 0 10px;
+  max-width: 70%;
+  position: relative;
+}
+
+.message-received {
+  align-self: flex-start;
+  background: #fff;
+  padding: 10px;
+  border-radius: 10px 10px 10px 0;
+  max-width: 70%;
+  position: relative;
+}
+
+.message-time {
+  font-size: 10px;
+  color: #888;
+  text-align: right;
+  margin-top: 5px;
+}
+
+/* Input */
+.chat-input {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  background: #f0f0f0;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.chat-input button {
+  margin-left: 10px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: none;
+  background: #0b93f6;
+  color: white;
+  cursor: pointer;
+}

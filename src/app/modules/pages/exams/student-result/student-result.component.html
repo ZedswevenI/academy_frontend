@@ -1,0 +1,708 @@
+<div class="result-page-container p-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div>
+                <h3 class="fw-bold mb-1">Performance Report</h3>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="javascript:void(0)" (click)="goBack()">{{ examData.examName
+                                }}</a></li>
+                        <li class="breadcrumb-item active">{{ studentInfo.studentName || studentInfo.admissionNo }}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn btn-import fs-16 fw-medium" (click)="exportToExcel()">
+                <i class="fa-solid fa-file-excel me-2"></i>Export Excel
+            </button>
+            <button class="btn btn btn-back fs-16 fw-medium" (click)="goBack()">
+                <i class="fa-solid fa-arrow-left"></i>Back
+            </button>
+        </div>
+    </div>
+    <!-- Student Quick Info -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="glass-card p-4 h-100 shadow-sm border-0">
+                <div class="d-flex align-items-center gap-4 mb-4">
+                    <div class="student-avatar-large">
+                        {{ (studentInfo.studentName || 'S').charAt(0) }}
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-gradient">{{ studentInfo.studentName || 'Student Name' }}</h4>
+                        <div class="d-flex gap-3 text-muted">
+                            <span><i class="fa-solid fa-id-card me-1"></i> {{ studentInfo.admissionNo }}</span>
+                            <span><i class="fa-solid fa-users me-1"></i> Batch: {{ studentResult?.batchId ||
+                                studentInfo.batchId }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6 col-sm">
+                        <div class="stat-box">
+                            <span class="stat-label">Rank</span>
+                            <span class="stat-value text-primary">#{{ studentResult?.rank || '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm">
+                        <div class="stat-box">
+                            <span class="stat-label">Percentile</span>
+                            <span class="stat-value text-purple">{{ studentResult?.percentile || '0' }}%</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm">
+                        <div class="stat-box">
+                            <span class="stat-label">Percentage</span>
+                            <span class="stat-value text-orange">{{ getPercentage(studentResult?.obtainedMarks || 0,
+                                studentResult?.totalMarks || 0) }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm">
+                        <div class="stat-box">
+                            <span class="stat-label">Score</span>
+                            <span class="stat-value text-success">{{ studentResult?.obtainedMarks || 0 }}<small
+                                    class="text-muted">/{{ studentResult?.totalMarks }}</small></span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm">
+                        <div class="stat-box">
+                            <span class="stat-label">Accuracy</span>
+                            <span class="stat-value text-info">{{ getPercentage(studentResult?.correctCount || 0,
+                                (studentResult?.correctCount||0) + (studentResult?.wrongCount||0)) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="glass-card p-0 h-100 d-flex flex-column shadow-sm border-0 overflow-hidden">
+                <div class="px-3 py-2 bg-light border-bottom text-center">
+                    <small class="fw-bold text-uppercase text-muted" style="font-size:10px; letter-spacing:1px">Overall
+                        Distribution</small>
+                </div>
+                <div class="p-3 flex-grow-1 d-flex flex-column justify-content-center align-items-center">
+                    <div style="height: 160px; width: 100%;">
+                        <canvas baseChart [data]="accuracyChartData" [options]="accuracyChartOptions"
+                            [type]="'doughnut'"></canvas>
+                    </div>
+                    <div class="d-flex gap-3 mt-3 w-100 justify-content-center">
+                        <div class="text-center">
+                            <div class="fw-bold text-success fs-5">{{ studentResult?.correctCount || 0 }}</div>
+                            <small class="text-muted fs-11">Correct</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-danger fs-5">{{ studentResult?.wrongCount || 0 }}</div>
+                            <small class="text-muted fs-11">Incorrect</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-warning fs-5">{{ studentResult?.skippedCount || 0 }}</div>
+                            <small class="text-muted fs-11">Skipped</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="custom-tabs mb-4">
+        <button [class.active]="activeSubTab === 'summary'" (click)="switchTab('summary')">General Summary</button>
+        <button [class.active]="activeSubTab === 'question_wise'" (click)="switchTab('question_wise')">Question
+            Wise</button>
+        <button [class.active]="activeSubTab === 'questions'" (click)="switchTab('questions')">Solutions</button>
+        <button [class.active]="activeSubTab === 'analysis'" (click)="switchTab('analysis')">Subject Wise</button>
+        <button [class.active]="activeSubTab === 'comparison'" (click)="switchTab('comparison')">Rankers List</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div [ngSwitch]="activeSubTab">
+
+        <!-- Summary Tab -->
+        <div *ngSwitchCase="'summary'">
+            <div class="row g-4">
+                <div class="col-md-7">
+                    <div class="glass-card p-4 mb-4 border-0 shadow-sm">
+                        <h6 class="fw-bold mb-4">Performance by Section</h6>
+                        <div style="height: 280px;">
+                            <canvas baseChart [data]="sectionChartData" [options]="sectionChartOptions"
+                                [type]="'bar'"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-4 border-0 shadow-sm">
+                        <h6 class="fw-bold mb-4">Session Details</h6>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <small class="text-muted d-block">Completion Date</small>
+                                    <span class="fw-medium">{{ formatDateFromTimestamp(studentResult?.completedAt)
+                                        }}</span>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div
+                                    class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center h-100">
+                                    <div>
+                                        <small class="text-muted d-block">Total Time Spent</small>
+                                        <span class="fw-bold text-primary">{{ formatTime(studentResult?.timeTaken)
+                                            }}</span>
+                                    </div>
+                                    <i class="fa-solid fa-clock text-muted opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="glass-card p-0 mb-4 border-0 shadow-sm overflow-hidden">
+                        <div class="px-4 py-3 border-bottom bg-light">
+                            <h6 class="fw-bold mb-0">Leaderboard Rankings</h6>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Rank</th>
+                                        <th>Candidate</th>
+                                        <th class="text-end pe-4">Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let item of leaderboard"
+                                        [class.table-primary]="item.admissionNo === studentInfo.admissionNo">
+                                        <td class="ps-4">
+                                            <span class="rank-badge" [ngClass]="'rank-' + item.rank">
+                                                {{ item.rank }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium">{{ item.studentName || item.admissionNo }}</div>
+                                            <small class="text-muted fs-11" *ngIf="item.studentName">{{ item.admissionNo
+                                                }}</small>
+                                        </td>
+                                        <td class="text-end pe-4 fw-bold text-primary">
+                                            {{ item.obtainedMarks }}
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="!leaderboard.length">
+                                        <td colspan="3" class="text-center py-4 text-muted small">Leaderboard data
+                                            unavailable</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Wise Tab -->
+        <div *ngSwitchCase="'question_wise'">
+            <div class="glass-card p-4 mb-4 border-0 shadow-sm">
+                <h6 class="fw-bold mb-4">Time Spent per Question (Seconds)</h6>
+                <div style="height: 250px;">
+                    <canvas baseChart [data]="timeChartData" [options]="timeChartOptions" [type]="'bar'"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card p-4 border-0 shadow-sm">
+                <h6 class="fw-bold mb-4">Detailed Question Metrics</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table-premium border">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">No.</th>
+                                <th>Section</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Your Ans</th>
+                                <th class="text-center">Correct Ans</th>
+                                <th class="text-center">Time Taken</th>
+                                <th class="text-center">Difficulty</th>
+                                <th class="text-end pe-4">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let a of studentResult?.answers; let i = index">
+                                <td class="ps-4 fw-bold">Q{{ i + 1 }}</td>
+                                <td>{{ getSectionName(a.sectionId) }}</td>
+                                <td class="text-center">
+                                    <span *ngIf="a.isSkipped"
+                                        class="badge bg-warning-soft text-warning border-warning-soft px-3">Skipped</span>
+                                    <span *ngIf="!a.isSkipped && a.isCorrect"
+                                        class="badge bg-success-soft text-success border-success-soft px-3">Correct</span>
+                                    <span *ngIf="!a.isSkipped && !a.isCorrect"
+                                        class="badge bg-danger-soft text-danger border-danger-soft px-3">Incorrect</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-bold"
+                                        [ngClass]="{'text-success': a.isCorrect, 'text-danger': !a.isCorrect && !a.isSkipped}">
+                                        {{ a.answerRaw || '---' }}
+                                    </span>
+                                </td>
+                                <td class="text-center fw-bold text-dark">
+                                    {{ a.correctAnswer || '---' }}
+                                </td>
+                                <td class="text-center text-muted">
+                                    <i class="fa-regular fa-clock me-1"></i> {{ (a.timeTaken / 1000).toFixed(1) }}s
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border text-capitalize">{{ a.difficulty ||
+                                        'Medium' }}</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <span class="fw-bold"
+                                        [ngClass]="a.marksAwarded >= 0 ? 'text-success' : 'text-danger'">
+                                        {{ a.marksAwarded >= 0 ? '+' : '' }}{{ a.marksAwarded }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solutions Tab (Formerly Question Analysis) -->
+        <!-- <div *ngSwitchCase="'questions'">
+            <div class="glass-card p-4 border-0 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold mb-0">Detailed Questions & Solutions</h6>
+                </div>
+
+                <div *ngFor="let sectionId of getStudentAnswerSectionKeys()" class="mb-5">
+                    <div class="section-title-divider mb-4">
+                        <span class="fw-bold px-3 bg-white text-muted">{{ getSectionName(sectionId) }}</span>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-12" *ngFor="let a of studentAnswersBySection[sectionId]; let j = index">
+                            <div class="question-analysis-card border shadow-none"
+                                [ngClass]="{'correct': a.isCorrect && !a.isSkipped, 'wrong': !a.isCorrect && !a.isSkipped, 'skipped': a.isSkipped}">
+                                <div
+                                    class="q-header p-3 border-bottom d-flex justify-content-between align-items-center bg-light-soft">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="q-number text-primary">QUESTION {{ j + 1 }}</span>
+                                        <span class="badge bg-secondary-soft text-muted fw-normal">
+                                            <i class="fa-regular fa-clock me-1"></i> {{ (a.timeTaken / 1000).toFixed(1)
+                                            }}s
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="marks-pill" [ngClass]="a.marksAwarded >= 0 ? 'plus' : 'minus'">
+                                            {{ a.marksAwarded >= 0 ? '+' : '' }}{{ a.marksAwarded }} pt
+                                        </div>
+                                        <span *ngIf="a.isSkipped"
+                                            class="badge bg-warning text-dark px-3 py-2">SKIPPED</span>
+                                        <span *ngIf="!a.isSkipped && a.isCorrect"
+                                            class="badge bg-success px-3 py-2">CORRECT</span>
+                                        <span *ngIf="!a.isSkipped && !a.isCorrect"
+                                            class="badge bg-danger px-3 py-2">INCORRECT</span>
+                                    </div>
+                                </div>
+                                <div class="q-body p-4">
+                                    <div class="mb-4">
+                                        <div class="fw-medium mb-4 q-text-premium mb-4"
+                                            [innerHTML]="renderLatex(a.questionHtml)"></div>
+
+                                        <div class="options-grid" *ngIf="a.questionOptions?.length">
+                                            <div *ngFor="let opt of a.questionOptions; let optIdx = index"
+                                                class="option-item border" [ngClass]="{
+                                                     'user-selected': a.answerRaw === (getOptionLabel(optIdx)),
+                                                     'is-correct': opt.isCorrect,
+                                                     'is-wrong': a.answerRaw === (getOptionLabel(optIdx)) && !opt.isCorrect
+                                                 }">
+                                                <div class="option-label">{{ getOptionLabel(optIdx) }}</div>
+                                                <div class="option-text" [innerHTML]="renderLatex(opt.textHtml)"></div>
+                                                <div class="option-marker">
+                                                    <i class="fa-solid fa-check text-success" *ngIf="opt.isCorrect"></i>
+                                                    <i class="fa-solid fa-xmark text-danger"
+                                                        *ngIf="a.answerRaw === (getOptionLabel(optIdx)) && !opt.isCorrect"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="answer-comparison mt-3 p-3 bg-light rounded-3 d-flex gap-5 border">
+                                        <div>
+                                            <small class="text-muted d-block text-uppercase fw-bold"
+                                                style="font-size:9px">Your Response</small>
+                                            <span class="fw-bold mt-1 fs-5"
+                                                [ngClass]="{'text-success': a.isCorrect, 'text-danger': !a.isCorrect && !a.isSkipped, 'text-warning': a.isSkipped}">
+                                                {{ a.answerRaw || '---' }}
+                                            </span>
+                                        </div>
+                                        <div class="vr"></div>
+                                        <div>
+                                            <small class="text-muted d-block text-uppercase fw-bold"
+                                                style="font-size:9px">Correct Choice</small>
+                                            <span class="fw-bold mt-1 text-dark fs-5">{{ a.correctAnswer?.toUpperCase()
+                                                }}</span>
+                                        </div>
+                                        <div class="vr"></div>
+                                        <div>
+                                            <small class="text-muted d-block text-uppercase fw-bold"
+                                                style="font-size:9px">Weightage</small>
+                                            <span class="fw-medium mt-1 text-muted">+{{ a.positiveMarks }} / -{{
+                                                a.negativeMarks }}</span>
+                                        </div>
+                                        <div class="vr"></div>
+                                        <div>
+                                            <small class="text-muted d-block text-uppercase fw-bold"
+                                                style="font-size:9px">Difficulty</small>
+                                            <span class="badge bg-light text-dark border mt-1 text-capitalize">{{
+                                                a.difficulty }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+
+        <!-- Solutions Tab -->
+        <div *ngSwitchCase="'questions'">
+            <div class="glass-card p-4 border-0 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold mb-0">Detailed Questions & Solutions</h6>
+                </div>
+
+                <div *ngFor="let sectionId of getStudentAnswerSectionKeys()" class="mb-5">
+                    <div class="section-title-divider mb-4">
+                        <span class="fw-bold px-3 bg-white text-muted">{{ getSectionName(sectionId) }}</span>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-12" *ngFor="let a of studentAnswersBySection[sectionId]; let j = index">
+                            <div class="question-analysis-card border shadow-none"
+                                [ngClass]="{'correct': a.isCorrect === true && !a.isSkipped, 'wrong': a.isCorrect === false && !a.isSkipped, 'skipped': a.isSkipped}">
+
+                                <!-- Question Header -->
+                                <div
+                                    class="q-header p-3 border-bottom d-flex justify-content-between align-items-center bg-light-soft">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="q-number text-primary">QUESTION {{ j + 1 }}</span>
+                                        <span class="badge bg-secondary-soft text-muted fw-normal text-capitalize">
+                                            {{ a.questionType?.replace('_', ' ') }}
+                                        </span>
+                                        <span class="badge bg-secondary-soft text-muted fw-normal">
+                                            <i class="fa-regular fa-clock me-1"></i> {{ (a.timeTaken / 1000).toFixed(1)
+                                            }}s
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="marks-pill" [ngClass]="a.marksAwarded >= 0 ? 'plus' : 'minus'">
+                                            {{ a.marksAwarded >= 0 ? '+' : '' }}{{ a.marksAwarded }} pt
+                                        </div>
+                                        <span *ngIf="a.isSkipped"
+                                            class="badge bg-warning text-dark px-3 py-2">SKIPPED</span>
+                                        <span *ngIf="!a.isSkipped && a.isCorrect === true"
+                                            class="badge bg-success px-3 py-2">CORRECT</span>
+                                        <span *ngIf="!a.isSkipped && a.isCorrect === false"
+                                            class="badge bg-danger px-3 py-2">INCORRECT</span>
+                                        <span *ngIf="!a.isSkipped && a.isCorrect === null"
+                                            class="badge bg-info px-3 py-2">PARTIAL</span>
+                                    </div>
+                                </div>
+
+                                <div class="q-body p-4">
+
+                                    <!-- Passage (for passage_qns) -->
+                                    <div *ngIf="a.passage?.passageHtml"
+                                        class="passage-box p-3 mb-4 bg-light border-start border-4 border-primary rounded-3">
+                                        <div class="fw-semibold text-primary mb-2 fs-13">
+                                            <i class="fa-solid fa-book-open me-1"></i>
+                                            {{ a.passage.title || 'Passage' }}
+                                        </div>
+                                        <div class="fs-14" [innerHTML]="renderLatex(a.passage.passageHtml)"></div>
+                                    </div>
+
+                                    <!-- Question Text -->
+                                    <div class="fw-medium mb-4 q-text-premium"
+                                        [innerHTML]="renderLatex(a.questionHtml)"></div>
+
+                                    <!-- MCQ Single / MCQ Multi / Passage MCQ — Options Grid -->
+                                    <div *ngIf="(a.questionType === 'mcq_single' || a.questionType === 'mcq_multi' || a.questionType === 'passage_qns') && a.questionOptions?.length"
+                                        class="options-grid mb-3">
+                                        <div *ngFor="let opt of a.questionOptions; let optIdx = index"
+                                            class="option-item border" [ngClass]="{
+                    'is-correct': opt.isCorrect,
+                    'user-selected': isOptionSelected(a, getOptionLabel(optIdx)),
+                    'is-wrong': isOptionSelected(a, getOptionLabel(optIdx)) && !opt.isCorrect
+                  }">
+                                            <div class="option-label">{{ getOptionLabel(optIdx) }}</div>
+                                            <div class="option-text" [innerHTML]="renderLatex(opt.textHtml)"></div>
+                                            <div class="option-marker">
+                                                <i class="fa-solid fa-check text-success" *ngIf="opt.isCorrect"></i>
+                                                <i class="fa-solid fa-xmark text-danger"
+                                                    *ngIf="isOptionSelected(a, getOptionLabel(optIdx)) && !opt.isCorrect"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- True / False -->
+                                    <div *ngIf="a.questionType === 'true_false'" class="d-flex gap-3 mb-3">
+                                        <div class="tf-option border rounded-3 px-4 py-2 d-flex align-items-center gap-2"
+                                            [ngClass]="{
+                    'is-correct': normalizeBoolean(a.correctAnswer) === 'true',
+                    'user-selected': normalizeBoolean(a.answerRaw) === 'true',
+                    'is-wrong': normalizeBoolean(a.answerRaw) === 'true' && normalizeBoolean(a.correctAnswer) !== 'true'
+                  }">
+                                            <i class="fa-solid fa-check text-success"
+                                                *ngIf="normalizeBoolean(a.correctAnswer) === 'true'"></i>
+                                            <i class="fa-solid fa-xmark text-danger"
+                                                *ngIf="normalizeBoolean(a.answerRaw) === 'true' && normalizeBoolean(a.correctAnswer) !== 'true'"></i>
+                                            True
+                                        </div>
+                                        <div class="tf-option border rounded-3 px-4 py-2 d-flex align-items-center gap-2"
+                                            [ngClass]="{
+                    'is-correct': normalizeBoolean(a.correctAnswer) === 'false',
+                    'user-selected': normalizeBoolean(a.answerRaw) === 'false',
+                    'is-wrong': normalizeBoolean(a.answerRaw) === 'false' && normalizeBoolean(a.correctAnswer) !== 'false'
+                  }">
+                                            <i class="fa-solid fa-check text-success"
+                                                *ngIf="normalizeBoolean(a.correctAnswer) === 'false'"></i>
+                                            <i class="fa-solid fa-xmark text-danger"
+                                                *ngIf="normalizeBoolean(a.answerRaw) === 'false' && normalizeBoolean(a.correctAnswer) !== 'false'"></i>
+                                            False
+                                        </div>
+                                    </div>
+
+                                    <!-- Integer / Numeric / Subjective / Short Answer -->
+                                    <div *ngIf="['integer','numeric','subjective','short_answer'].includes(a.questionType)"
+                                        class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <div class="p-3 rounded-3 border"
+                                                [ngClass]="a.isCorrect ? 'bg-success-subtle border-success' : a.isSkipped ? 'bg-warning-subtle border-warning' : 'bg-danger-subtle border-danger'">
+                                                <small class="text-muted d-block fw-bold mb-1"
+                                                    style="font-size:10px">YOUR ANSWER</small>
+                                                <span class="fw-bold fs-5"
+                                                    [ngClass]="a.isCorrect ? 'text-success' : a.isSkipped ? 'text-warning' : 'text-danger'">
+                                                    {{ a.isSkipped ? '— Skipped —' : (a.answerRaw ?? '— No Answer —') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="p-3 rounded-3 border bg-success-subtle border-success">
+                                                <small class="text-muted d-block fw-bold mb-1"
+                                                    style="font-size:10px">CORRECT ANSWER</small>
+                                                <span class="fw-bold fs-5 text-success">
+                                                    <ng-container
+                                                        *ngIf="a.questionType === 'numeric' && a.numericMin !== null && a.numericMax !== null">
+                                                        {{ a.numericMin }} – {{ a.numericMax }}
+                                                    </ng-container>
+                                                    <ng-container
+                                                        *ngIf="!(a.questionType === 'numeric' && a.numericMin !== null && a.numericMax !== null)">
+                                                        {{ a.correctAnswer ?? '—' }}
+                                                    </ng-container>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Matrix Match -->
+                                    <div *ngIf="a.questionType === 'matrix' && a.leftColumn?.length" class="mb-3">
+                                        <div class="table-responsive">
+                                            <table
+                                                class="table table-bordered align-middle text-center mb-0 matrix-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="text-start" style="width:35%">Left Column</th>
+                                                        <th style="width:25%">Right Column</th>
+                                                        <th style="width:20%">Your Answer</th>
+                                                        <th style="width:20%">Correct Answer</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr *ngFor="let left of a.leftColumn; let li = index">
+                                                        <!-- Left item -->
+                                                        <td class="text-start p-3">
+                                                            <span class="badge bg-primary me-2">{{ left.key }}</span>
+                                                            <span [innerHTML]="renderLatex(left.text)"></span>
+                                                        </td>
+                                                        <!-- Right column items (show all for first row only, merge for rest) -->
+                                                        <td class="p-2" *ngIf="li === 0"
+                                                            [attr.rowspan]="a.leftColumn.length">
+                                                            <div *ngFor="let right of a.rightColumn"
+                                                                class="d-flex align-items-center gap-2 mb-1 text-start">
+                                                                <span class="badge bg-success">{{ right.key }}</span>
+                                                                <span [innerHTML]="renderLatex(right.text)"></span>
+                                                            </div>
+                                                        </td>
+                                                        <!-- Student answer for this left key -->
+                                                        <td class="p-2">
+                                                            <span
+                                                                *ngFor="let rk of getMatrixStudentAnswer(a.answerRaw, left.key)"
+                                                                class="badge me-1"
+                                                                [ngClass]="isMatrixKeyCorrect(a.correctAnswer, left.key, rk) ? 'bg-success' : 'bg-danger'">
+                                                                {{ rk }}
+                                                            </span>
+                                                            <span
+                                                                *ngIf="!getMatrixStudentAnswer(a.answerRaw, left.key).length"
+                                                                class="text-muted small">—</span>
+                                                        </td>
+                                                        <!-- Correct answer for this left key -->
+                                                        <td class="p-2">
+                                                            <span
+                                                                *ngFor="let ck of getMatrixCorrectKeys(a.correctAnswer, left.key)"
+                                                                class="badge bg-success me-1">
+                                                                {{ ck }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Answer + Solution Footer -->
+                                    <div
+                                        class="answer-comparison mt-3 p-3 bg-light rounded-3 d-flex flex-wrap gap-4 border">
+                                        <div>
+                                            <small class="text-muted d-block text-uppercase fw-bold"
+                                                style="font-size:9px">Weightage</small>
+                                            <span class="fw-medium mt-1 text-muted">+{{ a.positiveMarks }} / -{{
+                                                a.negativeMarks }}</span>
+                                        </div>
+                                        <div class="vr d-none d-md-block"></div>
+                                        <div>
+                                            <small class="text-muted d-block text-uppercase fw-bold"
+                                                style="font-size:9px">Difficulty</small>
+                                            <span class="badge bg-light text-dark border mt-1 text-capitalize">{{
+                                                a.difficulty }}</span>
+                                        </div>
+                                        <div class="vr d-none d-md-block"></div>
+                                        <div>
+                                            <small class="text-muted d-block text-uppercase fw-bold"
+                                                style="font-size:9px">Marks Awarded</small>
+                                            <span class="fw-bold mt-1"
+                                                [ngClass]="a.marksAwarded >= 0 ? 'text-success' : 'text-danger'">
+                                                {{ a.marksAwarded >= 0 ? '+' : '' }}{{ a.marksAwarded }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Solution -->
+                                    <div *ngIf="a.solutionHtml"
+                                        class="mt-3 p-3 border-start border-4 border-success bg-success-subtle rounded-3">
+                                        <div class="fw-semibold text-success mb-2 fs-13">
+                                            <i class="fa-solid fa-lightbulb me-1"></i> Solution
+                                        </div>
+                                        <div [innerHTML]="renderLatex(a.solutionHtml)"></div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Subject Wise Analysis Tab -->
+        <div *ngSwitchCase="'analysis'">
+            <div class="glass-card p-4 border-0 shadow-sm">
+                <h6 class="fw-bold mb-4">Detailed Subject Matrix</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table-premium border">
+                        <thead>
+                            <tr class="text-nowrap">
+                                <th>Subject Name</th>
+                                <th class="text-center">Total Qns</th>
+                                <th class="text-center">Attempted</th>
+                                <th class="text-center">Correct</th>
+                                <th class="text-center">Time Spent</th>
+                                <th class="text-center">Marks Index</th>
+                                <th class="text-center">Efficiency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let sr of studentResult?.sectionResults">
+                                <td class="fw-bold text-dark">{{ getSectionName(sr.sectionId) }}</td>
+                                <td class="text-center">{{ sr.totalQuestions }}</td>
+                                <td class="text-center fw-medium">{{ sr.answeredCount }}</td>
+                                <td class="text-center">
+                                    <span class="text-success fw-bold">{{ sr.correctCount }}</span>
+                                    <span class="text-muted mx-1">/</span>
+                                    <span class="text-danger">{{ sr.wrongCount }}</span>
+                                </td>
+                                <td class="text-center text-muted">
+                                    <i class="fa-regular fa-clock me-1"></i> {{ formatTime(sr.timeTaken) }}
+                                </td>
+                                <td class="text-center">
+                                    <div class="fw-bold text-primary">{{ sr.obtainedMarks }}/{{ sr.totalMarks }}</div>
+                                    <div class="progress mt-1 mx-auto" style="height: 4px; width: 60px;">
+                                        <div class="progress-bar bg-primary"
+                                            [style.width]="getPercentage(sr.obtainedMarks, sr.totalMarks)"></div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border px-3">{{ getPercentage(sr.correctCount,
+                                        sr.answeredCount) }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div *ngSwitchCase="'comparison'">
+            <div class="glass-card p-4 border-0 shadow-sm">
+                <h6 class="fw-bold mb-4">Top Performance Benchmarks</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table-premium border mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Rank</th>
+                                <th>Student Name</th>
+                                <th>Admission No</th>
+                                <th class="text-center">Batch</th>
+                                <th class="text-end pe-4">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of leaderboard"
+                                [class.table-primary]="item.admissionNo === studentInfo.admissionNo">
+                                <td class="ps-4">
+                                    <div class="rank-badge-large" [ngClass]="'rank-' + item.rank">
+                                        {{ item.rank }}
+                                    </div>
+                                </td>
+                                <td class="fw-bold text-dark">{{ item.studentName || '---' }}</td>
+                                <td class="text-muted">{{ item.admissionNo }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">{{ item.batchId || 'N/A' }}</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <span class="fw-bold text-primary fs-5">{{ item.obtainedMarks }}</span>
+                                </td>
+                            </tr>
+                            <tr *ngIf="!leaderboard.length">
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-list-ol mb-2 fs-2 opacity-25"></i>
+                                    <p class="mb-0">Rankers list unavailable for this exam.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="loading" class="page-loader">
+    <div class="loader-ripple mb-3">
+        <div></div>
+        <div></div>
+    </div>
+    <span class="fw-medium text-muted">Building Comprehensive Analysis...</span>
+</div>

@@ -1,0 +1,186 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+    <!-- ================= LIST VIEW ================= -->
+    <div *ngIf="!showForm">
+      <div class="d-flex flex-column gap-4 py-4">
+        <div class="d-flex flex-column gap-4">
+          <div class="d-flex align-items-center justify-content-between">
+            <h1 class="fw-bold mb-0" style="font-size: 30px">
+              <i class="fa-solid fa-book-open-reader me-2"></i>Passages
+            </h1>
+            <div class="d-flex">
+              <button class="btn btn-back fs-16 fw-medium me-2" type="button" (click)="toggleFilters()">
+                <i class="fa-solid fa-filter"></i>
+                {{ showFilters ? "Hide Filters" : "Filters" }}
+              </button>
+              <button class="btn btn-create fs-16 fw-medium" type="button" (click)="openCreateForm()">
+                <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2" />
+                Add Passage
+              </button>
+            </div>
+          </div>
+          <!-- Filters -->
+          <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+            <div class="card-header bg-white border-0">
+              <form [formGroup]="filterForm" class="row g-3 align-items-end">
+                <div class="col-6 col-md-2">
+                  <selectbox label="Class" formControlName="classNo" [control]="filterForm.get('classNo')"
+                    [options]="classOptions" optionLabel="label" optionValue="value">
+                  </selectbox>
+                </div>
+                <div class="col-6 col-md-3">
+                  <selectbox label="Subject" formControlName="subjectId" [control]="filterForm.get('subjectId')"
+                    [options]="subjectOptions" optionLabel="label" optionValue="value">
+                  </selectbox>
+                </div>
+                <div class="col-6 col-md-2">
+                  <selectbox label="Status" formControlName="status" [control]="filterForm.get('status')"
+                    [options]="statusOptions" optionLabel="label" optionValue="value">
+                  </selectbox>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label">Tag</label>
+                  <input class="form-control form-control-sm" formControlName="tag" placeholder="e.g. physics" />
+                </div>
+                <div class="col-md-3 d-flex justify-content-end align-items-end gap-2">
+                  <button type="button" class="btn btn-close-custom fs-16 fw-medium"
+                    (click)="clearFilters()">Clear</button>
+                  <button type="button" class="btn btn-create fs-16 fw-medium" (click)="refresh()">Search</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+        [success]="'active'" [primary]="'inactive'" [totalRecords]="totalRecords" [loading]="loading"
+        (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search passages...'"
+        (rowClick)="onRowSelected($event)">
+      </custom-table>
+    </div>
+    <!-- ================= CREATE / EDIT FORM ================= -->
+    <div *ngIf="showForm">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="fw-bold mb-0">
+          <i class="fa-solid fa-book-open-reader me-2"></i>
+          {{ isEditMode ? "Edit Passage" : "Create Passage" }}
+        </h4>
+        <button class="btn btn-back fs-16 fw-medium" (click)="closeForm()">
+          <i class="fa-solid fa-arrow-left me-1"></i> Back
+        </button>
+      </div>
+      <form [formGroup]="passageForm">
+        <div class="row g-3">
+          <!-- Title -->
+          <div class="col-md-6">
+            <label class="form-label">Title <span class="text-danger">*</span></label>
+            <input class="form-control" formControlName="title" placeholder="Enter passage title" />
+          </div>
+          <!-- Subject -->
+          <div class="col-md-4">
+            <label class="form-label">Subject</label>
+            <select class="form-select" formControlName="subjectId">
+              <option value="">Select Subject</option>
+              <option *ngFor="let s of subjects" [value]="s._id">
+                {{ s.subjectName }}
+              </option>
+            </select>
+          </div>
+          <!-- Class -->
+          <div class="col-md-3">
+            <label class="form-label">Class</label>
+            <select class="form-select" formControlName="classNo">
+              <option [ngValue]="null">Select Class</option>
+              <option *ngFor="let c of classOptions" [ngValue]="c.value">
+                {{ c.label }}
+              </option>
+            </select>
+          </div>
+          <!-- Language -->
+          <div class="col-md-3">
+            <label class="form-label">Language <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="language">
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="ta">Tamil</option>
+            </select>
+          </div>
+          <!-- Tags -->
+          <div class="col-md-3">
+            <label class="form-label">Tags</label>
+            <div class="d-flex gap-2">
+              <input class="form-control" [(ngModel)]="tagInput" [ngModelOptions]="{ standalone: true }"
+                placeholder="Add tag & press Enter" (keydown)="onTagKeydown($event)" />
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="addTag()">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+            <div class="d-flex flex-wrap gap-1 mt-2" *ngIf="tags.length">
+              <span *ngFor="let tag of tags; let i = index"
+                class="badge bg-light text-dark border d-flex align-items-center gap-1">
+                {{ tag }}
+                <button type="button" class="btn-close btn-close-sm" style="font-size: 0.6rem"
+                  (click)="removeTag(i)"></button>
+              </span>
+            </div>
+          </div>
+          <!-- Passage HTML -->
+          <div class="col-12">
+            <doceditor label="Passage Content" [required]="true" placeholder="Enter passage content here..."
+              [control]="passageForm.get('passageHtml')" formControlName="passageHtml" id="passageEditor" height="300px"
+              width="100%">
+            </doceditor>
+          </div>
+        </div>
+        <div class="text-end mt-4">
+          <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeForm()">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="passageForm.invalid"
+            (click)="submitPassage()">
+            {{ isEditMode ? "Update" : "Create" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= VIEW MODAL ================= -->
+  <div class="modal-backdrop fade show" *ngIf="showViewModal" (click)="closeViewModal()"></div>
+  <div class="modal fade show d-block" tabindex="-1" *ngIf="showViewModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-book-open-reader me-2"></i>{{ viewData?.title }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closeViewModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-3 mb-3">
+            <span class="badge bg-primary">{{
+              viewData?.language === "en"
+              ? "English"
+              : viewData?.language === "hi"
+              ? "Hindi"
+              : "Tamil"
+              }}</span>
+            <span class="badge" [ngClass]="
+                viewData?.status === 'active' ? 'bg-success' : 'bg-secondary'
+              ">{{ viewData?.status }}</span>
+          </div>
+          <div *ngIf="viewData?.tags?.length" class="mb-3">
+            <span *ngFor="let tag of viewData.tags" class="badge bg-light text-dark border me-1">{{ tag }}</span>
+          </div>
+          <hr />
+          <div #passageViewContent class="passage-view-content" [innerHTML]="viewPassageHtml"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeViewModal()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

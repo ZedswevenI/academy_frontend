@@ -1,0 +1,123 @@
+.sub-text {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Table */
+.table-wrapper {
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 10px;
+  margin-top: 20px;
+}
+
+.timetable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Header */
+thead th {
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px;
+  border-bottom: 1px solid #dcdfe4;
+  border-right: 1px solid #dcdfe4;
+}
+
+.day-col {
+  width: 180px;
+}
+
+/* Body cells */
+tbody td {
+  border-right: 1px solid #dcdfe4;
+  padding: 16px;
+  vertical-align: middle;
+}
+
+tbody tr td:last-child {
+  border-right: none;
+}
+
+/* Day cell */
+.day-cell {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Period cell */
+.period-cell {
+  text-align: center;
+}
+
+.period-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.empty {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.subject {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Hall badge */
+.hall-badge {
+  margin-top: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid #cfd4da;
+  background: #fff;
+}
+
+/* POP UP */
+.app-modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  z-index: 9999 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 16px !important;
+}
+
+.app-modal {
+  background: #fff !important;
+  border-radius: 12px !important;
+  width: 100% !important;
+  max-width: 980px !important;
+  max-height: 90vh !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25) !important;
+  overflow: hidden !important;
+}
+
+.app-modal-header {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #eee !important;
+  background: #fff !important;
+}
+
+.app-modal-body {
+  padding: 16px !important;
+  overflow-y: auto !important;
+}

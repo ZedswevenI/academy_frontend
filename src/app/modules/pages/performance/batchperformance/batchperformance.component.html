@@ -1,0 +1,228 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="goBack()">
+                    <i class="fa-solid fa-arrow-left me-1"></i>Back
+                </button>
+                <div>
+                    <h1 class="fw-bold mb-0" style="font-size:22px;">
+                        <i class="fa-solid fa-chart-bar me-2"></i>Batch Report
+                    </h1>
+                    <div *ngIf="batchCode || academicYear" class="text-muted small">
+                        {{ batchCode }} <span *ngIf="batchCode && academicYear">·</span> {{ academicYear }}
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2" *ngIf="overview">
+                <button class="btn btn-export fs-16 fw-medium" [disabled]="printingAllCPT" (click)="printAllCPT()">
+                    <span *ngIf="printingAllCPT" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!printingAllCPT" class="fa-solid fa-file-pdf me-1"></i>
+                    {{ printingAllCPT ? 'Exporting...' : 'Z7i Performance' }}
+                </button>
+                <button class="btn btn-export fs-16 fw-medium" [disabled]="printingAllSchool"
+                    (click)="printAllSchool()">
+                    <span *ngIf="printingAllSchool" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!printingAllSchool" class="fa-solid fa-file-pdf me-1"></i>
+                    {{ printingAllSchool ? 'Exporting...' : 'School Performance' }}
+                </button>
+            </div>
+        </div>
+        <div *ngIf="!overview && batch_options.length" class="row g-3">
+            <div class="col-md-4">
+                <selectbox label="Batch" placeholder="Select Batch" [options]="batch_options"
+                    [(ngModel)]="selectedBatchId" (ngModelChange)="onBatchChange($event)">
+                </selectbox>
+            </div>
+            <div class="col-md-3">
+                <selectbox label="Academic Year" placeholder="Select Year" [options]="year_options"
+                    [(ngModel)]="selectedYear">
+                </selectbox>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn submitbutton px-4 w-100" style="border-radius:30px;"
+                    [disabled]="!selectedBatchId || !selectedYear || loading" (click)="onApply()">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    {{ loading ? 'Loading...' : 'Apply' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="loading" class="text-center py-5">
+        <span class="spinner-border text-primary"></span>
+    </div>
+    <div *ngIf="!loading && overview">
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-md-3">
+                <div class="bg-white rounded-4 shadow-sm p-3 text-center h-100">
+                    <div class="fw-bold mb-1" style="font-size:28px; color:#0284c7;">
+                        {{ overview?.studentCount ?? '—' }}
+                    </div>
+                    <div class="text-muted small fw-semibold">Students with Data</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="bg-white rounded-4 shadow-sm p-3 text-center h-100">
+                    <div class="fw-bold mb-1" style="font-size:28px; color:#16a34a;">
+                        {{ num(overview?.avgCombinedScore, 1) }}
+                    </div>
+                    <div class="text-muted small fw-semibold">Avg Combined Score</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="bg-white rounded-4 shadow-sm p-3 text-center h-100">
+                    <div class="fw-bold mb-1" style="font-size:28px; color:#ea580c;">
+                        {{ pct(overview?.avgMockPct) }}
+                    </div>
+                    <div class="text-muted small fw-semibold">Avg Mock %</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="bg-white rounded-4 shadow-sm p-3 text-center h-100">
+                    <div class="fw-bold mb-1" style="font-size:28px; color:#9333ea;">
+                        {{ pct(overview?.avgSchoolPct) }}
+                    </div>
+                    <div class="text-muted small fw-semibold">Avg School %</div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-4 shadow-sm p-4">
+            <ul class="nav nav-tabs border-bottom mb-4">
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" [class.active]="activeSection==='subject'"
+                        (click)="activeSection='subject'" href="javascript:void(0)">
+                        <i class="fa-solid fa-book-open me-1"></i>Subject-wise
+                        <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{ subjectWise.length
+                            }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" [class.active]="activeSection==='mock'"
+                        (click)="activeSection='mock'" href="javascript:void(0)">
+                        <i class="fa-solid fa-file-pen me-1"></i>Mock Exams
+                        <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{
+                            mockExamWise.length }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" [class.active]="activeSection==='school'"
+                        (click)="activeSection='school'" href="javascript:void(0)">
+                        <i class="fa-solid fa-school me-1"></i>School Exams
+                        <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{
+                            schoolExamWise.length }}</span>
+                    </a>
+                </li>
+            </ul>
+            <div *ngIf="activeSection==='subject'">
+                <div *ngIf="!subjectWise.length" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-book-open fa-2x mb-3 d-block opacity-25"></i>No assignment data available.
+                </div>
+                <div *ngIf="subjectWise.length">
+                    <div class="text-muted small mb-3">Sorted by average score — weakest subjects appear first</div>
+                    <div class="d-flex flex-column gap-3">
+                        <div *ngFor="let s of subjectWise" class="d-flex align-items-center gap-3 p-3 rounded-3 border"
+                            style="border-color:#e2e8f0!important;">
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold" style="font-size:14px;">{{ s.subjectName || s._id ||
+                                        'Unknown' }}</span>
+                                    <span class="d-flex gap-3 text-muted small">
+                                        <span>CGPA: <strong>{{ num(s.avgCgpa, 2) }}</strong></span>
+                                        <span>Students: <strong>{{ s.studentCount }}</strong></span>
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height:8px; border-radius:8px;">
+                                        <div class="progress-bar" [style.width]="(s.avgPct || 0) + '%'"
+                                            [style.background]="pctColor(s.avgPct)"
+                                            style="border-radius:8px; transition:width 0.4s ease;">
+                                        </div>
+                                    </div>
+                                    <span class="fw-bold" style="font-size:13px; min-width:44px; text-align:right;"
+                                        [style.color]="pctColor(s.avgPct)">
+                                        {{ pct(s.avgPct) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div *ngIf="activeSection==='mock'">
+                <div *ngIf="!mockExamWise.length" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-file-pen fa-2x mb-3 d-block opacity-25"></i>No mock exam data available.
+                </div>
+                <div *ngIf="mockExamWise.length">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" style="font-size:14px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Exam Name</th>
+                                    <th class="text-center">Students</th>
+                                    <th class="text-center">Avg %</th>
+                                    <th class="text-center">Top Score</th>
+                                    <th class="text-center">Bottom Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let m of mockExamWise">
+                                    <td class="fw-semibold">{{ m.examName || m._id }}</td>
+                                    <td class="text-center text-muted">{{ m.studentCount }}</td>
+                                    <td class="text-center">
+                                        <span class="badge rounded-pill px-2" [style.background]="pctBg(m.avgPct)"
+                                            [style.color]="pctTextColor(m.avgPct)">
+                                            {{ pct(m.avgPct) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-success fw-semibold">{{ pct(m.topScore) }}</td>
+                                    <td class="text-center text-danger fw-semibold">{{ pct(m.bottomScore) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div *ngIf="activeSection==='school'">
+                <div *ngIf="!schoolExamWise.length" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-school fa-2x mb-3 d-block opacity-25"></i>No school exam data available.
+                </div>
+                <div *ngIf="schoolExamWise.length">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" style="font-size:14px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Exam Name</th>
+                                    <th class="text-center">Date</th>
+                                    <th class="text-center">Students</th>
+                                    <th class="text-center">Avg %</th>
+                                    <th class="text-center">Top Score</th>
+                                    <th class="text-center">Bottom Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let e of schoolExamWise">
+                                    <td class="fw-semibold">{{ e.examName || e._id }}</td>
+                                    <td class="text-center text-muted">{{ formatDate(e.examDate) }}</td>
+                                    <td class="text-center text-muted">{{ e.studentCount }}</td>
+                                    <td class="text-center">
+                                        <span class="badge rounded-pill px-2" [style.background]="pctBg(e.avgPct)"
+                                            [style.color]="pctTextColor(e.avgPct)">
+                                            {{ pct(e.avgPct) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-success fw-semibold">{{ pct(e.topScore) }}</td>
+                                    <td class="text-center text-danger fw-semibold">{{ pct(e.bottomScore) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div *ngIf="!loading && !overview && !batch_options.length" class="text-center py-5 text-muted">
+        <i class="fa-solid fa-chart-bar fa-2x mb-3 d-block opacity-25"></i>
+        Select a batch and academic year to load the report.
+    </div>
+</div>

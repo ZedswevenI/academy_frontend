@@ -1,0 +1,481 @@
+.question-html {
+  font-size: 1rem;
+  line-height: 1.6;
+  word-wrap: break-word;
+
+  // Image styling - Important for physics diagrams
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 15px 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    
+    &:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  // KaTeX math styling - Optimized for complex formulas
+  .katex {
+    margin: 0 2px;
+    font-size: 1em;
+    
+    // Better spacing around operators
+    .mop {
+      margin-left: 0.1667em;
+      margin-right: 0.1667em;
+    }
+    
+    // Better fraction styling
+    .frac-line {
+      border-bottom-width: 1px;
+    }
+  }
+
+  // Custom inline math styling (enhanced)
+  .katex-inline-custom {
+    display: inline;
+    margin: 0 2px;
+    
+    .katex {
+      margin: 0;
+    }
+  }
+
+  // Display mode math ($$...$$) - For complex physics/chemistry equations
+  .katex-display,
+  .katex-display-custom {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem 0;
+    
+    // Better padding on sides for overflow
+    padding-left: 10px;
+    padding-right: 10px;
+    
+    .katex {
+      margin: 0;
+    }
+    
+    // Scrollbar styling for better appearance
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 3px;
+
+      &:hover {
+        background: #555;
+      }
+    }
+  }
+
+  // Tables for chemistry/physics (reaction schemes, etc.)
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 15px 0;
+    
+    td, th {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  }
+
+  // Code blocks (for notation, etc.)
+  code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #d63384;
+  }
+
+  // Lists - for steps, reactions, etc.
+  ol, ul {
+    margin-left: 20px;
+    margin-top: 10px;
+    
+    li {
+      margin-bottom: 8px;
+      
+      // Better formatting for items with math
+      p {
+        margin: 5px 0;
+      }
+    }
+  }
+
+  // Paragraph spacing
+  p {
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // Line breaks
+  br {
+    line-height: 1.2;
+  }
+
+  // Emphasis styling
+  strong {
+    font-weight: 600;
+    color: #333;
+  }
+
+  em {
+    font-style: italic;
+    color: #555;
+  }
+}
+
+// Option box styling - Important for chemistry/physics options
+.option-box {
+  background-color: #f8f9fa;
+  border-left: 3px solid #0d6efd;
+  transition: background-color 0.2s ease;
+  padding: 12px;
+  margin-bottom: 12px;
+
+  &:hover {
+    background-color: #e7f1ff;
+  }
+
+  .option-content {
+    flex: 1;
+
+    // Images in options (diagrams, structures)
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 10px 0;
+      border-radius: 3px;
+      max-height: 300px;
+    }
+
+    // KaTeX in options - Properly spaced
+    .katex {
+      margin: 0 2px;
+    }
+
+    .katex-display,
+    .katex-display-custom {
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+
+    // Tables in options
+    table {
+      font-size: 0.95em;
+      margin: 10px 0;
+    }
+
+    // Math with text in options
+    p {
+      margin: 8px 0;
+    }
+  }
+}
+
+// Solution section styling - For worked solutions with math
+.solution-section {
+  background-color: #f0f8ff;
+  padding: 15px;
+  border-radius: 0.5rem;
+  margin-top: 1.5rem;
+  border-left: 4px solid #17a2b8;
+
+  strong {
+    color: #0c5460;
+  }
+
+  .solution-content {
+    margin-top: 10px;
+
+    // Images in solution (diagrams, chemical structures)
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 15px 0;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    // KaTeX in solution - Important for showing work
+    .katex {
+      margin: 0 2px;
+    }
+
+    .katex-display,
+    .katex-display-custom {
+      margin: 1rem 0;
+      padding: 0.5rem 10px;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 3px;
+      overflow-x: auto;
+    }
+
+    // Tables in solution
+    table {
+      margin: 15px 0;
+    }
+
+    // Lists in solution (steps, mechanism, etc.)
+    ol, ul {
+      margin-left: 20px;
+
+      li {
+        margin-bottom: 8px;
+      }
+    }
+
+    p {
+      margin-bottom: 10px;
+    }
+  }
+}
+
+// Responsive adjustments for mobile and tablets
+@media (max-width: 1200px) {
+  .question-html {
+    .katex-display,
+    .katex-display-custom {
+      font-size: 0.95em;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .question-html {
+    font-size: 0.95rem;
+
+    img {
+      margin: 12px 0;
+      max-height: 250px;
+    }
+
+    .katex-display,
+    .katex-display-custom {
+      font-size: 0.85em;
+      margin: 1rem 0;
+      overflow-x: auto;
+      padding: 0.5rem 5px;
+    }
+
+    table {
+      font-size: 0.9em;
+
+      td, th {
+        padding: 6px 8px;
+      }
+    }
+
+    // Better spacing for formulas on mobile
+    .katex {
+      font-size: 0.9em;
+    }
+  }
+
+  .option-box {
+    padding: 10px;
+
+    .option-content {
+      img {
+        max-height: 200px;
+      }
+
+      .katex-display,
+      .katex-display-custom {
+        font-size: 0.8em;
+      }
+    }
+  }
+
+  .solution-section {
+    padding: 12px;
+
+    .solution-content {
+      img {
+        max-height: 250px;
+      }
+
+      .katex-display,
+      .katex-display-custom {
+        font-size: 0.8em;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .question-html {
+    font-size: 0.9rem;
+
+    img {
+      margin: 10px 0;
+      max-height: 180px;
+    }
+
+    .katex-display,
+    .katex-display-custom {
+      font-size: 0.75em;
+      padding: 0.25rem 5px;
+      margin: 0.8rem 0;
+    }
+
+    ol, ul {
+      margin-left: 15px;
+
+      li {
+        margin-bottom: 6px;
+      }
+    }
+  }
+}
+
+// Print styles - For printing physics/chemistry exams
+@media print {
+  .question-html,
+  .option-box,
+  .solution-section {
+    img {
+      display: block;
+      page-break-inside: avoid;
+      max-width: 100%;
+    }
+
+    .katex-display,
+    .katex-display-custom {
+      page-break-inside: avoid;
+      margin: 0.8rem 0;
+    }
+
+    table {
+      page-break-inside: avoid;
+    }
+  }
+
+  .option-box {
+    page-break-inside: avoid;
+  }
+
+  .solution-section {
+    page-break-inside: avoid;
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .question-html {
+    color: #e0e0e0;
+
+    img {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    code {
+      background-color: #2d2d2d;
+      color: #f8f8f2;
+    }
+
+    table {
+      td, th {
+        border-color: #444;
+      }
+
+      th {
+        background-color: #3a3a3a;
+        color: #e0e0e0;
+      }
+
+      tr:nth-child(even) {
+        background-color: #2a2a2a;
+      }
+    }
+  }
+
+  .option-box {
+    background-color: #2a2a2a;
+    border-left-color: #6c9cff;
+    color: #e0e0e0;
+
+    &:hover {
+      background-color: #333;
+    }
+  }
+
+  .solution-section {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-left-color: #17a2b8;
+    color: #e0e0e0;
+
+    strong {
+      color: #5dade2;
+    }
+
+    .solution-content {
+      .katex-display,
+      .katex-display-custom {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+    }
+  }
+}
+
+// Accessibility: Better contrast
+@media (prefers-contrast: more) {
+  .question-html {
+    font-weight: 500;
+
+    strong {
+      font-weight: 700;
+    }
+  }
+
+  .option-box {
+    border-left-width: 4px;
+  }
+
+  .solution-section {
+    border-left-width: 5px;
+  }
+}
+
+// High motion: Reduce animations
+@media (prefers-reduced-motion: reduce) {
+  .option-box {
+    transition: none;
+  }
+
+  img {
+    transition: none;
+  }
+}

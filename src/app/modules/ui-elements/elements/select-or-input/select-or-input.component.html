@@ -1,0 +1,50 @@
+<div class="mb-3">
+
+  <!-- Label row with toggle button -->
+  <div class="d-flex align-items-center justify-content-between mb-1">
+    <label class="form-label mb-0">
+      {{ label }}
+      <span *ngIf="required" class="text-danger">*</span>
+    </label>
+
+    <button type="button"
+            class="btn btn-link btn-sm p-0 text-decoration-none"
+            style="font-size: 12px;"
+            (click)="toggleMode()">
+      <i class="fa-solid me-1"
+         [class.fa-keyboard]="!isManual"
+         [class.fa-list]="isManual"></i>
+      {{ isManual ? 'Select from list' : 'Type manually' }}
+    </button>
+  </div>
+
+  <!-- DROPDOWN MODE -->
+  <select *ngIf="!isManual"
+          class="form-select"
+          [value]="selectVal"
+          (change)="onSelectChange($any($event.target).value)"
+          (blur)="onTouched()"
+          [class.is-invalid]="control?.invalid && (control?.touched || control?.dirty)">
+    <option value="">Select {{ label }}</option>
+    <option *ngFor="let o of options" [value]="o[optionValue]">
+      {{ o[optionLabel] }}
+    </option>
+  </select>
+
+  <!-- MANUAL INPUT MODE -->
+  <input *ngIf="isManual"
+         type="text"
+         class="form-control"
+         [placeholder]="placeholder"
+         [value]="inputVal"
+         (input)="onInputChange($any($event.target).value)"
+         (blur)="onTouched()"
+         [class.is-invalid]="control?.invalid && (control?.touched || control?.dirty)" />
+
+  <!-- Validation -->
+  <div *ngIf="control?.invalid && (control?.touched || control?.dirty)"
+       class="invalid-feedback d-block" style="font-size: 12px;">
+    <span *ngIf="control?.errors?.['required']">{{ label }} is required.</span>
+  </div>
+
+</div>

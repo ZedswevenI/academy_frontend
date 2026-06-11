@@ -1,0 +1,195 @@
+<!-- teacher-faculty-load.component.html -->
+<div>
+    <div class="filter-panel">
+        <div class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+                <app-staff-multiselect [options]="staffOptions" label="Staff" [optional]="true"
+                    (selectionChange)="onStaffChange($event)">
+                </app-staff-multiselect>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-medium">Center</label>
+                <select class="form-select form-select-sm" (ngModelChange)="selectedCenterIds = $event ? [$event] : []"
+                    [ngModel]="selectedCenterIds[0] || ''">
+                    <option value="">All</option>
+                    <option *ngFor="let c of centerOptions" [value]="c.value">{{ c.label }}</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-medium">From Date</label>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-medium">To Date</label>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate">
+            </div>
+
+            <div class="col-md-3 d-flex gap-2 align-items-end">
+                <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="onGenerateClick()">
+                    <span *ngIf="!loading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                    <span *ngIf="loading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" *ngIf="hasData" (click)="reset()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2">Generating report...</p>
+    </div>
+
+    <!-- Export buttons -->
+    <div *ngIf="hasData && !loading" class="d-flex gap-2 mb-3">
+        <button class="btn btn-outline-danger btn-sm" (click)="exportPdf()">
+            <i class="fa-solid fa-file-pdf me-1"></i> Export PDF
+        </button>
+        <button class="btn btn-export btn-sm" (click)="exportExcel()">
+            <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+        </button>
+    </div>
+
+    <!-- Faculty load data — one section per staff + subject -->
+    <ng-container *ngIf="hasData && !loading">
+        <div *ngFor="let staff of facultyLoadData" class="mb-4">
+
+            <!-- Staff header -->
+            <div class="report-table-card mb-3" style="background:#eff6ff; border-left:4px solid #3b82f6;">
+                <h6 class="fw-bold mb-0">
+                    <i class="fa-solid fa-chalkboard-teacher me-2 text-primary"></i>
+                    {{ staff.staffName }}
+                    <span class="text-muted fw-normal small ms-2" *ngIf="staff.staffCode">({{ staff.staffCode }})</span>
+                </h6>
+                <small class="text-muted" *ngIf="staff.centerName">{{ staff.centerName }}</small>
+            </div>
+
+            <!-- One table per subject -->
+            <div *ngFor="let subject of staff.subjects" class="report-table-card mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="fw-semibold mb-0">
+                            <i class="fa-solid fa-book me-2 text-secondary"></i>{{ subject.subjectName }}
+                        </h6>
+                        <small class="text-muted">
+                            Total Scheduled: <strong>{{ subject.totalScheduledHours }}</strong>
+                            <span *ngIf="subject.cancelledPeriods?.length" class="ms-3 text-danger">
+                                Cancelled: {{ subject.cancelledPeriods.length }} period(s)
+                            </span>
+                            <span *ngIf="subject.replacedPeriods?.length" class="ms-3 text-success">
+                                Additional: {{ subject.replacedPeriods.length }} period(s)
+                            </span>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Scheduled -->
+                <ng-container *ngIf="subject.scheduledPeriods?.length">
+                    <p class="fw-semibold text-primary mb-2" style="font-size:13px">
+                        <i class="fa-solid fa-check-circle me-1"></i> Scheduled Periods
+                    </p>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Batch Name</th>
+                                    <th>Batch Code</th>
+                                    <th>From Time</th>
+                                    <th>End Time</th>
+                                    <th>Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let p of subject.scheduledPeriods">
+                                    <td>{{ p.dateFormatted }}</td>
+                                    <td>{{ p.batchName || '-' }}</td>
+                                    <td>{{ p.batchCode }}</td>
+                                    <td>{{ p.fromTime }}</td>
+                                    <td>{{ p.endTime }}</td>
+                                    <td>{{ p.hours }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </ng-container>
+
+                <!-- Cancelled -->
+                <ng-container *ngIf="subject.cancelledPeriods?.length">
+                    <p class="fw-semibold text-danger mb-2" style="font-size:13px">
+                        <i class="fa-solid fa-xmark-circle me-1"></i> Cancelled / Replaced Periods
+                    </p>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead style="background:#fee2e2">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Batch Name</th>
+                                    <th>Batch Code</th>
+                                    <th>From Time</th>
+                                    <th>End Time</th>
+                                    <th>Hours</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let p of subject.cancelledPeriods">
+                                    <td>{{ p.dateFormatted }}</td>
+                                    <td>{{ p.batchName || '-' }}</td>
+                                    <td>{{ p.batchCode }}</td>
+                                    <td>{{ p.fromTime }}</td>
+                                    <td>{{ p.endTime }}</td>
+                                    <td>{{ p.hours }}</td>
+                                    <td class="text-danger small">{{ p.note || '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </ng-container>
+
+                <!-- Replaced -->
+                <ng-container *ngIf="subject.replacedPeriods?.length">
+                    <p class="fw-semibold text-success mb-2" style="font-size:13px">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Additional (Replacement) Periods
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead style="background:#dcfce7">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Batch Name</th>
+                                    <th>Batch Code</th>
+                                    <th>From Time</th>
+                                    <th>End Time</th>
+                                    <th>Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let p of subject.replacedPeriods">
+                                    <td>{{ p.dateFormatted }}</td>
+                                    <td>{{ p.batchName || '-' }}</td>
+                                    <td>{{ p.batchCode }}</td>
+                                    <td>{{ p.fromTime }}</td>
+                                    <td>{{ p.endTime }}</td>
+                                    <td>{{ p.hours }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </ng-container>
+            </div>
+        </div>
+    </ng-container>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading && dataLoaded && !hasData" class="text-center text-muted py-5">
+        <i class="fa-solid fa-inbox fs-1 d-block mb-3 opacity-50"></i>
+        <p>No faculty load data found for selected filters.</p>
+    </div>
+</div>

@@ -1,0 +1,154 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                <i class="fa-solid fa-book-open me-2"></i>
+                {{ isEditMode ? 'Edit Library' : 'Create Library' }}
+            </h1>
+        </div>
+
+        <form [formGroup]="knowledgeForm" (ngSubmit)="addKnowledge()">
+            <div class="row g-3">
+
+                <!-- Title -->
+                <div class="col-md-6">
+                    <formfield label="Title" placeholder="Enter Title" formControlName="title"
+                        [control]="knowledgeForm.get('title')" [required]="true">
+                    </formfield>
+                </div>
+
+                <!-- Class -->
+                <div class="col-md-6">
+                    <selectbox label="Class" [options]="class_options" formControlName="classNo"
+                        [control]="knowledgeForm.get('classNo')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- Subject -->
+                <div class="col-md-6">
+                    <selectbox label="Subject" [options]="subjects" formControlName="subjectId"
+                        [control]="knowledgeForm.get('subjectId')" [required]="true">
+                    </selectbox>
+                </div>
+
+                <!-- Topic — select from loaded options OR type custom -->
+                <div class="col-md-6">
+                    <select-or-input
+                        label="Topic"
+                        placeholder="Enter topic name..."
+                        [options]="topics"
+                        formControlName="topicId"
+                        [control]="knowledgeForm.get('topicId')"
+                        [required]="true">
+                    </select-or-input>
+                </div>
+
+                <!-- SubTopic — select from loaded options OR type custom -->
+                <div class="col-md-6">
+                    <select-or-input
+                        label="Sub Topic"
+                        placeholder="Enter sub topic name..."
+                        [options]="subTopics"
+                        formControlName="subTopicId"
+                        [control]="knowledgeForm.get('subTopicId')">
+                    </select-or-input>
+                </div>
+
+                <!-- Batch Multi-Select -->
+                <div class="col-md-6">
+                    <label class="form-label fw-medium">
+                        Batch <span class="text-danger">*</span>
+                        <span class="badge bg-primary ms-2">{{ selectedBatchCodes.length }} selected</span>
+                    </label>
+                    <div class="border rounded-3 p-2" style="max-height: 220px; overflow-y: auto;">
+                        <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                            <input type="checkbox" class="form-check-input me-2" [checked]="selectAllBatches"
+                                (change)="toggleAllBatches($any($event.target).checked)" />
+                            <span class="fw-semibold small">Select All</span>
+                        </div>
+                        <div *ngFor="let b of batch_options"
+                            class="d-flex align-items-center px-2 py-1 rounded"
+                            style="cursor: pointer;">
+                            <input type="checkbox" class="form-check-input me-2"
+                                [checked]="isBatchSelected(b.value)"
+                                (change)="toggleBatch(b.value, $any($event.target).checked)" />
+                            <span class="small">{{ b.label }}</span>
+                            <span class="text-muted small ms-auto">{{ b.value }}</span>
+                        </div>
+                        <div *ngIf="batch_options.length === 0" class="text-muted small text-center py-2">
+                            No batches available
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Load Students by Batch -->
+                <div class="col-md-6" *ngIf="selectedBatchCodes.length > 0">
+                    <label class="form-label fw-medium">Load Students from Batch</label>
+                    <select class="form-select" [(ngModel)]="studentBatchCode" [ngModelOptions]="{standalone: true}"
+                        (ngModelChange)="onBatchChange($event)">
+                        <option value="">-- Select Batch --</option>
+                        <ng-container *ngFor="let b of batch_options">
+                            <option *ngIf="isBatchSelected(b.value)" [value]="b.value">
+                                {{ b.label }} ({{ b.value }})
+                            </option>
+                        </ng-container>
+                    </select>
+                </div>
+
+                <!-- Students -->
+                <div class="col-md-6" *ngIf="studentOptions.length > 0">
+                    <multiselect label="Students" placeholder="Select Students (Optional)"
+                        [options]="studentOptions" formControlName="studentIds"
+                        [control]="knowledgeForm.get('studentIds')">
+                    </multiselect>
+                </div>
+
+                <!-- Available From -->
+                <div class="col-md-6">
+                    <formfield label="Available From" type="date" formControlName="availableFrom"
+                        [control]="knowledgeForm.get('availableFrom')" [min]="todayDate" [required]="true">
+                    </formfield>
+                </div>
+
+                <!-- Available Until -->
+                <div class="col-md-6">
+                    <formfield label="Available Until" type="date" formControlName="availableUntil"
+                        [control]="knowledgeForm.get('availableUntil')" [min]="minUntilDate" [required]="true">
+                    </formfield>
+                </div>
+
+                <!-- Upload -->
+                <div class="col-md-6">
+                    <importfiles label="Upload Material" [required]="true" [multiple]="false"
+                        formControlName="attachmentUrl" accept=".pdf"
+                        [existingFiles]="isEditMode ? uploadedFiles : []"
+                        (filesChanged)="onFilesSelected($event)">
+                    </importfiles>
+                </div>
+
+                <!-- Description -->
+                <div class="col-md-12">
+                    <description label="Description" placeholder="Type here..."
+                        formControlName="description"
+                        [control]="knowledgeForm.get('description')">
+                    </description>
+                </div>
+
+            </div>
+
+            <div class="col-12 text-end mt-4">
+                <button type="button" class="btn btn-back fs-16 fw-medium me-2"
+                   routerLink="/app/knowledge">
+                    Back
+                </button>
+                <button type="submit" class="btn btn-create fs-16 fw-medium"
+                    [disabled]="knowledgeForm.invalid || loading">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                    {{ loading ? (isEditMode ? 'Updating...' : 'Submitting...') : (isEditMode ? 'Update' : 'Submit') }}
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>

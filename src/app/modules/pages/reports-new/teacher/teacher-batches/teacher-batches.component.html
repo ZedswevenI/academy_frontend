@@ -1,0 +1,45 @@
+<!-- teacher-batches.component.html -->
+<div>
+    <div class="filter-panel">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-medium">Staff <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" [class.is-invalid]="touched && !selectedStaffId"
+                    [(ngModel)]="selectedStaffId">
+                    <option value="">Select Staff</option>
+                    <option *ngFor="let s of staffOptions" [value]="s.value">{{ s.label }}</option>
+                </select>
+                <div class="invalid-feedback">Please select a staff member.</div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-medium">Status</label>
+                <select class="form-select form-select-sm" [(ngModel)]="filterStatus">
+                    <option value="">All</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2 align-items-end">
+                <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="onGenerateClick()">
+                    <span *ngIf="!loading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                    <span *ngIf="loading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" *ngIf="rows.length" (click)="reset()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2">Generating report...</p>
+    </div>
+    <div *ngIf="rows.length && !loading" class="d-flex gap-2 mb-3">
+        <button class="btn btn-outline-danger btn-sm" (click)="exportPdf()"><i class="fa-solid fa-file-pdf me-1"></i>
+            Export PDF</button>
+        <button class="btn btn-export btn-sm" (click)="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export
+            Excel</button>
+    </div>
+    <app-report-table [columns]="columns" [rows]="rows" [loading]="loading" [dataLoaded]="dataLoaded"
+        emptyHint="No batches found for this staff member."></app-report-table>
+</div>

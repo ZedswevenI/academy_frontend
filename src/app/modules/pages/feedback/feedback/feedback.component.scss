@@ -1,0 +1,56 @@
+.feedback-page {
+    max-width: 800px;
+    background: #fff;
+    padding: 24px;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    margin: auto;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.rating-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.label {
+    font-weight: 500;
+}
+
+.stars i {
+    font-size: 26px;
+    cursor: pointer;
+    color: #d1d5db;
+    transition: 0.2s;
+}
+
+.stars i.filled {
+    color: #facc15;
+    /* gold */
+}
+
+.feedback-input {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    margin-bottom: 16px;
+    resize: none;
+}
+
+.submit-btn {
+    background: #0b5ed7;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 500;
+}

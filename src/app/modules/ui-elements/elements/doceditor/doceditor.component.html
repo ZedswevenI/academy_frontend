@@ -1,0 +1,37 @@
+<div class="mb-3">
+  <label *ngIf="label" class="form-label" [for]="id"> {{ label }} <span *ngIf="required" style="color: red">*</span> </label>
+  <quill-editor *ngIf="!modules"
+    [placeholder]="placeholder"
+    [style.height]="height"
+    [style.width]="width"
+    [id]="id"
+    [(ngModel)]="value"
+    (onBlur)="onTouched()"
+    (onEditorCreated)="onReady()"
+    (onContentChanged)="onEditorChanged($event)"
+    [ngClass]="{ 'is-invalid': control && control.invalid && (control.touched || control.dirty) }"
+  ></quill-editor>
+  <quill-editor *ngIf="modules"
+    [placeholder]="placeholder"
+    [style.height]="height"
+    [style.width]="width"
+    [id]="id"
+    [(ngModel)]="value"
+    [modules]="modules"
+    (onBlur)="onTouched()"
+    (onEditorCreated)="onReady()"
+    (onContentChanged)="onEditorChanged($event)"
+    [ngClass]="{ 'is-invalid': control && control.invalid && (control.touched || control.dirty) }"
+  ></quill-editor>
+  <div *ngIf="control && control.invalid && (control.touched || control.dirty)">
+    <small class="text-danger" *ngIf="control.errors?.['required']">This field is required.</small>
+  </div>
+</div>
+
+<!-- Sample Implementation Code 
+ 11th line     [styles]="{ minHeight: '180px', maxHeight: '300px' }"-->
+
+<!-- 
+HTML
+<doceditor label="" [required]="" placeholder="" [control]="" formControlName="" id=""></doceditor>
+-->

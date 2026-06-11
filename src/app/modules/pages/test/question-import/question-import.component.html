@@ -1,0 +1,223 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+
+      <!-- Upload Step -->
+      <div *ngIf="currentStep === 'upload'" class="card shadow">
+        <div class="card-header bg-success text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-file-import me-2"></i>Import Questions from DOCX
+          </h4>
+        </div>
+        <div class="card-body">
+
+
+
+          <!-- File Upload Area -->
+          <div class="upload-area border rounded p-5 text-center mb-3" [class.border-success]="selectedFile"
+            [class.border-primary]="!selectedFile">
+            <i class="fas fa-cloud-upload-alt fa-4x mb-3" [class.text-success]="selectedFile"
+              [class.text-primary]="!selectedFile"></i>
+            <h5 class="mb-3">
+              {{ selectedFile ? selectedFile.name : 'Choose a DOCX file to import' }}
+            </h5>
+
+            <input type="file" id="docxFile" class="d-none" accept=".docx" (change)="onFileSelected($event)">
+
+            <label for="docxFile" class="btn btn-primary btn-lg">
+              <i class="fas fa-folder-open me-2"></i>
+              {{ selectedFile ? 'Choose Different File' : 'Browse Files' }}
+            </label>
+
+            <p class="text-muted mt-3 mb-0">
+              <small>Supported format: .docx (Microsoft Word Document)</small>
+            </p>
+          </div>
+
+          <!-- Error Message -->
+          <div *ngIf="errorMessage" class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ errorMessage }}
+          </div>
+
+          <!-- Process Button -->
+          <div class="d-flex justify-content-center gap-3 mt-2">
+            <button class="btn btn-back fs-16 fw-medium btn-lg" routerLink="/app/assignment">
+              <i class="fas fa-times btn-icon"></i>Cancel
+            </button>
+            <button class="btn btn-import fs-16 fw-medium btn-lg" [disabled]="!selectedFile || isProcessing" (click)="processDocx()">
+              <span *ngIf="!isProcessing">
+                <i class="fas fa-cogs btn-icon"></i>Process Document
+              </span>
+              <span *ngIf="isProcessing">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Processing...
+              </span>
+            </button>
+          </div>          <div class="alert alert-info mt-2">
+            <h5><i class="fas fa-info-circle"></i> Import Instructions</h5>
+            <p class="mb-2">Upload a .docx file with questions in the following format:</p>
+            <ul class="mb-0">
+              <li><strong>[Q]</strong> - Marks the start of a question</li>
+              <li><strong>(a), (b), (c), (d)</strong> - Options for MCQ questions</li>
+              <li><strong>[qtype]</strong> - Question type (mcq, subjective, etc.)</li>
+              <li><strong>[DIFFICULTY]</strong> - easy, medium, or hard</li>
+              <li><strong>[ans]</strong> - Correct answer(s)</li>
+              <li><strong>[Marks]</strong> - Marks allocation</li>
+              <li><strong>[soln]</strong> - Solution with images</li>
+              <li>Images will be automatically extracted and displayed</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Step -->
+      <div *ngIf="currentStep === 'preview'" class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">
+            <i class="fas fa-eye me-2"></i>Preview Imported Questions
+          </h4>
+          <span class="badge bg-light text-dark">
+            {{ parsedQuestions.length }} Question(s) Found
+          </span>
+        </div>
+        <div class="card-body">
+
+          <div class="alert alert-success">
+            <i class="fas fa-check-circle me-2"></i>
+            Successfully parsed {{ parsedQuestions.length }} question(s).
+            Review them below and click "Submit All Questions" when ready.
+          </div>
+
+          <!-- Questions List -->
+          <div class="questions-container">
+            <div *ngFor="let question of parsedQuestions; let i = index" class="question-card card mb-4">
+              <div class="card-header bg-light">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h5 class="mb-0">
+                      <span class="badge bg-primary me-2">Q{{ question.id }}</span>
+                      Question {{ i + 1 }}
+                    </h5>
+                  </div>
+                  <div class="col-auto">
+                    <span class="badge bg-info me-2">{{ question.qtype }}</span>
+                    <span class="badge" [class.bg-success]="question.difficulty === 'easy'"
+                      [class.bg-warning]="question.difficulty === 'medium'"
+                      [class.bg-danger]="question.difficulty === 'hard'">
+                      {{ question.difficulty }}
+                    </span>
+                    <span class="badge bg-secondary ms-2">
+                      <ng-container *ngIf="question.negativeMarks > 0; else onlyPositive">
+                        +{{ question.positiveMarks }} / −{{ question.negativeMarks }}
+                      </ng-container>
+                      <ng-template #onlyPositive>
+                        +{{ question.positiveMarks }}
+                      </ng-template>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <!-- Question Text -->
+                <div class="question-text mb-4">
+                  <label class="fw-bold text-primary mb-2">
+                    <i class="fas fa-question-circle me-2"></i>Question:
+                  </label>
+                  <div class="question-content p-3 bg-light rounded" [innerHTML]="question.questionHtml"></div>
+                </div>
+
+                <!-- Options -->
+                <div *ngIf="question.options.length > 0" class="options-section mb-4">
+                  <label class="fw-bold text-primary mb-2">
+                    <i class="fas fa-list me-2"></i>Options:
+                  </label>
+                  <div class="options-list">
+                    <div *ngFor="let option of question.options" class="option-item p-3 mb-2 border rounded"
+                      [class.border-success]="question.answer.includes(option.label)"
+                      [class.bg-success-subtle]="question.answer.includes(option.label)">
+                      <div class="d-flex align-items-start">
+                        <div class="option-label me-3">
+                          <span class="badge" [class.bg-success]="question.answer.includes(option.label)"
+                            [class.bg-secondary]="!question.answer.includes(option.label)">
+                            {{ option.label }}
+                          </span>
+                          <i *ngIf="question.answer.includes(option.label)"
+                            class="fas fa-check-circle text-success ms-2"></i>
+                        </div>
+                        <div class="option-content flex-grow-1" [innerHTML]="option.html"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Correct Answer -->
+                <div class="answer-section mb-4">
+                  <label class="fw-bold text-success mb-2">
+                    <i class="fas fa-check-double me-2"></i>Correct Answer:
+                  </label>
+                  <div class="p-2 bg-success-subtle rounded">
+                    <strong>Option(s): {{ getCorrectOptionLabels(question) }}</strong>
+                  </div>
+                </div>
+
+                <!-- Solution -->
+                <div *ngIf="question.solutionHtml" class="solution-section">
+                  <label class="fw-bold text-info mb-2">
+                    <i class="fas fa-lightbulb me-2"></i>Solution:
+                  </label>
+                  <div class="solution-content p-3 bg-info-subtle rounded" [innerHTML]="question.solutionHtml"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex justify-content-between mt-4">
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary" (click)="reset()">
+                <i class="fas fa-arrow-left me-2"></i>Back to Upload
+              </button>
+              <button class="btn btn-outline-danger" routerLink="/app/assignment">
+                <i class="fas fa-times me-2"></i>Cancel
+              </button>
+            </div>
+            <button class="btn btn-success btn-lg" [disabled]="isProcessing" (click)="submitAllQuestions()">
+              <span *ngIf="!isProcessing">
+                <i class="fas fa-paper-plane me-2"></i>Submit All Questions
+              </span>
+              <span *ngIf="isProcessing">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Submitting...
+              </span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Success Step -->
+      <div *ngIf="currentStep === 'success'" class="card shadow">
+        <div class="card-body text-center py-5">
+          <div class="success-animation mb-4">
+            <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+          </div>
+          <h3 class="text-success mb-3">Questions Submitted Successfully!</h3>
+          <p class="text-muted mb-4">
+            {{ parsedQuestions.length }} question(s) have been imported and saved to the question bank.
+          </p>
+
+          <div class="d-flex justify-content-center gap-3">
+            <button class="btn btn-primary" (click)="reset()">
+              <i class="fas fa-plus me-2"></i>Import More Questions
+            </button>
+            <button class="btn btn-outline-secondary" routerLink="/app/assignment">
+              <i class="fas fa-list me-2"></i>View Assignments
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

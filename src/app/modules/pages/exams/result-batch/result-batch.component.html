@@ -1,0 +1,23 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4 py-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-chart-bar me-2"></i>Exam Results
+                    </h1>
+                    <small class="text-muted" *ngIf="examData?.examName">
+                        {{ examData.examName }} ({{ examData.examCode }})
+                    </small>
+                </div>
+                <button class="btn btn-back fs-16 fw-medium" routerLink="/app/exams/exams">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back
+                </button>
+            </div>
+        </div>
+        <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+            [success]="'Enabled'" [warn]="'Disabled'" [totalRecords]="totalRecords"
+            [loading]="loading" [searchPlaceholder]="'Search Batch ID...'">
+        </custom-table>
+    </div>
+</div>

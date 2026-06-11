@@ -1,0 +1,60 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                <i class="fa-solid fa-book-open me-2"></i>Library
+            </h1>
+            <button *appHasRole="['L3','L1','L4']" class="btn btn-create fs-16 fw-medium" type="button"
+                routerLink="/app/knowledge/create">
+                <img src="assets/icons/plus.svg" alt="add" width="20" height="20" class="me-2">
+                Add Library
+            </button>
+        </div>
+
+        <!-- FILTER SECTION -->
+        <form [formGroup]="filterForm" class="row g-3 mb-4">
+
+            <div class="col-md-3">
+                <selectbox label="Class" [options]="class_options" formControlName="classNo"
+                    [control]="filterForm.get('classNo')">
+                </selectbox>
+            </div>
+
+            <div class="col-md-3">
+                <selectbox label="Subject" [options]="subjects" formControlName="subjectId"
+                    [control]="filterForm.get('subjectId')">
+                </selectbox>
+            </div>
+
+            <div class="col-md-3">
+                <selectbox label="Batch" [options]="batch_options" formControlName="batchId"
+                    [control]="filterForm.get('batchId')">
+                </selectbox>
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button type="button" class="btn btn-create fs-16 fw-medium me-2" (click)="applyFilter()">
+                    Load List
+                </button>
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium"
+                    (click)="filterForm.reset(); applyFilter()">
+                    Reset
+                </button>
+            </div>
+
+        </form>
+
+        <!-- TABLE — passes currentPage/currentPageSize so table restores position -->
+        <custom-table [columns]="columnsArray" [data]="dataArray" [actions]="actions" [totalRecords]="totalRecords"
+            [loading]="loading" (requestData)="fetchTableData($event)" (rowClick)="onRowSelected($event)">
+        </custom-table>
+
+    </div>
+
+    <delete [title]="'Delete Knowledge'" [message]="deleteMessage" [(visible)]="deleteModalVisible"
+        (closed)="onDeleteModalClosed($event)">
+    </delete>
+
+</div>

@@ -1,0 +1,173 @@
+<div class="container-fluid py-4">
+  <!-- Header Card -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-0">Questions List</h5>
+        <small class="text-muted">
+          Total Questions: {{ questions.length }}
+        </small>
+      </div>
+
+
+      <div class="col-md-6 text-end">
+        <div class="btn-group me-2">
+          <button type="button" class="btn btn-edit fs-16 fw-medium dropdown-toggle" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="fa-solid fa-print btn-icon"></i>Print
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" (click)="printQuestions(false)">
+                📄 Without Answer <small class="text-muted">(for students)</small>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" (click)="printQuestions(true)">
+                📄 With Answer <small class="text-muted">(answer key)</small>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <button  *ngIf="!authService.assignmentRole()" class="btn btn-create fs-16 fw-medium me-2" (click)="addNewQuestion()">
+          + Add Question
+        </button>
+        <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <!-- Question Cards -->
+  <div *ngFor="let q of questions; let i = index" class="card mb-4 shadow-sm">
+
+    <!-- Card Header -->
+    <div class="card-header d-flex justify-content-between align-items-center">
+
+      <div>
+        <strong>Question {{ i + 1 }}</strong>
+
+        <!-- Question Type -->
+        <span class="badge bg-info ms-2">
+          {{ formatQuestionType(q.questionType) }}
+        </span>
+
+        <!-- Difficulty -->
+        <span class="badge bg-secondary ms-2">
+          {{ q.difficulty }}
+        </span>
+
+        <!-- Marks -->
+        <span class="badge bg-success ms-2">
+          +{{ q.positiveMarks }}
+        </span>
+
+        <span class="badge bg-danger ms-2">
+          -{{ q.negativeMarks }}
+        </span>
+      </div>
+
+      <div>
+        <button class="btn btn-edit fs-16 fw-medium me-2" (click)="editQuestion(q)">
+          Edit
+        </button>
+
+        <button class="btn btn-close-custom fs-16 fw-medium" (click)="deleteQuestion(q)">
+          Delete
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Card Body -->
+    <div class="card-body">
+
+      <!-- Question with LaTeX support and Images -->
+      <div class="mb-3 question-html" #questionContent [innerHTML]="q.questionHtml">
+      </div>
+
+      <!-- Options -->
+      <div *ngIf="q.questionOptions?.length">
+
+        <div *ngFor="let opt of q.questionOptions; let j = index" class="option-box p-2 mb-2 rounded">
+
+          <div class="d-flex align-items-start">
+            <div class="me-2 fw-bold">
+              {{ j + 1 }}.
+            </div>
+            <!-- Option text with LaTeX support and Images -->
+            <div class="option-content" #optionContent [innerHTML]="opt.textHtml">
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Matrix Match Display -->
+      <div *ngIf="q.questionType === 'matrix' && q.leftColumn?.length" class="matrix-section mt-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="fw-bold mb-2 text-primary">Left Column</div>
+            <div *ngFor="let l of q.leftColumn"
+              class="d-flex align-items-start p-2 mb-2 border rounded">
+              <span class="badge bg-primary me-2">{{ l.key }}</span>
+              <div class="flex-grow-1" #matrixContent [innerHTML]="l.textHtml"></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="fw-bold mb-2 text-success">Right Column</div>
+            <div *ngFor="let r of q.rightColumn"
+              class="d-flex align-items-start p-2 mb-2 border rounded">
+              <span class="badge bg-success me-2">{{ r.key }}</span>
+              <div class="flex-grow-1" #matrixContent [innerHTML]="r.textHtml"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <strong class="text-primary">
+            <i class="fas fa-check-circle me-1"></i> Correct Matches:
+          </strong>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <span *ngFor="let m of q.matrixMatches"
+              class="badge bg-light text-dark border px-3 py-2">
+              <span class="fw-bold text-primary">{{ m.key }}</span>
+              <i class="fas fa-arrow-right mx-2 text-muted"></i>
+              <span *ngIf="m.matches?.length; else noMatch" class="fw-bold text-success">
+                {{ m.matches.join(', ') }}
+              </span>
+              <ng-template #noMatch>
+                <span class="text-muted fst-italic">—</span>
+              </ng-template>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Correct Answer Display -->
+      <div *ngIf="q.questionType !== 'matrix'" class="mt-3 border-top pt-3">
+
+        <strong>Correct Answer:</strong>
+
+        <span class="ms-2">
+          {{ q.correctAnswer }}
+        </span>
+
+      </div>
+
+      <!-- Solution Display (if available) with LaTeX and Images -->
+      <div *ngIf="q.solutionHtml" class="mt-3 border-top pt-3 solution-section">
+        <strong>Solution:</strong>
+        <div class="mt-2 solution-content" #solutionContent [innerHTML]="q.solutionHtml">
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

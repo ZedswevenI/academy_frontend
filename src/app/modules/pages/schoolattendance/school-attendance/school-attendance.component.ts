@@ -1,0 +1,1200 @@
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  ElementRef,
+} from '@angular/core';
+import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { AuthService } from '../../../../service/auth/auth.service';
+import { AlertService } from '../../../../service/alert/alert.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
+@Component({
+  selector: 'app-school-attendance',
+  standalone: false,
+  templateUrl: './school-attendance.component.html',
+  styleUrl: './school-attendance.component.scss',
+})
+export class SchoolAttendanceComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  loading = false;
+  batches: any[] = [];
+  markedSet = new Set<string>();
+  holidaySet = new Set<string>();
+  selectedDate = 0;
+  selectedDateLabel = '';
+  dates: {
+    label: string;
+    value: number;
+    isToday: boolean;
+    isFuture: boolean;
+  }[] = [];
+  currentWeekMonday = 0;
+  isAO = false;
+  isTeacher = false;
+  canDeclare = false;
+  staffId = '';
+  roleLevel = '';
+  popoverDate: number | null = null;
+  holidayPopoverDateMap = new Map<
+    number,
+    { name: string; type: string; attendanceId: string }
+  >();
+  declareForm = { name: '', type: 'HOLIDAY' };
+  declaringHoliday = false;
+  removingHoliday = false;
+  showPrintModal = false;
+  printBatch: any = null;
+  printMonth = '';
+  printLoading = false;
+  monthOptions: { label: string; value: string }[] = [];
+  finalisedSet = new Set<string>();
+  finalisingBatch: string | null = null;
+  statusReport: any[] = [];
+  statusReportLoading = false;
+  showStatusReport = false;
+  statusReportFrom = '';
+  statusReportTo = '';
+
+  constructor(
+    private breadcrumb: BredcrumpService,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private auth: AuthService,
+    private alert: AlertService,
+    private elRef: ElementRef,
+  ) {
+    this.breadcrumb.set([{ label: 'School Attendance' }]);
+  }
+
+  ngOnInit(): void {
+    this.roleLevel = this.auth.getRole();
+    this.isAO = ['L1', 'L3'].includes(this.roleLevel);
+    this.isTeacher = ['L4', 'L5'].includes(this.roleLevel);
+    this.canDeclare = ['L1', 'L3', 'L4'].includes(this.roleLevel);
+    this.staffId = this.auth.getStaffId();
+    this.buildWeekDates(this.getTodayUtcMs());
+    const today =
+      this.dates.find((d) => d.value === this.getTodayUtcMs()) || this.dates[0];
+    this.selectDate(today);
+    this.buildMonthOptions();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: MouseEvent): void {
+    if (
+      !this.elRef.nativeElement
+        .querySelector('.date-popover-wrap')
+        ?.contains(e.target as Node)
+    ) {
+      this.popoverDate = null;
+    }
+  }
+
+  getTodayUtcMs(): number {
+    const now = new Date();
+    return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  }
+
+  getMondayOfWeek(anyMs: number): number {
+    const d = new Date(anyMs);
+    const utcDay = d.getUTCDay();
+    const diff = utcDay === 0 ? -6 : 1 - utcDay;
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + diff);
+  }
+
+  buildWeekDates(anyMs: number): void {
+    const monday = this.getMondayOfWeek(anyMs);
+    this.currentWeekMonday = monday;
+    const today = this.getTodayUtcMs();
+    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    this.dates = Array.from({ length: 7 }, (_, i) => {
+      const ms = monday + i * 86_400_000;
+      const d = new Date(ms);
+      return {
+        label: `${dayLabels[i]} ${d.getUTCDate()} ${months[d.getUTCMonth()]}`,
+        value: ms,
+        isToday: ms === today,
+        isFuture: ms > today,
+      };
+    });
+  }
+
+  buildMonthOptions(): void {
+    const now = new Date();
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    this.monthOptions = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1),
+      );
+      const val = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      this.monthOptions.push({
+        label: `${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
+        value: val,
+      });
+    }
+    this.printMonth = this.monthOptions[0]?.value || '';
+  }
+
+  prevWeek(): void {
+    this.buildWeekDates(this.currentWeekMonday - 7 * 86_400_000);
+    this.selectDate(this.dates[0]);
+  }
+  nextWeek(): void {
+    this.buildWeekDates(this.currentWeekMonday + 7 * 86_400_000);
+    this.selectDate(this.dates[0]);
+  }
+
+  selectDate(d: any): void {
+    this.selectedDate = d.value;
+    this.selectedDateLabel = d.label;
+    this.popoverDate = null;
+    this.loadBatches();
+    this.loadWeekHolidays();
+  }
+
+  selectDateOnly(d: any): void {
+    const changed = this.selectedDate !== d.value;
+    this.selectedDate = d.value;
+    this.selectedDateLabel = d.label;
+    this.popoverDate = null;
+    if (changed) {
+      this.loadBatches();
+      this.loadWeekHolidays();
+    }
+  }
+
+  onHolidayIconClick(d: any, event: MouseEvent): void {
+    event.stopPropagation();
+    const changed = this.selectedDate !== d.value;
+    this.selectedDate = d.value;
+    this.selectedDateLabel = d.label;
+    if (changed) {
+      this.loadBatches();
+      this.loadWeekHolidays();
+    }
+    if (this.popoverDate === d.value) {
+      this.popoverDate = null;
+    } else {
+      this.popoverDate = d.value;
+      const existing = this.holidayPopoverDateMap.get(d.value);
+      this.declareForm = {
+        name: existing?.name || '',
+        type: existing?.type || 'HOLIDAY',
+      };
+    }
+  }
+
+  loadWeekHolidays(): void {
+    if (!this.batches.length) return;
+    const tenantId = localStorage.getItem('tenantId');
+    const batchCode = this.batches[0]?.batchCode;
+    if (!batchCode) return;
+    const fromDate = this.dates[0].value;
+    const toDate = this.dates[6].value;
+    this.commonApi
+      .fetchData(
+        { entiId: tenantId, batchCode, fromDate, toDate },
+        'batch',
+        'school-attendance/holiday/list',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.holidayPopoverDateMap.clear();
+          (res?.data || []).forEach((h: any) => {
+            this.holidayPopoverDateMap.set(h.date, {
+              name: h.holidayName || h.type,
+              type: h.type,
+              attendanceId: h.attendanceId,
+            });
+          });
+        },
+        error: () => {},
+      });
+  }
+
+  isDateHoliday(dateMs: number): boolean {
+    return this.holidayPopoverDateMap.has(dateMs);
+  }
+
+  getDateHolidayName(dateMs: number): string {
+    return this.holidayPopoverDateMap.get(dateMs)?.name || '';
+  }
+
+  declareHoliday(): void {
+    if (!this.declareForm.name.trim()) {
+      this.alert.error('Please enter a holiday name');
+      return;
+    }
+    const tenantId = localStorage.getItem('tenantId');
+    this.declaringHoliday = true;
+    this.commonApi
+      .fetchData(
+        {
+          entiId: tenantId,
+          date: this.popoverDate,
+          holidayName: this.declareForm.name.trim(),
+          type: this.declareForm.type,
+          userId: localStorage.getItem('userId'),
+        },
+        'batch',
+        'school-attendance/holiday/declare-all-batches',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.declaringHoliday = false;
+          if (res?.status) {
+            this.alert.success(`Holiday declared: ${this.declareForm.name}`);
+            this.holidayPopoverDateMap.set(this.popoverDate!, {
+              name: this.declareForm.name.trim(),
+              type: this.declareForm.type,
+              attendanceId: '',
+            });
+            this.popoverDate = null;
+            this.declareForm = { name: '', type: 'HOLIDAY' };
+            this.checkMarkedStatus();
+          } else {
+            this.alert.error(res?.message || 'Failed to declare holiday');
+          }
+        },
+        error: (err: any) => {
+          this.declaringHoliday = false;
+          this.alert.error(err?.error?.message || 'Failed to declare holiday');
+        },
+      });
+  }
+
+  removeHoliday(dateMs: number): void {
+    if (!confirm('Remove holiday for all batches on this date?')) return;
+    const tenantId = localStorage.getItem('tenantId');
+    const batchCode = this.batches[0]?.batchCode;
+    if (!batchCode) return;
+    this.removingHoliday = true;
+    const ops = this.batches.map((b) =>
+      this.commonApi
+        .fetchData(
+          {
+            entiId: tenantId,
+            batchCode: b.batchCode,
+            date: dateMs,
+            userId: localStorage.getItem('userId'),
+          },
+          'batch',
+          'school-attendance/holiday/remove',
+        )
+        .pipe(takeUntil(this.destroy$))
+        .toPromise(),
+    );
+
+    Promise.allSettled(ops).then(() => {
+      this.removingHoliday = false;
+      this.holidayPopoverDateMap.delete(dateMs);
+      this.popoverDate = null;
+      this.alert.success('Holiday removed');
+      this.checkMarkedStatus();
+    });
+  }
+
+  closePopover(): void {
+    this.popoverDate = null;
+    this.declareForm = { name: '', type: 'HOLIDAY' };
+  }
+
+  loadBatches(): void {
+    const tenantId = localStorage.getItem('tenantId');
+    const payload: any = { entiId: tenantId, roleLevel: this.roleLevel };
+    if (this.isTeacher) payload.staffId = this.staffId;
+    this.loading = true;
+    this.commonApi
+      .fetchData(payload, 'batch', 'school-attendance/batches')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          this.batches = res?.data || [];
+          this.checkMarkedStatus();
+          this.loadWeekHolidays();
+        },
+        error: () => {
+          this.loading = false;
+          this.batches = [];
+        },
+      });
+  }
+
+  checkMarkedStatus(): void {
+    if (!this.batches.length || !this.selectedDate) return;
+    const tenantId = localStorage.getItem('tenantId');
+    this.markedSet.clear();
+    this.holidaySet.clear();
+    this.finalisedSet.clear();
+    this.commonApi
+      .fetchData(
+        {
+          entiId: tenantId,
+          fromDate: this.selectedDate,
+          toDate: this.selectedDate,
+          batchCodes: this.batches.map((b) => b.batchCode),
+        },
+        'batch',
+        'school-attendance/marked-check',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          (res?.markedBatchCodes || []).forEach((c: string) =>
+            this.markedSet.add(c),
+          );
+          (res?.holidayBatchCodes || []).forEach((c: string) =>
+            this.holidaySet.add(c),
+          );
+          (res?.finalisedBatchCodes || []).forEach((c: string) =>
+            this.finalisedSet.add(c),
+          );
+        },
+        error: () => {},
+      });
+  }
+
+  isFinalised(batchCode: string): boolean {
+    return this.finalisedSet.has(batchCode);
+  }
+
+  isMarked(batchCode: string): boolean {
+    return this.markedSet.has(batchCode);
+  }
+  isHoliday(batchCode: string): boolean {
+    return this.holidaySet.has(batchCode);
+  }
+
+  goToMark(batch: any): void {
+    this.router.navigate(['/app/school-attendance/mark'], {
+      state: {
+        batchCode: batch.batchCode,
+        batchName: batch.batchName,
+        batchId: batch.batchId,
+        section: batch.section || '',
+        classNo: batch.classNo || '',
+        date: this.selectedDate,
+        dateLabel: this.selectedDateLabel,
+        roleLevel: this.roleLevel,
+        markedBy: localStorage.getItem('userId'),
+        markedByName: localStorage.getItem('userName') || '',
+        markedByRole: this.roleLevel,
+      },
+    });
+  }
+
+  get isPastDate(): boolean {
+    return this.selectedDate < this.getTodayUtcMs();
+  }
+
+  get isFutureDate(): boolean {
+    return this.selectedDate > this.getTodayUtcMs();
+  }
+
+  canMarkBatch(batch: any): boolean {
+    if (this.isHoliday(batch.batchCode)) return false;
+    if (this.isTeacher) return !this.isPastDate && !this.isFutureDate;
+    return !this.isFutureDate;
+  }
+
+  openPrintModal(batch: any): void {
+    this.printBatch = batch;
+    this.showPrintModal = true;
+  }
+
+  closePrintModal(): void {
+    this.showPrintModal = false;
+    this.printBatch = null;
+  }
+
+  downloadPdf(): void {
+    if (!this.printBatch || !this.printMonth || this.printLoading) return;
+    const [year, month] = this.printMonth.split('-').map(Number);
+    const tenantId = localStorage.getItem('tenantId');
+    this.printLoading = true;
+    this.commonApi
+      .fetchData(
+        { entiId: tenantId, batchCode: this.printBatch.batchCode, month, year },
+        'batch',
+        'school-attendance/monthly-report',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.printLoading = false;
+          this.generatePdf(res?.data, year, month);
+        },
+        error: (err: any) => {
+          this.printLoading = false;
+          this.alert.error(err?.error?.message || 'Failed to generate report');
+        },
+      });
+  }
+
+  private generatePdf(data: any, year: number, month: number): void {
+    if (!data) return;
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const monthLabel = `${monthNames[month - 1]} ${year}`;
+    const lastDay = data.lastDay || 31;
+    const rows: any[] = data.rows || [];
+    const batch = this.printBatch;
+    const workingDays = data.workingDays || 0;
+    const holidays: any[] = data.holidays || [];
+    const holidayDaySet = new Set<number>();
+    const holidayNameMap = new Map<number, string>();
+    holidays.forEach((h: any) => {
+      const dayNum = new Date(h.date).getUTCDate();
+      holidayDaySet.add(dayNum);
+      holidayNameMap.set(dayNum, h.name);
+    });
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const ml = 10,
+      mr = 10;
+    const contentW = pageW - ml - mr;
+    const bold = (s: number) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(s);
+    };
+    const normal = (s: number) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(s);
+    };
+    bold(14);
+    doc.text('ATTENDANCE REGISTER', pageW / 2, 12, { align: 'center' });
+    normal(9);
+    doc.text(`Batch  : ${batch.batchName} (${batch.batchCode})`, ml, 19);
+    if (batch.section) doc.text(`Section : ${batch.section}`, ml, 24);
+    if (batch.classNo)
+      doc.text(`Class   : ${batch.classNo}`, ml, batch.section ? 29 : 24);
+    bold(10);
+    doc.text(`Month : ${monthLabel}`, pageW / 2, 19, { align: 'center' });
+    normal(9);
+    doc.text(`No. of Working Days : ${workingDays}`, pageW - mr, 19, {
+      align: 'right',
+    });
+    doc.text(`Total Students      : ${rows.length}`, pageW - mr, 24, {
+      align: 'right',
+    });
+    if (holidays.length) {
+      doc.text(`Holidays : ${holidays.length}`, pageW - mr, 29, {
+        align: 'right',
+      });
+    }
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.4);
+    doc.line(ml, 32, pageW - mr, 32);
+    const srW = 6,
+      idW = 22,
+      nameW = 36,
+      dayW = 5.5,
+      pW = 8,
+      aW = 8,
+      pctW = 10;
+    const remW = contentW - srW - idW - nameW - lastDay * dayW - pW - aW - pctW;
+    const head: any[][] = [[]];
+    head[0].push(
+      {
+        content: 'Sr',
+        styles: { halign: 'center', fontStyle: 'bold', cellWidth: srW },
+      },
+      {
+        content: 'Adm No',
+        styles: { halign: 'center', fontStyle: 'bold', cellWidth: idW },
+      },
+      {
+        content: 'Name',
+        styles: { halign: 'left', fontStyle: 'bold', cellWidth: nameW },
+      },
+    );
+    for (let d = 1; d <= lastDay; d++) {
+      const isHol = holidayDaySet.has(d);
+      head[0].push({
+        content: String(d),
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          cellWidth: dayW,
+          fontSize: 6,
+          fillColor: isHol ? [255, 200, 0] : [41, 128, 185],
+          textColor: isHol ? [80, 60, 0] : [255, 255, 255],
+        },
+      });
+    }
+    head[0].push(
+      {
+        content: 'P',
+        styles: { halign: 'center', fontStyle: 'bold', cellWidth: pW },
+      },
+      {
+        content: 'A',
+        styles: { halign: 'center', fontStyle: 'bold', cellWidth: aW },
+      },
+      {
+        content: `% of\n${workingDays}d`,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          cellWidth: pctW,
+          fontSize: 5.5,
+        },
+      },
+      {
+        content: 'Remarks',
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          cellWidth: remW > 5 ? remW : 12,
+        },
+      },
+    );
+    const body: any[][] = rows.map((row: any, idx: number) => {
+      const cells: any[] = [
+        { content: idx + 1, styles: { halign: 'center' } },
+        {
+          content: row.admissionNo,
+          styles: { halign: 'center', fontSize: 5.5 },
+        },
+        { content: row.name, styles: { halign: 'left', fontSize: 6.5 } },
+      ];
+      for (const val of row.attendance || []) {
+        const v = val || '';
+        cells.push({
+          content: v,
+          styles: {
+            halign: 'center',
+            fontStyle: v && v !== 'H' ? 'bold' : 'normal',
+            fontSize: v === 'H' ? 5.5 : 6.5,
+            textColor:
+              v === 'A'
+                ? [220, 53, 69]
+                : v === 'L'
+                  ? [255, 153, 0]
+                  : v === 'P'
+                    ? [25, 135, 84]
+                    : v === 'H'
+                      ? [120, 90, 0]
+                      : [210, 210, 210],
+            fillColor:
+              v === 'H'
+                ? [255, 243, 180]
+                : v === ''
+                  ? [245, 245, 245]
+                  : [255, 255, 255],
+          },
+        });
+      }
+      cells.push(
+        {
+          content: row.presentCount,
+          styles: {
+            halign: 'center',
+            fontStyle: 'bold',
+            textColor: [25, 135, 84],
+          },
+        },
+        {
+          content: row.absentCount,
+          styles: {
+            halign: 'center',
+            fontStyle: 'bold',
+            textColor: [220, 53, 69],
+          },
+        },
+        {
+          content: `${row.percentage}%`,
+          styles: {
+            halign: 'center',
+            fontStyle: 'bold',
+            textColor: row.percentage >= 75 ? [25, 135, 84] : [220, 53, 69],
+          },
+        },
+        { content: '', styles: { halign: 'left' } },
+      );
+      return cells;
+    });
+    const dayTotalsRow: any[] = [
+      { content: '', styles: { fillColor: [230, 235, 255] } },
+      { content: '', styles: { fillColor: [230, 235, 255] } },
+      {
+        content: 'Present',
+        styles: {
+          halign: 'right',
+          fontStyle: 'bold',
+          fillColor: [230, 235, 255],
+          fontSize: 6.5,
+        },
+      },
+    ];
+    for (let d = 0; d < lastDay; d++) {
+      const isHol = holidayDaySet.has(d + 1);
+      if (isHol) {
+        dayTotalsRow.push({
+          content: 'H',
+          styles: {
+            halign: 'center',
+            fontSize: 5.5,
+            fillColor: [255, 243, 180],
+            textColor: [120, 90, 0],
+          },
+        });
+      } else {
+        const cnt = rows.filter(
+          (r: any) => r.attendance[d] === 'P' || r.attendance[d] === 'L',
+        ).length;
+        dayTotalsRow.push({
+          content: cnt || '',
+          styles: {
+            halign: 'center',
+            fontStyle: 'bold',
+            fillColor: [230, 235, 255],
+            fontSize: 6,
+          },
+        });
+      }
+    }
+    const totalPresent = rows.reduce(
+      (s: number, r: any) => s + (r.presentCount || 0),
+      0,
+    );
+    const totalAbsent = rows.reduce(
+      (s: number, r: any) => s + (r.absentCount || 0),
+      0,
+    );
+    const avgPct = rows.length
+      ? Math.round(
+          rows.reduce((s: number, r: any) => s + (r.percentage || 0), 0) /
+            rows.length,
+        )
+      : 0;
+    dayTotalsRow.push(
+      {
+        content: totalPresent,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          fillColor: [230, 235, 255],
+          textColor: [25, 135, 84],
+        },
+      },
+      {
+        content: totalAbsent,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          fillColor: [230, 235, 255],
+          textColor: [220, 53, 69],
+        },
+      },
+      {
+        content: `${avgPct}%`,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          fillColor: [230, 235, 255],
+        },
+      },
+      { content: '', styles: { fillColor: [230, 235, 255] } },
+    );
+    body.push(dayTotalsRow);
+    const dayPctRow: any[] = [
+      { content: '', styles: { fillColor: [245, 245, 245] } },
+      { content: '', styles: { fillColor: [245, 245, 245] } },
+      {
+        content: 'Attendance %',
+        styles: {
+          halign: 'right',
+          fontStyle: 'bold',
+          fillColor: [245, 245, 245],
+          fontSize: 6,
+        },
+      },
+    ];
+    for (let d = 0; d < lastDay; d++) {
+      const isHol = holidayDaySet.has(d + 1);
+      if (isHol) {
+        dayPctRow.push({
+          content: 'H',
+          styles: {
+            halign: 'center',
+            fontSize: 5.5,
+            fillColor: [255, 243, 180],
+            textColor: [120, 90, 0],
+          },
+        });
+      } else {
+        const cnt = rows.filter(
+          (r: any) => r.attendance[d] === 'P' || r.attendance[d] === 'L',
+        ).length;
+        const pct = rows.length > 0 ? Math.round((cnt / rows.length) * 100) : 0;
+        dayPctRow.push({
+          content: cnt > 0 ? `${pct}` : '',
+          styles: {
+            halign: 'center',
+            fontSize: 5.5,
+            fillColor: [245, 245, 245],
+            textColor:
+              pct >= 75
+                ? [25, 135, 84]
+                : pct > 0
+                  ? [220, 53, 69]
+                  : [180, 180, 180],
+          },
+        });
+      }
+    }
+    dayPctRow.push(
+      { content: '', styles: { fillColor: [245, 245, 245] } },
+      { content: '', styles: { fillColor: [245, 245, 245] } },
+      { content: '', styles: { fillColor: [245, 245, 245] } },
+      { content: '', styles: { fillColor: [245, 245, 245] } },
+    );
+    body.push(dayPctRow);
+    const blankRow = (label: string) => {
+      const r: any[] = [
+        { content: '', styles: { fillColor: [255, 255, 255] } },
+        { content: '', styles: { fillColor: [255, 255, 255] } },
+        {
+          content: label,
+          styles: {
+            halign: 'right',
+            fontStyle: 'bold',
+            fillColor: [255, 255, 255],
+            fontSize: 6,
+            textColor: [100, 100, 100],
+          },
+        },
+      ];
+      for (let d = 0; d < lastDay; d++)
+        r.push({ content: '', styles: { fillColor: [255, 255, 255] } });
+      r.push(
+        { content: '', styles: { fillColor: [255, 255, 255] } },
+        { content: '', styles: { fillColor: [255, 255, 255] } },
+        { content: '', styles: { fillColor: [255, 255, 255] } },
+        { content: '', styles: { fillColor: [255, 255, 255] } },
+      );
+      return r;
+    };
+    body.push(blankRow('Present (Morning)'));
+    body.push(blankRow('Present (Afternoon)'));
+    body.push(blankRow('Girls'));
+    body.push(blankRow('Boys'));
+    body.push(blankRow('Class Teacher Initial'));
+    autoTable(doc, {
+      startY: 34,
+      head,
+      body,
+      theme: 'grid',
+      styles: {
+        fontSize: 6.5,
+        cellPadding: 1.2,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.2,
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontSize: 7,
+        cellPadding: 1.5,
+        halign: 'center',
+      },
+      alternateRowStyles: { fillColor: [248, 250, 255] },
+      margin: { left: ml, right: mr },
+      didParseCell: (hookData: any) => {
+        const li = rows.length;
+        if (hookData.row.index === li)
+          hookData.cell.styles.fillColor = [230, 235, 255];
+        if (hookData.row.index === li + 1)
+          hookData.cell.styles.fillColor = [245, 245, 245];
+        if (hookData.row.index > li + 1)
+          hookData.cell.styles.fillColor = [255, 255, 255];
+      },
+    });
+    const finalY = (doc as any).lastAutoTable?.finalY || pageH - 40;
+    const footY = Math.min(finalY + 8, pageH - 28);
+    normal(7.5);
+    doc.setTextColor(80, 80, 80);
+    doc.text('No. on Roll at beginning of month : ___________', ml, footY);
+    doc.text('No. on Roll at end of month        : ___________', ml, footY + 5);
+    doc.text(
+      'No. Admitted                        : ___________',
+      ml,
+      footY + 10,
+    );
+    doc.text(
+      'No. Left with TC                    : ___________',
+      ml,
+      footY + 15,
+    );
+    const sigX = pageW - mr - 70;
+    doc.line(sigX, footY + 8, sigX + 65, footY + 8);
+    doc.text('Signature of Class Teacher', sigX, footY + 10);
+    doc.line(sigX, footY + 16, sigX + 65, footY + 16);
+    doc.text('Signature of Principal / Academic Coordinator', sigX, footY + 18);
+    if (batch.classTeacherName) {
+      normal(7);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`(${batch.classTeacherName})`, sigX, footY + 12.5);
+    }
+    if (holidays.length) {
+      normal(7);
+      doc.setTextColor(100, 80, 0);
+      const hText = holidays
+        .map((h: any) => {
+          const dn = new Date(h.date).getUTCDate();
+          return `${dn} — ${h.name} (${h.type})`;
+        })
+        .join('   |   ');
+      doc.text(`Holidays : ${hText}`, ml, footY + 17);
+    }
+    normal(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      'P = Present   A = Absent   L = Late   H = Holiday/Week-off   (grey) = Not taken   % = of working days',
+      pageW / 2,
+      footY + 22,
+      { align: 'center' },
+    );
+    doc.save(
+      `Attendance_${batch.batchCode}_${monthLabel.replace(' ', '_')}.pdf`,
+    );
+  }
+
+  finaliseAttendance(batch: any): void {
+    if (
+      !confirm(
+        `Finalise attendance for ${batch.batchName} on ${this.selectedDateLabel}? This cannot be undone.`,
+      )
+    )
+      return;
+    const tenantId = localStorage.getItem('tenantId');
+    this.finalisingBatch = batch.batchCode;
+    this.commonApi
+      .fetchData(
+        {
+          entiId: tenantId,
+          batchCode: batch.batchCode,
+          date: this.selectedDate,
+          userId: localStorage.getItem('userId'),
+          finalisedByName: localStorage.getItem('userName') || '',
+        },
+        'batch',
+        'school-attendance/finalise',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.finalisingBatch = null;
+          if (res?.status) {
+            this.alert.success(
+              `Attendance finalised. ${res?.data?.emailsSent || 0} absence alert(s) sent.`,
+            );
+            this.finalisedSet.add(batch.batchCode);
+          } else {
+            this.alert.error(res?.message || 'Failed to finalise');
+          }
+        },
+        error: (err: any) => {
+          this.finalisingBatch = null;
+          this.alert.error(err?.error?.message || 'Failed to finalise');
+        },
+      });
+  }
+
+  loadBatchStatusReport(): void {
+    const tenantId = localStorage.getItem('tenantId');
+    this.statusReportLoading = true;
+    const payload: any = { entiId: tenantId };
+    if (this.statusReportFrom) {
+      const [y, m, d] = this.statusReportFrom.split('-').map(Number);
+      payload.fromDate = Date.UTC(y, m - 1, d);
+    }
+    if (this.statusReportTo) {
+      const [y, m, d] = this.statusReportTo.split('-').map(Number);
+      payload.toDate = Date.UTC(y, m - 1, d);
+    }
+    this.commonApi
+      .fetchData(payload, 'batch', 'school-attendance/batch-status-report')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.statusReportLoading = false;
+          this.statusReport = res?.data || [];
+          this.showStatusReport = true;
+        },
+        error: (err: any) => {
+          this.statusReportLoading = false;
+          this.alert.error(err?.error?.message || 'Failed to load report');
+        },
+      });
+  }
+
+  closeStatusReport(): void {
+    this.showStatusReport = false;
+    this.statusReport = [];
+    this.statusReportFrom = '';
+    this.statusReportTo = '';
+  }
+
+  getStatusBadgeClass(status: string): string {
+    const map: any = {
+      MARKED: 'bg-success-subtle text-success border-success-subtle',
+      FINALISED: 'bg-primary-subtle text-primary border-primary-subtle',
+      NOT_MARKED: 'bg-danger-subtle text-danger border-danger-subtle',
+      HOLIDAY: 'bg-warning-subtle text-warning border-warning-subtle',
+      WEEK_OFF: 'bg-warning-subtle text-warning border-warning-subtle',
+      LEAVE: 'bg-secondary-subtle text-secondary border-secondary-subtle',
+    };
+    return map[status] || 'bg-secondary-subtle text-secondary';
+  }
+
+  getStatusIcon(status: string): string {
+    const map: any = {
+      MARKED: 'fa-circle-check',
+      FINALISED: 'fa-lock',
+      NOT_MARKED: 'fa-circle-xmark',
+      HOLIDAY: 'fa-umbrella-beach',
+      WEEK_OFF: 'fa-umbrella-beach',
+      LEAVE: 'fa-calendar-minus',
+    };
+    return map[status] || 'fa-circle-question';
+  }
+
+  formatDayTooltip(day: any): string {
+    const d = new Date(day.date);
+    const dateStr = `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
+    if (day.status === 'NOT_MARKED') return `${dateStr} — Not Marked`;
+    if (['HOLIDAY', 'WEEK_OFF', 'LEAVE'].includes(day.status))
+      return `${dateStr} — ${day.holidayName || day.status}`;
+    const parts = [`${dateStr} — ${day.status}`];
+    if (day.markedByName) parts.push(`By: ${day.markedByName}`);
+    if (day.presentCount != null)
+      parts.push(
+        `P:${day.presentCount} A:${day.absentCount} L:${day.lateCount}`,
+      );
+    return parts.join(' | ');
+  }
+
+  exportStatusReportToExcel(): void {
+    if (!this.statusReport.length) return;
+    const rows: any[] = [];
+    for (const b of this.statusReport) {
+      for (const day of b.days) {
+        const d = new Date(day.date);
+        const dateStr = `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
+        rows.push({
+          'Batch Code': b.batchCode,
+          'Batch Name': b.batchName,
+          Class: b.classNo ? `Class ${b.classNo}` : '',
+          Section: b.section || '',
+          'Academic Year': b.academicYear || '',
+          'Class Teacher': b.classTeacher?.name || '',
+          Date: dateStr,
+          Status: day.status,
+          'Holiday Name': day.holidayName || '',
+          'Marked By': day.markedByName || '',
+          'Marked By Role': day.markedByRole || '',
+          Finalised: day.isFinalised ? 'Yes' : 'No',
+          'Finalised By': day.finalisedByName || '',
+          'Total Students': day.totalStudents || 0,
+          Present: day.presentCount || 0,
+          Absent: day.absentCount || 0,
+          Late: day.lateCount || 0,
+          Remarks: day.remarks || '',
+        });
+      }
+      rows.push({
+        'Batch Code': b.batchCode,
+        'Batch Name': `SUMMARY — ${b.batchName}`,
+        Class: '',
+        Section: '',
+        'Academic Year': b.academicYear || '',
+        'Class Teacher': b.classTeacher?.name || '',
+        Date: '',
+        Status: '',
+        'Holiday Name': '',
+        'Marked By': '',
+        'Marked By Role': '',
+        Finalised: '',
+        'Finalised By': '',
+        'Total Students': '',
+        Present: '',
+        Absent: '',
+        Late: '',
+        Remarks: `Total:${b.summary.totalDays} Marked:${b.summary.marked} Finalised:${b.summary.finalised} Not Marked:${b.summary.notMarked} Holiday:${b.summary.holiday}`,
+      });
+      rows.push({});
+    }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 12 },
+      { wch: 22 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 10 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 24 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Batch Status Report');
+    const fromLabel = this.statusReportFrom || 'all';
+    const toLabel = this.statusReportTo || 'all';
+    XLSX.writeFile(
+      wb,
+      `Batch_Attendance_Report_${fromLabel}_to_${toLabel}.xlsx`,
+    );
+  }
+
+  exportDailyStatusToExcel(
+    type: 'all' | 'marked' | 'not_marked' | 'holiday' = 'all',
+  ): void {
+    const tenantId = localStorage.getItem('tenantId');
+    this.commonApi
+      .fetchData(
+        {
+          entiId: tenantId,
+          fromDate: this.selectedDate,
+          toDate: this.selectedDate,
+        },
+        'batch',
+        'school-attendance/batch-status-report',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          const allData: any[] = res?.data || [];
+          let filtered = allData;
+          if (type === 'marked')
+            filtered = allData.filter((b) =>
+              ['MARKED', 'FINALISED'].includes(b.days[0]?.status),
+            );
+          if (type === 'not_marked')
+            filtered = allData.filter(
+              (b) => b.days[0]?.status === 'NOT_MARKED',
+            );
+          if (type === 'holiday')
+            filtered = allData.filter((b) =>
+              ['HOLIDAY', 'WEEK_OFF', 'LEAVE'].includes(b.days[0]?.status),
+            );
+          if (!filtered.length) return;
+          const rows = filtered.map((b: any) => {
+            const day = b.days[0] || {};
+            return {
+              'Batch Code': b.batchCode,
+              'Batch Name': b.batchName,
+              Class: b.classNo ? `Class ${b.classNo}` : '',
+              Section: b.section || '',
+              'Class Teacher': b.classTeacher?.name || '',
+              Status: day.status || 'NOT_MARKED',
+              'Holiday Name': day.holidayName || '',
+              'Marked By': day.markedByName || '',
+              Finalised: day.isFinalised ? 'Yes' : 'No',
+              'Finalised By': day.finalisedByName || '',
+              'Total Students': day.totalStudents || 0,
+              Present: day.presentCount || 0,
+              Absent: day.absentCount || 0,
+              Late: day.lateCount || 0,
+            };
+          });
+          const ws = XLSX.utils.json_to_sheet(rows);
+          ws['!cols'] = [
+            { wch: 14 },
+            { wch: 28 },
+            { wch: 8 },
+            { wch: 8 },
+            { wch: 22 },
+            { wch: 12 },
+            { wch: 16 },
+            { wch: 20 },
+            { wch: 10 },
+            { wch: 20 },
+            { wch: 14 },
+            { wch: 8 },
+            { wch: 8 },
+            { wch: 8 },
+          ];
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Attendance Status');
+          XLSX.writeFile(
+            wb,
+            `School_Attendance_${type.toUpperCase()}_${this.selectedDateLabel.replace(/ /g, '_')}.xlsx`,
+          );
+        },
+        error: () => {},
+      });
+  }
+}

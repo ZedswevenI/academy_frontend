@@ -1,0 +1,81 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-file-lines me-2"></i>Create Assignment
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <form [formGroup]="assForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <selectbox label="Class" [options]="class_options" formControlName="class"
+                            [control]="assForm.get('class')" [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-6">
+                        <selectbox label="Subject" [options]="subject_options" formControlName="subject"
+                            [control]="assForm.get('subject')" [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-6">
+                        <selectbox label="Topic" [options]="topic_options" formControlName="topic"
+                            [control]="assForm.get('topic')" [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-6">
+                        <selectbox label="Sub Topic" [options]="sub_options" formControlName="sub"
+                            [control]="assForm.get('sub')" [required]="true">
+                        </selectbox>
+                    </div>
+                </div>
+
+                <div class="col-12 text-end mt-3">
+                    <button class="btn submitbutton px-4" [disabled]="assForm.invalid" (click)="onProceed()"
+                        style="border-radius: 30px;">
+                        Proceed
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="mt-3" *ngIf="isProceed">
+            <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+                [totalRecords]="totalRecords" (requestData)="loadTableData($event)"
+                [searchPlaceholder]="'Search Class, Batch, Topic...'"></custom-table>
+            <div class="d-flex justify-content-end mt-5">
+                <button type="button" class="btn closebutton px-4" routerLink="/app/assignment">Back</button>
+                <button type="button" class="btn submitbutton px-4">Submit</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div *ngIf="isUnassign" class="assignment-popup-backdrop">
+    <div class="assignment-popup card p-4">
+        <h5 class="text-primary mb-3">Assign Assignment</h5>
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <input type="checkbox" class="form-check-input" [(ngModel)]="confirmAssign" />
+            </div>
+            <div class="col">
+                <p class="mb-0">Are you sure you want to assign this Assignment</p>
+            </div>
+        </div>
+
+        <div class="text-end mt-3">
+            <button class="btn closebutton" (click)="onClose()">
+                Back
+            </button>
+            <button class="btn submitbutton" (click)="onConfirm()">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>

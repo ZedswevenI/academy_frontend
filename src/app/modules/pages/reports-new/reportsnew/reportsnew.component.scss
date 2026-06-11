@@ -1,0 +1,227 @@
+/* reportsnew.component.scss — shared across all report components */
+
+// ── Tab bar ───────────────────────────────────────────────────────────────────
+.report-container {
+  padding: 24px;
+}
+
+.report-header {
+  margin-bottom: 20px;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  &.active {
+    color: #1d4ed8;
+    border-bottom-color: #1d4ed8;
+    background: #eff6ff;
+  }
+}
+
+// ── Report card grid ──────────────────────────────────────────────────────────
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.report-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .report-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    i {
+      font-size: 18px;
+      color: #2563eb;
+    }
+  }
+
+  .report-card-body {
+    flex: 1;
+    min-width: 0;
+
+    .report-card-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .report-card-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .report-card-arrow {
+    color: #9ca3af;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+}
+
+// ── Filter panel ──────────────────────────────────────────────────────────────
+.filter-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+// ── Summary cards ─────────────────────────────────────────────────────────────
+.summary-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: center;
+
+  .summary-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1d4ed8;
+    line-height: 1.2;
+  }
+
+  .summary-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+}
+
+// ── Report table card ─────────────────────────────────────────────────────────
+.report-table-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+// ── Table styles ──────────────────────────────────────────────────────────────
+.table {
+  th {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    background: #f8fafc;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+    padding: 10px 12px;
+  }
+
+  td {
+    font-size: 13px;
+    color: #374151;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  tr:hover td {
+    background: #f9fafb;
+  }
+}
+
+// ── Export buttons ────────────────────────────────────────────────────────────
+.btn-export {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+
+  &:hover {
+    background: #15803d;
+    color: #fff;
+  }
+}
+
+.btn-back {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+// ── Multi-select dropdown options hover ───────────────────────────────────────
+.batch-ms-option,
+.staff-ms-option,
+.student-ms-option {
+  &:hover {
+    background: #f8f9fa;
+  }
+}
+
+// ── Generate button disabled state ────────────────────────────────────────────
+.btn-create:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+
+  i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+  }
+}

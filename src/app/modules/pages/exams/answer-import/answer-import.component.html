@@ -1,0 +1,334 @@
+<div class="row layout-container">
+  <div class="col-10 m-auto mt-4 pb-4">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h4 class="mb-1 fw-bold"><i class="fas fa-file-import me-2"></i>Import Answers</h4>
+            <small class="text-muted d-block mt-1">Exam: <span class="fw-bold text-dark">{{ examData?.examName
+                }}</span></small>
+          </div>
+          <div class="btn-group border-end" role="group">
+            <button type="button" class="btn btn-sm me-1" [class.btn-edit]="mode === 'docx'"
+              [class.btn-create]="mode !== 'docx'" (click)="switchMode('docx')">
+              <i class="fas fa-file-word me-1"></i> DOCX
+            </button>
+            <button type="button" class="btn btn-sm me-1" [class.btn-edit]="mode === 'excel'"
+              [class.btn-create]="mode !== 'excel'" (click)="switchMode('excel')">
+              <i class="fas fa-file-excel me-1"></i> Excel
+            </button>
+            <button type="button" class="btn btn-sm me-1" [class.btn-edit]="mode === 'manual'"
+              [class.btn-create]="mode !== 'manual'" (click)="switchMode('manual')" [disabled]="fetchingQuestions">
+              <i class="fas fa-keyboard me-1"></i> Manual Entry
+            </button>
+            <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+              <i class="fa-solid fa-arrow-left btn-icon"></i>
+              Back
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-4">
+        <!-- ── DOCX MODE ── -->
+        <ng-container *ngIf="mode === 'docx'">
+
+          <!-- Step 1: File Selection -->
+          <div *ngIf="parsedAnswers.length === 0" class="mb-4">
+            <div class="upload-area p-5 border rounded-3 text-center position-relative"
+              [class.bg-light]="!selectedFile">
+              <input type="file" accept=".docx" class="position-absolute w-100 h-100 top-0 start-0 opacity-0 bg-danger"
+                style="cursor: pointer;" (change)="onFileSelected($event)">
+
+              <div *ngIf="!selectedFile">
+                <i class="fa-solid fa-cloud-arrow-up text-primary mb-3" style="font-size: 3rem;"></i>
+                <h5 class="fw-bold">Click or drag DOCX file here</h5>
+                <p class="text-muted small mb-3">Format required: [NUMBER] 1, [ANS] A, [SOL]...</p>
+                <button class="btn btn-sm btn-outline-primary z-3 position-relative"
+                  (click)="downloadSample(); $event.stopPropagation()">
+                  <i class="fas fa-download me-1"></i> Download Sample DOCX
+                </button>
+              </div>
+
+              <div *ngIf="selectedFile">
+                <i class="fas fa-file-word text-primary mb-3" style="font-size: 3rem;"></i>
+                <h5 class="fw-bold text-success">{{ selectedFile.name }}</h5>
+                <p class="text-muted small mb-3">{{ (selectedFile.size / 1024).toFixed(2) }} KB</p>
+                <button class="btn btn-sm btn-outline-danger z-3 position-relative"
+                  (click)="removeFile(); $event.stopPropagation()">Remove File</button>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+              <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="goBack()">Cancel</button>
+              <button class="btn btn-create fs-16 fw-medium" [disabled]="!selectedFile || parsing || fetchingQuestions"
+                (click)="parseDocx()">
+                <span *ngIf="parsing || fetchingQuestions" class="spinner-border spinner-border-sm me-2"></span>
+                {{ fetchingQuestions ? 'Loading Exam Data...' : (parsing ? 'Parsing...' : 'Parse File') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Verification Table -->
+          <div *ngIf="parsedAnswers.length > 0">
+            <div class="alert alert-info border-0 rounded-3">
+              <i class="fas fa-info-circle me-2"></i>
+              Parsed <strong>{{ parsedAnswers.length }}</strong> answers. Please review them before submitting.
+            </div>
+
+            <div class="table-responsive border rounded-3 mb-4" style="max-height: 500px; overflow-y: auto;">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light sticky-top">
+                  <tr>
+                    <th>Question #</th>
+                    <th>Status</th>
+                    <th>Parsed Answer</th>
+                    <th>Solution Preview</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of parsedAnswers" [class.table-danger]="!!item.error">
+                    <td class="fw-bold">{{ item.questionId }}</td>
+                    <td>
+                      <span class="badge" [class.bg-success]="!item.error" [class.bg-danger]="item.error">
+                        {{ item.error ? 'Error' : 'Mapped' }}
+                      </span>
+                      <div class="text-danger fs-12 mt-1" *ngIf="item.error">{{ item.error }}</div>
+                    </td>
+                    <td class="fw-bold text-primary">{{ item.ansStr || '-' }}</td>
+                    <td>
+                      <div style="max-height: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        [innerHTML]="item.solutionHtml || '-'"></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+              <button class="btn btn-outline-secondary px-4 me-2" (click)="removeFile()">Back</button>
+              <button class="btn btn-success px-4" (click)="submitAnswers()" [disabled]="submitting">
+                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                <i *ngIf="!submitting" class="fa-solid fa-cloud-arrow-up me-2"></i> Submit Answers
+              </button>
+            </div>
+          </div>
+
+        </ng-container>
+        <!-- ── END DOCX MODE ── -->
+
+        <!-- ── EXCEL MODE ── -->
+        <ng-container *ngIf="mode === 'excel'">
+
+          <div *ngIf="parsedAnswers.length === 0" class="mb-4">
+            <div class="upload-area p-5 border rounded-3 text-center position-relative" [class.bg-light]="!excelFile">
+              <input type="file" accept=".xlsx,.xls" class="position-absolute w-100 h-100 top-0 start-0 opacity-0"
+                style="cursor:pointer" (change)="onExcelSelected($event)">
+
+              <div *ngIf="!excelFile">
+                <i class="fas fa-file-excel text-success mb-3" style="font-size:3rem;"></i>
+                <h5 class="fw-bold">Click or drag Excel file here</h5>
+                <p class="text-muted small mb-3">
+                  Columns required: <code>Question No</code>, <code>Answer</code>, <code>Solution</code>
+                </p>
+                <button class="btn btn-sm btn-outline-success z-3 position-relative"
+                  (click)="downloadExcelSample(); $event.stopPropagation()">
+                  <i class="fas fa-download me-1"></i> Download Sample Excel
+                </button>
+              </div>
+
+              <div *ngIf="excelFile">
+                <i class="fas fa-file-excel text-success mb-3" style="font-size:3rem;"></i>
+                <h5 class="fw-bold text-success">{{ excelFile.name }}</h5>
+                <p class="text-muted small mb-3">{{ (excelFile.size / 1024).toFixed(2) }} KB</p>
+                <button class="btn btn-sm btn-outline-danger z-3 position-relative"
+                  (click)="removeExcelFile(); $event.stopPropagation()">Remove File</button>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+              <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="goBack()">Cancel</button>
+              <button class="btn btn-create fs-16 fw-medium"
+                [disabled]="!excelFile || excelParsing || fetchingQuestions" (click)="parseExcel()">
+                <span *ngIf="excelParsing || fetchingQuestions" class="spinner-border spinner-border-sm me-2"></span>
+                {{ fetchingQuestions ? 'Loading Exam Data...' : (excelParsing ? 'Parsing...' : 'Parse File') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Verification table (shared) -->
+          <div *ngIf="parsedAnswers.length > 0">
+            <div class="alert alert-info border-0 rounded-3">
+              <i class="fas fa-info-circle me-2"></i>
+              Parsed <strong>{{ parsedAnswers.length }}</strong> answers. Please review before submitting.
+            </div>
+            <div class="table-responsive border rounded-3 mb-4" style="max-height:500px;overflow-y:auto;">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light sticky-top">
+                  <tr>
+                    <th>Question #</th>
+                    <th>Status</th>
+                    <th>Parsed Answer</th>
+                    <th>Solution Preview</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of parsedAnswers" [class.table-danger]="!!item.error">
+                    <td class="fw-bold">{{ item.questionId }}</td>
+                    <td>
+                      <span class="badge" [class.bg-success]="!item.error" [class.bg-danger]="item.error">
+                        {{ item.error ? 'Error' : 'Mapped' }}
+                      </span>
+                      <div class="text-danger fs-12 mt-1" *ngIf="item.error">{{ item.error }}</div>
+                    </td>
+                    <td class="fw-bold text-primary">{{ item.ansStr || '-' }}</td>
+                    <td>
+                      <div style="max-height:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                        [innerHTML]="item.solutionHtml || '-'"></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+              <button class="btn btn-outline-secondary px-4 me-2" (click)="removeExcelFile()">Back</button>
+              <button class="btn btn-success px-4" (click)="submitAnswers()" [disabled]="submitting">
+                <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                <i *ngIf="!submitting" class="fa-solid fa-cloud-arrow-up me-2"></i> Submit Answers
+              </button>
+            </div>
+          </div>
+
+        </ng-container>
+        <!-- ── END EXCEL MODE ── -->
+
+        <!-- ── MANUAL ENTRY MODE ── -->
+        <ng-container *ngIf="mode === 'manual'">
+
+          <div *ngIf="fetchingQuestions" class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 text-muted">Loading questions...</p>
+          </div>
+
+          <div *ngIf="!fetchingQuestions && !existingQuestions.length" class="alert alert-warning">
+            No questions found for this exam.
+          </div>
+
+          <div *ngIf="!fetchingQuestions && existingQuestions.length">
+            <div class="alert alert-info border-0 rounded-3 mb-4">
+              <i class="fas fa-info-circle me-2"></i>
+              Enter answers for the questions you want to update. Only modified questions will be saved.
+            </div>
+
+            <div *ngFor="let entry of manualEntries; let i = index" class="card mb-3 border shadow-none"
+              [class.border-primary]="entry.dirty">
+              <div class="card-body">
+
+                <!-- Question header -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <span class="badge bg-secondary">Q{{ i + 1 }}</span>
+                  <span class="badge bg-info text-dark">{{ formatType(entry.question.questionType) }}</span>
+                  <span *ngIf="entry.dirty" class="badge bg-primary">Modified</span>
+                </div>
+
+                <!-- Question text -->
+                <div class="mb-3 fw-medium"
+                  [innerHTML]="entry.question.questionHtml || entry.question.questionText || ''"></div>
+
+                <!-- MCQ Single -->
+                <div
+                  *ngIf="entry.question.questionType === 'mcq_single' || entry.question.questionType === 'mcq-single'">
+                  <label class="form-label fw-bold text-primary small">Select Correct Option:</label>
+                  <div *ngFor="let opt of entry.options; let j = index"
+                    class="d-flex align-items-center p-2 mb-2 border rounded" [class.border-success]="opt.isCorrect"
+                    [class.bg-light]="!opt.isCorrect" style="cursor:pointer" (click)="toggleMcqOption(entry, j)">
+                    <input type="radio" class="form-check-input me-2" [checked]="opt.isCorrect" readonly>
+                    <span class="badge me-2" [class.bg-success]="opt.isCorrect" [class.bg-light]="!opt.isCorrect"
+                      [class.text-dark]="!opt.isCorrect">{{ opt.key }}</span>
+                    <span [innerHTML]="opt.textHtml || opt.text || opt.key"></span>
+                  </div>
+                </div>
+
+                <!-- MCQ Multi -->
+                <div *ngIf="entry.question.questionType === 'mcq_multi' || entry.question.questionType === 'mcq-multi'">
+                  <label class="form-label fw-bold text-primary small">Select Correct Options (multiple):</label>
+                  <div *ngFor="let opt of entry.options; let j = index"
+                    class="d-flex align-items-center p-2 mb-2 border rounded" [class.border-success]="opt.isCorrect"
+                    [class.bg-light]="!opt.isCorrect" style="cursor:pointer" (click)="toggleMcqOption(entry, j)">
+                    <input type="checkbox" class="form-check-input me-2" [checked]="opt.isCorrect" readonly>
+                    <span class="badge me-2" [class.bg-success]="opt.isCorrect" [class.bg-light]="!opt.isCorrect"
+                      [class.text-dark]="!opt.isCorrect">{{ opt.key }}</span>
+                    <span [innerHTML]="opt.textHtml || opt.text || opt.key"></span>
+                  </div>
+                </div>
+
+                <!-- True / False -->
+                <div *ngIf="entry.question.questionType === 'true_false'">
+                  <label class="form-label fw-bold text-primary small">Select Answer:</label>
+                  <div class="d-flex gap-3 mt-1">
+                    <div *ngFor="let val of ['true', 'false']" class="d-flex align-items-center p-2 px-4 border rounded"
+                      [class.border-success]="entry.correctAnswer === val"
+                      [class.bg-success]="entry.correctAnswer === val" [class.bg-light]="entry.correctAnswer !== val"
+                      style="cursor:pointer" (click)="setTfAnswer(entry, val)">
+                      <input type="radio" class="form-check-input me-2" [checked]="entry.correctAnswer === val"
+                        readonly>
+                      <span class="fw-medium" [class.text-white]="entry.correctAnswer === val">
+                        {{ val === 'true' ? 'True' : 'False' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Integer / Numeric -->
+                <div *ngIf="entry.question.questionType === 'integer' || entry.question.questionType === 'numeric'">
+                  <label class="form-label fw-bold text-primary small">Enter Answer:</label>
+                  <input type="number" class="form-control form-control-sm w-25" [(ngModel)]="entry.correctAnswer"
+                    (ngModelChange)="onAnswerInput(entry)" placeholder="Enter numeric value">
+                </div>
+
+                <!-- Matrix -->
+                <div *ngIf="entry.question.questionType === 'matrix'">
+                  <label class="form-label fw-bold text-primary small">
+                    Correct Matches:
+                    <span class="text-muted fw-normal ms-1">(format: A:PQ;B:R)</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm w-50" [(ngModel)]="entry.correctAnswer"
+                    (ngModelChange)="onAnswerInput(entry)" placeholder="e.g. A:PQ;B:R;C:S">
+                </div>
+
+                <!-- Subjective / Others -->
+                <div
+                  *ngIf="entry.question.questionType === 'subjective' || entry.question.questionType === 'text-based'">
+                  <label class="form-label fw-bold text-primary small">Correct Answer:</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="entry.correctAnswer"
+                    (ngModelChange)="onAnswerInput(entry)" placeholder="Enter answer">
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <span class="text-muted small">
+                {{ manualEntries.length }} questions &nbsp;|&nbsp;
+                <strong class="text-primary">{{ dirtyCount }}</strong> modified
+              </span>
+              <div>
+                <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="goBack()">Cancel</button>
+                <button class="btn btn-create fs-16 fw-medium" (click)="submitManual()" [disabled]="manualSubmitting">
+                  <span *ngIf="manualSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                  <i *ngIf="!manualSubmitting" class="fa-solid fa-cloud-arrow-up me-2"></i>
+                  Save Answers
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </ng-container>
+        <!-- ── END MANUAL ENTRY MODE ── -->
+
+      </div>
+    </div>
+  </div>
+</div>

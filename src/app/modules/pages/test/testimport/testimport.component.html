@@ -1,0 +1,104 @@
+<div class="card shadow-sm p-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="mb-1">Import Tests (Excel)</h5>
+            <div class="text-muted small">
+                Upload Excel → system maps Subject/Topic/SubTopic/Category/SubCategory → IDs → imports to backend.
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+                    <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
+
+            <select class="form-select form-select-sm" style="width: 140px" [(ngModel)]="mode">
+                <option value="insert">Insert</option>
+                <option value="upsert">Upsert</option>
+            </select>
+
+            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="downloadSample()">
+                Sample Format
+            </button>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+            <label class="form-label">Excel File</label>
+            <input type="file" class="form-control" accept=".xlsx,.xls" (change)="onFileChange($event)" />
+            <div class="text-muted small mt-1">
+                Headers must be: classNo, subject, topic, subTopic, examCategory, examSubCategory, testNo, testCode,
+                numberOfQuestions, status
+            </div>
+        </div>
+
+        <div class="col-md-6 text-end">
+            <button class="btn btn-primary" type="button" [disabled]="loading || !excelRows.length"
+                (click)="importNow()">
+                {{ loading ? 'Importing...' : ('Import ' + excelRows.length + ' Rows') }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm p-4 mt-3" *ngIf="excelRows.length">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="mb-0">Preview</h6>
+        <div class="text-muted small">
+            Valid: {{ validCount }} • Errors: {{ rowErrors.length }}
+        </div>
+    </div>
+
+    <div class="table-responsive mt-3">
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>classNo</th>
+                    <th>subject</th>
+                    <th>topic</th>
+                    <th>subTopic</th>
+                    <th>category</th>
+                    <th>subCategory</th>
+                    <th>testNo</th>
+                    <th>testCode</th>
+                    <th>qns</th>
+                    <th>Status</th>
+                    <th style="min-width: 220px">Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let r of excelRows; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ r.classNo }}</td>
+                    <td>{{ r.subject }}</td>
+                    <td>{{ r.topic }}</td>
+                    <td>{{ r.subTopic }}</td>
+                    <td>{{ r.examCategory }}</td>
+                    <td>{{ r.examSubCategory }}</td>
+                    <td>{{ r.testNo }}</td>
+                    <td>{{ r.testCode }}</td>
+                    <td>{{ r.numberOfQuestions }}</td>
+                    <td>{{ r.status }}</td>
+                    <td>
+                        <span class="text-danger small" *ngIf="r.__error">{{ r.__error }}</span>
+                        <span class="text-success small" *ngIf="!r.__error">OK</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="alert alert-warning mt-3" *ngIf="rowErrors.length">
+        <div class="fw-semibold mb-1">Some rows have issues:</div>
+        <ul class="mb-0">
+            <li *ngFor="let e of rowErrors.slice(0, 10)">
+                Row {{ e.row }}: {{ e.message }}
+            </li>
+        </ul>
+        <div class="text-muted small mt-2" *ngIf="rowErrors.length > 10">
+            Showing first 10 errors only.
+        </div>
+    </div>
+</div>

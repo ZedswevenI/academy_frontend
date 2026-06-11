@@ -1,0 +1,12 @@
+/* Add these to school-attendance.component.scss */
+
+.date-card--holiday {
+  background: #fffbeb;
+  border-color: #fde68a !important;
+  color: #92400e;
+}
+
+.date-card--holiday:hover {
+  background: #fef3c7;
+  border-color: #f59e0b !important;
+}

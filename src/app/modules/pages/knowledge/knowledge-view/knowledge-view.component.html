@@ -1,0 +1,192 @@
+<div class="ms-3 me-3 pt-1 pb-1" *ngIf="material">
+  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+    <h1 class="fw-bold mb-4" style="font-size: 30px;">
+      <i class="fa-solid fa-book-open me-2"></i>View Library
+    </h1>
+
+    <div class="row g-3">
+
+      <!-- Title -->
+      <div class="col-lg-6 mb-3">
+        <label class="fw-semibold">Title :</label>
+        <div><strong>{{ material.title }}</strong></div>
+      </div>
+
+      <!-- Available From -->
+      <div class="col-lg-6 mb-3">
+        <label class="fw-semibold">Available From :</label>
+        <div><strong>{{ formatDate(material.availableFrom) }}</strong></div>
+      </div>
+
+      <!-- Available Until -->
+      <div class="col-lg-6 mb-3">
+        <label class="fw-semibold">Available Until :</label>
+        <div><strong>{{ formatDate(material.availableUntil) }}</strong></div>
+      </div>
+
+      <!-- Class -->
+      <div class="col-lg-6 mb-3">
+        <label class="fw-semibold">Class :</label>
+        <div><strong>{{ material.classNo }}</strong></div>
+      </div>
+
+      <!-- Subject -->
+      <div class="col-lg-6 mb-3">
+        <label class="fw-semibold">Subject :</label>
+        <div><strong>{{ material.subjectId?.subjectName }}</strong></div>
+      </div>
+
+      <!-- Topic -->
+      <div class="col-lg-6 mb-3">
+        <label class="fw-semibold">Topic :</label>
+        <div><strong>{{ material.topicId?.topicName || material.topicId }}</strong></div>
+      </div>
+
+      <!-- Batches -->
+      <div class="col-lg-12 mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="fw-semibold mb-0">Batches :</label>
+          <!-- <button class="btn btn-create fs-16 fw-medium"
+              (click)="showAddBatch = !showAddBatch">
+            <i class="fa-solid me-1" [class.fa-plus]="!showAddBatch" [class.fa-times]="showAddBatch"></i>
+            {{ showAddBatch ? 'Cancel' : 'Add Batch' }}
+          </button> -->
+          <button [ngClass]="showAddBatch ? 'btn btn-close-custom' : 'btn btn-create'" class="fs-16 fw-medium"
+            (click)="showAddBatch = !showAddBatch">
+            <i class="fa-solid me-1" [class.fa-plus]="!showAddBatch" [class.fa-times]="showAddBatch"></i>
+
+            {{ showAddBatch ? 'Cancel' : 'Add Batch' }}
+          </button>
+        </div>
+        <div class="text-muted small mb-2"><i class="fa-solid fa-hand-pointer me-1"></i>Click a batch to view assigned
+          students</div>
+        <div class="d-flex flex-wrap gap-2" *ngIf="material.batchIds?.length">
+          <button *ngFor="let batch of material.batchIds" type="button"
+            class="btn btn-sm px-3 py-2 d-flex align-items-center gap-1"
+            [class.btn-edit]="selectedBatchCode === batch" [class.btn-create]="selectedBatchCode !== batch"
+            (click)="onBatchClick(batch)">
+            <i class="fa-solid fa-users-rectangle"></i>
+            {{ batch }}
+            <i class="fa-solid fa-chevron-right ms-1" style="font-size: 10px;" *ngIf="selectedBatchCode !== batch"></i>
+            <i class="fa-solid fa-chevron-down ms-1" style="font-size: 10px;" *ngIf="selectedBatchCode === batch"></i>
+          </button>
+        </div>
+        <div *ngIf="!material.batchIds?.length" class="text-muted">No batches assigned</div>
+
+        <!-- Students for selected batch -->
+        <div *ngIf="selectedBatchCode" class="border rounded-3 p-3 mt-3 bg-light">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="fw-semibold mb-0">
+              <i class="fa-solid fa-user-group me-1 text-primary"></i>
+              Students in {{ selectedBatchCode }}
+            </label>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0"
+              (click)="selectedBatchCode = ''; batchStudents = []">
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+          <div *ngIf="batchStudentsLoading" class="text-center py-3">
+            <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+            <span class="text-muted small">Loading students...</span>
+          </div>
+          <div *ngIf="!batchStudentsLoading && batchStudents.length > 0">
+            <div class="d-flex flex-wrap gap-2">
+              <span *ngFor="let s of batchStudents" class="badge rounded-pill px-3 py-2"
+                [class.bg-success-subtle]="isAssignedStudent(s.studentId)"
+                [class.text-success]="isAssignedStudent(s.studentId)" [class.bg-light]="!isAssignedStudent(s.studentId)"
+                [class.text-muted]="!isAssignedStudent(s.studentId)" [class.border]="true">
+                <i class="fa-solid fa-user me-1"></i>{{ s.name }} ({{ s.admissionNo }})
+                <span *ngIf="isAssignedStudent(s.studentId)" class="ms-1"><i class="fa-solid fa-check"></i></span>
+              </span>
+            </div>
+          </div>
+          <div *ngIf="!batchStudentsLoading && batchStudents.length === 0" class="text-muted small">
+            <i class="fa-solid fa-user-slash me-1"></i>No students found in this batch
+          </div>
+        </div>
+
+        <!-- Add Batch Section -->
+        <div *ngIf="showAddBatch" class="border rounded-3 p-3 mt-3 bg-light">
+          <label class="form-label fw-medium mb-2">Select batch to add:</label>
+          <div class="d-flex gap-2 align-items-end">
+            <select class="form-select" [(ngModel)]="newBatchCode" (ngModelChange)="onNewBatchChange($event)"
+              style="max-width: 300px;">
+              <option value="">-- Select Batch --</option>
+              <ng-container *ngFor="let b of availableBatches">
+                <option [value]="b.batchCode" *ngIf="!isBatchAssigned(b.batchCode)">
+                  {{ b.batchName }} ({{ b.batchCode }})
+                </option>
+              </ng-container>
+            </select>
+          </div>
+
+          <!-- Student list for selected batch -->
+          <div *ngIf="newBatchCode" class="mt-3">
+            <div *ngIf="studentsLoading" class="text-center py-3">
+              <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+              <span class="text-muted small">Loading students...</span>
+            </div>
+
+            <div *ngIf="!studentsLoading && students.length > 0">
+              <label class="form-label fw-medium mb-2">
+                Students (Optional)
+                <span class="badge bg-primary ms-2">{{ selectedStudentIds.length }} selected</span>
+              </label>
+              <div class="border rounded-3 p-2 bg-white" style="max-height: 220px; overflow-y: auto;">
+                <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                  <input type="checkbox" class="form-check-input me-2" [checked]="selectAllStudents"
+                    (change)="toggleAllStudents($any($event.target).checked)" />
+                  <span class="fw-semibold small">Select All</span>
+                  <span class="text-muted small ms-auto">{{ students.length }} total</span>
+                </div>
+                <div *ngFor="let s of students" class="d-flex align-items-center px-2 py-1 rounded"
+                  style="cursor: pointer;">
+                  <input type="checkbox" class="form-check-input me-2" [checked]="isStudentSelected(s.value)"
+                    (change)="toggleStudent(s.value, $any($event.target).checked)" />
+                  <span class="small">{{ s.label }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="!studentsLoading && students.length === 0 && newBatchCode" class="text-muted small mt-2">
+              <i class="fa-solid fa-user-slash me-1"></i>No students found in this batch
+            </div>
+          </div>
+
+          <div class="mt-3 text-end">
+            <button class="btn btn-import fs-16 fw-medium" [disabled]="!newBatchCode || addBatchLoading"
+              (click)="addBatch()">
+              <span *ngIf="addBatchLoading" class="spinner-border spinner-border-sm me-1"></span>
+              {{ addBatchLoading ? 'Adding...' : 'Add' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="col-lg-12 mb-3">
+        <label class="fw-semibold">Description :</label>
+        <div><strong>{{ material.description || '-' }}</strong></div>
+      </div>
+
+      <!-- Attachment -->
+      <div class="col-lg-12 mb-3" *ngIf="getAttachmentUrl()">
+        <label class="fw-semibold">Document :</label>
+        <div>
+          <a (click)="downloadFile(getAttachmentUrl())" target="_blank" class="text-primary" style="cursor: pointer;">
+            View / Download File
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="text-end mt-4">
+      <button class="btn btn-back fs-16 fw-medium" routerLink="/app/knowledge">
+        Back
+      </button>
+    </div>
+
+  </div>
+</div>

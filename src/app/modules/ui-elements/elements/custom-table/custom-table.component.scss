@@ -1,0 +1,302 @@
+.table thead th {
+  background-color: #f9fafb;
+  color: #000;
+  font-size: 14px;
+  border-bottom: 2px solid #b9babb;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+.table tbody td {
+  font-size: 14px;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+/* Alternating row colors */
+.table tbody tr:nth-child(odd) > td {
+  background-color: #ffffff;
+}
+.table tbody tr:nth-child(even) > td {
+  background-color: #f8fafc;
+}
+
+
+
+
+th .fa {
+  vertical-align: middle;
+}
+
+.table-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.icon-12 {
+  font-size: 12px;
+  line-height: 1;
+}
+.icon-14 {
+  font-size: 14px;
+  line-height: 1;
+}
+.icon-16 {
+  font-size: 16px;
+  line-height: 1;
+}
+.icon-18 {
+  font-size: 18px;
+  line-height: 1;
+}
+.icon-20 {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.icon-24 {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.filternew {
+  background-color: var(--search-bg) !important;
+  // border: none !important;
+  border-radius: 42px !important;
+  color: var(--filter-text) !important;
+}
+
+/* Hover for rows */
+.table tbody tr:hover {
+  background-color: transparent !important;
+  cursor: pointer;
+}
+
+/* base: keep button flat */
+.table .btn.btn-outline-secondary.border-0.p-1 {
+  // background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+/* smooth transition on icon-like children */
+.table .btn.btn-outline-secondary.border-0.p-1 i,
+.table .btn.btn-outline-secondary.border-0.p-1 i::before,
+.table .btn.btn-outline-secondary.border-0.p-1 svg {
+  transition: color 0.15s ease, fill 0.15s ease, transform 0.15s ease;
+}
+
+/* default icon color comes from inline style or inherit; ensure we can override it */
+.table .btn.btn-outline-secondary.border-0.p-1 i,
+.table .btn.btn-outline-secondary.border-0.p-1 i::before,
+.table .btn.btn-outline-secondary.border-0.p-1 svg {
+  color: inherit !important;
+  fill: currentColor !important; /* for SVG-based icons */
+}
+
+/* HOVER: change only the icon color (and a tiny scale) */
+.table .btn.btn-outline-secondary.border-0.p-1:hover i,
+.table .btn.btn-outline-secondary.border-0.p-1:hover i::before,
+.table .btn.btn-outline-secondary.border-0.p-1:hover svg {
+  // color: var(--icon-hover-color) !important;
+  // fill: var(--icon-hover-color) !important;
+  color: var(--hover-color) !important;
+  fill: var(--hover-color) !important;
+  transform: scale(1.07);
+}
+
+/* keep hover/active/focus backgrounds truly transparent */
+.table .btn.btn-outline-secondary.border-0.p-1:hover,
+.table .btn.btn-outline-secondary.border-0.p-1:active,
+.table .btn.btn-outline-secondary.border-0.p-1:focus {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* nice keyboard focus ring without bg */
+.table .btn.btn-outline-secondary.border-0.p-1:focus-visible {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+/* 1) Neutralize hover at the table scope (Bootstrap 5 variables) */
+.table.table-hover {
+  --bs-table-hover-bg: transparent !important;
+  --bs-table-hover-color: inherit !important;
+}
+.table.table-hover.table-striped {
+  --bs-table-striped-bg: transparent !important;
+}
+
+/* 2) Kill any direct backgrounds applied to the row */
+.table.table-hover > tbody > tr:hover {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 3) Kill backgrounds applied to cells (Bootstrap uses the cells) */
+.table.table-hover > tbody > tr:hover > td,
+.table.table-hover > tbody > tr:hover > th {
+  --bs-table-accent-bg: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: inherit !important;
+}
+
+/* 4) Belt-and-suspenders: if a theme paints via ::before */
+.table.table-hover > tbody > tr:hover > td::before,
+.table.table-hover > tbody > tr:hover > th::before {
+  content: none !important;
+}
+
+/* ===== WRAP MODE ===== */
+.no-scroll {
+  overflow-x: visible !important;
+}
+
+.table-wrap {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.table-wrap th,
+.table-wrap td.wrap-cell {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.table-wrap th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clamp-cell {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  cursor: default;
+}
+
+.clamp-cell.badge-cell {
+  display: inline-block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.truncate-cell {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* Floating cell tooltip */
+.cell-float-tooltip {
+  position: fixed;
+  z-index: 1090;
+  background: #1f2937;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 300px;
+  min-width: 100px;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1f2937;
+  }
+}
+
+.truncate-cell {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle; /* keeps icon+text buttons tidy elsewhere */
+}
+
+
+.highlight-col {
+  font-weight: 600;
+  color: var(--highlight-color) !important;
+}
+.highlight-col,
+.highlight-col * {
+  text-decoration: underline !important;
+}
+
+.pagination-active {
+  background-color: #ceeefd !important;
+  border: none;
+}
+
+.action-btn-group {
+  position: relative;
+}
+
+.action-icon-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  font-size: 13px;
+}
+
+/* Compact simple/change action buttons */
+.table td .btn-sm.action-simple-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+}
+
+.action-icon-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.dropdown-menu {
+  min-width: 220px;
+  border-radius: 10px;
+}
+
+.dropdown-item {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}

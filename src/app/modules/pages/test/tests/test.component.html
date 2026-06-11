@@ -1,0 +1,124 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4 py-4">
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-file-lines me-2"></i>Tests
+                    </h1>
+                    <div class="d-flex">
+                        <button class="btn btn-back fs-16 fw-medium me-2" type="button"
+                            (click)="toggleFilters()">
+                            <i class="fa-solid fa-filter"></i>
+                            {{ showFilters ? 'Hide Filters' : 'Filters' }}
+                        </button>
+                         <button *ngIf="!authService.assignmentRole()" class="btn btn-import fs-16 fw-medium me-2" type="button"
+                            routerLink="/app/assignment/import">
+                            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
+                            Import Assignments</button>
+                        <button *ngIf="!authService.assignmentRole()" class="btn btn-create fs-16 fw-medium" type="button"
+                            routerLink="/app/assignment/create">
+                            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
+                            Add Assignment</button>
+                    </div>
+                </div>
+                <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
+                    <div class="card-header bg-white border-0">
+                        <form [formGroup]="filterForm" class="row g-3 align-items-end">
+
+                            <!-- Class -->
+                            <div class="col-6 col-md-3">
+                                <selectbox label="Class" formControlName="classNo" [control]="filterForm.get('classNo')"
+                                    [options]="classOptions" optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Subject -->
+                            <div class="col-6 col-md-3">
+                                <selectbox label="Subject" formControlName="subjectId"
+                                    [control]="filterForm.get('subjectId')" [options]="subjectOptions"
+                                    optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Topic -->
+                            <div class="col-6 col-md-3">
+                                <selectbox label="Topic" formControlName="topicId" [control]="filterForm.get('topicId')"
+                                    [options]="topicOptions" optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Subtopic -->
+                            <div class="col-6 col-md-3">
+                                <selectbox label="Subtopic" formControlName="subtopicId"
+                                    [control]="filterForm.get('subtopicId')" [options]="subtopicOptions"
+                                    optionLabel="label" optionValue="value">
+                                </selectbox>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="col-12 d-flex justify-content-end gap-2">
+                                <div class="btn-group">
+                                    <!-- <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-print me-1"></i> Print
+                                    </button> -->
+                                    <button type="button" class="btn btn-back fs-16 fw-medium me-2 btn-sm dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-print me-1"></i> Print
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" (click)="printAllFilteredTests(false)">
+                                                Without Answer <small class="text-muted">(for students)</small>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" (click)="printAllFilteredTests(true)">
+                                                With Answer <small class="text-muted">(answer key)</small>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="clearFilters()">
+                                    Clear
+                                </button>
+                                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="refresh()">
+                                    Search
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+            [success]="'Active'" [primary]="'Inactive'" [totalRecords]="totalRecords" [loading]="loading"
+            (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search Test, Code, Class...'" (rowClick)="onRowSelected($event)">
+        </custom-table>
+
+    </div>
+</div>
+<!-- Print Modal -->
+<div *ngIf="showPrintModal" class="print-modal-overlay">
+  <div class="print-modal-box">
+    <h6 class="mb-1">Print Test</h6>
+    <p class="text-muted mb-3" style="font-size:12px">
+      Test No: <strong>{{ selectedRow?.testNumber }}</strong> &nbsp;|&nbsp;
+      {{ selectedRow?.subject }} &nbsp;|&nbsp;
+      {{ selectedRow?.topicName }}
+    </p>
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-outline-dark btn-sm" (click)="printQuestions(false)">
+        📄 Without Answer &nbsp;<small class="text-muted">(Student Copy)</small>
+      </button>
+      <button class="btn btn-outline-dark btn-sm" (click)="printQuestions(true)">
+        📋 With Answer &nbsp;<small class="text-muted">(Answer Key)</small>
+      </button>
+    </div>
+    <button class="btn btn-link btn-sm text-danger mt-2 p-0" (click)="closePrintModal()">
+      Cancel
+    </button>
+  </div>
+</div>

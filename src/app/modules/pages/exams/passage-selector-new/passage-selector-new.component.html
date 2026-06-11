@@ -1,0 +1,122 @@
+<div class="modal-backdrop fade show"></div>
+
+<div class="modal d-block" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-book me-2"></i>Select Passage
+                </h5>
+                <button type="button" class="btn-close" (click)="close()"></button>
+            </div>
+
+            <!-- FILTER BAR -->
+            <div class="border-bottom px-3 py-2 bg-light">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold mb-1">Class</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="filterClassNo" (change)="applyFilter()">
+                            <option [ngValue]="null">All Classes</option>
+                            <option *ngFor="let c of classOptions" [ngValue]="c.value">{{ c.label }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold mb-1">Subject</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="filterSubjectId"
+                            (change)="applyFilter()">
+                            <option [ngValue]="null">All Subjects</option>
+                            <option *ngFor="let s of subjectOptions" [ngValue]="s.value">{{ s.label }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" (click)="clearFilter()">
+                            <i class="fas fa-times me-1"></i> Clear
+                        </button>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <small class="text-muted">{{ filteredPassages.length }} passage(s) found</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body p-0" style="max-height:65vh; overflow:hidden;">
+                <div class="row g-0 h-100">
+
+                    <!-- LEFT: PASSAGE LIST -->
+                    <div class="col-md-4 border-end" style="max-height:65vh; overflow-y:auto;">
+
+                        <!-- Empty state -->
+                        <div *ngIf="filteredPassages.length === 0" class="text-center text-muted py-5">
+                            <i class="fas fa-book-open fa-2x mb-2 d-block opacity-50"></i>
+                            <p class="small">No passages found for selected filters</p>
+                        </div>
+
+                        <div class="list-group list-group-flush">
+                            <button *ngFor="let p of filteredPassages" type="button"
+                                class="list-group-item list-group-item-action py-3" [class.active]="p === activePassage"
+                                (click)="selectPassage(p)">
+                                <div class="fw-semibold">{{ p.title }}</div>
+                                <div class="d-flex gap-2 mt-1 flex-wrap">
+                                    <span class="badge bg-light text-dark border small" *ngIf="p.classNo">
+                                        {{ p.classNo === 13 ? '12th Pass' : 'Class ' + p.classNo }}
+                                    </span>
+                                    <span class="badge bg-light text-dark border small"
+                                        *ngIf="p.subjectId?.subjectName">
+                                        {{ p.subjectId?.subjectName }}
+                                    </span>
+                                    <span class="badge bg-secondary small">{{ p.language }}</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: PASSAGE PREVIEW -->
+                    <div class="col-md-8 d-flex flex-column" style="max-height:65vh;">
+                        <div class="p-3 border-bottom bg-white d-flex align-items-center gap-2">
+                            <i class="fas fa-eye text-muted"></i>
+                            <span class="fw-bold small text-muted">Preview</span>
+                            <span *ngIf="activePassage" class="ms-2 badge bg-primary">{{ activePassage.title }}</span>
+                        </div>
+
+                        <div class="flex-grow-1 p-3 bg-light overflow-auto"
+                            style="max-height:calc(65vh - 48px); overflow-y:auto;">
+
+                            <div *ngIf="previewLoading" class="text-center text-muted py-5">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i>
+                                Loading preview...
+                            </div>
+
+                            <div *ngIf="!previewLoading && !activePassage" class="text-center text-muted py-5">
+                                <i class="fas fa-hand-pointer fa-2x mb-2 d-block opacity-50"></i>
+                                Select a passage from the list to preview
+                            </div>
+
+                            <div *ngIf="!previewLoading && activePassage" [innerHTML]="previewHtml" style="word-wrap:break-word;
+                       overflow-wrap:break-word;
+                       white-space:normal;
+                       font-size:15px;
+                       line-height:1.7;">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer">
+                <small class="text-muted me-auto" *ngIf="activePassage">
+                    Selected: <strong>{{ activePassage.title }}</strong>
+                </small>
+                <button class="btn btn-outline-secondary" (click)="close()">Cancel</button>
+                <button class="btn btn-primary" [disabled]="!activePassage" (click)="confirm()">
+                    <i class="fas fa-check me-1"></i> Use this Passage
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

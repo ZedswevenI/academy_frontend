@@ -1,0 +1,31 @@
+<div class="chat-container">
+  <!-- Sidebar: Contacts -->
+  <div class="chat-sidebar">
+    <div class="chat-header">Chats</div>
+    <div class="chat-contact" *ngFor="let contact of contacts" [class.active]="contact.id === activeContact?.id" (click)="selectContact(contact)">
+      <!-- <img [src]="contact.avatar" alt="avatar" class="avatar"> -->
+       <div class="avatar group">{{ contact.name[0] }}</div>
+      <div class="contact-info">
+        <div class="contact-name">{{contact.name}}</div>
+        <div class="last-message">{{contact.lastMessage}}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Window -->
+  <div class="chat-window">
+    <div class="chat-header">{{activeContact?.name || 'Select a chat'}}</div>
+    
+    <div class="chat-messages">
+      <div *ngFor="let msg of messages" [ngClass]="{'message-sent': msg.fromMe, 'message-received': !msg.fromMe}">
+        <div class="message-text">{{msg.text}}</div>
+        <div class="message-time">{{msg.time}}</div>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input type="text" [(ngModel)]="newMessage" placeholder="Type a message" (keydown.enter)="sendMessage()">
+      <button (click)="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>

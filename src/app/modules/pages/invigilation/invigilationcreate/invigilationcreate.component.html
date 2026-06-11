@@ -1,0 +1,253 @@
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="fw-bold mb-0">
+                <i class="fa-solid fa-user-shield me-2"></i>
+                {{ isEdit ? 'Edit' : 'Add' }} Invigilation
+            </h5>
+            <small class="text-muted">
+                {{ isEdit ? 'Update details or re-upload rooms' : 'Enter exam details and upload rooms Excel' }}
+            </small>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" (click)="cancel()">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back
+        </button>
+    </div>
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2 mb-0">Loading...</p>
+    </div>
+    <ng-container *ngIf="!loading">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-semibold">
+                <i class="fa-solid fa-circle-info me-2 text-primary"></i>Exam Details
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Exam Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm"
+                            [class.is-invalid]="touched && !examName.trim()" placeholder="e.g. XII JEE ADVANCE"
+                            [(ngModel)]="examName">
+                        <div class="invalid-feedback">Exam name is required</div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium">Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control form-control-sm"
+                            [class.is-invalid]="touched && !examDate" [(ngModel)]="examDate">
+                        <div class="invalid-feedback">Date is required</div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium">Session <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" [class.is-invalid]="touched && !session"
+                            [(ngModel)]="session">
+                            <option value="">Select</option>
+                            <option *ngFor="let s of sessionOptions" [value]="s.value">{{ s.label }}</option>
+                        </select>
+                        <div class="invalid-feedback">Session is required</div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium">Exam Start</label>
+                        <input type="time" class="form-control form-control-sm" [(ngModel)]="examStartTime">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium">Exam End</label>
+                        <input type="time" class="form-control form-control-sm" [(ngModel)]="examEndTime">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-semibold">
+                <i class="fa-solid fa-clock me-2 text-warning"></i>Slot Times
+                <small class="text-muted fw-normal ms-2">Two invigilator slots per session</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Slot 1 Start</label>
+                        <input type="time" class="form-control form-control-sm" [(ngModel)]="slot1StartTime">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Slot 1 End</label>
+                        <input type="time" class="form-control form-control-sm" [(ngModel)]="slot1EndTime">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Slot 2 Start</label>
+                        <input type="time" class="form-control form-control-sm" [(ngModel)]="slot2StartTime">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Slot 2 End</label>
+                        <input type="time" class="form-control form-control-sm" [(ngModel)]="slot2EndTime">
+                    </div>
+                </div>
+                <div class="mt-3 d-flex gap-2 flex-wrap" *ngIf="slot1StartTime || slot2StartTime">
+                    <span class="badge bg-light text-dark border px-3 py-2" *ngIf="slot1StartTime">
+                        <i class="fa-solid fa-person-chalkboard me-1 text-primary"></i>
+                        Slot 1: {{ slot1StartTime }}{{ slot1EndTime ? ' – ' + slot1EndTime : '' }}
+                    </span>
+                    <span class="badge bg-light text-dark border px-3 py-2" *ngIf="slot2StartTime">
+                        <i class="fa-solid fa-person-chalkboard me-1 text-success"></i>
+                        Slot 2: {{ slot2StartTime }}{{ slot2EndTime ? ' – ' + slot2EndTime : '' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <!-- ── SECTION 3: ROOM ASSIGNMENT ── -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="fa-solid fa-file-excel me-2 text-success"></i>Room Assignment
+                    <span *ngIf="!isEdit" class="text-danger ms-1">*</span>
+                    <small *ngIf="isEdit" class="text-muted fw-normal ms-2">(upload new file to replace)</small>
+                </span>
+                <button type="button" class="btn btn-sm btn-outline-success" (click)="downloadSample()">
+                    <i class="fa-solid fa-download me-1"></i> Sample Excel
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">
+                        Required columns:
+                        <span class="badge bg-light text-dark border me-1">Room No</span>
+                        <span class="badge bg-light text-dark border me-1">Slot 1 Staff Code</span>
+                        <span class="badge bg-light text-dark border">Slot 2 Staff Code</span>
+                    </small>
+                </div>
+                <!-- Edit toggle -->
+                <div *ngIf="isEdit" class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="replaceRoomsSwitch"
+                            [(ngModel)]="replaceRooms" (ngModelChange)="clearFile()">
+                        <label class="form-check-label" for="replaceRoomsSwitch">
+                            Replace existing rooms with new Excel upload
+                        </label>
+                    </div>
+                </div>
+                <!-- Upload zone -->
+                <ng-container *ngIf="!isEdit || replaceRooms">
+                    <div class="upload-zone"
+                        [class.upload-zone--success]="selectedFile && !parseErrors.length && !parseLoading"
+                        [class.upload-zone--error]="parseErrors.length > 0"
+                        [class.is-invalid-zone]="touched && !isEdit && !selectedFile" (click)="fileInput.click()">
+                        <!-- No file -->
+                        <ng-container *ngIf="!selectedFile && !parseLoading">
+                            <i class="fa-solid fa-cloud-arrow-up text-muted fs-2 mb-2 d-block"></i>
+                            <p class="mb-0 text-muted">Click to upload .xlsx file</p>
+                        </ng-container>
+                        <!-- Parsing -->
+                        <ng-container *ngIf="parseLoading">
+                            <span class="spinner-border text-primary d-block mx-auto mb-2"
+                                style="width:2rem;height:2rem"></span>
+                            <p class="mb-0 text-muted">Parsing...</p>
+                        </ng-container>
+                        <!-- Loaded, no errors -->
+                        <ng-container *ngIf="selectedFile && !parseLoading && !parseErrors.length">
+                            <i class="fa-solid fa-file-excel text-success fs-2 mb-2 d-block"></i>
+                            <p class="mb-1 fw-medium">{{ fileName }}</p>
+                            <span class="badge bg-success">{{ parsedRooms.length }} rooms ready</span>
+                            <button class="btn btn-sm btn-outline-danger ms-2"
+                                (click)="clearFile(); $event.stopPropagation()">
+                                <i class="fa-solid fa-xmark me-1"></i>Remove
+                            </button>
+                        </ng-container>
+                        <!-- Errors -->
+                        <ng-container *ngIf="selectedFile && !parseLoading && parseErrors.length">
+                            <i class="fa-solid fa-triangle-exclamation text-danger fs-2 mb-2 d-block"></i>
+                            <p class="mb-1 fw-medium text-danger">{{ parseErrors.length }} error(s) — fix and re-upload
+                            </p>
+                            <small class="text-muted">{{ fileName }}</small>
+                            <button class="btn btn-sm btn-outline-secondary ms-2"
+                                (click)="clearFile(); $event.stopPropagation()">
+                                <i class="fa-solid fa-rotate-left me-1"></i>Try again
+                            </button>
+                        </ng-container>
+                    </div>
+                    <div class="text-danger small mt-1" *ngIf="touched && !isEdit && !selectedFile && !parseLoading">
+                        Please upload the rooms Excel file
+                    </div>
+                    <input #fileInput type="file" accept=".xlsx,.xls" class="d-none" (change)="onFileChange($event)">
+                    <!-- Validation errors list -->
+                    <div *ngIf="parseErrors.length"
+                        class="mt-3 p-3 rounded border border-danger bg-danger bg-opacity-10">
+                        <p class="fw-semibold text-danger mb-2">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            Fix these errors in the Excel file and re-upload:
+                        </p>
+                        <ul class="mb-0 ps-3">
+                            <li *ngFor="let e of parseErrors" class="small text-danger mb-1">{{ e }}</li>
+                        </ul>
+                    </div>
+                    <!-- Preview table -->
+                    <div *ngIf="parsedRooms.length && !parseErrors.length" class="mt-3">
+                        <p class="fw-medium small text-muted mb-2">Preview ({{ parsedRooms.length }} rooms):</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0" style="font-size:13px">
+                                <thead class="table-success">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Room No</th>
+                                        <th>Slot 1 Code</th>
+                                        <th>Slot 2 Code</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let r of parsedRooms; let i = index">
+                                        <td>{{ i + 1 }}</td>
+                                        <td class="fw-medium">{{ r.roomNo }}</td>
+                                        <td><span *ngIf="r.slot1StaffCode" class="badge bg-light text-dark border">{{
+                                                r.slot1StaffCode }}</span><span *ngIf="!r.slot1StaffCode"
+                                                class="text-muted">–</span></td>
+                                        <td><span *ngIf="r.slot2StaffCode" class="badge bg-light text-dark border">{{
+                                                r.slot2StaffCode }}</span><span *ngIf="!r.slot2StaffCode"
+                                                class="text-muted">–</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </ng-container>
+                <!-- Existing rooms display (edit, not replacing) -->
+                <ng-container *ngIf="isEdit && !replaceRooms && existingRooms.length">
+                    <p class="text-muted small mb-2">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Current rooms ({{ existingRooms.length }}) — will be kept:
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0" style="font-size:13px">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Room No</th>
+                                    <th>Slot 1</th>
+                                    <th>Slot 2</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let r of existingRooms; let i = index">
+                                    <td>{{ i + 1 }}</td>
+                                    <td class="fw-medium">{{ r.roomNo }}</td>
+                                    <td>{{ r.slot1StaffName || r.slot1StaffCode || '–' }}</td>
+                                    <td>{{ r.slot2StaffName || r.slot2StaffCode || '–' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </ng-container>
+            </div>
+        </div>
+        <!-- ── ACTIONS ── -->
+        <div class="d-flex gap-2">
+            <button class="btn btn-create fs-16 fw-medium px-4" [disabled]="saving" (click)="save()">
+                <span *ngIf="!saving">
+                    <i class="fa-solid fa-floppy-disk me-1"></i>{{ isEdit ? 'Update' : 'Save' }}
+                </span>
+                <span *ngIf="saving">
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                    {{ isEdit ? 'Updating...' : 'Saving...' }}
+                </span>
+            </button>
+            <button class="btn btn-outline-secondary" [disabled]="saving" (click)="cancel()">Cancel</button>
+        </div>
+    </ng-container>
+</div>

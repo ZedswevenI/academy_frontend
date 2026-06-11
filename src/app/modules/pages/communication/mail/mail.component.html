@@ -1,0 +1,52 @@
+<div class="email-compose">
+
+  <!-- Header -->
+  <div class="email-header d-flex justify-content-between align-items-center">
+    <span class="header-title">New Message</span>
+  </div>
+
+  <!-- To / Cc / Bcc / Subject -->
+  <div class="email-fields">
+    <div class="field">
+      <label>To</label>
+      <input type="email" placeholder="Add recipients" [(ngModel)]="to">
+      <button class="toggle-cc" (click)="showCc = !showCc">Cc / Bcc</button>
+    </div>
+
+    <div *ngIf="showCc" class="field">
+      <label>Cc</label>
+      <input type="email" placeholder="Add Cc">
+    </div>
+    <div *ngIf="showCc" class="field">
+      <label>Bcc</label>
+      <input type="email" placeholder="Add Bcc">
+    </div>
+
+    <div class="field">
+      <label>Subject</label>
+      <input type="text" placeholder="Subject" [(ngModel)]="subject">
+    </div>
+  </div>
+
+  <!-- Message Body -->
+  <div class="email-body mt-3 border-top p-2 w-100">
+    <form [formGroup]="mailForm" class="w-100">
+     <div class="col-12">
+         <doceditor 
+        label="" 
+        [required]="true"  
+        [control]="mailForm.get('body')"
+        formControlName="body"
+        id="body"
+        class="w-100" [height]="'400px'" [width]="'1600px'">
+      </doceditor>
+     </div>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div class="email-footer d-flex justify-content-end mt-2">
+    <button class="send-btn" (click)="sendEmail()">Send</button>
+  </div>
+
+</div>

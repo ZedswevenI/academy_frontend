@@ -1,0 +1,330 @@
+<div class="qa-container py-4">
+  <!-- Header Section -->
+  <div class="qa-header mb-4">
+    <div class="container-fluid">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h2 class="mb-2 fw-bold text-dark">Arrange Questions</h2>
+          <p class="text-muted mb-0 small">
+            Drag to reorder • {{ rearrangedQuestions.length }} questions
+          </p>
+        </div>
+        <div class="col-md-6 text-end">
+          <button class="btn btn-edit fs-16 fw-medium me-2" (click)="resetOrder()" title="Reset to original order">
+            <i class="bi bi-arrow-counterclockwise btn-icon"></i> Reset
+          </button>
+          <button class="btn btn-create fs-16 fw-medium me-2" (click)="saveNewOrder()" title="Save the new order">
+            <i class="bi bi-check-circle btn-icon"></i> Save Order
+          </button>
+          <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+  </div>
+  <!-- Questions List (Draggable) -->
+  <div *ngIf="!isLoading" class="container-fluid">
+    <div cdkDropList #questionList="cdkDropList" [cdkDropListData]="rearrangedQuestions"
+      (cdkDropListDropped)="drop($event)" class="qa-list">
+
+      <!-- Question Card -->
+      <div *ngFor="let question of rearrangedQuestions; let i = index" cdkDrag class="qa-card card mb-3 shadow-sm">
+
+        <div class="card-body p-3">
+          <div class="d-flex gap-3 align-items-start">
+            <!-- Drag Handle -->
+            <div class="qa-drag-handle flex-shrink-0" cdkDragHandle title="Drag to reorder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="5" r="1"></circle>
+                <circle cx="9" cy="12" r="1"></circle>
+                <circle cx="9" cy="19" r="1"></circle>
+                <circle cx="16" cy="5" r="1"></circle>
+                <circle cx="16" cy="12" r="1"></circle>
+                <circle cx="16" cy="19" r="1"></circle>
+              </svg>
+            </div>
+
+            <!-- Question Number & Type -->
+            <div class="qa-info flex-shrink-0" style="min-width: 120px;">
+              <div class="qa-number">
+                <span class="badge bg-gradient rounded-circle"
+                  style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold;">
+                  {{ getCurrentNumber(question) }}
+                </span>
+              </div>
+              <div class="mt-2">
+                <span class="badge bg-light text-dark border border-1 small">
+                  {{ formatQuestionType(question.questionType) }}
+                </span>
+                <div class="small text-muted mt-1" *ngIf="question.positiveMarks">
+                  <span class="me-2">
+                    <strong>+{{ question.positiveMarks }}</strong>
+                  </span>
+                  <span *ngIf="question.negativeMarks">
+                    <strong>-{{ question.negativeMarks }}</strong>
+                  </span>
+                </div>
+              </div>
+
+              <button class="btn btn-shuffle fs-16 fw-medium"
+                (click)="previewQuestion(question)" type="button">
+
+                <!-- Eye Open -->
+                <svg *ngIf="!question.questionView" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+
+                <!-- Eye Closed -->
+                <svg *ngIf="question.questionView" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C5 20 1 12 1 12a21.86 21.86 0 0 1 5.06-6.94"></path>
+                  <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.86 21.86 0 0 1-4.06 5.94"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+
+                <!-- Text -->
+                <span>
+                  {{ question.questionView ? 'Hide Options' : 'Show Options' }}
+                </span>
+
+              </button>
+            </div>
+
+            <!-- Question Preview -->
+            <div class="qa-preview flex-grow-1 min-w-0">
+              <div class="mb-3 question-html" #questionContent [innerHTML]="question.questionHtml">
+              </div>
+
+              <!-- Options -->
+              <div *ngIf="(question.questionOptions?.length && question.questionView)">
+
+                <div *ngFor="let opt of question.questionOptions; let j = index" class="option-box p-2 mb-2 rounded">
+
+                  <div class="d-flex align-items-start">
+                    <div class="me-2 fw-bold">
+                      {{ j + 1 }}.
+                    </div>
+                    <!-- Option text with LaTeX support and Images -->
+                    <div class="option-content" #optionContent [innerHTML]="opt.textHtml">
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <!-- Matrix Match Display -->
+              <div *ngIf="question.questionView && question.questionType === 'matrix' && question.leftColumn?.length"
+                class="matrix-section mt-3">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="fw-bold mb-2 text-primary">Left Column</div>
+                    <div *ngFor="let l of question.leftColumn"
+                      class="d-flex align-items-start p-2 mb-2 border rounded">
+                      <span class="badge bg-primary me-2">{{ l.key }}</span>
+                      <div class="flex-grow-1" #optionContent [innerHTML]="l.textHtml"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="fw-bold mb-2 text-success">Right Column</div>
+                    <div *ngFor="let r of question.rightColumn"
+                      class="d-flex align-items-start p-2 mb-2 border rounded">
+                      <span class="badge bg-success me-2">{{ r.key }}</span>
+                      <div class="flex-grow-1" #optionContent [innerHTML]="r.textHtml"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <strong class="text-primary">
+                    <i class="fas fa-check-circle me-1"></i> Correct Matches:
+                  </strong>
+                  <div class="d-flex flex-wrap gap-2 mt-2">
+                    <span *ngFor="let m of question.matrixMatches"
+                      class="badge bg-light text-dark border px-3 py-2">
+                      <span class="fw-bold text-primary">{{ m.key }}</span>
+                      <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                      <span *ngIf="m.matches?.length; else noMatch" class="fw-bold text-success">
+                        {{ m.matches.join(', ') }}
+                      </span>
+                      <ng-template #noMatch>
+                        <span class="text-muted fst-italic">—</span>
+                      </ng-template>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Correct Answer Display -->
+              <div *ngIf="question.questionView && question.questionType !== 'matrix'" class="mt-3 border-top pt-3">
+
+                <strong>Correct Answer:</strong>
+
+                <span class="ms-2">
+                  {{ question.correctAnswer }}
+                </span>
+
+              </div>
+
+              <!-- Solution Display (if available) with LaTeX and Images -->
+              <div *ngIf="(question.solutionHtml && question.questionView)"
+                class="mt-3 border-top pt-3 solution-section">
+                <strong>Solution:</strong>
+                <div class="mt-2 solution-content" #solutionContent [innerHTML]="question.solutionHtml">
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="qa-actions flex-shrink-0 d-flex gap-2">
+              <!-- Preview Button -->
+
+
+              <!-- Copy Button -->
+              <!-- <button 
+                class="btn btn-sm btn-outline-secondary"
+                (click)="copyQuestionNumber(question)"
+                title="Copy question number"
+                type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+              </button> -->
+
+              <!-- Move Up Button -->
+              <button class="btn btn-sm" [ngClass]="getButtonClass(i === 0)" (click)="swapUp(i)" [disabled]="i === 0"
+                title="Move up" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </button>
+
+              <!-- Move Down Button -->
+              <button class="btn btn-sm" [ngClass]="getButtonClass(i === rearrangedQuestions.length - 1)"
+                (click)="swapDown(i)" [disabled]="i === rearrangedQuestions.length - 1" title="Move down" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drag Placeholder -->
+        <div *cdkDragPlaceholder class="qa-placeholder">
+          <div class="placeholder-content">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="5" r="1"></circle>
+              <circle cx="9" cy="12" r="1"></circle>
+              <circle cx="9" cy="19" r="1"></circle>
+              <circle cx="16" cy="5" r="1"></circle>
+              <circle cx="16" cy="12" r="1"></circle>
+              <circle cx="16" cy="19" r="1"></circle>
+            </svg>
+            <span>Drop here</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="rearrangedQuestions.length === 0" class="text-center py-5">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          class="mb-3 text-muted">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <p class="text-muted">No questions to arrange</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="qa-toast-container">
+    <div *ngFor="let toast of toasts" class="alert" [ngClass]="'alert-' + getToastClass(toast.type)" role="alert">
+      <div class="d-flex justify-content-between align-items-center">
+        <span>{{ toast.message }}</span>
+        <button type="button" class="btn-close btn-sm" (click)="removeToast(toast.id)" aria-label="Close">
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- <div 
+  *ngIf="previewOpen && selectedQuestion" 
+  class="qa-modal-overlay"
+  (click)="closePreview()">
+
+  <div class="qa-modal card shadow-lg" (click)="$event.stopPropagation()">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold">
+        Question {{ getCurrentNumber(selectedQuestion) }} Preview
+      </h5>
+      <button 
+        type="button" 
+        class="btn-close"
+        (click)="closePreview()"
+        aria-label="Close">
+      </button>
+    </div>
+
+    <div class="card-body">
+      <div class="mb-3 pb-3 border-bottom">
+        <div class="d-flex gap-2 align-items-center">
+          <span class="badge bg-light text-dark">
+            {{ getQuestionTypeName(selectedQuestion.type) }}
+          </span>
+          <div *ngIf="selectedQuestion.positiveMarks" class="small">
+            <span class="text-success fw-bold me-2">
+              +{{ selectedQuestion.positiveMarks }}
+            </span>
+            <span *ngIf="selectedQuestion.negativeMarks" class="text-danger fw-bold">
+              -{{ selectedQuestion.negativeMarks }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="qa-latex-content" *ngIf="selectedQuestion.questionHtml">
+          <div [innerHTML]="selectedQuestion.questionHtml"></div>
+        </div>
+        <div *ngIf="!selectedQuestion.questionHtml && selectedQuestion.text">
+          {{ selectedQuestion.text }}
+        </div>
+      </div>
+
+      <div 
+        *ngIf="selectedQuestion.options && selectedQuestion.options.length > 0">
+        <h6 class="fw-bold mb-2">Options:</h6>
+        <div class="qa-options">
+          <div 
+            *ngFor="let option of selectedQuestion.options; let i = index" 
+            class="qa-option-item card-body p-2 border rounded mb-2">
+            <div class="d-flex gap-2">
+              <span class="badge bg-secondary rounded-circle" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">
+                {{ getOptionLabel(i)}}
+              </span>
+              <span class="flex-grow-1 small">{{ option }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer bg-light d-flex justify-content-end">
+      <button 
+        type="button" 
+        class="btn btn-secondary btn-sm"
+        (click)="closePreview()">
+        Close Preview
+      </button>
+    </div>
+  </div>
+</div> -->

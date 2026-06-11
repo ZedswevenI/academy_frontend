@@ -1,0 +1,28 @@
+.multiselect-wrapper {
+  position: relative;  // menu is positioned relative to THIS, not the viewport
+
+  .multiselect-menu {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;           // same width as the button
+    z-index: 1055;      // above modals (Bootstrap modal z-index is 1050)
+    max-height: 220px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .multiselect-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+
+    &:hover {
+      background-color: rgba(var(--bs-primary-rgb), 0.06);
+    }
+  }
+}

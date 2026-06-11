@@ -1,0 +1,164 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <!-- Header Section -->
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px">
+                        <i class="fa-solid fa-list-check me-2"></i>Task View
+                    </h1>
+                    <!-- <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/task">Back</button> -->
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <form>
+                <div class="row g-3">
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label"> Task Name </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ taskData.taskName }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label"> Faculty Name </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ taskData.staffId.staffName }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label"> Due Date </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ formatDate(taskData.dueDate) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="col-form-label fw-semibold">Description</label>
+                        <div class="border rounded p-3 bg-light"
+                            style="word-wrap: break-word; overflow-wrap: break-word" [innerHTML]="taskData.description">
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-12 mb-3" *ngIf="taskData.attachmentUrl?.length">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label"> Attachments </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2">
+                                <div *ngFor="let file of taskData.attachmentUrl">
+                                    <a (click)="downloadAttachment(file.url)" target="_blank" class="text-primary">
+                                        {{ file.url.split("/").pop() }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div *ngIf="taskData?.status === 'Completed' || taskData?.status === 'COMPLETED'"
+                        class="col-lg-6 col-md-12 mb-3">
+                        <div class="row">
+                            <label class="col-sm-3 col-form-label"> Remarks </label>
+                            <span class="col-sm-1 text-center pt-2 d-none d-md-block">:</span>
+                            <div class="col-sm-7 pt-2">
+                                <strong>{{ taskData.remarks }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 text-end mt-3">
+                    <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/task">
+                        Back
+                    </button>
+                    <button *ngIf="taskData?.status === 'Pending' || taskData?.status === 'PENDING'"
+                        class="btn btn-import fs-16 fw-medium me-2" (click)="markInProgress()">
+                        Mark In Progress
+                    </button>
+                    <button *ngIf="
+              taskData?.status === 'IN_PROGRESS' ||
+              taskData?.status === 'In Progress'
+            " class="btn btn-shuffle fs-16 fw-medium" (click)="needTime()">
+                        Need More Time
+                    </button>
+                    <button *ngIf="taskData?.status !== 'COMPLETED'" class="btn btn-create fs-16 fw-medium" 
+                    (click)="onAct()">
+                        Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- POP UP -->
+<!-- <div *ngIf="isStatus" class="task-popup-backdrop">
+    <div class="task-popup card p-4">
+        <div class="d-flex justify-content-between">
+            <h5 class="text-primary mb-3">Update Status</h5>
+            <button class="btn-close position-absolute top-0 end-0 m-3" (click)="onClose()"></button>
+        </div>
+        <label class="col-form-label">Remarks <span style="color: red">*</span></label>
+        <textarea class="form-control mb-3" rows="3" placeholder="Enter remarks" [(ngModel)]="remarks">
+    </textarea>
+        <label class="col-form-label">Task Status <span style="color: red">*</span></label>
+        <div *ngFor="let item of statusOptions; let i = index" class="row align-items-center mb-2">
+            <div class="col-auto">
+                <input type="checkbox" class="form-check-input" [checked]="item.checked" (change)="selectStatus(i)" />
+            </div>
+            <div class="col">
+                <p class="mb-0">{{ item.label }}</p>
+            </div>
+        </div>
+        <div class="text-end mt-3">
+            <button class="btn closebutton" (click)="onClose()">Back</button>
+            <button class="btn submitbutton" (click)="onConfirm()" [disabled]="">
+                Update Status
+            </button>
+        </div>
+    </div>
+</div> -->
+
+<div *ngIf="isStatus" class="task-popup-backdrop">
+    <div class="task-popup card p-4">
+        <div class="d-flex justify-content-between">
+            <h5 class="text-primary mb-3">Update Status</h5>
+            <button class="btn-close position-absolute top-0 end-0 m-3" (click)="onClose()"></button>
+        </div>
+
+        <label class="col-form-label fw-medium">Remarks <span class="text-danger">*</span></label>
+        <textarea class="form-control" [ngClass]="{'is-invalid': formSubmitted && !remarks.trim()}" rows="3"
+            placeholder="Enter remarks" [(ngModel)]="remarks">
+        </textarea>
+        <div *ngIf="formSubmitted && !remarks.trim()" class="text-danger small mt-1 mb-2">
+            Remarks are required.
+        </div>
+        <div *ngIf="!(formSubmitted && !remarks.trim())" class="mb-3"></div>
+
+        <label class="col-form-label fw-medium">Task Status <span class="text-danger">*</span></label>
+        <div class="border rounded p-2" [ngClass]="{'border-danger': formSubmitted && !isStatusSelected()}">
+            <div *ngFor="let item of statusOptions; let i = index" class="row align-items-center mb-1 mt-1">
+                <div class="col-auto">
+                    <input type="checkbox" class="form-check-input" [checked]="item.checked"
+                        (change)="selectStatus(i)" />
+                </div>
+                <div class="col">
+                    <p class="mb-0">{{ item.label }}</p>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="formSubmitted && !isStatusSelected()" class="text-danger small mt-1">
+            Please select a task status.
+        </div>
+
+        <div class="text-end mt-4">
+            <button class="btn btn-back fs-16 fw-medium me-2" (click)="onClose()">Back</button>
+            <button class="btn btn-create fs-16 fw-medium" (click)="onConfirm()">Update Status</button>
+        </div>
+    </div>
+</div>

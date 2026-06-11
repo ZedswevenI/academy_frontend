@@ -1,0 +1,17 @@
+<nav class="navbar navbar-expand-lg navbar-dark border-bottom px-3" style="background-color: #013f81;">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="topNav">
+      <ul class="navbar-nav gap-2">
+        <li class="nav-item" *ngFor="let menu of navItems">
+          <a class="nav-link " [routerLink]="menu.route" routerLinkActive="active">
+            <i [class]="menu.icon + ' me-2'"></i>{{ menu.label }}
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

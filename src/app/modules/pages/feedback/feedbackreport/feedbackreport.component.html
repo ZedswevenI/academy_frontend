@@ -1,0 +1,193 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <!-- Header -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="flex-grow-1">
+                <h1 class="fw-bold mb-0" style="font-size:22px">
+                    <i class="fa-solid fa-chart-bar me-2 text-primary"></i>
+                    {{ reportTitle }}
+                </h1>
+                <div class="text-muted small mt-1" *ngIf="formData">
+                    {{ formData.title }} ·
+                    {{ formatDate(formData.startDate) }} → {{ formatDate(formData.endDate) }}
+                </div>
+            </div>
+            <button class="btn btn-import fs-16 fw-medium" (click)="exportPdf()"
+                [disabled]="exporting || !reportRows.length">
+                <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2"></span>
+                <i class="fa-solid fa-file-pdf btn-icon" *ngIf="!exporting"></i>
+                Export PDF
+            </button>
+            <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+                <i class="fa-solid fa-arrow-left btn-icon"></i>Back
+            </button>
+        </div>
+        <!-- Filters -->
+        <div class="border rounded-3 p-3 mb-4 bg-light">
+            <div class="row g-3 align-items-end">
+                <!-- Staff selection -->
+                <div class="col-md-6">
+                    <label class="form-label small fw-semibold mb-2">
+                        <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>
+                        Staff Filter
+                    </label>
+                    <!-- Staff selection toggle chips -->
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button type="button" class="btn fs-16 fw-medium" [class.btn-create]="!selectedStaff.length"
+                            [class.btn-late-entry]="selectedStaff.length" (click)="selectAllStaff()">
+                            All Staff
+                        </button>
+                        <button *ngFor="let s of staffList" type="button" class="btn fs-16 fw-medium"
+                            [class.btn-edit]="selectedStaff.includes(s.staffId)"
+                            [class.btn-late-entry]="!selectedStaff.includes(s.staffId)"
+                            (click)="toggleStaff(s.staffId)">
+                            {{ s.staffCode || s.staffName }}
+                            <span *ngIf="s.subjectName" class="ms-1 opacity-75" style="font-size:10px">· {{
+                                s.subjectName }}</span>
+                        </button>
+                    </div>
+                    <div class="text-muted small">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        {{ staffSelectionLabel }}
+                    </div>
+                </div>
+                <!-- Apply button -->
+                <div class="col-md-2">
+                    <button class="btn btn-create fs-16 fw-medium" (click)="fetchReport()" [disabled]="loading">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ loading ? 'Loading...' : 'Apply' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Loading -->
+        <div *ngIf="loading" class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <div class="text-muted small mt-2">Generating report...</div>
+        </div>
+        <!-- No data -->
+        <div *ngIf="!loading && !reportRows.length && reportData" class="text-center py-5 text-muted border rounded-3">
+            <i class="fa-solid fa-inbox fa-2x opacity-25 mb-2 d-block"></i>
+            No data found for the selected filters
+        </div>
+        <!-- Summary KPIs -->
+        <div *ngIf="!loading && reportRows.length" class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded-3 text-center">
+                    <div class="fw-bold text-primary" style="font-size:24px">{{ reportRows.length }}</div>
+                    <div class="text-muted small">Staff × Batch Rows</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded-3 text-center">
+                    <div class="fw-bold text-secondary" style="font-size:24px">{{ totalResponses }}</div>
+                    <div class="text-muted small">Total Responses</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded-3 text-center">
+                    <div class="fw-bold text-success" style="font-size:24px">{{ avgTea }}</div>
+                    <div class="text-muted small">Avg TEA%</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded-3 text-center">
+                    <div class="fw-bold text-warning" style="font-size:24px">{{ avgRea }}</div>
+                    <div class="text-muted small">Avg REA%</div>
+                </div>
+            </div>
+        </div>
+        <!-- Report table -->
+        <div *ngIf="!loading && reportRows.length" class="table-responsive">
+            <table class="table table-bordered table-sm align-middle" style="font-size:12px;min-width:900px">
+                <thead>
+                    <tr class="table-dark text-center">
+                        <th class="text-start">Staff</th>
+                        <th>Batch</th>
+                        <th>Strength</th>
+                        <th>Feedbacks</th>
+                        <!-- Part A headers -->
+                        <th *ngFor="let h of partAHeaders" class="table-primary text-primary"
+                            style="font-size:11px;min-width:36px" [title]="h.fieldText">
+                            {{ h.label }}
+                        </th>
+                        <!-- Part B headers -->
+                        <th *ngFor="let h of partBHeaders" class="table-warning text-warning-emphasis"
+                            style="font-size:11px;min-width:36px" [title]="h.fieldText">
+                            {{ h.label }}
+                        </th>
+                        <th class="table-success text-success">TEA%</th>
+                        <th class="table-warning text-warning-emphasis">REA%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let r of reportRows">
+                        <!-- Staff -->
+                        <td>
+                            <div class="text-muted" style="font-size:10px" *ngIf="r.staffName">{{ r.staffName }}</div>
+                            <div *ngIf="r.subjectName"
+                                class="badge bg-primary bg-opacity-10 text-primary rounded-pill mt-1"
+                                style="font-size:9px">{{ r.subjectName }}</div>
+                        </td>
+                        <td class="text-center">{{ r.batchCode }}</td>
+                        <td class="text-center">{{ r.strength }}</td>
+                        <td class="text-center">{{ r.responseCount }}</td>
+                        <!-- Part A scores -->
+                        <td *ngFor="let v of r.partAScores" class="text-center" style="background:#eff6ff">
+                            <span [class]="scoreClass(v)">
+                                {{ v != null ? v.toFixed(2) : '—' }}
+                            </span>
+                        </td>
+                        <!-- Part B scores -->
+                        <td *ngFor="let v of r.partBScores" class="text-center" style="background:#fffbeb">
+                            <span [class]="scoreClass(v)">
+                                {{ v != null ? v.toFixed(2) : '—' }}
+                            </span>
+                        </td>
+                        <!-- TEA% -->
+                        <td class="text-center" style="background:#f0fdf4">
+                            <span [class]="pctClass(r.teaPct)">
+                                {{ r.teaPct != null ? r.teaPct.toFixed(1) + '%' : '—' }}
+                            </span>
+                        </td>
+                        <!-- REA% -->
+                        <td class="text-center" style="background:#fffbeb">
+                            <span [class]="pctClass(r.reaPct)">
+                                {{ r.reaPct != null ? r.reaPct.toFixed(1) + '%' : '—' }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+                <!-- Overall average footer -->
+                <tfoot>
+                    <tr class="table-light fw-bold">
+                        <td colspan="4" class="text-end pe-3">Overall Average</td>
+                        <td *ngFor="let h of partAHeaders" style="background:#eff6ff"></td>
+                        <td *ngFor="let h of partBHeaders" style="background:#fffbeb"></td>
+                        <td class="text-center text-success" style="background:#f0fdf4">
+                            {{ avgTea }}
+                        </td>
+                        <td class="text-center text-warning-emphasis" style="background:#fffbeb">
+                            {{ avgRea }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <!-- Legend -->
+        <div *ngIf="!loading && reportRows.length" class="d-flex flex-wrap gap-3 mt-3 pt-3 border-top small text-muted">
+            <span><i class="fa-solid fa-circle text-success me-1"></i>≥ 9.0 Excellent</span>
+            <span><i class="fa-solid fa-circle text-primary me-1"></i>≥ 7.0 Good</span>
+            <span><i class="fa-solid fa-circle text-warning me-1"></i>≥ 5.0 Average</span>
+            <span><i class="fa-solid fa-circle text-danger me-1"></i>&lt; 5.0 Poor</span>
+            <span class="ms-auto">
+                <span class="badge bg-primary bg-opacity-10 text-primary me-1">A1–An</span> Part A · Teaching
+                Effectiveness
+            </span>
+            <span>
+                <span class="badge bg-warning bg-opacity-10 text-warning-emphasis me-1">B1–Bn</span> Part B · Research
+                Effectiveness
+            </span>
+        </div>
+    </div>
+</div>

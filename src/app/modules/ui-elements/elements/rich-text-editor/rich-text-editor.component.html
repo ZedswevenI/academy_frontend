@@ -1,0 +1,93 @@
+<div class="mb-4">
+  <label class="form-label fw-bold">
+    {{ label }}
+    <span *ngIf="required" class="text-danger">*</span>
+  </label>
+
+  <div class="editor-container border rounded">
+
+    <!-- Toolbar -->
+    <div class="editor-toolbar bg-light border-bottom p-2">
+      <div class="btn-toolbar">
+
+        <!-- Formatting -->
+        <div class="btn-group btn-group-sm me-2">
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('bold')">
+            <i class="fas fa-bold"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('italic')">
+            <i class="fas fa-italic"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('underline')">
+            <i class="fas fa-underline"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('strikeThrough')">
+            <i class="fas fa-strikethrough"></i>
+          </button>
+        </div>
+
+        <!-- Lists -->
+        <div class="btn-group btn-group-sm me-2">
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('insertUnorderedList')">
+            <i class="fas fa-list-ul"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('insertOrderedList')">
+            <i class="fas fa-list-ol"></i>
+          </button>
+        </div>
+
+        <!-- Alignment -->
+        <div class="btn-group btn-group-sm me-2">
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('justifyLeft')">
+            <i class="fas fa-align-left"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('justifyCenter')">
+            <i class="fas fa-align-center"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('justifyRight')">
+            <i class="fas fa-align-right"></i>
+          </button>
+        </div>
+
+        <!-- Table / Latex -->
+        <div class="btn-group btn-group-sm me-2">
+          <button type="button" class="btn btn-outline-secondary" (click)="insertTable('questionEditor')">
+            <i class="fas fa-table"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="insertLatex()">
+            <i class="fas fa-superscript"></i> TeX
+          </button>
+        </div>
+
+        <!-- Clear -->
+        <div class="btn-group btn-group-sm">
+          <button type="button" class="btn btn-outline-secondary" (click)="execCommand('removeFormat')">
+            <i class="fas fa-remove-format"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Editor -->
+    <div
+      #editor
+      [attr.contenteditable]="!readOnly"
+      [class.bg-light]="readOnly"
+      [class.text-muted]="readOnly"
+      (input)="!readOnly && onInput()"
+      class="editor-content p-3"
+       id="questionEditor"
+      (input)="onInput()"
+      (paste)="onPasteImage($event)"
+      [style.minHeight]="minHeight"
+      style="max-height:400px; overflow-y:auto">
+    </div>
+
+  </div>
+
+  <small class="form-text text-muted">
+    <i class="fas fa-info-circle"></i>
+    Paste images, use LaTeX & insert tables
+  </small>
+</div>

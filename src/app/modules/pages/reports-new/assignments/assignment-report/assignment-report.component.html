@@ -1,0 +1,169 @@
+<!-- assignment-report.component.html -->
+<div>
+    <!-- View toggle -->
+    <div class="filter-panel">
+        <div class="row g-3 align-items-end">
+            <!-- View toggle -->
+            <div class="col-md-12 mb-2">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm" [class.btn-primary]="view === 'batch'"
+                        [class.btn-outline-primary]="view !== 'batch'" (click)="onViewChange('batch')"><i
+                            class="fa-solid fa-layer-group me-1"></i> Batch-wise</button>
+                    <button type="button" class="btn btn-sm" [class.btn-primary]="view === 'student'"
+                        [class.btn-outline-primary]="view !== 'student'" (click)="onViewChange('student')"><i
+                            class="fa-solid fa-user me-1"></i> Student-wise</button>
+                </div>
+            </div>
+
+            <!-- Batch -->
+            <div class="col-md-3">
+                <app-batch-multiselect [options]="batchOptions" label="Batch" [optional]="false" [required]="true"
+                    [touched]="touched" (selectionChange)="onBatchChange($event)"></app-batch-multiselect>
+            </div>
+
+            <!-- Student (only for student view) -->
+            <div class="col-md-3" *ngIf="view === 'student'">
+                <app-student-multiselect [batchCodes]="selectedBatchCodes" label="Student" [allowManual]="true"
+                    [touched]="touched" (selectionChange)="onStudentChange($event)">
+                </app-student-multiselect>
+            </div>
+
+            <!-- Subject -->
+            <div class="col-md-2">
+                <label class="form-label fw-medium">Subject</label>
+                <select class="form-select form-select-sm" [(ngModel)]="filterSubjectId">
+                    <option value="">All</option>
+                    <option *ngFor="let s of subjectOptions" [value]="s.value">{{ s.label }}</option>
+                </select>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-md-4 d-flex gap-2 align-items-end">
+                <button class="btn btn-create fs-16 fw-medium" [disabled]="!canGenerate() || loading"
+                    (click)="onGenerateClick()">
+                    <span *ngIf="!loading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                    <span *ngIf="loading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" *ngIf="hasData" (click)="reset()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Validation hints -->
+        <div class="mt-2" *ngIf="touched && !selectedBatchIds.length">
+            <small class="text-danger"><i class="fa-solid fa-circle-info me-1"></i>Please select at least one
+                batch.</small>
+        </div>
+        <div class="mt-1" *ngIf="touched && view === 'student' && !selectedAdmissionNos.length">
+            <small class="text-danger"><i class="fa-solid fa-circle-info me-1"></i>Please select at least one
+                student.</small>
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="text-muted mt-2">Generating report...</p>
+    </div>
+
+    <!-- Export -->
+    <div *ngIf="hasData && !loading" class="d-flex gap-2 mb-3">
+        <button class="btn btn-outline-danger btn-sm" (click)="exportPdf()"><i class="fa-solid fa-file-pdf me-1"></i>
+            Export PDF</button>
+        <button class="btn btn-export btn-sm" (click)="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export
+            Excel</button>
+    </div>
+
+    <!-- BATCH VIEW — one table per batch -->
+    <ng-container *ngIf="view === 'batch' && !loading">
+        <div *ngFor="let batch of batchResults" class="report-table-card mb-4">
+            <h6 class="fw-bold mb-1">
+                <i class="fa-solid fa-layer-group me-2 text-primary"></i>{{ batch.batchCode }}
+                <span class="text-muted fw-normal small ms-2">{{ batch.batchName }}</span>
+            </h6>
+            <small class="text-muted d-block mb-3">{{ batch.students?.length || 0 }} students</small>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Enrollment No</th>
+                            <th>Student Name</th>
+                            <th *ngFor="let col of batch.columns">{{ col.colLabel }}</th>
+                            <th>SGPA</th>
+                            <th>GSGPA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let stu of batch.students; let i = index">
+                            <td>{{ i + 1 }}</td>
+                            <td>{{ stu.admissionNo }}</td>
+                            <td>{{ stu.studentName }}</td>
+                            <td *ngFor="let col of batch.columns">{{ stu[col.colKey] ?? '-' }}</td>
+                            <td>{{ stu.SGPA ?? '-' }}</td>
+                            <td>{{ stu.GSGPA ?? '-' }}</td>
+                        </tr>
+                        <!-- Batch average row -->
+                        <tr *ngIf="batch.batchAverage" style="background:#dbeafe;font-weight:600">
+                            <td colspan="3">Batch Average</td>
+                            <td *ngFor="let col of batch.columns">{{ batch.batchAverage[col.colKey] ?? '-' }}</td>
+                            <td>{{ batch.batchAverage.SGPA ?? '-' }}</td>
+                            <td>{{ batch.batchAverage.GSGPA ?? '-' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </ng-container>
+
+    <!-- STUDENT VIEW — one table per student -->
+    <ng-container *ngIf="view === 'student' && !loading">
+        <div *ngFor="let stu of studentResults" class="report-table-card mb-4">
+            <h6 class="fw-bold mb-1">
+                <i class="fa-solid fa-user-graduate me-2 text-primary"></i>{{ stu.studentName }}
+                <span class="text-muted fw-normal small ms-2">({{ stu.admissionNo }})</span>
+            </h6>
+            <small class="text-muted d-block mb-3">Batch: {{ stu.batchCode }}</small>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Test Code</th>
+                            <th>Subject</th>
+                            <th>Topic</th>
+                            <th>Sub Topic</th>
+                            <th>Category</th>
+                            <th>Sub Category</th>
+                            <th>CGPA</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let test of stu.tests">
+                            <td>{{ test.testCode }}</td>
+                            <td>{{ test.subjectName }}</td>
+                            <td>{{ test.topicName }}</td>
+                            <td>{{ test.subTopicName }}</td>
+                            <td>{{ test.categoryName }}</td>
+                            <td>{{ test.subCategoryName }}</td>
+                            <td>{{ test.cgpa }}</td>
+                            <td>
+                                <span class="badge" [class.bg-success]="test.status === 'COMPLETED'"
+                                    [class.bg-warning]="test.status !== 'COMPLETED' && test.status !== 'NOT_STARTED'"
+                                    [class.bg-secondary]="test.status === 'NOT_STARTED'">
+                                    {{ test.status || '-' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </ng-container>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading && dataLoaded && !hasData" class="text-center text-muted py-5">
+        <i class="fa-solid fa-inbox fs-1 d-block mb-3 opacity-50"></i>
+        <p>No assignment data found for selected filters.</p>
+    </div>
+</div>

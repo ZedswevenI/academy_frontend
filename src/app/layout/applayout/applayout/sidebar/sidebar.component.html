@@ -1,0 +1,36 @@
+<aside class="sidebar" [class.open]="open">
+  <div class="sidebar-header d-lg-none d-flex align-items-end justify-content-end">
+    <button class="btn close-btn text-white fw-bold" (click)="close.emit()">
+      ✕
+    </button>
+  </div>
+  <nav class="nav-wrap">
+    <ng-container *ngFor="let menu of menuItems">
+      <a *ngIf="!menu.children" class="sidebar-link" [routerLink]="menu.route" routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }" style="text-decoration: none">
+        <i [class]="menu.icon + ' me-2'"></i>
+        {{ menu.label }}
+      </a>
+      <div *ngIf="menu.children" class="sidebar-group">
+        <div class="sidebar-link parent" (click)="toggleMenu(menu)">
+          <i [class]="menu.icon + ' me-2'"></i>
+          {{ menu.label }}
+          <i class="fa-solid fa-chevron-down ms-auto" [class.rotate]="menu.expanded"></i>
+        </div>
+        <div class="submenu" *ngIf="menu.expanded">
+          <a *ngFor="let child of menu.children" class="sidebar-link child" [routerLink]="child.route"
+            routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" style="text-decoration: none">
+            <i [class]="child.icon + ' me-2'"></i>
+            {{ child.label }}
+          </a>
+        </div>
+      </div>
+    </ng-container>
+  </nav>
+  <div class="logout-wrap">
+    <button class="btn logout-btn" (click)="logout()">
+      <i class="fa-solid fa-right-from-bracket me-2"></i>
+      Log Out
+    </button>
+  </div>
+</aside>

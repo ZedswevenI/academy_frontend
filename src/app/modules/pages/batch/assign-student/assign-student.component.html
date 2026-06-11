@@ -1,0 +1,121 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex flex-column gap-4">
+            <!-- Header Section -->
+            <div class="d-flex flex-column gap-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                        <i class="fa-solid fa-layer-group me-2"></i>Batch
+                    </h1>
+                    <!-- <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button">
+            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
+            Add</button> -->
+                    <div class="header-actions">
+                        <button class="btn btn-outline-secondary me-2" style="border-radius: 25px;">
+                            <i class="fa-solid fa-rotate-right"></i> Refresh
+                        </button>
+                        <button class="btn btn-newbutton rounded-pill me-1 mb-1 fs-16 fw-medium" type="button">
+                            <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
+                            Create Batch</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <form [formGroup]="assignForm">
+                <div class="row g-3 align-items-end">
+                    <!-- First field – little longer -->
+                    <div class="col-md-4">
+                        <formfield label="Search" formControlName="search" [control]="assignForm.get('search')"
+                            placeholder="Batch name / code / program..." [required]="false">
+                        </formfield>
+                    </div>
+
+                    <!-- Remaining fields – equal width -->
+                    <div class="col-md-2">
+                        <selectbox label="Status" placeholder="Select Status" [options]="status_options"
+                            formControlName="status" [required]="false" [control]="assignForm.get('status')">
+                        </selectbox>
+                    </div>
+
+                    <div class="col-md-2">
+                        <selectbox label=" Academic Year" placeholder="Select Academic Year" [options]="ay_options"
+                            formControlName="ay" [required]="false" [control]="assignForm.get('ay')"> </selectbox>
+                    </div>
+
+                    <div class="col-md-2">
+                        <selectbox label="Program" placeholder="Select Program" [options]="program_options"
+                            formControlName="program" [required]="false" [control]="assignForm.get('program')">
+                        </selectbox>
+                    </div>
+
+                    <div class="col-md-2">
+                        <selectbox label="Center" placeholder="Select Center" [options]="center_options"
+                            formControlName="center" [required]="false" [control]="assignForm.get('center')">
+                        </selectbox>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" style="border-radius: 25px;">Cancel</button>
+                        <button class="btn btn-primary" style="border-radius: 25px;">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            <div class="table-card">
+                <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
+                    [success]="'Active'" [danger]="'Inactive'" [searchPlaceholder]="'Search BatchName, Student...'"
+                    [totalRecords]="totalRecords" (requestData)="loadTableData($event)"></custom-table>
+            </div>
+            <!-- ASSIGN STUDENTS PANEL -->
+            <div class="assign-panel" *ngIf="showAssignPanel">
+                <div class="panel-header">
+                    <h3>Assign Students</h3>
+                    <i class="fa-solid fa-xmark" (click)="closeAssign()"></i>
+                </div>
+
+                <div class="panel-body">
+                    <strong>9th class (9BATCH)</strong>
+                    <p class="hint">
+                        Eligible students = ACTIVE + program/year/center match + batchId is null.
+                    </p>
+
+                    <div class="search-student">
+                        <input placeholder="Search student name / phone / admissionNo" />
+                        <button class="go-btn">Go</button>
+                    </div>
+
+                    <p class="found">Found: 1</p>
+
+                    <div class="student-box">
+                        <label>
+                            <input type="checkbox" />
+                            fgsdffs (902064259002)
+                        </label>
+                        <small>7894654654 - 7894654654</small>
+                    </div>
+
+                    <p class="selected">Selected: 0</p>
+
+                    <div class="panel-actions">
+                        <button class="btn btn-outline-secondary" style="border-radius: 25px;" (click)="closeAssign()">Cancel</button>
+                        <button class="btn btn-primary" style="border-radius: 25px;">Assign</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Close Batch -->
+ <div>
+    <delete [title]="'Close Batch'" [message]="'Are you sure you want to close this batch?'"
+        [(visible)]="modalVisible" (closed)="onModalClosed($event)">
+    </delete>
+</div>

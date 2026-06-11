@@ -1,0 +1,37 @@
+<div class="app-shell">
+
+  <!-- HEADER -->
+  <app-header (menuToggle)="toggleSidebar()"></app-header>
+
+  <!-- BODY -->
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <aside class="app-sidebar" [class.open]="sidebarOpen">
+      <app-sidebar
+        [open]="sidebarOpen"
+        (close)="closeSidebar()">
+      </app-sidebar>
+    </aside>
+
+    <!-- OVERLAY (mobile) -->
+    <div
+      class="sidebar-overlay d-lg-none"
+      *ngIf="sidebarOpen"
+      (click)="closeSidebar()">
+    </div>
+
+    <!-- MAIN -->
+    <main class="app-main">
+      <app-bredcrump></app-bredcrump>
+      <alert></alert>
+
+      <div class="app-content">
+        <router-outlet></router-outlet>
+      </div>
+
+      <app-footer></app-footer>
+    </main>
+
+  </div>
+</div>

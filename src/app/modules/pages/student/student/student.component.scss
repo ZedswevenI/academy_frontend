@@ -1,0 +1,45 @@
+/* grid/ list*/
+.view-switch {
+  display: flex;
+  border: 1px solid #dee2e6;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.view-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: none;
+  background-color: transparent;
+  color: #6c757d;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.view-btn.active {
+  background-color: #0b1f3b; 
+  color: #ffffff;
+}
+
+.view-btn:not(.active):hover {
+  background-color: #f1f3f5;
+}
+
+.add-student-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: #0b5ed7;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.add-student-btn i {
+  font-size: 14px;
+}

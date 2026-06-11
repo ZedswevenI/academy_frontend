@@ -1,0 +1,165 @@
+<div class="institute-page">
+
+    <!-- Profile Card -->
+    <div class="card mb-3 institute-card shadow-sm border-0">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1 fw-semibold d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-building-columns text-saffron"></i>
+                    <span>Institute Information</span>
+                </h5>
+                <p class="mb-0 text-muted small">
+                    View and update your institute’s core profile, contact and address details.
+                </p>
+            </div>
+            <button class="btn btn-edit fs-16 fw-medium" (click)="openEdit()">
+                <i class="fa-regular fa-pen-to-square btn-icon"></i>
+                <span>Edit Details</span>
+            </button>
+        </div>
+
+        <!-- VIEW MODE -->
+        <div class="card-body pt-3">
+            <div class="row g-4">
+
+                <!-- Left column -->
+                <div class="col-lg-6">
+                    <h6 class="section-title mb-2">Basic Details</h6>
+                    <dl class="info-grid">
+                        <div class="info-row">
+                            <dt>Institute Name</dt>
+                            <dd>{{ instituteInfo.name || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>Code</dt>
+                            <dd>{{ instituteInfo.code || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>Status</dt>
+                            <dd>
+                                <span class="status-pill" [class.status-pill-active]="instituteInfo.status === 'Active'"
+                                    [class.status-pill-inactive]="instituteInfo.status !== 'Active'">
+                                    {{ instituteInfo.status || '--' }}
+                                </span>
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- Right column -->
+                <div class="col-lg-6">
+                    <h6 class="section-title mb-2">Contact & Address</h6>
+                    <dl class="info-grid">
+                        <div class="info-row">
+                            <dt>Email</dt>
+                            <dd>{{ instituteInfo.email || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>Phone</dt>
+                            <dd>{{ instituteInfo.phone || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>Address Line 1</dt>
+                            <dd>{{ instituteInfo.addressLine1 || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>Address Line 2</dt>
+                            <dd>{{ instituteInfo.addressLine2 || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>City</dt>
+                            <dd>{{ instituteInfo.city || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>State</dt>
+                            <dd>{{ instituteInfo.state || '--' }}</dd>
+                        </div>
+                        <div class="info-row">
+                            <dt>Pincode</dt>
+                            <dd>{{ instituteInfo.pincode || '--' }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODAL -->
+    <div class="app-modal-backdrop" *ngIf="showForm">
+        <div class="app-modal">
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">Edit Institute Information</h6>
+                    <span class="text-muted small">Update institute profile details</span>
+                </div>
+                <button type="button" class="btn-close" (click)="cancel()"></button>
+            </div>
+            <div class="app-modal-body">
+                <form [formGroup]="instituteForm">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <formfield label="Institute Name" [required]="true" formControlName="name"
+                                [control]="instituteForm.get('name')">
+                            </formfield>
+                        </div>
+                        <div class="col-md-3">
+                            <formfield label="Code" [required]="true" formControlName="code"
+                                [control]="instituteForm.get('code')">
+                            </formfield>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-center">
+                            <togglebtn leftLabel="Inactive" rightLabel="Active" formControlName="isActive"
+                                [control]="instituteForm.get('isActive')">
+                            </togglebtn>
+                        </div>
+                        <div class="col-md-6">
+                            <appreadonly label="Email" [required]="true" formControlName="email"
+                                [control]="instituteForm.get('email')"></appreadonly>
+                        </div>
+                        <div class="col-md-6">
+                            <appreadonly label="Phone" [required]="true" formControlName="phone"
+                                [control]="instituteForm.get('phone')"></appreadonly>
+                        </div>
+                        <div class="col-md-6">
+                            <formfield label="Address Line 1" [required]="true" formControlName="addressLine1"
+                                [control]="instituteForm.get('addressLine1')">
+                            </formfield>
+                        </div>
+                        <div class="col-md-6">
+                            <formfield label="Address Line 2" [required]="false" formControlName="addressLine2"
+                                [control]="instituteForm.get('addressLine2')">
+                            </formfield>
+                        </div>
+                        <div class="col-md-4">
+                            <formfield label="City" [required]="true" formControlName="city"
+                                [control]="instituteForm.get('city')">
+                            </formfield>
+                        </div>
+                        <div class="col-md-4">
+                            <formfield label="State" [required]="true" formControlName="state"
+                                [control]="instituteForm.get('state')">
+                            </formfield>
+                        </div>
+                        <div class="col-md-4">
+                            <formfield label="Pincode" [required]="true" formControlName="pincode"
+                                [control]="instituteForm.get('pincode')">
+                            </formfield>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()">Cancel</button>
+                        <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="instituteForm.invalid"
+                            (click)="save()">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+</div>
