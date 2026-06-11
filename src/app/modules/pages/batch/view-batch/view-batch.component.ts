@@ -719,7 +719,7 @@ export class ViewBatchComponent implements OnInit {
     }
     const payload = {
       entiId: this.entiId,
-      sourceBatchId: this.batchId,
+      fromBatchId: this.batchId,
       toBatchId: targetBatchId,
       studentIds: selectedIds,
     };
