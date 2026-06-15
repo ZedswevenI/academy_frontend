@@ -20,7 +20,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Dashboard',
     icon: 'fa-solid fa-gauge',
     route: '/app/dashboard',
-    roles: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7']
+    roles: ['L1', 'L2']
   },
   {
     label: 'Batch',
@@ -92,7 +92,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Tasks',
     icon: 'fa-solid fa-list-check',
     route: '/app/task',
-    roles: ['L1', 'L2', 'L3', 'L4']
+    roles: ['L1', 'L2', 'L3', 'L4', 'L5']
   },
   {
     label: 'PTM',
@@ -147,13 +147,13 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Reports',
     icon: 'fa-solid fa-chart-line',
     route: '/app/report',
-    roles: ['L1', 'L5']
+    roles: ['L1']
   },
   {
     label: 'Invigilation',
     icon: 'fa-solid fa-person-chalkboard',
     route: '/app/invigilation',
-    roles: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7']
+    roles: ['L1', 'L4', 'L5']
   },
   {
     label: 'Communication',
@@ -196,7 +196,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Support',
     icon: 'fa-solid fa-headset',
     route: '/app/support',
-    roles: ['L1', 'L2', 'L3', 'L5', 'L6']
+    roles: ['L1', 'L2', 'L3', 'L6']
   },
   {
     label: 'Exams',
@@ -239,7 +239,7 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'School Exams',
     icon: 'fa-solid fa-chalkboard-user',
     route: '/app/org-master/school/exams',
-    roles: ['L1']
+    roles: ['L1', 'L5']
   },
   {
     label: 'Org Masters',
