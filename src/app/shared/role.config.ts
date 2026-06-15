@@ -31,17 +31,17 @@ export const ROUTE_ACCESS: Record<string, RoleLevel[]> = {
   feedback:         ['L1', 'L3', 'L4'],
   performance:      ['L1', 'L3', 'L4'],
   ptm:              ['L1', 'L3', 'L4'],
-  task:             ['L1', 'L2', 'L3', 'L4'],
+  task:             ['L1', 'L2', 'L3', 'L4', 'L5'],
   circular:         ['L1', 'L2', 'L3'],
   phase:            ['L1', 'L4'],
   knowledge:        ['L1', 'L3', 'L4'],
   support:          ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7'],
   package:          ['L1', 'L2'],
-  'org-master':     ['L1'],
+  'org-master':     ['L1', 'L5'],
   class:            ['L1'],
   inward:           ['L1'],
   'exam-schedule':  ['L1', 'L5', 'L7'],
-  exams:            ['L1', 'L5'],
+  exams: ['L1', 'L5']
 };
 
 // Which roles can DOWNLOAD in each module (L1 can always download)

@@ -168,7 +168,7 @@
             <i class="fas fa-check-circle me-2"></i>
             <strong>{{ parsedStudents.length }}</strong> student records parsed. Preview:
           </div>
-          <div class="table-responsive border rounded-3" style="max-height:280px;overflow-y:auto">
+          <!-- <div class="table-responsive border rounded-3" style="max-height:280px;overflow-y:auto">
             <table class="table table-sm table-hover align-middle mb-0">
               <thead class="bg-light sticky-top">
                 <tr>
@@ -181,6 +181,26 @@
                 <tr *ngFor="let s of parsedStudents; let i = index">
                   <td class="text-muted">{{ i + 1 }}</td>
                   <td class="fw-medium">{{ s.admissionNo }}</td>
+                  <td>{{ s.obtainedMarks }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div> -->
+          <div class="table-responsive border rounded-3" style="max-height:280px;overflow-y:auto">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="bg-light sticky-top">
+                <tr>
+                  <th>#</th>
+                  <th>Admission No</th>
+                  <th *ngFor="let s of getSectionMeta()">{{ s.sectionName }} Marks</th>
+                  <th>Total Obtained Marks</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of parsedStudents; let i = index">
+                  <td class="text-muted">{{ i + 1 }}</td>
+                  <td class="fw-medium">{{ s.admissionNo }}</td>
+                  <td *ngFor="let sr of s.sectionResults">{{ sr.obtainedMarks }}</td>
                   <td>{{ s.obtainedMarks }}</td>
                 </tr>
               </tbody>

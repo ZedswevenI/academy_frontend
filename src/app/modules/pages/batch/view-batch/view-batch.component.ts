@@ -99,6 +99,7 @@ export class ViewBatchComponent implements OnInit {
   showRemoveConfirm = false;
   removeStudentId = '';
   removeStudentName = '';
+  removeRemarks = '';
   latePeriodOptions: any[] = [];
   showCloseConfirm = false;
   reportSubjectId = '';
@@ -358,13 +359,6 @@ export class ViewBatchComponent implements OnInit {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  // private dateToEpochMs(s: any): number {
-  //   const v = safeTrim(s);
-  //   if (!v) return 0;
-  //   const t = new Date(`${v}T00:00:00`).getTime();
-  //   return isFinite(t) ? t : 0;
-  // }
-
   private dateToEpochMs(s: any): number {
     const v = safeTrim(s);
     if (!v) return 0;
@@ -525,12 +519,6 @@ export class ViewBatchComponent implements OnInit {
   }
 
   onStaffDraftSubjectChanged(subjectId: any) {
-    // const sid = safeTrim(subjectId);
-    // const filtered = sid
-    //   ? this.staffListFull.filter(
-    //       (st: any) => safeTrim(String(st?.subject)) === sid,
-    //     )
-    //   : this.staffListFull;
     const sid = safeTrim(subjectId);
     const filtered = sid
       ? this.staffListFull.filter((st: any) => {
@@ -719,7 +707,7 @@ export class ViewBatchComponent implements OnInit {
     }
     const payload = {
       entiId: this.entiId,
-      sourceBatchId: this.batchId,
+      fromBatchId: this.batchId,
       toBatchId: targetBatchId,
       studentIds: selectedIds,
     };
@@ -1602,6 +1590,7 @@ export class ViewBatchComponent implements OnInit {
   openRemoveStudent(studentId: string, name: string) {
     this.removeStudentId = studentId;
     this.removeStudentName = name;
+    this.removeRemarks = '';
     this.showRemoveConfirm = true;
   }
 
@@ -1609,6 +1598,7 @@ export class ViewBatchComponent implements OnInit {
     this.showRemoveConfirm = false;
     this.removeStudentId = '';
     this.removeStudentName = '';
+    this.removeRemarks = '';
   }
 
   confirmRemoveStudent() {
@@ -1620,6 +1610,7 @@ export class ViewBatchComponent implements OnInit {
           entiId: this.entiId,
           batchId: this.batchId,
           studentIds: [this.removeStudentId],
+          remarks: this.removeRemarks.trim() || null,
         },
         'batch',
         'students/remove',
@@ -2176,12 +2167,12 @@ export class ViewBatchComponent implements OnInit {
     XLSX.writeFile(wb, 'sample_student_import.xlsx');
   }
 
-  viewStudent(s: any){
+  viewStudent(s: any) {
     const stu = s?._raw || s;
     this.router.navigate(['/app/student/view', stu.studentId]);
   }
 
-   viewTeacher(staffId: any) {
+  viewTeacher(staffId: any) {
     this.router.navigate(['/app/teacher/view'], {
       queryParams: { staffId: staffId },
     });
