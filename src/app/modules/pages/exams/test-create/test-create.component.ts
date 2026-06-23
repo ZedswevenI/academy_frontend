@@ -1,6 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
@@ -9,10 +16,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
   selector: 'app-exam-create',
   standalone: false,
   templateUrl: './test-create.component.html',
-  styleUrl: './test-create.component.scss'
+  styleUrl: './test-create.component.scss',
 })
 export class TestCreateComponent implements OnInit {
-
   isEditMode = false;
   isDuplicateMode = false;
   examId = '';
@@ -34,18 +40,21 @@ export class TestCreateComponent implements OnInit {
 
   mediumOptions = [
     { label: 'English', value: 'en' },
-    { label: 'Tamil', value: 'ta' }
+    { label: 'Tamil', value: 'ta' },
   ];
 
   calculatorOptions = [
     { label: 'None', value: 'none' },
     { label: 'Normal', value: 'normal' },
-    { label: 'Scientific', value: 'scientific' }
+    { label: 'Scientific', value: 'scientific' },
   ];
 
   classOptions = [
-    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
-    { label: '12th Pass', value: 13 }
+    ...Array.from({ length: 7 }, (_, i) => ({
+      label: `Class ${i + 6}`,
+      value: i + 6,
+    })),
+    { label: '12th Pass', value: 13 },
   ];
 
   constructor(
@@ -62,14 +71,23 @@ export class TestCreateComponent implements OnInit {
       this.isDuplicateMode = true;
       this.editData = state.test;
       this.withQuestions = state.withQuestions !== false;
-      this.breadcrumb.set([{ label: 'Exams', link: '/app/exams/exams' }, { label: 'Duplicate' }]);
+      this.breadcrumb.set([
+        { label: 'Exams', link: '/app/exams/exams' },
+        { label: 'Duplicate' },
+      ]);
     } else if (state?.test) {
       this.isEditMode = true;
       this.examId = state.test.examId || '';
       this.editData = state.test;
-      this.breadcrumb.set([{ label: 'Exams', link: '/app/exams/exams' }, { label: 'Edit' }]);
+      this.breadcrumb.set([
+        { label: 'Exams', link: '/app/exams/exams' },
+        { label: 'Edit' },
+      ]);
     } else {
-      this.breadcrumb.set([{ label: 'Exams', link: '/app/exams/exams' }, { label: 'Create' }]);
+      this.breadcrumb.set([
+        { label: 'Exams', link: '/app/exams/exams' },
+        { label: 'Create' },
+      ]);
     }
   }
 
@@ -86,29 +104,36 @@ export class TestCreateComponent implements OnInit {
   private initForm(): void {
     this.minDateTime = this.isEditMode ? '' : this.toDatetimeLocal(Date.now());
 
-    this.examForm = this.fb.group({
-      examCode: ['', Validators.required],
-      examName: ['', Validators.required],
-      password: [
-        '',
-        this.isEditMode
-          ? [Validators.minLength(6), Validators.maxLength(10)]
-          : [Validators.required, Validators.minLength(6), Validators.maxLength(10)]
-      ],
-      description: [''],
-      testType: ['practice', Validators.required],
-      medium: ['en', Validators.required],
-      duration: [180, [Validators.required, Validators.min(1)]],
-      totalMarks: [0, [Validators.required, Validators.min(0)]],
-      totalQuestions: [0, [Validators.required, Validators.min(0)]],
-      startTime: ['', Validators.required],
-      endTime: ['', Validators.required],
-      autoPublishAt: [''],
-      instructionId: [''],
-      calculatorType: ['none'],
-      classNo: [null, Validators.required],
-      sections: this.fb.array([])
-    }, { validators: this.dateValidators.bind(this) });
+    this.examForm = this.fb.group(
+      {
+        examCode: ['', Validators.required],
+        examName: ['', Validators.required],
+        password: [
+          '',
+          this.isEditMode
+            ? [Validators.minLength(6), Validators.maxLength(10)]
+            : [
+                Validators.required,
+                Validators.minLength(6),
+                Validators.maxLength(10),
+              ],
+        ],
+        description: [''],
+        testType: ['practice', Validators.required],
+        medium: ['en', Validators.required],
+        duration: [180, [Validators.required, Validators.min(1)]],
+        totalMarks: [0, [Validators.required, Validators.min(0)]],
+        totalQuestions: [0, [Validators.required, Validators.min(0)]],
+        startTime: ['', Validators.required],
+        endTime: ['', Validators.required],
+        autoPublishAt: [''],
+        instructionId: [''],
+        calculatorType: ['none'],
+        classNo: [null, Validators.required],
+        sections: this.fb.array([]),
+      },
+      { validators: this.dateValidators.bind(this) },
+    );
   }
 
   /* ================= DATE VALIDATORS ================= */
@@ -156,13 +181,16 @@ export class TestCreateComponent implements OnInit {
   }
 
   addSection(): void {
-    this.sections.push(this.fb.group({
-      sectionCode: ['', Validators.required],
-      sectionName: ['', Validators.required],
-      subjectId: ['', Validators.required],
-      numberOfQuestions: [0, [Validators.required, Validators.min(1)]],
-      sortOrder: [this.sections.length]
-    }));
+    this.sections.push(
+      this.fb.group({
+        sectionId: [''],
+        sectionCode: ['', Validators.required],
+        sectionName: ['', Validators.required],
+        subjectId: ['', Validators.required],
+        numberOfQuestions: [0, [Validators.required, Validators.min(1)]],
+        sortOrder: [this.sections.length],
+      }),
+    );
   }
 
   removeSection(index: number): void {
@@ -182,7 +210,7 @@ export class TestCreateComponent implements OnInit {
 
     // Check duplicate
     const duplicate = this.sections.controls.some(
-      (c, i) => i !== index && c.get('subjectId')?.value === subjectId
+      (c, i) => i !== index && c.get('subjectId')?.value === subjectId,
     );
 
     if (duplicate) {
@@ -196,21 +224,22 @@ export class TestCreateComponent implements OnInit {
     if (subject) {
       section.patchValue({
         sectionCode: subject.subjectCode || '',
-        sectionName: subject.subjectName || ''
+        sectionName: subject.subjectName || '',
       });
     }
   }
 
   hasDuplicateSubjects(): boolean {
     const ids = this.sections.controls
-      .map(c => c.get('subjectId')?.value)
-      .filter(v => !!v);
+      .map((c) => c.get('subjectId')?.value)
+      .filter((v) => !!v);
     return new Set(ids).size !== ids.length;
   }
 
   get sectionQuestionsTotal(): number {
     return this.sections.controls.reduce(
-      (sum, c) => sum + (Number(c.get('numberOfQuestions')?.value) || 0), 0
+      (sum, c) => sum + (Number(c.get('numberOfQuestions')?.value) || 0),
+      0,
     );
   }
 
@@ -219,10 +248,7 @@ export class TestCreateComponent implements OnInit {
   private async loadInitialData(): Promise<void> {
     this.loading = true;
     try {
-      await Promise.all([
-        this.loadSubjects(),
-        this.loadInstructions()
-      ]);
+      await Promise.all([this.loadSubjects(), this.loadInstructions()]);
 
       if ((this.isEditMode || this.isDuplicateMode) && this.editData) {
         this.populateFormForEdit();
@@ -238,20 +264,40 @@ export class TestCreateComponent implements OnInit {
 
   private loadSubjects(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.commonApi.fetchData({ entiId: this.tenantId }, 'ims/subject', 'list?list=full')
+      this.commonApi
+        .fetchData({ entiId: this.tenantId }, 'ims/subject', 'list?list=full')
         .subscribe({
-          next: (res: any) => { this.subjects = res?.data || []; resolve(); },
-          error: (err: any) => { this.alert.error(err?.error?.message || 'Error loading subjects'); reject(err); }
+          next: (res: any) => {
+            this.subjects = res?.data || [];
+            resolve();
+          },
+          error: (err: any) => {
+            this.alert.error(err?.error?.message || 'Error loading subjects');
+            reject(err);
+          },
         });
     });
   }
 
   private loadInstructions(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.commonApi.fetchData({ entiId: this.tenantId }, 'exam/instruction', 'list?list=full')
+      this.commonApi
+        .fetchData(
+          { entiId: this.tenantId },
+          'exam/instruction',
+          'list?list=full',
+        )
         .subscribe({
-          next: (res: any) => { this.instructions = res?.data || []; resolve(); },
-          error: (err: any) => { this.alert.error(err?.error?.message || 'Error loading instructions'); reject(err); }
+          next: (res: any) => {
+            this.instructions = res?.data || [];
+            resolve();
+          },
+          error: (err: any) => {
+            this.alert.error(
+              err?.error?.message || 'Error loading instructions',
+            );
+            reject(err);
+          },
         });
     });
   }
@@ -263,7 +309,7 @@ export class TestCreateComponent implements OnInit {
     this.examForm.patchValue({
       examCode: this.isDuplicateMode ? '' : d.examCode,
       examName: d.examName,
-      password: this.isDuplicateMode ? '' : (d.password || ''),
+      password: this.isDuplicateMode ? '' : d.password || '',
       description: d.description || '',
       testType: d.testType,
       medium: d.medium,
@@ -272,22 +318,29 @@ export class TestCreateComponent implements OnInit {
       totalQuestions: d.totalQuestions,
       startTime: this.toDatetimeLocal(d.startTime),
       endTime: this.toDatetimeLocal(d.endTime),
-      autoPublishAt: d.autoPublishAt ? this.toDatetimeLocal(d.autoPublishAt) : '',
+      autoPublishAt: d.autoPublishAt
+        ? this.toDatetimeLocal(d.autoPublishAt)
+        : '',
       // instructionId: d.instructionId || '',
       instructionId: d.instructionId?._id || d.instructionId || '',
       calculatorType: d.calculatorType || 'none',
-      classNo: d.classNo || null
+      classNo: d.classNo || null,
     });
     this.sections.clear();
     (d.sections || []).forEach((s: any) => {
-      this.sections.push(this.fb.group({
-        sectionCode: [s.sectionCode, Validators.required],
-        sectionName: [s.sectionName, Validators.required],
-        // subjectId: [s.subjectId, Validators.required],
-        subjectId: [s.subjectId?._id || s.subjectId, Validators.required],
-        numberOfQuestions: [s.numberOfQuestions, [Validators.required, Validators.min(1)]],
-        sortOrder: [s.sortOrder]
-      }));
+      this.sections.push(
+        this.fb.group({
+          sectionId: [s.sectionId],
+          sectionCode: [s.sectionCode, Validators.required],
+          sectionName: [s.sectionName, Validators.required],
+          subjectId: [s.subjectId?._id || s.subjectId, Validators.required],
+          numberOfQuestions: [
+            s.numberOfQuestions,
+            [Validators.required, Validators.min(1)],
+          ],
+          sortOrder: [s.sortOrder],
+        }),
+      );
     });
 
     if (!this.sections.length) this.addSection();
@@ -332,7 +385,7 @@ export class TestCreateComponent implements OnInit {
     const totalQ = Number(this.examForm.get('totalQuestions')?.value) || 0;
     if (totalQ > 0 && this.sectionQuestionsTotal !== totalQ) {
       this.alert.error(
-        `Section questions total (${this.sectionQuestionsTotal}) does not match Total Questions (${totalQ})`
+        `Section questions total (${this.sectionQuestionsTotal}) does not match Total Questions (${totalQ})`,
       );
       return;
     }
@@ -358,7 +411,14 @@ export class TestCreateComponent implements OnInit {
       instructionId: f.instructionId || undefined,
       calculatorType: f.calculatorType,
       classNo: f.classNo || null,
-      sections: f.sections
+      sections: f.sections.map((s: any) => ({
+        ...(s.sectionId ? { sectionId: s.sectionId } : {}),
+        sectionCode: s.sectionCode,
+        sectionName: s.sectionName,
+        subjectId: s.subjectId,
+        numberOfQuestions: s.numberOfQuestions,
+        sortOrder: s.sortOrder,
+      })),
     };
     if (this.isEditMode) {
       payload.examId = this.examId;
@@ -367,10 +427,13 @@ export class TestCreateComponent implements OnInit {
           if (res?.status) {
             this.alert.success('Exam updated successfully');
             // this.router.navigate(['/app/exams/exams']);
-            this.router.navigate(['/app/exams/exams/view'], { state: { exam: res.data } });
+            this.router.navigate(['/app/exams/exams/view'], {
+              state: { exam: res.data },
+            });
           }
         },
-        error: (err: any) => this.alert.error(err?.error?.message || 'Error updating exam')
+        error: (err: any) =>
+          this.alert.error(err?.error?.message || 'Error updating exam'),
       });
     } else if (this.isDuplicateMode && this.withQuestions) {
       payload.refExamId = this.editData?.examId;
@@ -379,10 +442,13 @@ export class TestCreateComponent implements OnInit {
           if (res?.status) {
             this.alert.success('Exam duplicated successfully');
             // this.router.navigate(['/app/exams/exams']);
-            this.router.navigate(['/app/exams/exams/view'], { state: { exam: res.data } });
+            this.router.navigate(['/app/exams/exams/view'], {
+              state: { exam: res.data },
+            });
           }
         },
-        error: (err: any) => this.alert.error(err?.error?.message || 'Error duplicating exam')
+        error: (err: any) =>
+          this.alert.error(err?.error?.message || 'Error duplicating exam'),
       });
     } else {
       this.commonApi.fetchData(payload, 'exam', 'create').subscribe({
@@ -390,10 +456,13 @@ export class TestCreateComponent implements OnInit {
           if (res?.status) {
             this.alert.success('Exam created successfully');
             // this.router.navigate(['/app/exams/exams']);
-            this.router.navigate(['/app/exams/exams/view'], { state: { exam: res.data } });
+            this.router.navigate(['/app/exams/exams/view'], {
+              state: { exam: res.data },
+            });
           }
         },
-        error: (err: any) => this.alert.error(err?.error?.message || 'Error creating exam')
+        error: (err: any) =>
+          this.alert.error(err?.error?.message || 'Error creating exam'),
       });
     }
   }
