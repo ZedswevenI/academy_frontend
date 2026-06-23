@@ -350,41 +350,46 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   //   return map;
   // }
 
-  private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, { matches: string[], marks: number, negMark: number }> {
-  const map: Record<string, { matches: string[], marks: number, negMark: number }> = {};
-  if (!correctAnswer) return map;
-  correctAnswer.split(';').forEach((pStr: string) => {
-    const colonIdx = pStr.indexOf(':');
-    if (colonIdx === -1) return;
-    const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
-    let rPart = pStr.substring(colonIdx + 1).trim();
+  private parseMatrixCorrectAnswer(
+    correctAnswer: string,
+  ): Record<string, { matches: string[]; marks: number; negMark: number }> {
+    const map: Record<
+      string,
+      { matches: string[]; marks: number; negMark: number }
+    > = {};
+    if (!correctAnswer) return map;
+    correctAnswer.split(';').forEach((pStr: string) => {
+      const colonIdx = pStr.indexOf(':');
+      if (colonIdx === -1) return;
+      const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
+      let rPart = pStr.substring(colonIdx + 1).trim();
 
-    // Extract marks: (2,1) or (2)
-    let marks = 0;
-    let negMark = 0;
-    const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
-    if (marksMatch) {
-      marks = parseFloat(marksMatch[1]) || 0;
-      negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
-    }
-
-    // Strip marks brackets
-    rPart = rPart.replace(/\([^)]*\)/g, '').trim();
-    if (!lKey || !rPart) return;
-
-    if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
-
-    // Handle "P,T" (new) or "PQ" (legacy concatenated)
-    const parts = rPart.toUpperCase().split(',').filter(Boolean);
-    for (const part of parts) {
-      // Each part: single char "P" or legacy "PQ"
-      for (const rk of part.split('').filter(Boolean)) {
-        if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
+      // Extract marks: (2,1) or (2)
+      let marks = 0;
+      let negMark = 0;
+      const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
+      if (marksMatch) {
+        marks = parseFloat(marksMatch[1]) || 0;
+        negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
       }
-    }
-  });
-  return map;
-}
+
+      // Strip marks brackets
+      rPart = rPart.replace(/\([^)]*\)/g, '').trim();
+      if (!lKey || !rPart) return;
+
+      if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
+
+      // Handle "P,T" (new) or "PQ" (legacy concatenated)
+      const parts = rPart.toUpperCase().split(',').filter(Boolean);
+      for (const part of parts) {
+        // Each part: single char "P" or legacy "PQ"
+        for (const rk of part.split('').filter(Boolean)) {
+          if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
+        }
+      }
+    });
+    return map;
+  }
 
   private normalizeDelimiters(html: string): string {
     if (!html) return html;
@@ -851,264 +856,551 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     });
   }
 
+  // printQuestions(withAnswer: boolean): void {
+  //   setTimeout(() => {
+  //     const printWindow = window.open('', '_blank', 'width=900,height=700');
+  //     if (!printWindow) return;
+  //     const questionsHtml = this.questions
+  //       .map((q, i) => {
+  //         const qEl = this.questionElements.toArray()[i]?.nativeElement;
+  //         const questionHtml = qEl ? qEl.innerHTML : '';
+  //         const opts = q.questionOptions || [];
+  //         let optionsHtml = '';
+  //         if (opts.length) {
+  //           const rows: string[] = [];
+  //           for (let j = 0; j < opts.length; j += 2) {
+  //             const cells = [j, j + 1]
+  //               .filter((k) => k < opts.length)
+  //               .map((k) => {
+  //                 const label = String.fromCharCode(65 + k);
+  //                 const flatIndex =
+  //                   this.questions
+  //                     .slice(0, i)
+  //                     .reduce(
+  //                       (acc: number, pq: any) =>
+  //                         acc + (pq.questionOptions?.length || 0),
+  //                       0,
+  //                     ) + k;
+  //                 const optEl = this.optionElements.toArray()[flatIndex];
+  //                 const optHtml = optEl
+  //                   ? optEl.nativeElement.innerHTML
+  //                   : typeof opts[k].textHtml === 'string'
+  //                     ? opts[k].textHtml
+  //                     : '';
+  //                 const isCorrect = withAnswer && opts[k].isCorrect;
+  //                 return `<td class="opt-cell ${isCorrect ? 'correct-opt' : ''}">
+  //                       <span class="opt-label">(${label})</span>
+  //                       <span class="opt-text">${optHtml}</span>
+  //                     </td>`;
+  //               })
+  //               .join('<td class="opt-divider"></td>');
+  //             rows.push(`<tr>${cells}</tr>`);
+  //           }
+  //           optionsHtml = `
+  //         <table class="options-table">
+  //           ${rows.join('')}
+  //         </table>`;
+  //         }
+  //         const answerRow = withAnswer
+  //           ? `<div class="answer-box">
+  //            <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
+  //          </div>`
+  //           : `<div class="answer-box">
+  //          </div>`;
+  //         return `
+  //       <div class="question-card">
+  //         <div class="question-number">Q${i + 1}.
+  //           <span class="meta-right">
+  //             [${this.formatQuestionType(q.questionType)}] &nbsp;
+  //           </span>
+  //         </div>
+  //         <div class="question-body">${questionHtml}</div>
+  //         ${optionsHtml}
+  //         ${answerRow}
+  //       </div>`;
+  //       })
+  //       .join('');
+  //     const docTitle = withAnswer ? 'ANSWER KEY' : 'EXAM';
+  //     printWindow.document.write(`
+  //     <!DOCTYPE html>
+  //     <html>
+  //     <head>
+  //       <title>${docTitle}</title>
+  //       <link rel="stylesheet"
+  //         href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+  //         crossorigin="anonymous">
+  //       <style>
+  //         * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  //         body {
+  //           font-family: 'Times New Roman', Times, serif;
+  //           font-size: 12pt;
+  //           color: #000;
+  //           background: #fff;
+  //           padding: 30px 40px;
+  //         }
+
+  //         /* ── Page Header ── */
+  //         .page-header {
+  //           text-align: center;
+  //           border-bottom: 2px solid #000;
+  //           padding-bottom: 10px;
+  //           margin-bottom: 16px;
+  //         }
+  //         .page-header h1 { font-size: 18pt; letter-spacing: 2px; }
+  //         .page-header .subtitle {
+  //           font-size: 10pt;
+  //           margin-top: 3px;
+  //           font-style: italic;
+  //         }
+  //         .page-meta {
+  //           display: table;
+  //           width: 100%;
+  //           margin-top: 8px;
+  //           font-size: 10.5pt;
+  //         }
+  //         .page-meta td { width: 25%; text-align: center; }
+
+  //         /* ── Student Info ── */
+  //         .student-info {
+  //           display: ${withAnswer ? 'none' : 'table'};
+  //           width: 100%;
+  //           margin-bottom: 14px;
+  //           font-size: 11pt;
+  //           border-collapse: collapse;
+  //         }
+  //         .student-info td { padding: 0 10px 0 0; white-space: nowrap; }
+  //         .student-info .fill-line {
+  //           border-bottom: 1px solid #000;
+  //           width: 100%;
+  //           display: inline-block;
+  //         }
+
+  //         /* ── Instructions ── */
+  //         .instructions {
+  //           display: ${withAnswer ? 'none' : 'block'};
+  //           font-size: 10pt;
+  //           border: 1px solid #000;
+  //           padding: 6px 12px;
+  //           margin-bottom: 16px;
+  //           line-height: 1.6;
+  //         }
+  //         .instructions ol { margin-left: 18px; }
+  //         .instructions li { margin-bottom: 2px; }
+
+  //         /* ── Question Card ── */
+  //         .question-card {
+  //           margin-bottom: 22px;
+  //           padding-bottom: 10px;
+  //           border-bottom: 1px dashed #555;
+  //           page-break-inside: avoid;
+  //         }
+
+  //         /* ── Question Number Row ── */
+  //         .question-number {
+  //           font-weight: bold;
+  //           font-size: 11.5pt;
+  //           margin-bottom: 4px;
+  //           display: flex;
+  //           justify-content: space-between;
+  //           align-items: baseline;
+  //         }
+  //         .meta-right {
+  //           font-weight: normal;
+  //           font-style: italic;
+  //           font-size: 9.5pt;
+  //           color: #000;
+  //         }
+
+  //         /* ── Question Body ── */
+  //         .question-body {
+  //           padding: 4px 18px 10px 18px;
+  //           line-height: 1.8;
+  //           font-size: 12pt;
+  //         }
+
+  //         /* ── Options Grid (2 per row) ── */
+  //         .options-table {
+  //           width: 100%;
+  //           border-collapse: collapse;
+  //           margin: 0 18px 10px 18px;
+  //           width: calc(100% - 36px);
+  //         }
+  //         .options-table tr { vertical-align: top; }
+  //         .opt-cell {
+  //           width: 48%;
+  //           padding: 3px 6px;
+  //           vertical-align: top;
+  //         }
+  //         .opt-divider { width: 4%; }
+  //         .opt-label {
+  //           font-weight: bold;
+  //           font-size: 11pt;
+  //           margin-right: 6px;
+  //           white-space: nowrap;
+  //         }
+  //         .opt-text {
+  //           font-size: 11.5pt;
+  //           line-height: 1.6;
+  //           vertical-align: top;
+  //         }
+  //         .correct-opt .opt-text {
+  //           font-weight: bold;
+  //           text-decoration: underline;
+  //         }
+  //         .page-header .meta {
+  //           font-size: 11pt;
+  //           margin-top: 6px;
+  //           display: flex;
+  //           justify-content: space-between;
+  //         }
+  //     .meta-table {
+  //     width: 100%;
+  //     border-collapse: collapse;
+  //     font-size: 10.5pt;
+  //     margin-top: 8px;
+  //     }
+  //     .meta-table td {
+  //     padding: 3px 6px;
+  //     }
+  //         /* ── Answer Box ── */
+  //         .answer-box {
+  //           margin: 6px 18px 0 18px;
+  //           font-size: 11pt;
+  //           padding-top: 4px;
+  //           border-top: 1px solid #ccc;
+  //         }
+  //         .answer-table { width: 100%; border-collapse: collapse; }
+  //         .answer-table td { padding: 0; }
+  //         .marks-box { text-align: right; white-space: nowrap; }
+
+  //         /* ── KaTeX ── */
+  //         .katex { font-size: 1em; }
+  //         img { max-width: 100%; height: auto; display: block; margin: 4px 0; }
+
+  //         /* ── Print ── */
+  //         @media print {
+  //           body { padding: 10px 20px; }
+  //           .question-card { page-break-inside: avoid; }
+  //           @page { margin: 12mm 15mm; }
+  //         }
+  //       </style>
+  //     </head>
+  //     <body>
+
+  //       <!-- Header -->
+  //       <div class="page-header">
+  //         <table class="meta-table">
+  //   <tr>
+  //     <td style="width:50%;text-align:left"><strong>Exam:</strong> ${this.questionData.examName || ''}</td>
+  //     <td style="width:50%;text-align:right"><strong>Code:</strong> ${this.questionData.examCode || ''}</td>
+  //   </tr>
+  //   <tr>
+  //     <td style="width:50%;text-align:left"><strong>Sections:</strong> ${(this.questionData.sections || []).map((s: any) => s.sectionName).join(' | ')}</td>
+  //     <td style="width:50%;text-align:right"><strong>Duration:</strong> ${this.questionData.duration || ''} min</td>
+  //   </tr>
+  //   <tr>
+  //     <td style="width:50%;text-align:left"><strong>Total Marks:</strong> ${this.questionData.totalMarks || ''}</td>
+  //     <td style="width:50%;text-align:right"><strong>Total Questions:</strong> ${this.questionData.totalQuestions || ''}</td>
+  //   </tr>
+  // </table>
+  //       </div>
+
+  //       <!-- Questions -->
+  //       ${questionsHtml}
+
+  //       <script>window.onload = () => window.print();<\/script>
+  //     </body>
+  //     </html>
+  //   `);
+
+  //     printWindow.document.close();
+  //   }, 500);
+  // }
+
   printQuestions(withAnswer: boolean): void {
-    setTimeout(() => {
-      const printWindow = window.open('', '_blank', 'width=900,height=700');
-      if (!printWindow) return;
-      const questionsHtml = this.questions
-        .map((q, i) => {
-          const qEl = this.questionElements.toArray()[i]?.nativeElement;
-          const questionHtml = qEl ? qEl.innerHTML : '';
-          const opts = q.questionOptions || [];
-          let optionsHtml = '';
-          if (opts.length) {
-            const rows: string[] = [];
-            for (let j = 0; j < opts.length; j += 2) {
-              const cells = [j, j + 1]
-                .filter((k) => k < opts.length)
-                .map((k) => {
-                  const label = String.fromCharCode(65 + k);
-                  const flatIndex =
-                    this.questions
-                      .slice(0, i)
-                      .reduce(
-                        (acc: number, pq: any) =>
-                          acc + (pq.questionOptions?.length || 0),
-                        0,
-                      ) + k;
-                  const optEl = this.optionElements.toArray()[flatIndex];
-                  const optHtml = optEl
-                    ? optEl.nativeElement.innerHTML
-                    : typeof opts[k].textHtml === 'string'
-                      ? opts[k].textHtml
-                      : '';
-                  const isCorrect = withAnswer && opts[k].isCorrect;
-                  return `<td class="opt-cell ${isCorrect ? 'correct-opt' : ''}">
-                        <span class="opt-label">(${label})</span>
-                        <span class="opt-text">${optHtml}</span>
-                      </td>`;
-                })
-                .join('<td class="opt-divider"></td>');
-              rows.push(`<tr>${cells}</tr>`);
-            }
-            optionsHtml = `
-          <table class="options-table">
-            ${rows.join('')}
-          </table>`;
+    const questionsToPrint = this.filteredQuestions;
+
+    if (!questionsToPrint.length) {
+      this.alert.error('No questions to print');
+      return;
+    }
+    const safeHtml = (val: any): string => (typeof val === 'string' ? val : '');
+    const formatAnswer = (q: any): string => {
+      switch (q.questionType) {
+        case 'mcq_single':
+        case 'passage_qns':
+          return `<span class="ans-badge">${(q.correctAnswer || '').toUpperCase()}</span>`;
+        case 'mcq_multi':
+          return (q.correctAnswer || '')
+            .toUpperCase()
+            .split(';')
+            .map((k: string) => `<span class="ans-badge">${k.trim()}</span>`)
+            .join(' ');
+        case 'true_false':
+          const tf = (q.correctAnswer || '').toLowerCase();
+          return `<span class="ans-badge ${tf === 'true' ? 'ans-true' : 'ans-false'}">${tf === 'true' ? 'True' : 'False'}</span>`;
+        case 'integer':
+          return `<span class="ans-badge ans-num">${q.correctAnswer ?? ''}</span>`;
+        case 'numeric':
+          const range =
+            q.numericMin != null && q.numericMax != null
+              ? ` <span class="ans-range">(Range: ${q.numericMin} – ${q.numericMax})</span>`
+              : '';
+          return `<span class="ans-badge ans-num">${q.correctAnswer ?? ''}</span>${range}`;
+        case 'subjective':
+        case 'short_answer':
+          return q.correctAnswer
+            ? `<span class="ans-text">${safeHtml(q.correctAnswer)}</span>`
+            : `<em>Manually evaluated</em>`;
+        case 'matrix':
+          return `<em>See matrix matches below</em>`;
+        default:
+          return `<span class="ans-badge">${q.correctAnswer ?? ''}</span>`;
+      }
+    };
+    const questionsHtml = questionsToPrint
+      .map((q: any, i: number) => {
+        const qEl = this.questionElements.toArray()[i];
+        const questionHtml = qEl
+          ? qEl.nativeElement.innerHTML
+          : safeHtml(q.questionHtml);
+        const passageHtml = safeHtml(q.passageHtml);
+        const passageBlock =
+          q.enablePassage && passageHtml
+            ? `<div class="passage-block"><div class="block-label">📖 Passage</div><div>${passageHtml}</div></div>`
+            : '';
+        const instructionHtml = safeHtml(q.instructionHtml);
+        const instructionBlock =
+          q.enableInstruction && instructionHtml
+            ? `<div class="instruction-block"><div class="block-label">ℹ Instruction</div><div>${instructionHtml}</div></div>`
+            : '';
+        let optionsBlock = '';
+        const opts: any[] = q.questionOptions || [];
+        if (opts.length) {
+          const optOffset = questionsToPrint
+            .slice(0, i)
+            .reduce(
+              (acc: number, pq: any) => acc + (pq.questionOptions?.length || 0),
+              0,
+            );
+
+          const optRows: string[] = [];
+          for (let k = 0; k < opts.length; k += 2) {
+            const cells = [k, k + 1]
+              .filter((j) => j < opts.length)
+              .map((j) => {
+                const optEl = this.optionElements.toArray()[optOffset + j];
+                const optHtml = optEl
+                  ? optEl.nativeElement.innerHTML
+                  : safeHtml(opts[j].textHtml);
+                const isCorrect = withAnswer && opts[j].isCorrect;
+                const key = opts[j].key || String.fromCharCode(65 + j);
+                return `<td class="opt-cell ${isCorrect ? 'opt-correct' : ''}">
+                      <span class="opt-key">(${key})</span>
+                      <span class="opt-body">${optHtml}</span>
+                      ${isCorrect ? '<span class="opt-tick">✓</span>' : ''}
+                    </td>`;
+              });
+            optRows.push(
+              cells.length === 2
+                ? `<tr>${cells[0]}<td class="opt-gap"></td>${cells[1]}</tr>`
+                : `<tr>${cells[0]}</tr>`,
+            );
           }
-          const answerRow = withAnswer
-            ? `<div class="answer-box">
-             <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
+          optionsBlock = `<table class="opts-table"><tbody>${optRows.join('')}</tbody></table>`;
+        }
+        let matrixBlock = '';
+        if (q.questionType === 'matrix' && q.leftColumn?.length) {
+          const leftRows = (q.leftColumn as any[])
+            .map(
+              (l: any) =>
+                `<tr><td class="matrix-key">${l.key}.</td><td class="matrix-cell">${safeHtml(l.textHtml)}</td></tr>`,
+            )
+            .join('');
+          const rightRows = (q.rightColumn as any[])
+            .map(
+              (r: any) =>
+                `<tr><td class="matrix-key">${r.key}.</td><td class="matrix-cell">${safeHtml(r.textHtml)}</td></tr>`,
+            )
+            .join('');
+          const matchesTable =
+            withAnswer && q.matrixMatches?.length
+              ? `<div class="matrix-matches">
+             <div class="block-label">✓ Correct Matches</div>
+             <table class="match-table">
+               <thead><tr><th>Left</th><th>Matches</th><th>+Marks</th><th>−Neg</th></tr></thead>
+               <tbody>
+                 ${(q.matrixMatches as any[])
+                   .map(
+                     (m: any) =>
+                       `<tr>
+                      <td class="match-key">${m.key}</td>
+                      <td>${(m.matches || []).map((rk: string) => `<span class="match-badge">${rk}</span>`).join(' ')}</td>
+                      <td class="match-marks">+${m.marks ?? 0}</td>
+                      <td class="match-neg">${m.negMark ? '−' + m.negMark : '0'}</td>
+                    </tr>`,
+                   )
+                   .join('')}
+               </tbody>
+             </table>
            </div>`
-            : `<div class="answer-box">             
-           </div>`;
-          return `
-        <div class="question-card">
-          <div class="question-number">Q${i + 1}.
-            <span class="meta-right">
-              [${this.formatQuestionType(q.questionType)}] &nbsp;
-            </span>
-          </div>
-          <div class="question-body">${questionHtml}</div>
-          ${optionsHtml}
-          ${answerRow}
+              : '';
+
+          matrixBlock = `
+        <div class="matrix-wrap">
+          <table class="matrix-cols">
+            <thead>
+              <tr>
+                <th class="matrix-head">Column I</th>
+                <th class="matrix-head">Column II</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="matrix-side"><table><tbody>${leftRows}</tbody></table></td>
+                <td class="matrix-side"><table><tbody>${rightRows}</tbody></table></td>
+              </tr>
+            </tbody>
+          </table>
+          ${matchesTable}
         </div>`;
-        })
-        .join('');
-      const docTitle = withAnswer ? 'ANSWER KEY' : 'EXAM';
-      printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${docTitle}</title>
-        <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
-          crossorigin="anonymous">
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
+        }
 
-          body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 12pt;
-            color: #000;
-            background: #fff;
-            padding: 30px 40px;
-          }
+        // answer + solution
+        const answerBlock = withAnswer
+          ? `<div class="answer-row"><strong>Answer:</strong>&nbsp;${formatAnswer(q)}</div>`
+          : '';
 
-          /* ── Page Header ── */
-          .page-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 16px;
-          }
-          .page-header h1 { font-size: 18pt; letter-spacing: 2px; }
-          .page-header .subtitle {
-            font-size: 10pt;
-            margin-top: 3px;
-            font-style: italic;
-          }
-          .page-meta {
-            display: table;
-            width: 100%;
-            margin-top: 8px;
-            font-size: 10.5pt;
-          }
-          .page-meta td { width: 25%; text-align: center; }
+        const solutionHtml = safeHtml(q.solutionHtml);
+        const solutionBlock =
+          withAnswer && q.enableSolution && solutionHtml
+            ? `<div class="solution-block"><div class="block-label">💡 Solution</div><div>${solutionHtml}</div></div>`
+            : '';
 
-          /* ── Student Info ── */
-          .student-info {
-            display: ${withAnswer ? 'none' : 'table'};
-            width: 100%;
-            margin-bottom: 14px;
-            font-size: 11pt;
-            border-collapse: collapse;
-          }
-          .student-info td { padding: 0 10px 0 0; white-space: nowrap; }
-          .student-info .fill-line {
-            border-bottom: 1px solid #000;
-            width: 100%;
-            display: inline-block;
-          }
+        const marks = `[+${q.positiveMarks}${q.negativeMarks ? ' / −' + q.negativeMarks : ''}]`;
 
-          /* ── Instructions ── */
-          .instructions {
-            display: ${withAnswer ? 'none' : 'block'};
-            font-size: 10pt;
-            border: 1px solid #000;
-            padding: 6px 12px;
-            margin-bottom: 16px;
-            line-height: 1.6;
-          }
-          .instructions ol { margin-left: 18px; }
-          .instructions li { margin-bottom: 2px; }
+        return `
+      <div class="q-card">
+        <div class="q-header">
+          <span class="q-num">Q${i + 1}.</span>
+          <span class="q-meta">${this.formatQuestionType(q.questionType)} &nbsp; ${marks}</span>
+          ${q.questionNo ? `<span class="q-no">${q.questionNo}</span>` : ''}
+        </div>
+        ${instructionBlock}
+        ${passageBlock}
+        <div class="q-body">${questionHtml}</div>
+        ${optionsBlock}
+        ${matrixBlock}
+        ${answerBlock}
+        ${solutionBlock}
+      </div>`;
+      })
+      .join('');
 
-          /* ── Question Card ── */
-          .question-card {
-            margin-bottom: 22px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed #555;
-            page-break-inside: avoid;
-          }
-
-          /* ── Question Number Row ── */
-          .question-number {
-            font-weight: bold;
-            font-size: 11.5pt;
-            margin-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-          }
-          .meta-right {
-            font-weight: normal;
-            font-style: italic;
-            font-size: 9.5pt;
-            color: #000;
-          }
-
-          /* ── Question Body ── */
-          .question-body {
-            padding: 4px 18px 10px 18px;
-            line-height: 1.8;
-            font-size: 12pt;
-          }
-
-          /* ── Options Grid (2 per row) ── */
-          .options-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0 18px 10px 18px;
-            width: calc(100% - 36px);
-          }
-          .options-table tr { vertical-align: top; }
-          .opt-cell {
-            width: 48%;
-            padding: 3px 6px;
-            vertical-align: top;
-          }
-          .opt-divider { width: 4%; }
-          .opt-label {
-            font-weight: bold;
-            font-size: 11pt;
-            margin-right: 6px;
-            white-space: nowrap;
-          }
-          .opt-text {
-            font-size: 11.5pt;
-            line-height: 1.6;
-            vertical-align: top;
-          }
-          .correct-opt .opt-text {
-            font-weight: bold;
-            text-decoration: underline;
-          }
-          .page-header .meta {
-            font-size: 11pt;
-            margin-top: 6px;
-            display: flex;
-            justify-content: space-between;
-          }
-      .meta-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 10.5pt;
-      margin-top: 8px;
+    setTimeout(() => {
+      const printWindow = window.open('', '_blank', 'width=960,height=750');
+      if (!printWindow) {
+        this.alert.error('Pop-up blocked — allow pop-ups and try again');
+        return;
       }
-      .meta-table td {
-      padding: 3px 6px;
-      }
-          /* ── Answer Box ── */
-          .answer-box {
-            margin: 6px 18px 0 18px;
-            font-size: 11pt;
-            padding-top: 4px;
-            border-top: 1px solid #ccc;
-          }
-          .answer-table { width: 100%; border-collapse: collapse; }
-          .answer-table td { padding: 0; }
-          .marks-box { text-align: right; white-space: nowrap; }
+      const examMeta = this.questionData;
+      const docTitle = withAnswer ? 'ANSWER KEY' : 'QUESTION PAPER';
+      const sections = (examMeta?.sections || [])
+        .map((s: any) => s.sectionName)
+        .join(' | ');
 
-          /* ── KaTeX ── */
-          .katex { font-size: 1em; }
-          img { max-width: 100%; height: auto; display: block; margin: 4px 0; }
-
-          /* ── Print ── */
-          @media print {
-            body { padding: 10px 20px; }
-            .question-card { page-break-inside: avoid; }
-            @page { margin: 12mm 15mm; }
-          }
-        </style>
-      </head>
-      <body>
-
-        <!-- Header -->
-        <div class="page-header">
-          <table class="meta-table">
-    <tr>
-      <td style="width:50%;text-align:left"><strong>Exam:</strong> ${this.questionData.examName || ''}</td>
-      <td style="width:50%;text-align:right"><strong>Code:</strong> ${this.questionData.examCode || ''}</td>
-    </tr>
-    <tr>
-      <td style="width:50%;text-align:left"><strong>Sections:</strong> ${(this.questionData.sections || []).map((s: any) => s.sectionName).join(' | ')}</td>
-      <td style="width:50%;text-align:right"><strong>Duration:</strong> ${this.questionData.duration || ''} min</td>
-    </tr>
-    <tr>
-      <td style="width:50%;text-align:left"><strong>Total Marks:</strong> ${this.questionData.totalMarks || ''}</td>
-      <td style="width:50%;text-align:right"><strong>Total Questions:</strong> ${this.questionData.totalQuestions || ''}</td>
-    </tr>
-  </table>
-        </div> 
-
-        <!-- Questions -->
-        ${questionsHtml}
-
-        <script>window.onload = () => window.print();<\/script>
-      </body>
-      </html>
-    `);
-
+      printWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${docTitle}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; background: #fff; padding: 28px 40px; }
+    .page-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 16px; }
+    .doc-title { text-align: center; font-size: 15pt; font-weight: bold; letter-spacing: 2px; margin-bottom: 8px; }
+    .header-table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+    .header-table td { padding: 3px 4px; }
+    .student-strip { display: ${withAnswer ? 'none' : 'flex'}; gap: 24px; margin-bottom: 12px; font-size: 11pt; border: 1px solid #000; padding: 6px 10px; }
+    .student-strip .fill { flex: 1; border-bottom: 1px solid #000; min-width: 120px; }
+    .instructions { display: ${withAnswer ? 'none' : 'block'}; font-size: 10pt; border: 1px solid #ccc; padding: 5px 12px; margin-bottom: 14px; line-height: 1.6; }
+    .instructions ol { padding-left: 20px; }
+    .q-card { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed #888; page-break-inside: avoid; }
+    .q-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+    .q-num  { font-weight: bold; font-size: 12pt; white-space: nowrap; }
+    .q-meta { font-size: 9.5pt; font-style: italic; color: #333; flex: 1; }
+    .q-no   { font-size: 9pt; color: #555; white-space: nowrap; }
+    .q-body { padding: 2px 16px 8px 16px; line-height: 1.8; font-size: 12pt; }
+    .passage-block, .instruction-block, .solution-block { margin: 0 16px 10px 16px; padding: 8px 12px; border-radius: 4px; font-size: 11pt; line-height: 1.7; }
+    .passage-block     { background: #f5f5f5; border-left: 3px solid #555; }
+    .instruction-block { background: #fffbe6; border-left: 3px solid #f0a500; }
+    .solution-block    { background: #edf7ff; border-left: 3px solid #1a73e8; }
+    .block-label { font-weight: bold; font-size: 10pt; margin-bottom: 4px; }
+    .opts-table { width: calc(100% - 32px); margin: 0 16px 10px 16px; border-collapse: collapse; }
+    .opts-table tr { vertical-align: top; }
+    .opt-cell { width: 48%; padding: 3px 6px; vertical-align: top; line-height: 1.6; }
+    .opt-cell.opt-correct { font-weight: bold; text-decoration: underline; }
+    .opt-gap  { width: 4%; }
+    .opt-key  { font-weight: bold; margin-right: 5px; font-size: 11pt; }
+    .opt-body { font-size: 11.5pt; }
+    .opt-tick { color: #1a7a1a; font-size: 10pt; margin-left: 4px; }
+    .matrix-wrap  { margin: 0 16px 10px 16px; }
+    .matrix-cols  { width: 100%; border-collapse: collapse; }
+    .matrix-head  { font-size: 10.5pt; font-weight: bold; padding: 4px 8px; border-bottom: 1px solid #333; }
+    .matrix-side  { width: 50%; vertical-align: top; padding: 4px 8px; }
+    .matrix-key   { font-weight: bold; padding: 3px 8px 3px 0; white-space: nowrap; }
+    .matrix-cell  { padding: 3px 4px; line-height: 1.6; }
+    .matrix-matches { margin-top: 10px; }
+    .match-table { width: auto; border-collapse: collapse; font-size: 10.5pt; margin-top: 4px; }
+    .match-table th { padding: 3px 12px; border: 1px solid #aaa; background: #eee; font-size: 10pt; }
+    .match-table td { padding: 3px 12px; border: 1px solid #ccc; }
+    .match-key   { font-weight: bold; }
+    .match-badge { display: inline-block; background: #1a7a1a; color: #fff; padding: 0 5px; border-radius: 3px; margin-right: 2px; font-size: 10pt; }
+    .match-marks { color: #1a7a1a; font-weight: bold; }
+    .match-neg   { color: #c0392b; }
+    .answer-row { margin: 6px 16px 0; padding-top: 5px; border-top: 1px solid #ccc; font-size: 11pt; }
+    .ans-badge  { display: inline-block; background: #1a7a1a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: bold; margin-left: 4px; }
+    .ans-true   { background: #1a7a1a; }
+    .ans-false  { background: #c0392b; }
+    .ans-num    { background: #1a4fa8; }
+    .ans-range  { font-size: 10pt; color: #555; }
+    .ans-text   { font-style: italic; }
+    img { max-width: 100%; height: auto; display: inline-block; vertical-align: middle; }
+    .katex { font-size: 1em; }
+    @media print {
+      body { padding: 8px 18px; }
+      .q-card { page-break-inside: avoid; }
+      @page { margin: 12mm 15mm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <div class="doc-title">${docTitle}</div>
+    <table class="header-table">
+      <tr>
+        <td style="width:60%;"><strong>Exam:</strong> ${examMeta?.examName || ''}</td>
+        <td style="width:40%;text-align:right;"><strong>Code:</strong> ${examMeta?.examCode || ''}</td>
+      </tr>
+      <tr>
+        <td><strong>Sections:</strong> ${sections}</td>
+        <td style="text-align:right;"><strong>Duration:</strong> ${examMeta?.duration || '—'} min</td>
+      </tr>
+      <tr>
+        <td><strong>Total Marks:</strong> ${examMeta?.totalMarks || '—'}</td>
+        <td style="text-align:right;"><strong>Total Questions:</strong> ${questionsToPrint.length}</td>
+      </tr>
+      <tr>
+        <td><strong>Duration: </strong> ${examMeta?.duration || '—'} minutes</td>
+      </tr>
+    </table>
+  </div>
+  ${questionsHtml}
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`);
       printWindow.document.close();
     }, 500);
   }
