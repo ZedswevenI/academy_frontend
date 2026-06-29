@@ -26,29 +26,21 @@ export class TestCreateComponent implements OnInit {
   tenantId = '';
   loading = false;
   withQuestions = true;
-
   examForm!: FormGroup;
-
   subjects: any[] = [];
   instructions: any[] = [];
-
   testTypeOptions = [
     { label: 'Practice', value: 'practice' },
-    // { label: 'Live', value: 'live' },
-    // { label: 'Mock', value: 'mock' }
   ];
-
   mediumOptions = [
     { label: 'English', value: 'en' },
     { label: 'Tamil', value: 'ta' },
   ];
-
   calculatorOptions = [
     { label: 'None', value: 'none' },
     { label: 'Normal', value: 'normal' },
     { label: 'Scientific', value: 'scientific' },
   ];
-
   classOptions = [
     ...Array.from({ length: 7 }, (_, i) => ({
       label: `Class ${i + 6}`,
@@ -56,6 +48,8 @@ export class TestCreateComponent implements OnInit {
     })),
     { label: '12th Pass', value: 13 },
   ];
+  examCodeLoading = false;
+  minDateTime = '';
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -96,14 +90,25 @@ export class TestCreateComponent implements OnInit {
     this.loadInitialData();
   }
 
-  // Minimum datetime for date pickers (current time)
-  minDateTime = '';
-
-  /* ================= FORM ================= */
+  private loadNextExamCode(): void {
+    if (this.isEditMode) return;
+  this.examCodeLoading = true;
+  this.commonApi.fetchData(
+    { entiId: this.tenantId },
+    'exam', 'next-code'
+  ).subscribe({
+    next: (res: any) => {
+      this.examCodeLoading = false;
+      if (res?.status) {
+        this.examForm.patchValue({ examCode: res.examCode });
+      }
+    },
+    error: () => { this.examCodeLoading = false; }
+  });
+}
 
   private initForm(): void {
     this.minDateTime = this.isEditMode ? '' : this.toDatetimeLocal(Date.now());
-
     this.examForm = this.fb.group(
       {
         examCode: ['', Validators.required],
@@ -135,8 +140,6 @@ export class TestCreateComponent implements OnInit {
       { validators: this.dateValidators.bind(this) },
     );
   }
-
-  /* ================= DATE VALIDATORS ================= */
 
   private dateValidators(group: AbstractControl): ValidationErrors | null {
     const startTime = group.get('startTime')?.value;
@@ -200,26 +203,18 @@ export class TestCreateComponent implements OnInit {
     }
   }
 
-  /* ================= SECTION SUBJECT AUTO-FILL ================= */
-
   onSectionSubjectChange(index: number): void {
     const section = this.sections.at(index) as FormGroup;
     const subjectId = section.get('subjectId')?.value;
-
     if (!subjectId) return;
-
-    // Check duplicate
     const duplicate = this.sections.controls.some(
       (c, i) => i !== index && c.get('subjectId')?.value === subjectId,
     );
-
     if (duplicate) {
       this.alert.error('This subject is already added in another section');
       section.patchValue({ subjectId: '', sectionCode: '', sectionName: '' });
       return;
     }
-
-    // Auto-fill sectionCode and sectionName from subject
     const subject = this.subjects.find((s: any) => s._id === subjectId);
     if (subject) {
       section.patchValue({
@@ -243,17 +238,15 @@ export class TestCreateComponent implements OnInit {
     );
   }
 
-  /* ================= DATA LOADING ================= */
-
   private async loadInitialData(): Promise<void> {
     this.loading = true;
     try {
       await Promise.all([this.loadSubjects(), this.loadInstructions()]);
-
       if ((this.isEditMode || this.isDuplicateMode) && this.editData) {
         this.populateFormForEdit();
       } else {
         this.addSection();
+        this.loadNextExamCode()
       }
     } catch (e) {
       this.alert.error('Error loading data');
@@ -302,8 +295,6 @@ export class TestCreateComponent implements OnInit {
     });
   }
 
-  /* ================= EDIT MODE ================= */
-
   private populateFormForEdit(): void {
     const d = this.editData;
     this.examForm.patchValue({
@@ -321,7 +312,6 @@ export class TestCreateComponent implements OnInit {
       autoPublishAt: d.autoPublishAt
         ? this.toDatetimeLocal(d.autoPublishAt)
         : '',
-      // instructionId: d.instructionId || '',
       instructionId: d.instructionId?._id || d.instructionId || '',
       calculatorType: d.calculatorType || 'none',
       classNo: d.classNo || null,
@@ -342,7 +332,6 @@ export class TestCreateComponent implements OnInit {
         }),
       );
     });
-
     if (!this.sections.length) this.addSection();
   }
 
@@ -357,8 +346,6 @@ export class TestCreateComponent implements OnInit {
     if (!datetimeLocal) return null;
     return new Date(datetimeLocal).getTime();
   }
-
-  /* ================= SUBMIT ================= */
 
   submitExam(): void {
     this.examForm.markAllAsTouched();
@@ -426,7 +413,6 @@ export class TestCreateComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Exam updated successfully');
-            // this.router.navigate(['/app/exams/exams']);
             this.router.navigate(['/app/exams/exams/view'], {
               state: { exam: res.data },
             });
@@ -441,7 +427,6 @@ export class TestCreateComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Exam duplicated successfully');
-            // this.router.navigate(['/app/exams/exams']);
             this.router.navigate(['/app/exams/exams/view'], {
               state: { exam: res.data },
             });
@@ -455,7 +440,6 @@ export class TestCreateComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             this.alert.success('Exam created successfully');
-            // this.router.navigate(['/app/exams/exams']);
             this.router.navigate(['/app/exams/exams/view'], {
               state: { exam: res.data },
             });

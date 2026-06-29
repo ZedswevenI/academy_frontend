@@ -32,6 +32,8 @@ interface ActivityItem {
   startDate: number;
   endDate: number;
   status: string;
+  remarks: string | null;
+  centerCode: string | null;
 }
 
 interface PtmItem {
@@ -77,6 +79,28 @@ interface InactiveUser {
   neverLoggedIn: boolean;
   daysSinceLogin: number | null;
   avatar: string;
+}
+
+interface AbsentStudent {
+  studentId: string;
+  admissionNo: string;
+  remarks: string | null;
+  studentName: string;
+  batchCode: string;
+  batchName: string;
+  date: number;
+}
+
+interface PeriodAbsentStudent {
+  studentId: string;
+  admissionNo: string;
+  studentName: string;
+  remarks: string | null;
+  batchCode: string;
+  date: number;
+  periodNo: number;
+  subjectId: string;
+  facultyId: string;
 }
 
 @Component({
@@ -187,8 +211,11 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
   inactiveUsersCount = 0;
   ptms: PtmItem[] = [];
   upcomingActivities: ActivityItem[] = [];
+todayAbsentList: AbsentStudent[] = [];
+todayPeriodAbsentList: PeriodAbsentStudent[] = [];
+todayAbsentCount = 0;
+activeAbsentTab: 'school' | 'period' = 'school';
 
-  // Charts
   attendanceLineData: ChartData<'line'> = { labels: [], datasets: [] };
   attendanceLineOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
@@ -427,6 +454,9 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
         if (u.byBatch !== null) this.kpis[i].byBatch = u.byBatch;
       }
     });
+    this.todayAbsentCount = kpis.attendance?.todayAbsent ?? 0;
+this.todayAbsentList = kpis.attendance?.todayAbsentList ?? [];
+this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
   }
 
   private buildAttendanceChart(trend: any): void {

@@ -267,7 +267,7 @@ export class ReportsnewComponent implements OnInit {
   facultyLoadData: any[] = [];
   sectionOptions = [
     { key: 'teaching', label: 'Teaching Hours', disabled: false },
-    { key: 'invigilation', label: 'Invigilation Hours', disabled: true },
+    { key: 'invigilation', label: 'Invigilation Hours', disabled: false },
     { key: 'tasks', label: 'Tasks', disabled: false },
     { key: 'cancelled', label: 'Cancelled Periods', disabled: false },
     { key: 'replaced', label: 'Replaced Periods', disabled: false },
@@ -3715,7 +3715,32 @@ export class ReportsnewComponent implements OnInit {
           [240, 253, 244],
         );
       }
-
+      // Invigilation
+      if (staff.invigilation?.duties?.length) {
+        doc.setFontSize(8);
+        doc.text(
+          `Invigilation: ${staff.invigilation.totalHours || '-'} | ${staff.invigilation.count} session(s)`,
+          14,
+          startY,
+        );
+        startY += 4;
+        addSectionTable(
+          'Invigilation Hours',
+          ['Date', 'Exam', 'Session', 'Room', 'Slot', 'Start', 'End'],
+          [
+            'examDateFormatted',
+            'examName',
+            'session',
+            'roomNo',
+            'slot',
+            'slotStartTime',
+            'slotEndTime',
+          ],
+          staff.invigilation.duties,
+          [20, 184, 166],
+          [240, 253, 250],
+        );
+      }
       // Tasks
       if (staff.tasks?.tasks?.length) {
         doc.setFontSize(8);
@@ -4030,7 +4055,23 @@ export class ReportsnewComponent implements OnInit {
           ],
           staff.replaced.periods,
         );
-
+      if (staff.invigilation?.duties?.length)
+        addSection(
+          'Invigilation Hours',
+          staff.invigilation.count,
+          null,
+          ['Date', 'Exam', 'Session', 'Room', 'Slot', 'Start Time', 'End Time'],
+          [
+            'examDateFormatted',
+            'examName',
+            'session',
+            'roomNo',
+            'slot',
+            'slotStartTime',
+            'slotEndTime',
+          ],
+          staff.invigilation.duties,
+        );
       if (staff.tasks?.tasks?.length)
         addSection(
           'Tasks',
@@ -4120,32 +4161,6 @@ export class ReportsnewComponent implements OnInit {
         );
 
       if (staff.assignments?.rows?.length)
-        // addSection(
-        //   'Assignment Enabled Per Batch',
-        //   staff.assignments.count,
-        //   null,
-        //   [
-        //     'Batch',
-        //     'Batch Name',
-        //     'Subject',
-        //     'Test No',
-        //     'Enabled On',
-        //     'Students',
-        //     'Completed',
-        //     '%',
-        //   ],
-        //   [
-        //     'batchCode',
-        //     'batchName',
-        //     'subjectName',
-        //     'testNo',
-        //     'enabledAtFormatted',
-        //     'totalStudents',
-        //     'completed',
-        //     'completionPct',
-        //   ],
-        //   staff.assignments.rows,
-        // );
         addSection(
           'Assignment Enabled Per Batch',
           staff.assignments.count,

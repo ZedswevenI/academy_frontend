@@ -58,6 +58,7 @@ export class TestComponent implements OnInit, OnDestroy {
     { label: 'Published', value: 'published' },
     { label: 'Result Published', value: 'result_published' },
     { label: 'Completed', value: 'completed' },
+    { label: 'Disable for Student', value: 'disabled' },
   ];
   mediumOptions = [
     { label: 'English', value: 'en' },
@@ -236,9 +237,28 @@ export class TestComponent implements OnInit, OnDestroy {
             this.deleteExam(row);
           },
         },
+        {
+          text: 'Disable Exam',
+          icon: 'fa-solid fa-ban',
+          show: (row: any) => row.status !== 'result_published',
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.disableExam(row);
+          },
+        },
+        {
+          text: 'Enable Exam',
+          icon: 'fa-solid fa-circle-check',
+          show: (row: any) => row.status !== 'disabled',
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.enableExam(row);
+          },
+        },
       ],
     },
   ];
+  showGraceQuestionSelector = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -485,6 +505,8 @@ export class TestComponent implements OnInit, OnDestroy {
         return 'Result Published';
       case 'completed':
         return 'Completed';
+      case 'disabled':
+        return 'Disabled';
       default:
         return status;
     }
@@ -520,7 +542,6 @@ export class TestComponent implements OnInit, OnDestroy {
     const suffix = ' - Copy';
     const basePayload: any = {
       entiId: localStorage.getItem('tenantId'),
-      examCode: `${d.examCode}${suffix}`,
       examName: `${d.examName}${suffix}`,
       password: d.password || '123456',
       description: d.description,
@@ -1315,9 +1336,6 @@ export class TestComponent implements OnInit, OnDestroy {
     return this.graceRow?.sections || [];
   }
 
-  /* ================= GRACE QUESTION SELECTOR ================= */
-  showGraceQuestionSelector = false;
-
   openGraceQuestionSelector() {
     this.showGraceQuestionSelector = true;
   }
@@ -1400,18 +1418,6 @@ export class TestComponent implements OnInit, OnDestroy {
     this.fetchTableData({ page: 1, pageSize: 10 });
   }
 
-  // private forceCloseDropdowns(): void {
-  //   document
-  //     .querySelectorAll('.dropdown-menu.show')
-  //     .forEach((menu) => menu.classList.remove('show'));
-  //   document
-  //     .querySelectorAll('body > .dropdown-menu')
-  //     .forEach((menu) => menu.remove());
-  //   document
-  //     .querySelectorAll('.dropdown-toggle[aria-expanded="true"]')
-  //     .forEach((toggle) => toggle.setAttribute('aria-expanded', 'false'));
-  // }
-
   forceCloseDropdowns(): void {
     document
       .querySelectorAll('.dropdown-menu.show')
@@ -1429,5 +1435,53 @@ export class TestComponent implements OnInit, OnDestroy {
 
   onRowSelected(row: any) {
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
+  }
+
+  disableExam(row: any): void {
+    if (
+      !confirm(`Disable "${row.examName}"? Students won't be able to see it.`)
+    )
+      return;
+    this.commonApi
+      .fetchData(
+        { entiId: localStorage.getItem('tenantId'), examId: row.examId },
+        'exam',
+        'disable',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success('Exam disabled successfully');
+            if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+          } else {
+            this.alert.error(res?.message || 'Failed to disable exam');
+          }
+        },
+        error: () => this.alert.error('Error disabling exam'),
+      });
+  }
+
+  enableExam(row: any): void {
+    if (!confirm(`Enable "${row.examName}"?`)) return;
+    this.commonApi
+      .fetchData(
+        {
+          entiId: localStorage.getItem('tenantId'),
+          examId: row.examId,
+        },
+        'exam',
+        'enable',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success(`Exam enabled as ${res.data?.status}`);
+            if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+          } else {
+            this.alert.error(res?.message || 'Failed to enable exam');
+          }
+        },
+        error: () => this.alert.error('Error enabling exam'),
+      });
   }
 }

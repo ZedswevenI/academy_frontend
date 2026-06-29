@@ -19,6 +19,12 @@
       <button *ngIf="!examData.isImported" class="btn btn-shuffle fs-16 fw-medium me-2" (click)="viewQuestions()">
         <i class="fa-solid fa-list me-1"></i> Questions
       </button>
+      <button *ngIf="examData.status === 'result_published'" class="btn btn-export fs-16 fw-medium me-2"
+        [disabled]="exportingReport" (click)="exportParticipantReport()">
+        <span *ngIf="exportingReport" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="!exportingReport" class="fa-solid fa-file-excel me-1"></i>
+        {{ exportingReport ? 'Exporting...' : 'Export Report' }}
+      </button>
       <button *ngIf="!authService.assignmentRole() && examData.status !== 'result_published'"
         class="btn btn-edit fs-16 fw-medium me-2" (click)="editExam()">
         <i class="fa-regular fa-pen-to-square me-1"></i> Edit
