@@ -110,6 +110,9 @@
                                 <span *ngIf="a.endDate && a.endDate !== a.startDate"> → {{ formatActivityDate(a.endDate)
                                     }}</span>
                             </div>
+                            <div class="act-remarks" *ngIf="a.remarks">
+                                <i class="fa-solid fa-comment-dots fa-xs"></i> {{ a.remarks }}
+                            </div>
                         </div>
                         <span class="chip" [class.blue]="a.status === 'PLANNED'"
                             [class.green]="a.status === 'IN_PROGRESS'" [class.amber]="a.status === 'COMPLETED'">
@@ -123,6 +126,71 @@
                 </ng-template>
             </ul>
         </div>
+    </div>
+
+    <!-- Today's Absent List -->
+    <div class="card absent-card" *ngIf="todayAbsentCount > 0">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">
+                    <i class="fa-solid fa-user-slash" style="color:#dc2626"></i> Today's Absent Students
+                </h3>
+                <p class="card-sub">{{ todayAbsentCount }} student(s) absent today</p>
+            </div>
+            <div class="absent-tabs">
+                <button class="absent-tab" [class.active]="activeAbsentTab === 'school'"
+                    (click)="activeAbsentTab = 'school'">
+                    <i class="fa-solid fa-school fa-xs"></i> Day-wise
+                    <span class="absent-tab-count">{{ todayAbsentList.length }}</span>
+                </button>
+                <button class="absent-tab" [class.active]="activeAbsentTab === 'period'"
+                    (click)="activeAbsentTab = 'period'">
+                    <i class="fa-solid fa-clock fa-xs"></i> Period-wise
+                    <span class="absent-tab-count">{{ todayPeriodAbsentList.length }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Day-wise -->
+        <ng-container *ngIf="activeAbsentTab === 'school'">
+            <div class="absent-table" *ngIf="todayAbsentList.length; else emptyDayAbsent">
+                <div class="absent-row absent-head">
+                    <span>Student</span> <span>Admission No</span><span>Batch</span><span>Remarks</span>
+                </div>
+                <div class="absent-row" *ngFor="let s of todayAbsentList">
+                    <span class="ptm-name">{{ s.studentName }}</span>
+                    <span class="ptm-name">{{ s.admissionNo }}</span>
+                    <span>
+                        <div class="ptm-name">{{ s.batchCode }}</div>
+                        <div class="ptm-sub">{{ s.batchName }}</div>
+                    </span>
+                    <span class="absent-remark" [class.none]="!s.remarks">{{ s.remarks || '—' }}</span>
+                </div>
+            </div>
+            <ng-template #emptyDayAbsent>
+                <div class="empty-state">No day-wise absences recorded</div>
+            </ng-template>
+        </ng-container>
+
+        <!-- Period-wise -->
+        <ng-container *ngIf="activeAbsentTab === 'period'">
+            <div class="absent-table" *ngIf="todayPeriodAbsentList.length; else emptyPeriodAbsent">
+                <div class="absent-row absent-head period-row">
+                    <span>Student</span><span>Admission
+                        No</span><span>Batch</span><span>Period</span><span>Remarks</span>
+                </div>
+                <div class="absent-row period-row" *ngFor="let s of todayPeriodAbsentList">
+                    <span class="ptm-name">{{ s.studentName }}</span>
+                    <span class="ptm-name">{{ s.admissionNo }}</span>
+                    <span class="ptm-sub">{{ s.batchCode }}</span>
+                    <span><span class="period-badge">P{{ s.periodNo }}</span></span>
+                    <span class="absent-remark" [class.none]="!s.remarks">{{ s.remarks || '—' }}</span>
+                </div>
+            </div>
+            <ng-template #emptyPeriodAbsent>
+                <div class="empty-state">No period-wise absences recorded</div>
+            </ng-template>
+        </ng-container>
     </div>
 
     <!-- Attendance + Program -->

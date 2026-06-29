@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, NgZone, OnInit } from '@angular/core';
 import katex from 'katex';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -92,6 +92,7 @@ export class QuestionCreateNewComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
+    private zone: NgZone,
     private breadcrump: BredcrumpService,
     private commonApi: CommonapiService,
     private alert: AlertService,
@@ -99,7 +100,6 @@ export class QuestionCreateNewComponent implements OnInit {
     private sanitizer: DomSanitizer,
   ) {
     this.initializeForm();
-
     const state: any = history.state;
     this.entiId = localStorage.getItem('tenantId') || '';
 
@@ -154,7 +154,7 @@ export class QuestionCreateNewComponent implements OnInit {
       enableInstruction: [false],
       enableSolution: [false],
       questionType: ['mcq_single', Validators.required],
-      questionText: ['', Validators.required],
+      questionText: [''],
       positiveMarks: [4, [Validators.required, Validators.min(0)]],
       negativeMarks: [1, [Validators.required, Validators.min(0)]],
       hasPartialMarking: [false],
@@ -524,9 +524,7 @@ export class QuestionCreateNewComponent implements OnInit {
   }
 
   addOption(): void {
-    this.options.push(
-      this.fb.group({ text: ['', Validators.required], isCorrect: [false] }),
-    );
+    this.options.push(this.fb.group({ text: [''], isCorrect: [false] }));
   }
 
   removeOption(index: number): void {
@@ -658,7 +656,6 @@ export class QuestionCreateNewComponent implements OnInit {
     return this.questionForm.get('questionType')?.value || 'mcq_single';
   }
 
-
   private validateBeforeSubmit(): boolean {
     const qt = this.getSelectedQuestionType();
     if (qt === 'mcq_single' || qt === 'mcq_multi') {
@@ -727,7 +724,6 @@ export class QuestionCreateNewComponent implements OnInit {
     }
     return true;
   }
-
 
   onSubmit(): void {
     if (!this.questionForm.valid) {
@@ -801,6 +797,19 @@ export class QuestionCreateNewComponent implements OnInit {
   }
 
   private submitBankQuestion(): void {
+    const formValue = this.questionForm.value;
+    if (!formValue.bankSubjectId) {
+      this.alert.error('Please select a subject');
+      return;
+    }
+    if (!formValue.topicId?.trim()) {
+      this.alert.error('Topic is required for bank questions');
+      return;
+    }
+    if (!formValue.classNo) {
+      this.alert.error('Please select a class');
+      return;
+    }
     this.prepareQuestionData().then((payload) => {
       const formValue = this.questionForm.value;
       const finalPayload: any = {
@@ -861,14 +870,17 @@ export class QuestionCreateNewComponent implements OnInit {
 
   onEditorInput(event: Event, controlName: string) {
     const target = event.target as HTMLDivElement;
-    if (!target) return;
-    this.questionForm.patchValue({ [controlName]: target.innerHTML });
+    this.zone.run(() => {
+      this.questionForm.patchValue({ [controlName]: target.innerHTML });
+    });
   }
 
   onOptionEditorInput(index: number, event: Event) {
-    const optionGroup = this.options.at(index) as FormGroup;
     const target = event.target as HTMLDivElement;
-    optionGroup.patchValue({ text: target.innerHTML });
+    this.zone.run(() => {
+      const optionGroup = this.options.at(index) as FormGroup;
+      optionGroup.patchValue({ text: target.innerHTML });
+    });
   }
 
   onMatrixRightEditorInput(index: number, event: Event) {
@@ -1530,10 +1542,80 @@ export class QuestionCreateNewComponent implements OnInit {
     });
   }
 
+  // isFormReadyToSubmit(): boolean {
+  //   if (this.questionForm.invalid) return false;
+  //   const questionText = (this.questionForm.get('questionText')?.value || '').trim();
+  // if (!questionText || questionText === '<br>' || questionText === '<div><br></div>') {
+  //   return false;
+  // }
+  //   if (!this.isBankMode && !this.isEditMode) {
+  //     if (!this.questionForm.get('sectionId')?.value) return false;
+  //     if (!this.selectedSubjectId) return false;
+  //   }
+  //   if (this.isBankMode && !this.isEditMode) {
+  //     if (!this.questionForm.get('bankSubjectId')?.value) return false;
+  //     if (!this.questionForm.get('topicId')?.value?.trim()) return false;
+  //     if (!this.questionForm.get('classNo')?.value) return false;
+  //   }
+  //   const qt = this.getSelectedQuestionType();
+  //   if (qt === 'mcq_single' || qt === 'mcq_multi') {
+  //     const correctCount = this.options.controls.filter(
+  //       (c) => c.get('isCorrect')?.value,
+  //     ).length;
+  //     if (correctCount === 0) return false;
+  //     if (qt === 'mcq_single' && correctCount > 1) return false;
+  //   }
+  //   if (qt === 'integer') {
+  //     const val = this.questionForm.get('integerAnswer')?.value;
+  //     if (val === null || val === undefined || val === '') return false;
+  //     if (!Number.isInteger(Number(val))) return false;
+  //   }
+  //   if (qt === 'numeric') {
+  //     const min = this.questionForm.get('numericMin')?.value;
+  //     const max = this.questionForm.get('numericMax')?.value;
+  //     if (
+  //       min === null ||
+  //       min === undefined ||
+  //       max === null ||
+  //       max === undefined
+  //     )
+  //       return false;
+  //     if (parseFloat(min) > parseFloat(max)) return false;
+  //   }
+  //   if (qt === 'matrix') {
+  //     const anyUnmatched = this.matrixLeft.controls.some(
+  //       (c) => !c.get('selectedMatches')?.value?.length,
+  //     );
+  //     if (anyUnmatched) return false;
+  //     if (this.matrixMarksExceeded()) return false;
+  //   }
+  //   if (this.mcqPartialMarksExceeded()) return false;
+  //   return true;
+  // }
+
+  // isFormReadyToSubmit() — add manual content checks:
+
   isFormReadyToSubmit(): boolean {
     if (this.questionForm.invalid) return false;
     const qt = this.getSelectedQuestionType();
-    if (qt === 'mcq_single' || qt === 'mcq_multi') {
+    const questionText = (this.questionForm.get('questionText')?.value || '')
+      .replace(/<[^>]*>/g, '')
+      .trim();
+    if (!questionText) return false;
+    if (this.isBankMode) {
+      if (!this.questionForm.get('bankSubjectId')?.value) return false;
+      if (!(this.questionForm.get('topicId')?.value || '').trim()) return false;
+      if (!this.questionForm.get('classNo')?.value) return false;
+    }
+    if (!this.isBankMode && !this.isEditMode) {
+      if (!this.questionForm.get('sectionId')?.value) return false;
+    }
+    if (['mcq_single', 'mcq_multi', 'passage_qns'].includes(qt)) {
+      const filledOptions = this.options.controls.filter((c) => {
+        const t = (c.get('text')?.value || '').replace(/<[^>]*>/g, '').trim();
+        return !!t;
+      });
+      if (filledOptions.length < 2) return false;
       const correctCount = this.options.controls.filter(
         (c) => c.get('isCorrect')?.value,
       ).length;

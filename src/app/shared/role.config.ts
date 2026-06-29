@@ -16,7 +16,7 @@ export const ROLE_LABELS: Record<RoleLevel, string> = {
 };
 
 export const ROUTE_ACCESS: Record<string, RoleLevel[]> = {
-  dashboard:        ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7'],
+  dashboard:        ['L1', 'L2'],
   batch:            ['L1', 'L2', 'L3'],
   timetable:        ['L1', 'L3', 'L4'],
   attendance:       ['L1', 'L3', 'L4'],

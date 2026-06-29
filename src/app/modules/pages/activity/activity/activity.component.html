@@ -1,6 +1,5 @@
 <div class="ms-3 me-3 pt-1 pb-1">
     <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-
         <!-- Header -->
         <div class="d-flex flex-column gap-4">
             <div class="d-flex flex-column gap-4">
@@ -9,12 +8,10 @@
                         <i class="fa-solid fa-calendar-check me-2"></i>Activity
                     </h1>
                     <div *appHasRole="['L1', 'L3']" class="d-flex gap-2">
-                        <button class="btn btn-import fs-16 fw-medium me-2" type="button"
-                            (click)="openImportModal()">
+                        <button class="btn btn-import fs-16 fw-medium me-2" type="button" (click)="openImportModal()">
                             <i class="fa-solid fa-file-import me-2"></i>Bulk Import
                         </button>
-                        <button class="btn btn-create fs-16 fw-medium" type="button"
-                            routerLink="/app/activity/create">
+                        <button class="btn btn-create fs-16 fw-medium" type="button" routerLink="/app/activity/create">
                             <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
                             Add Activity
                         </button>
@@ -22,37 +19,52 @@
                 </div>
             </div>
         </div>
-
         <!-- Filter Form -->
         <div class="mt-3">
             <form [formGroup]="filterForm">
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <selectbox label="Batch" placeholder="Select Batch" [options]="batch_options"
-                            formControlName="batchCode" [control]="filterForm.get('batchCode')">
-                        </selectbox>
+                    <!-- From Date -->
+                    <div class="col-md-3">
+                        <label class="form-label">From Date</label>
+                        <input type="date" class="form-control" formControlName="fromDate">
                     </div>
-                    <div *appHasRole="['L1', 'L3']" class="col-md-4">
-                        <selectbox label="Center" placeholder="Select Center" [options]="center_options"
-                            formControlName="centerCode" [control]="filterForm.get('centerCode')">
-                        </selectbox>
+                    <!-- To Date -->
+                    <div class="col-md-3">
+                        <label class="form-label">To Date</label>
+                        <input type="date" class="form-control" formControlName="toDate">
                     </div>
-                    <div class="col-md-4">
-                        <selectbox label="Status" placeholder="All Status (Optional)" [options]="status_options"
+                    <!-- Status -->
+                    <div class="col-md-3">
+                        <selectbox label="Status" placeholder="All Status" [options]="status_options"
                             formControlName="status" [control]="filterForm.get('status')">
                         </selectbox>
                     </div>
+                    <!-- Center (L1/L3 only) -->
+                    <div *appHasRole="['L1', 'L3']" class="col-md-3">
+                        <selectbox label="Center" placeholder="All Centers" [options]="center_options"
+                            formControlName="centerCode" [control]="filterForm.get('centerCode')">
+                        </selectbox>
+                    </div>
+                    <!-- Batch Multi-select — full width -->
+                    <div class="col-12">
+                        <label class="form-label">Batch</label>
+                        <multiselect [options]="batch_options" formControlName="batchCodes"
+                            [control]="filterForm.get('batchCodes')" placeholder="All Batches (select one or more)">
+                        </multiselect>
+                    </div>
                 </div>
-                <div class="col-12 text-end mt-3">
-                    <button class="btn btn-shuffle fs-16 fw-medium" [disabled]="filterForm.invalid || loading"
-                        (click)="onProceed()">
-                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                        {{ loading ? 'Loading...' : 'Proceed' }}
+                <!-- Actions -->
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button class="btn btn-back fs-16 fw-medium" type="button" (click)="onClearFilters()">
+                        <i class="fa-solid fa-xmark btn-icon"></i> Clear
+                    </button>
+                    <button class="btn btn-create fs-16 fw-medium" [disabled]="loading" (click)="onProceed()">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                        {{ loading ? 'Loading...' : 'Search' }}
                     </button>
                 </div>
             </form>
         </div>
-
         <!-- Table -->
         <div class="mt-3">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
@@ -61,36 +73,29 @@
                 (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>
-
     </div>
 </div>
-
 <!-- ===================== IMPORT MODAL ===================== -->
 <div class="modal fade" id="activityImportModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-4">
-
             <div class="modal-header border-bottom">
                 <h5 class="modal-title fw-bold">
                     <i class="fa-solid fa-file-import me-2 text-primary"></i>Bulk Import Activity
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="resetImport()"></button>
             </div>
-
             <div class="modal-body p-4">
-
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <span class="fw-semibold">Upload Excel File</span>
                     <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="downloadTemplate()">
                         <i class="fa-solid fa-download me-1"></i>Download Template
                     </button>
                 </div>
-
                 <!-- importfiles component -->
                 <importfiles label="Select File (.xlsx / .xls / .csv)" [required]="true" [multiple]="false"
                     accept=".xlsx,.xls,.csv" (filesChanged)="onImportFileSelected($event)">
                 </importfiles>
-
                 <!-- Column info -->
                 <div class="mt-2 p-3 bg-light rounded-3 small" *ngIf="!fileName">
                     <div class="fw-semibold mb-2 text-muted">Expected Excel Columns:</div>
@@ -100,7 +105,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Errors -->
                 <div *ngIf="errorRows.length > 0" class="alert alert-danger rounded-3 mt-3 mb-0">
                     <div class="fw-semibold mb-2">
@@ -112,14 +116,12 @@
                         </li>
                     </ul>
                 </div>
-
                 <!-- Success -->
                 <div *ngIf="parsedRows.length > 0 && errorRows.length === 0"
                     class="alert alert-success rounded-3 mt-3 mb-0 d-flex align-items-center gap-2">
                     <i class="fa-solid fa-circle-check"></i>
                     <span><strong>{{ parsedRows.length }}</strong> row(s) ready to import</span>
                 </div>
-
                 <!-- Preview -->
                 <div *ngIf="parsedRows.length > 0" class="table-responsive mt-3"
                     style="max-height: 280px; overflow-y: auto;">
@@ -143,9 +145,7 @@
                         </tbody>
                     </table>
                 </div>
-
             </div>
-
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
                     (click)="resetImport()">Cancel</button>
@@ -156,11 +156,9 @@
                     {{ importLoading ? 'Importing...' : 'Import ' + parsedRows.length + ' Record(s)' }}
                 </button>
             </div>
-
         </div>
     </div>
 </div>
-
 <!-- ===================== VIEW MODAL ===================== -->
 <div class="modal fade" id="activityViewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
@@ -193,7 +191,6 @@
                         <div class="text-muted small">End Date</div>
                         <div class="fw-semibold">{{ selectedActivity.endDateFormatted }}</div>
                     </div>
-
                     <div class="col-6">
                         <div class="text-muted small">Status</div>
                         <span class="badge" [class.bg-success]="selectedActivity.status === 'COMPLETED'"
@@ -221,7 +218,6 @@
         </div>
     </div>
 </div>
-
 <!-- ===================== DELETE MODAL ===================== -->
 <div class="modal fade" id="activityDeleteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">

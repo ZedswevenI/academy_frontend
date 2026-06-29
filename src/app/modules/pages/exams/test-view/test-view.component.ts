@@ -9,6 +9,8 @@ import { BaseChartDirective } from 'ng2-charts';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import katex from 'katex';
 import { DomSanitizer } from '@angular/platform-browser';
+import * as XLSX from 'xlsx';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-ass-view',
@@ -188,6 +190,7 @@ export class TestViewComponent implements OnInit {
   graceQuestionsLoading = false;
   actualTotalMarks = 0;
   marksMismatch = false;
+  exportingReport = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -1512,5 +1515,82 @@ export class TestViewComponent implements OnInit {
     return (this.graceRow?.graces || []).some(
       (g: any) => g.questionId === questionId && g.isActive !== false,
     );
+  }
+
+  async exportParticipantReport(): Promise<void> {
+    this.exportingReport = true;
+    try {
+      const res: any = await firstValueFrom(
+        this.commonApi.fetchData(
+          { entiId: this.tenantId, examId: this.examData.examId },
+          'exam/result',
+          'participant-report',
+        ),
+      );
+      if (!res?.status) {
+        this.alert.error(res?.message || 'Failed to fetch report');
+        return;
+      }
+      const sections: string[] = res.sections || [];
+      const rows: any[] = res.data || [];
+      if (!rows.length) {
+        this.alert.error('No participant data found');
+        return;
+      }
+      const headers = [
+        'Rank',
+        'Enroll No',
+        'Student Name',
+        'Total Marks',
+        'Obtained Marks',
+        'Percentage',
+      ];
+      for (const sec of sections) {
+        headers.push(`${sec} - Obtained`);
+        headers.push(`${sec} - Total`);
+        headers.push(`${sec} - Correct`);
+        headers.push(`${sec} - Wrong`);
+        headers.push(`${sec} - Skipped`);
+      }
+      const sheetData: any[][] = [headers];
+      for (const r of rows) {
+        const row: any[] = [
+          r.rank || '—',
+          r.admissionNo,
+          r.studentName,
+          r.totalMarks,
+          r.obtainedMarks,
+          r.percentage != null ? r.percentage.toFixed(1) + '%' : '—',
+        ];
+        for (const sec of sections) {
+          const sd = r.sections?.[sec];
+          row.push(sd?.obtainedMarks ?? 0);
+          row.push(sd?.totalMarks ?? 0);
+          row.push(sd?.correctCount ?? 0);
+          row.push(sd?.wrongCount ?? 0);
+          row.push(sd?.skippedCount ?? 0);
+        }
+        sheetData.push(row);
+      }
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      ws['!cols'] = headers.map((h, i) => ({
+        wch:
+          Math.max(
+            h.length,
+            ...sheetData.slice(1).map((r) => String(r[i] || '').length),
+          ) + 2,
+      }));
+      XLSX.utils.book_append_sheet(wb, ws, 'Participant Report');
+      XLSX.writeFile(
+        wb,
+        `${this.examData?.examCode || 'exam'}_participant_report.xlsx`,
+      );
+      this.alert.success('Report exported successfully');
+    } catch (err) {
+      this.alert.error('Failed to export report');
+    } finally {
+      this.exportingReport = false;
+    }
   }
 }

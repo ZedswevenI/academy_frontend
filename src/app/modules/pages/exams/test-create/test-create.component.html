@@ -11,8 +11,18 @@
 
     <!-- Exam Code -->
     <div class="col-md-3">
-      <label class="form-label">Exam Code <span class="text-danger">*</span></label>
-      <input class="form-control" formControlName="examCode" placeholder="e.g. JEE_MOCK_01" />
+      <label class="form-label">Exam Code</label>
+      <div class="input-group">
+        <input class="form-control bg-light" formControlName="examCode" [readonly]="!isEditMode"
+          placeholder="Auto-generating..." />
+        <span class="input-group-text" *ngIf="examCodeLoading">
+          <span class="spinner-border spinner-border-sm"></span>
+        </span>
+        <span class="input-group-text text-muted" *ngIf="!examCodeLoading && !isEditMode">
+          <i class="fa-solid fa-lock"></i>
+        </span>
+      </div>
+      <div class="form-text text-muted" *ngIf="!isEditMode">Auto-generated</div>
     </div>
 
     <!-- Exam Name -->
