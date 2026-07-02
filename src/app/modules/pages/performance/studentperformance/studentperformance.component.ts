@@ -334,7 +334,7 @@ export class StudentperformanceComponent implements OnInit {
       this.commonApi
         .fetchData(
           { entiId: this.tenantId, studentId: this.studentId },
-          'ims/student',
+          'student',
           'view',
         )
         .subscribe({

@@ -7,19 +7,16 @@
             <i class="fa-solid fa-file-import me-2"></i>Imported Exams
           </h1>
           <div class="d-flex">
-            <button class="btn btn-back fs-16 fw-medium me-2" type="button"
-              (click)="toggleFilters()">
+            <button class="btn btn-back fs-16 fw-medium me-2" type="button" (click)="toggleFilters()">
               <i class="fa-solid fa-filter"></i>
               {{ showFilters ? 'Hide Filters' : 'Filters' }}
             </button>
-            <button *ngIf="!authService.assignmentRole()"
-              class="btn btn-import fs-16 fw-medium" type="button"
+            <button *ngIf="!authService.assignmentRole()" class="btn btn-import fs-16 fw-medium" type="button"
               (click)="importMarks()">
               <i class="fas fa-file-import me-2"></i>Import Marks
             </button>
           </div>
         </div>
-
         <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
           <div class="card-header bg-white border-0">
             <form [formGroup]="filterForm" class="row g-3 align-items-end">
@@ -29,7 +26,8 @@
                 </selectbox>
               </div>
               <div class="col-md-4 d-flex justify-content-end gap-2 ms-2">
-                <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="clearFilters()">Clear</button>
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium"
+                  (click)="clearFilters()">Clear</button>
                 <button type="button" class="btn btn-create fs-16 fw-medium" (click)="refresh()">Search</button>
               </div>
             </form>
@@ -37,10 +35,36 @@
         </div>
       </div>
     </div>
-
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
       [success]="'Published'" [primary]="'Result Published'" [warn]="'Draft'" [totalRecords]="totalRecords"
-      [loading]="loading" (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search Exam Name, Code...'" (rowClick)="onRowSelected($event)">
+      [loading]="loading" (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search Exam Name, Code...'"
+      (rowClick)="onRowSelected($event)">
     </custom-table>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-backdrop fade show" *ngIf="showDeleteConfirm"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="showDeleteConfirm">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0">
+        <h6 class="modal-title fw-semibold text-danger">
+          <i class="fa-regular fa-trash-can me-1"></i>Delete Imported Exam
+        </h6>
+        <button class="btn-close" (click)="closeDeleteConfirm()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Delete <strong>{{ deleteExamName }}</strong>? This cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-sm btn-outline-secondary" (click)="closeDeleteConfirm()" [disabled]="deleteLoading">
+          Cancel
+        </button>
+        <button class="btn btn-sm btn-danger" (click)="confirmDeleteImportedExam()" [disabled]="deleteLoading">
+          <span *ngIf="deleteLoading" class="spinner-border spinner-border-sm me-1"></span>Delete
+        </button>
+      </div>
+    </div>
   </div>
 </div>

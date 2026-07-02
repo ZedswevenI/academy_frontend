@@ -473,6 +473,7 @@ export class StudentViewComponent implements OnInit {
       { Field: 'DOB', Value: b.dob ? this.fmtEpoch(b.dob) : '—' },
       { Field: 'Program', Value: p.programName || '—' },
       { Field: 'Batch', Value: p.batchName || '—' },
+      { Field: 'Batch Code', Value: p.batchCode || '—' },
       { Field: 'Center', Value: p.centerName || '—' },
     ];
     XLSX.utils.book_append_sheet(

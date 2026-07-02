@@ -13,9 +13,20 @@
                 <div class="d-flex align-items-center gap-3">
                     <div>
                         <h1 class="fw-bold mb-0" style="font-size:22px;">
-                            {{ student?.admissionNo || studentId }}
+                            {{ studentProfile?.basic?.name || student?.admissionNo || studentId }}
                         </h1>
-                        <div class="text-muted small">Academic Year: {{ academicYear }}</div>
+                        <div class="text-muted small">
+                            Admission No: {{ studentProfile?.basic?.admissionNo || student?.admissionNo || '—' }}
+                            &nbsp;·&nbsp;
+                            Batch: {{ studentProfile?.program?.batchName || '—' }}
+                            <span *ngIf="studentProfile?.basic?.batchCode">
+                                ({{ studentProfile?.basic?.batchCode }})
+                            </span>
+                            &nbsp;·&nbsp;
+                            Center: {{ studentProfile?.program?.centerName || '—' }}
+                            &nbsp;·&nbsp;
+                            Academic Year: {{ academicYear }}
+                        </div>
                     </div>
                 </div>
                 <div>

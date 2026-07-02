@@ -3,6 +3,9 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { forkJoin, Observable } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import * as XLSX from 'xlsx';
 
 interface Message {
   text: string;
@@ -22,7 +25,6 @@ interface Chat {
   styleUrl: './table-list.component.scss',
 })
 export class TableListComponent {
-  // In table-list / grid-list:
   @Input() hasSearched = false;
   @Input() filters: any = {};
 
@@ -39,16 +41,21 @@ export class TableListComponent {
   columnsArray = [
     { key: 'student.name', label: 'Student Name', sortable: false },
     { key: 'admissionNo', label: 'Admission No.', sortable: false },
+    { key: 'student.phone', label: 'Mobile', sortable: false },
+    { key: 'batchCode', label: 'Batch Code', sortable: false },
+    { key: 'batchName', label: 'Batch Name', sortable: false },
     { key: 'programName', label: 'Program', sortable: false },
     { key: 'centerName', label: 'Center', sortable: false },
     { key: 'status', label: 'Status', sortable: false },
-    { key: 'student.phone', label: 'Mobile', sortable: false },
   ];
 
   dataArray: any[] = [];
   originalData: any[] = [];
   totalRecords = 0;
   loading = false;
+  exportingStudents = false;
+
+  private batchNameByCode$!: Observable<Map<string, string>>;
 
   actions = [
     {
@@ -76,19 +83,34 @@ export class TableListComponent {
     private alert: AlertService,
   ) {
     this.breadcrump.set([{ label: 'Student' }]);
+    this.batchNameByCode$ = this.commonApi
+      .fetchData(
+        { entiId: localStorage.getItem('tenantId') },
+        'batch',
+        'list?list=full',
+      )
+      .pipe(
+        map((res: any) => {
+          const m = new Map<string, string>();
+          (res?.data || []).forEach((b: any) => {
+            const code = (b?.batchCode || '').toString().trim();
+            if (code) m.set(code, b?.batchName || '');
+          });
+          return m;
+        }),
+        shareReplay(1),
+      );
   }
 
   ngOnInit(): void { }
 
-  fetchTableData(params: {
+  private buildQuery(params: {
     page: number;
     pageSize: number;
     search?: string;
     sortKey?: string;
     sortDirection?: string;
-  }) {
-    this.loading = true;
-
+  }): any {
     const query: any = {
       page: params.page,
       limit: params.pageSize,
@@ -108,17 +130,41 @@ export class TableListComponent {
       query.sort =
         params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
     }
+    return query;
+  }
 
-    const queryString = Object.keys(query)
+  private toQueryString(query: any): string {
+    return Object.keys(query)
       .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
       .join('&');
+  }
 
+  private withBatchNames(rows: any[], batchMap: Map<string, string>): any[] {
+    return rows.map((s: any) => ({
+      ...s,
+      batchName: batchMap.get((s?.batchCode || '').toString().trim()) || '-',
+    }));
+  }
+
+  fetchTableData(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    sortKey?: string;
+    sortDirection?: string;
+  }) {
+    this.loading = true;
+
+    const queryString = this.toQueryString(this.buildQuery(params));
     const body = { entiId: localStorage.getItem('tenantId') };
 
-    this.commonApi.fetchData(body, 'student', `list?${queryString}`).subscribe({
-      next: (res: any) => {
-        this.dataArray = res.data || [];
-        this.totalRecords = res?.count || 0;
+    forkJoin({
+      students: this.commonApi.fetchData(body, 'student', `list?${queryString}`),
+      batchMap: this.batchNameByCode$,
+    }).subscribe({
+      next: ({ students, batchMap }: any) => {
+        this.dataArray = this.withBatchNames(students.data || [], batchMap);
+        this.totalRecords = students?.count || 0;
         this.loading = false;
       },
       error: () => {
@@ -132,6 +178,82 @@ export class TableListComponent {
     // this.router.navigate(['/app/student/view'])
     const s = row?._raw || row;
     this.router.navigate(['/app/student/view', s.studentId]);
+  }
+
+  exportAllStudents() {
+    this.exportingStudents = true;
+    const pageSize = 500;
+    const body = { entiId: localStorage.getItem('tenantId') };
+    const fetchPage = (page: number) => {
+      const q = this.buildQuery({ page, pageSize });
+      return this.commonApi.fetchData(body, 'student', `list?${this.toQueryString(q)}`);
+    };
+
+    forkJoin({
+      first: fetchPage(1),
+      batchMap: this.batchNameByCode$,
+    }).subscribe({
+      next: ({ first, batchMap }: any) => {
+        const total = first?.count || 0;
+        const firstRows = first?.data || [];
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+        if (totalPages <= 1) {
+          this.downloadStudentsExcel(this.withBatchNames(firstRows, batchMap));
+          return;
+        }
+
+        const remaining = [];
+        for (let p = 2; p <= totalPages; p++) remaining.push(fetchPage(p));
+
+        forkJoin(remaining).subscribe({
+          next: (pages: any[]) => {
+            const allRows = [
+              ...firstRows,
+              ...pages.flatMap((r: any) => r?.data || []),
+            ];
+            this.downloadStudentsExcel(this.withBatchNames(allRows, batchMap));
+          },
+          error: () => {
+            this.exportingStudents = false;
+            this.alert.error('Failed to export all students');
+          },
+        });
+      },
+      error: () => {
+        this.exportingStudents = false;
+        this.alert.error('Failed to export students');
+      },
+    });
+  }
+
+  private downloadStudentsExcel(rows: any[]) {
+    this.exportingStudents = false;
+    if (!rows.length) {
+      this.alert.warning('No students to export.');
+      return;
+    }
+    const sheetRows = rows.map((s: any) => ({
+      'Student Name': s.student?.name || '-',
+      'Admission No': s.admissionNo || '-',
+      Program: s.programName || '-',
+      Center: s.centerName || '-',
+      'Batch Code': s.batchCode || '-',
+      'Batch Name': s.batchName || '-',
+      Status: s.status || '-',
+      Mobile: s.student?.phone || '-',
+      'Academic Year': s.academicYear || '-',
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(sheetRows),
+      'Students',
+    );
+    XLSX.writeFile(
+      wb,
+      `Students_Export_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
   }
 
   chatStudent(row: any) {
