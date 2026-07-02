@@ -13,15 +13,12 @@ import { AuthService } from '../../../../service/auth/auth.service';
   styleUrl: './imported-exams.component.scss'
 })
 export class ImportedExamsComponent implements OnInit {
-
   loading = false;
   totalRecords = 0;
   dataArray: any[] = [];
-
   lastTableParams: any = null;
   showFilters = false;
   filterForm!: FormGroup;
-
   columnsArray = [
     { key: 'examCode', label: 'Exam Code', sortable: true },
     { key: 'examName', label: 'Exam Name', sortable: true },
@@ -30,7 +27,6 @@ export class ImportedExamsComponent implements OnInit {
     { key: 'duration', label: 'Duration (min)', sortable: true },
     { key: 'statusDisplay', label: 'Status', sortable: false }
   ];
-
   actions = [
     {
       type: 'icon',
@@ -39,13 +35,25 @@ export class ImportedExamsComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#0066FF',
       callback: (row: any) => this.viewExam(row)
+    },
+    {
+      type: 'icon',
+      icon: 'fa-regular fa-trash-can',
+      tooltip: 'Delete Imported Exam',
+      color: '#6B7280',
+      hoverColor: '#DC2626',
+      show: (row: any) => row.isImported !== true,
+      callback: (row: any) => this.deleteImportedExam(row)
     }
   ];
-
   classOptions = [
     ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
     { label: '12th Pass', value: 13 }
   ];
+  showDeleteConfirm = false;
+  deleteExamId = '';
+  deleteExamName = '';
+  deleteLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -78,20 +86,16 @@ export class ImportedExamsComponent implements OnInit {
   fetchTableData(params: any) {
     this.lastTableParams = { ...params };
     this.loading = true;
-
     const query: any = { page: params.page, limit: params.pageSize, isImported: true };
     if (params.sortKey) {
       query.sort = params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
     }
-
     const filters = this.filterForm.value;
     if (params.search) query.search = params.search;
     if (filters.classNo) query.classNo = filters.classNo;
-
     const queryString = Object.keys(query)
       .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
       .join('&');
-
     this.commonApi.fetchData({ entiId: localStorage.getItem('tenantId') }, 'exam', `list?${queryString}`)
       .subscribe({
         next: (res: any) => {
@@ -125,6 +129,43 @@ export class ImportedExamsComponent implements OnInit {
 
   viewExam(row: any) {
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
+  }
+
+  deleteImportedExam(row: any) {
+    this.deleteExamId = row.examId;
+    this.deleteExamName = row.examName || row.examCode || '';
+    this.showDeleteConfirm = true;
+  }
+
+  closeDeleteConfirm() {
+    this.showDeleteConfirm = false;
+    this.deleteExamId = '';
+    this.deleteExamName = '';
+  }
+
+  confirmDeleteImportedExam() {
+    if (!this.deleteExamId) return;
+    this.deleteLoading = true;
+    this.commonApi
+      .fetchData(
+        { entiId: localStorage.getItem('tenantId'), examId: this.deleteExamId },
+        'exam',
+        'delete/import',
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.deleteLoading = false;
+          if (res?.status) {
+            this.alert.success('Imported exam deleted successfully');
+            this.closeDeleteConfirm();
+            if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+          }
+        },
+        error: () => {
+          this.deleteLoading = false;
+          this.alert.error('Error deleting imported exam');
+        },
+      });
   }
 
   onRowSelected(row: any) {
