@@ -3,8 +3,16 @@ import { RouterModule, Routes } from '@angular/router';
 import { TimetableComponent } from './timetable/timetable.component';
 import { ListComponent } from './list/list.component';
 import { ViewTableComponent } from './view-table/view-table.component';
+import { TimetableviewnewComponent } from './timetableviewnew/timetableviewnew.component';
+import { TimetablenewComponent } from './timetablenew/timetablenew.component';
 
-const routes: Routes = [{ path: '', component: TimetableComponent, title: 'Timetable' }, { path: 'table', component: ListComponent, title: 'Timetable' }, { path: 'view/:id', component: ViewTableComponent, title: 'Timetable View' }];
+const routes: Routes = [
+  { path: '', component: TimetableComponent, title: 'Timetable' },
+  { path: '1', component: TimetablenewComponent, title: 'Timetable' },
+  { path: 'table', component: ListComponent, title: 'Timetable' },
+  { path: 'view/:id', component: ViewTableComponent, title: 'Timetable View' },
+  { path: 'viewnew/:id', component: TimetableviewnewComponent, title: 'Timetable View' }
+];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
