@@ -62,11 +62,6 @@
             [disabled]="batch?.status === 'CLOSED'">
             <i class="fa-solid fa-lock btn-icon"></i>Close
         </button>
-        <!-- Export Report -->
-        <button *ngIf="activeTab === 'report' && (subjectHours.length || phaseReport)"
-            class="btn btn-back fs-16 fw-medium" (click)="exportReport()">
-            <i class="fa-solid fa-arrow-left btn-icon"></i> Export Report
-        </button>
     </div>
     <!-- <div class="mt-2 d-flex align-items-center gap-2 small">
         <div class="bg-light border rounded px-2 py-1">
@@ -289,20 +284,29 @@
         <!-- ── REPORT TAB ──────────────────────────────────────────────────────────── -->
         <div *ngIf="activeTab === 'report'">
             <!-- Subject filter -->
-            <div class="d-flex align-items-end gap-3 mb-4 flex-wrap">
-                <div style="min-width:260px">
-                    <label class="form-label small text-muted mb-1 fw-semibold">
-                        Filter by Subject
-                    </label>
-                    <select class="form-select form-select-sm" [(ngModel)]="reportSubjectId"
-                        (ngModelChange)="onReportSubjectChanged($event)">
-                        <option value="">— All Subjects —</option>
-                        <option *ngFor="let s of batchSubjectOptions | slice:1" [value]="s.value">{{ s.label }}</option>
-                    </select>
+            <div class="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
+                <div class="d-flex align-items-end gap-3 flex-wrap">
+                    <div style="min-width:260px">
+                        <label class="form-label small text-muted mb-1 fw-semibold">
+                            Filter by Subject
+                        </label>
+                        <select class="form-select form-select-sm" [(ngModel)]="reportSubjectId"
+                            (ngModelChange)="onReportSubjectChanged($event)">
+                            <option value="">— All Subjects —</option>
+                            <option *ngFor="let s of batchSubjectOptions | slice:1" [value]="s.value">{{ s.label }}
+                            </option>
+                        </select>
+                    </div>
+                    <div *ngIf="reportLoading" class="text-muted small">
+                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading...
+                    </div>
                 </div>
-                <div *ngIf="reportLoading" class="text-muted small">
-                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading...
-                </div>
+                <button *ngIf="subjectHours.length" class="btn btn-back fs-16 fw-medium" [disabled]="exportingReport"
+                    (click)="exportFullReport()">
+                    <span *ngIf="exportingReport" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-file-excel btn-icon" *ngIf="!exportingReport"></i>
+                    {{ exportingReport ? 'Exporting...' : 'Export Report' }}
+                </button>
             </div>
             <!-- ── Subject Hours Section ─────────────────────────────────────────────── -->
             <div class="mb-4" *ngIf="subjectHours.length">

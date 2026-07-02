@@ -1,4 +1,12 @@
 <div>
+    <div class="d-flex justify-content-end mb-2" *ngIf="totalRecords">
+        <button class="btn btn-sm btn-outline-success" [disabled]="exportingStudents"
+            (click)="exportAllStudents()">
+            <span *ngIf="exportingStudents" class="spinner-border spinner-border-sm me-1"></span>
+            <i class="fa-solid fa-file-excel me-1" *ngIf="!exportingStudents"></i>
+            {{ exportingStudents ? 'Exporting...' : 'Export All Students' }}
+        </button>
+    </div>
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
         [success]="'ACTIVE'" [danger]="'INACTIVE'" [showsearch]="false"
         [searchPlaceholder]="'Search StudentName,Batch,...'" [loading]="loading"

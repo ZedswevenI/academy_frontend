@@ -5,7 +5,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
 
 const safeTrim = (v: any) =>
@@ -108,6 +108,7 @@ export class ViewBatchComponent implements OnInit {
   subjectHours: any[] = [];
   phaseReport: any = null;
   expandedPhases = new Set<string>();
+  exportingReport = false;
   specialClassExistingPeriods: number[] = [];
   specialClassPeriodConflict = false;
   specialClassPhaseOptions: any[] = [];
@@ -726,14 +727,6 @@ export class ViewBatchComponent implements OnInit {
     });
   }
 
-  // openPromoteModal() {
-  //   if (safeTrim(this.batch?.status) !== 'ACTIVE') {
-  //     this.alert.error('Only ACTIVE batches can be promoted');
-  //     return;
-  //   }
-  //   this.showPromoteModal = true;
-  // }
-
   openPromoteModal() {
     if (safeTrim(this.batch?.status) !== 'ACTIVE') {
       this.alert.error('Only ACTIVE batches can be promoted');
@@ -757,51 +750,9 @@ export class ViewBatchComponent implements OnInit {
     this.showPromoteModal = true;
   }
 
-  // confirmPromote() {
-  //   if (this.loading) return;
-  //   this.loading = true;
-  //   this.commonApi
-  //     .fetchData(
-  //       { entiId: this.entiId, batchId: this.batchId },
-  //       'batch',
-  //       'promote',
-  //     )
-  //     .subscribe({
-  //       next: (res: any) => {
-  //         this.loading = false;
-  //         this.alert.success(res?.message || 'Batch promoted');
-  //         this.closePromoteModal();
-  //         this.loadBatch();
-  //       },
-  //       error: (err: any) => {
-  //         this.loading = false;
-  //         this.alert.error(err?.error?.message || 'Promote failed');
-  //       },
-  //     });
-  // }
-
-  // openLateEntry() {
-  //   this.lateForm.reset({
-  //     type: 'STUDENT',
-  //     personId: '',
-  //     timetableId: '',
-  //     date: this.epochMsToDateInput(Date.now()),
-  //     periodNo: 1,
-  //     scheduledStartMin: 0,
-  //     delayMinutes: 0,
-  //     reason: '',
-  //   });
-  //   this.showLateModal = true;
-  //   this.loadLatestTimetable();
-  //   this.lateForm
-  //     .get('type')
-  //     ?.valueChanges.subscribe(() => this.onLateTypeChanged());
-  // }
-
   confirmPromote() {
     if (this.loading) return;
     this.loading = true;
-
     const payload: any = {
       entiId: this.entiId,
       batchId: this.batchId,
@@ -809,7 +760,6 @@ export class ViewBatchComponent implements OnInit {
     if (this.promoteNewProgramId) {
       payload.newProgramId = this.promoteNewProgramId;
     }
-
     this.commonApi.fetchData(payload, 'batch', 'promote').subscribe({
       next: (res: any) => {
         this.loading = false;
@@ -871,14 +821,10 @@ export class ViewBatchComponent implements OnInit {
       { emitEvent: false },
     );
     if (!dateStr) return;
-
     const dateMs = this.dateToEpochMs(dateStr);
     const batchCode = safeTrim(this.batch?.batchCode);
     if (!dateMs || !batchCode) return;
-
     const wkStartOn = this.getPreviousMonday(dateMs);
-
-    // Step 1 — get timetableId from list-by-batch
     this.commonApi
       .fetchData(
         { entiId: this.entiId, batchCode },
@@ -897,8 +843,6 @@ export class ViewBatchComponent implements OnInit {
           if (timetableId) {
             this.lateForm.patchValue({ timetableId }, { emitEvent: false });
           }
-
-          // Step 2 — get day schedule for period dropdown
           this.commonApi
             .fetchData(
               {
@@ -1013,64 +957,6 @@ export class ViewBatchComponent implements OnInit {
     return this.staffOptionsAll;
   }
 
-  // submitLateEntry() {
-  //   if (this.loading) return;
-  //   if (this.lateForm.invalid) {
-  //     this.lateForm.markAllAsTouched();
-  //     this.alert.error('Please fill all required fields');
-  //     return;
-  //   }
-  //   const v = this.lateForm.value;
-  //   const type = safeTrim(v.type).toUpperCase();
-  //   const personId = safeTrim(v.personId);
-
-  //   let personName = '';
-  //   if (type === 'STAFF') {
-  //     personName = safeTrim(
-  //       this.staffListFull.find(
-  //         (x: any) => safeTrim(x?.staffId || x?._id) === personId,
-  //       )?.staffName || '',
-  //     );
-  //   } else {
-  //     personName = safeTrim(
-  //       this.students.find((x: any) => safeTrim(x?.studentId) === personId)
-  //         ?.student?.name || '',
-  //     );
-  //   }
-
-  //   const dateMs = this.dateToEpochMs(v.date);
-  //   if (!dateMs) {
-  //     this.alert.error('Date is required');
-  //     return;
-  //   }
-
-  //   const payload = {
-  //     entiId: this.entiId,
-  //     type,
-  //     personId,
-  //     personName,
-  //     timetableId: safeTrim(v.timetableId),
-  //     batchCode: safeTrim(this.batch?.batchCode),
-  //     date: dateMs,
-  //     periodNo: Number(v.periodNo),
-  //     scheduledStartMin: Number(v.scheduledStartMin),
-  //     delayMinutes: Number(v.delayMinutes),
-  //     reason: safeTrim(v.reason) || null,
-  //   };
-  //   this.loading = true;
-  //   this.commonApi.fetchData(payload, 'timetable', 'late-entry/log').subscribe({
-  //     next: (res: any) => {
-  //       this.loading = false;
-  //       this.alert.success(res?.message || 'Late entry logged');
-  //       this.closeLateModal();
-  //     },
-  //     error: (err: any) => {
-  //       this.loading = false;
-  //       this.alert.error(err?.error?.message || 'Failed to log late entry');
-  //     },
-  //   });
-  // }
-
   submitLateEntry() {
     if (this.loading) return;
     if (this.lateForm.invalid) {
@@ -1113,24 +999,6 @@ export class ViewBatchComponent implements OnInit {
       },
     });
   }
-
-  // openSpecialClass() {
-  //   this.specialClassForm.reset({
-  //     date: '',
-  //     periodNo: 1,
-  //     startTime: '',
-  //     endTime: '',
-  //     subjectId: '',
-  //     staffId: '',
-  //     periodType: 'LECTURE',
-  //     mode: 'OFFLINE',
-  //     topic: '',
-  //     venue: '',
-  //     zoomUrl: '',
-  //   });
-  //   this.specialClassStaffOptions = [...this.staffOptionsAll];
-  //   this.showSpecialClassModal = true;
-  // }
 
   openSpecialClass() {
     this.specialClassForm.reset({
@@ -1244,123 +1112,6 @@ export class ViewBatchComponent implements OnInit {
     this.showSpecialClassModal = false;
   }
 
-  // submitSpecialClass() {
-  //   if (this.loading) return;
-  //   if (this.specialClassForm.invalid) {
-  //     this.specialClassForm.markAllAsTouched();
-  //     this.alert.error('Please fill all required fields');
-  //     return;
-  //   }
-  //   const v = this.specialClassForm.value;
-  //   const dateMs = this.dateToEpochMs(v.date);
-  //   const startMin = this.timeStrToMin(v.startTime);
-  //   const endMin = this.timeStrToMin(v.endTime);
-  //   if (!dateMs) {
-  //     this.alert.error('Date is required');
-  //     return;
-  //   }
-  //   if (endMin <= startMin) {
-  //     this.alert.error('End time must be after start time');
-  //     return;
-  //   }
-  //   const subjectOpt = this.specialClassSubjectOptions.find(
-  //     (x: any) => safeTrim(x?.value) === safeTrim(v.subjectId),
-  //   );
-  //   const staffOpt = this.specialClassStaffOptions.find(
-  //     (x: any) => safeTrim(x?.value) === safeTrim(v.staffId),
-  //   );
-  //   this.loading = true;
-  //   this.commonApi
-  //     .fetchData(
-  //       { entiId: this.entiId, batchCode: this.batch?.batchCode },
-  //       'timetable',
-  //       'list-by-batch',
-  //     )
-  //     .subscribe({
-  //       next: (res: any) => {
-  //         const wkDate = this.getPreviousMonday(dateMs);
-  //         const tt = (res?.data || []).find(
-  //           (t: any) =>
-  //             Number(t?.wkStartOn) === wkDate && t?.status === 'Active',
-  //         );
-  //         if (!tt) {
-  //           this.loading = false;
-  //           this.alert.error(
-  //             'No active timetable found for this batch on the selected date. Publish a timetable first.',
-  //           );
-  //           return;
-  //         }
-  //         const payload = {
-  //           entiId: this.entiId,
-  //           timetableId: safeTrim(tt._id),
-  //           batchCode: safeTrim(this.batch?.batchCode),
-  //           date: dateMs,
-  //           day: this.getDayName(dateMs),
-  //           period: {
-  //             periodNo: Number(v.periodNo),
-  //             periodType: safeTrim(v.periodType),
-  //             mode: safeTrim(v.mode),
-  //             time: {
-  //               startMin,
-  //               endMin,
-  //               startLabel: v.startTime,
-  //               endLabel: v.endTime,
-  //             },
-  //             facultyId: safeTrim(v.staffId),
-  //             facultyName: staffOpt?.label || null,
-  //             subjectId: safeTrim(v.subjectId),
-  //             subjectName: subjectOpt?.label || null,
-  //             topic: safeTrim(v.topic) || null,
-  //             venue: safeTrim(v.venue) || null,
-  //             zoomUrl: safeTrim(v.zoomUrl) || null,
-  //           },
-  //         };
-  //         this.commonApi
-  //           .fetchData(payload, 'timetable', 'period/add')
-  //           .subscribe({
-  //             next: (r: any) => {
-  //               this.loading = false;
-  //               this.alert.success(r?.message || 'Special class added');
-  //               this.closeSpecialClassModal();
-  //             },
-  //             error: (err: any) => {
-  //               this.loading = false;
-  //               this.alert.error(
-  //                 err?.error?.message || 'Failed to add special class',
-  //               );
-  //             },
-  //           });
-  //       },
-  //       error: (err: any) => {
-  //         this.loading = false;
-  //         this.alert.error(err?.error?.message || 'Failed to load timetable');
-  //       },
-  //     });
-  // }
-
-  // ── remove student ─────────────────────────────────────────────────────────
-  // removeStudent(studentId: string) {
-  //   if (!confirm('Remove this student from the batch?')) return;
-  //   this.loading = true;
-  //   this.commonApi
-  //     .fetchData(
-  //       { entiId: this.entiId, batchId: this.batchId, studentIds: [studentId] },
-  //       'batch',
-  //       'students/remove',
-  //     )
-  //     .subscribe({
-  //       next: () => {
-  //         this.loading = false;
-  //         this.alert.success('Student removed');
-  //         this.loadBatch();
-  //       },
-  //       error: (err: any) => {
-  //         this.loading = false;
-  //         this.alert.error(err?.error?.message || 'Remove failed');
-  //       },
-  //     });
-  // }
-
   private _getUtcMidnight(epochMs: number): number {
     const d = new Date(epochMs);
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
@@ -1374,7 +1125,6 @@ export class ViewBatchComponent implements OnInit {
       return;
     }
     const v = this.specialClassForm.value;
-    // const dateMs = this.dateToEpochMs(v.date);
     const dateMs = this._getUtcMidnight(this.dateToEpochMs(v.date));
     const startMin = this.timeStrToMin(v.startTime);
     const endMin = this.timeStrToMin(v.endTime);
@@ -1484,68 +1234,6 @@ export class ViewBatchComponent implements OnInit {
       },
     });
   }
-
-  // private _createTimetableAndAdd(
-  //   batchCode: string,
-  //   wkStartOn: number,
-  //   dateMs: number,
-  //   dayName: string,
-  //   period: any,
-  // ) {
-  //   const createPayload = {
-  //     entiId: this.entiId,
-  //     batchCode,
-  //     wkStartOn,
-  //     week: [
-  //       {
-  //         day: dayName,
-  //         periods: [period],
-  //       },
-  //     ],
-  //   };
-  //   this.commonApi.fetchData(createPayload, 'timetable', 'create').subscribe({
-  //     next: (res: any) => {
-  //       const timetableId = safeTrim(res?.data?._id);
-  //       if (!timetableId) {
-  //         this.loading = false;
-  //         this.alert.error('Timetable created but ID not returned');
-  //         return;
-  //       }
-  //       this.commonApi
-  //         .fetchData(
-  //           { entiId: this.entiId, timetableId },
-  //           'timetable',
-  //           'publish',
-  //         )
-  //         .subscribe({
-  //           next: () => {
-  //             this._addSpecialPeriod(
-  //               timetableId,
-  //               batchCode,
-  //               dateMs,
-  //               dayName,
-  //               period,
-  //             );
-  //           },
-  //           error: (err: any) => {
-  //             this._addSpecialPeriod(
-  //               timetableId,
-  //               batchCode,
-  //               dateMs,
-  //               dayName,
-  //               period,
-  //             );
-  //           },
-  //         });
-  //     },
-  //     error: (err: any) => {
-  //       this.loading = false;
-  //       this.alert.error(
-  //         err?.error?.message || 'Failed to create timetable for this week',
-  //       );
-  //     },
-  //   });
-  // }
 
   private _createTimetableAndAdd(
     batchCode: string,
@@ -1787,7 +1475,7 @@ export class ViewBatchComponent implements OnInit {
       this.loadSubjectHours();
       this.loadPhaseReport();
     } else {
-      this.subjectHours = [];
+      this.loadSubjectHours();
     }
   }
 
@@ -1883,13 +1571,78 @@ export class ViewBatchComponent implements OnInit {
     return '#3b82f6';
   }
 
-  exportReport() {
+  private loadAllPhaseReports() {
+    const subjects = (this.batchSubjectOptions || []).filter(
+      (o: any) => o.value,
+    );
+    if (!subjects.length || !this.batch?.classNo) return of([] as any[]);
+    const calls = subjects.map((s: any) =>
+      this.commonApi
+        .fetchData(
+          {
+            entiId: this.entiId,
+            batchCode: safeTrim(this.batch?.batchCode),
+            subjectId: s.value,
+            classNo: this.batch.classNo,
+          },
+          'institue',
+          'phase/allotment/report',
+        )
+        .pipe(
+          map((res: any) => ({
+            subjectId: s.value,
+            subjectName: s.label,
+            report: res?.data || (res?.phases ? res : null),
+          })),
+          catchError(() =>
+            of({ subjectId: s.value, subjectName: s.label, report: null }),
+          ),
+        ),
+    );
+    return forkJoin(calls);
+  }
+
+  exportFullReport() {
     if (!this.batch) return;
+    this.exportingReport = true;
+    const subjectHours$ = this.subjectHours.length
+      ? of(this.subjectHours)
+      : this.commonApi
+          .fetchData(
+            {
+              entiId: this.entiId,
+              batchCode: safeTrim(this.batch?.batchCode),
+            },
+            'timetable',
+            'subject/report',
+          )
+          .pipe(
+            map((res: any) => res?.data || []),
+            catchError(() => of([] as any[])),
+          );
+
+    forkJoin({
+      hours: subjectHours$,
+      phases: this.loadAllPhaseReports(),
+    }).subscribe({
+      next: ({ hours, phases }) => {
+        this.exportingReport = false;
+        this.subjectHours = hours;
+        this.buildFullReportWorkbook(hours, phases);
+      },
+      error: () => {
+        this.exportingReport = false;
+        this.alert.error('Failed to build report export');
+      },
+    });
+  }
+
+  private buildFullReportWorkbook(hours: any[], phases: any[]) {
     const wb = XLSX.utils.book_new();
 
-    // ── Sheet 1: Subject Hours ────────────────────────────────────────────────
-    if (this.subjectHours.length) {
-      const subjectRows = this.subjectHours.map((s: any) => ({
+    // ── Sheet 1: Subject Hours (all subjects) ─────────────────────────────────
+    if (hours.length) {
+      const subjectRows = hours.map((s: any) => ({
         Subject: s.subjectName || s.subjectCode || '-',
         'Subject Code': s.subjectCode || '-',
         'Allotted Hours': s.allottedHours ?? 0,
@@ -1897,7 +1650,7 @@ export class ViewBatchComponent implements OnInit {
       subjectRows.push({
         Subject: 'TOTAL',
         'Subject Code': '',
-        'Allotted Hours': this.subjectHours.reduce(
+        'Allotted Hours': hours.reduce(
           (sum: number, s: any) => sum + (s.allottedHours || 0),
           0,
         ),
@@ -1909,23 +1662,26 @@ export class ViewBatchComponent implements OnInit {
       );
     }
 
-    // ── Sheet 2: Phase Report ─────────────────────────────────────────────────
-    if (this.phaseReport) {
-      const phaseRows: any[] = [];
+    // ── Sheet 2: Phase Plan Report (combined, all subjects) ───────────────────
+    const phaseRows: any[] = [];
+    for (const entry of phases || []) {
+      const report = entry?.report;
+      if (!report) continue;
+      const subjectName = entry.subjectName || '-';
 
-      // Summary row
       phaseRows.push({
+        Subject: subjectName,
         Phase: 'SUMMARY',
         Topic: '',
-        'Est. Hours': this.phaseReport.summary?.totalEstHours ?? '',
-        'Allotted Hours': this.phaseReport.summary?.totalAllottedHours ?? '',
-        'Remaining Hours': this.phaseReport.summary?.totalRemainingHours ?? '',
+        'Est. Hours': report.summary?.totalEstHours ?? '',
+        'Allotted Hours': report.summary?.totalAllottedHours ?? '',
+        'Remaining Hours': report.summary?.totalRemainingHours ?? '',
         'Progress %': '',
       });
 
-      for (const ph of this.phaseReport.phases || []) {
-        // Phase row
+      for (const ph of report.phases || []) {
         phaseRows.push({
+          Subject: subjectName,
           Phase: ph.phaseName,
           Topic: '',
           'Est. Hours': ph.estHours ?? '',
@@ -1933,9 +1689,9 @@ export class ViewBatchComponent implements OnInit {
           'Remaining Hours': ph.remainingHours ?? '',
           'Progress %': this.getProgressPct(ph.allottedHours, ph.estHours),
         });
-        // Topic rows
         for (const t of ph.topics || []) {
           phaseRows.push({
+            Subject: subjectName,
             Phase: '',
             Topic: '  ' + t.topicName,
             'Est. Hours': t.estHours ?? '',
@@ -1946,37 +1702,32 @@ export class ViewBatchComponent implements OnInit {
         }
       }
 
-      // Unassigned bucket
-      if (this.phaseReport.unassigned) {
+      if (report.unassigned) {
         phaseRows.push({
+          Subject: subjectName,
           Phase: 'Unassigned',
           Topic: '',
           'Est. Hours': '-',
-          'Allotted Hours': this.phaseReport.unassigned.allottedHours ?? 0,
+          'Allotted Hours': report.unassigned.allottedHours ?? 0,
           'Remaining Hours': '-',
           'Progress %': '-',
         });
       }
-
-      const sheetName = this.reportSubjectName
-        ? ('Phase_' + this.reportSubjectName).slice(0, 31)
-        : 'Phase Report';
+    }
+    if (phaseRows.length) {
       XLSX.utils.book_append_sheet(
         wb,
         XLSX.utils.json_to_sheet(phaseRows),
-        sheetName,
+        'Phase Plan Report',
       );
     }
 
     if (!wb.SheetNames.length) {
-      this.alert.warning('No report data to export. Select a subject first.');
+      this.alert.warning('No report data to export.');
       return;
     }
 
-    XLSX.writeFile(
-      wb,
-      `Report_${safeTrim(this.batch?.batchCode)}_${this.reportSubjectName || 'All'}.xlsx`,
-    );
+    XLSX.writeFile(wb, `Full_Report_${safeTrim(this.batch?.batchCode)}.xlsx`);
   }
 
   get subjectHoursTotal(): number {

@@ -235,6 +235,9 @@
                                         <div class="fw-medium">
                                             <i class="fa-solid fa-layer-group me-1 text-muted"></i>
                                             {{ student.program?.batchName || '—' }}
+                                            <span class="text-muted small" *ngIf="student.program?.batchCode">
+                                                ({{ student.program?.batchCode }})
+                                            </span>
                                         </div>
                                     </div>
                                     <div class="mb-3">

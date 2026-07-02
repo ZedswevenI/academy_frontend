@@ -6,7 +6,8 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { finalize } from 'rxjs/operators';
+import { finalize, map, shareReplay } from 'rxjs/operators';
+import { forkJoin, Observable } from 'rxjs';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
@@ -44,6 +45,8 @@ export class GridListComponent implements OnInit {
   searchTerm = '';
   private searchTimer: any;
 
+  private batchNameByCode$!: Observable<Map<string, string>>;
+
   constructor(
     private breadcrump: BredcrumpService,
     private alert: AlertService,
@@ -52,6 +55,19 @@ export class GridListComponent implements OnInit {
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Student' }]);
+    this.batchNameByCode$ = this.commonApi
+      .fetchData({ entiId: this.entiId }, 'batch', 'list?list=full')
+      .pipe(
+        map((res: any) => {
+          const m = new Map<string, string>();
+          (res?.data || []).forEach((b: any) => {
+            const code = (b?.batchCode || '').toString().trim();
+            if (code) m.set(code, b?.batchName || '');
+          });
+          return m;
+        }),
+        shareReplay(1),
+      );
   }
 
   ngOnInit(): void {
@@ -70,15 +86,21 @@ export class GridListComponent implements OnInit {
     const qs = Object.keys(params)
       .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
       .join('&');
-    this.commonApi
-      .fetchData({ entiId: this.entiId }, this.moduleName, `list?${qs}`)
+    forkJoin({
+      list: this.commonApi.fetchData(
+        { entiId: this.entiId },
+        this.moduleName,
+        `list?${qs}`,
+      ),
+      batchMap: this.batchNameByCode$,
+    })
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
-        next: (res: any) => {
-          const rows = Array.isArray(res?.data) ? res.data : [];
-          this.totalRecords = res?.count || 0;
+        next: ({ list, batchMap }: any) => {
+          const rows = Array.isArray(list?.data) ? list.data : [];
+          this.totalRecords = list?.count || 0;
           this.totalPages =
-            res?.totalPages ||
+            list?.totalPages ||
             Math.ceil(this.totalRecords / this.pageSize) ||
             0;
 
@@ -92,6 +114,7 @@ export class GridListComponent implements OnInit {
             center: s.centerName || '—',
             phone: s.student?.phone || '—',
             batch: s.batchCode || '—',
+            batchName: batchMap.get((s.batchCode || '').toString().trim()) || '—',
             academicYear: s.academicYear || '—',
           }));
         },
