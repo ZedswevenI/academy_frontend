@@ -1496,7 +1496,7 @@
                             </h6>
                             <small class="text-muted">
                                 {{ staff.invigilation.count }} session(s) | Total: <strong>{{
-                                    staff.invigilation.totalHours }}</strong>
+                                    staff.invigilation.totalFormatted || '-' }}</strong>
                             </small>
                         </div>
                         <div class="table-responsive">
@@ -1510,6 +1510,7 @@
                                         <th>Slot</th>
                                         <th>Start Time</th>
                                         <th>End Time</th>
+                                        <th>Duration</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1521,6 +1522,7 @@
                                         <td>{{ p.slot || '-' }}</td>
                                         <td>{{ p.slotStartTime || '-' }}</td>
                                         <td>{{ p.slotEndTime || '-' }}</td>
+                                        <td>{{ formatMinutes(p.durationMinutes) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
