@@ -631,6 +631,15 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
     a.click();
   }
 
+  private fmtAbsentDate(ms: number): string {
+    if (!ms) return '';
+    return new Date(ms).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
   exportAbsentExcel(): void {
     const today = new Date().toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -642,6 +651,7 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
     let fileName: string;
     if (this.activeAbsentTab === 'school') {
       rows = this.todayAbsentList.map((s) => ({
+        Date: this.fmtAbsentDate(s.date),
         Student: s.studentName,
         'Admission No': s.admissionNo,
         'Batch Code': s.batchCode,
@@ -652,6 +662,7 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
       fileName = `Absent_Daywise_${today.replace(/ /g, '_')}.xlsx`;
     } else {
       rows = this.todayPeriodAbsentList.map((s) => ({
+        Date: this.fmtAbsentDate(s.date),
         Student: s.studentName,
         'Admission No': s.admissionNo,
         Batch: s.batchCode,
