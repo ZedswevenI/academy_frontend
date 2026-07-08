@@ -6,6 +6,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ChartConfiguration, ChartData } from 'chart.js';
+import * as XLSX from 'xlsx';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
@@ -628,6 +629,44 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
+  }
+
+  exportAbsentExcel(): void {
+    const today = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    let rows: any[];
+    let sheetName: string;
+    let fileName: string;
+    if (this.activeAbsentTab === 'school') {
+      rows = this.todayAbsentList.map((s) => ({
+        Student: s.studentName,
+        'Admission No': s.admissionNo,
+        'Batch Code': s.batchCode,
+        'Batch Name': s.batchName,
+        Remarks: s.remarks || '',
+      }));
+      sheetName = 'Day-wise Absent';
+      fileName = `Absent_Daywise_${today.replace(/ /g, '_')}.xlsx`;
+    } else {
+      rows = this.todayPeriodAbsentList.map((s) => ({
+        Student: s.studentName,
+        'Admission No': s.admissionNo,
+        Batch: s.batchCode,
+        Period: `P${s.periodNo}`,
+        Remarks: s.remarks || '',
+      }));
+      sheetName = 'Period-wise Absent';
+      fileName = `Absent_Periodwise_${today.replace(/ /g, '_')}.xlsx`;
+    }
+    if (!rows.length) return;
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 20 }));
+    const workbook: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    XLSX.writeFile(workbook, fileName);
   }
 
   private buildStaffDepts(data: any): void {

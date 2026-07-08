@@ -106,12 +106,14 @@ export class AuthService {
   }
 
   logout(): void {
+    const payload = {
+      entiId: localStorage.getItem(TENANT_KEY) ?? '',
+      userId: localStorage.getItem(USER_ID_KEY) ?? '',
+    };
     this.http
-      .post(
-        `${environment.baseURL}/ims/user/logout`,
-        {},
-        { withCredentials: true },
-      )
+      .post(`${environment.baseURL}/ims/user/logout`, payload, {
+        withCredentials: true,
+      })
       .subscribe({
         next: () => this.clearSession(true),
         error: () => this.clearSession(false),
