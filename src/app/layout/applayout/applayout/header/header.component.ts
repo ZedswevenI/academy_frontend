@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Output, EventEmitter } from '@angular/core';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { AuthService } from '../../../../service/auth/auth.service';
 declare var bootstrap: any;
 
 @Component({
@@ -27,6 +28,7 @@ export class HeaderComponent {
     private router: Router,
     private api: CommonapiService,
     private alert: AlertService,
+    private authService: AuthService,
   ) {
     this.username = localStorage.getItem('name');
     this.useremail = localStorage.getItem('email');
@@ -34,9 +36,8 @@ export class HeaderComponent {
   }
 
   logout() {
-    localStorage.clear();
     sessionStorage.clear();
-    this.router.navigate(['/auth/login']);
+    this.authService.logout();
   }
 
   @Output() menuToggle = new EventEmitter<void>();

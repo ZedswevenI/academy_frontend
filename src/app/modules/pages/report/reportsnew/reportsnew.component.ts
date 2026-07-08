@@ -2520,6 +2520,18 @@ export class ReportsnewComponent implements OnInit {
     return `${hrs} hr ${mins} min`;
   }
 
+  formatMinutes(mins: number | null | undefined): string {
+    if (mins === null || mins === undefined) return '-';
+    return this.formatHours(mins / 60);
+  }
+
+  private invigDutyRows(staff: any): any[] {
+    return (staff.invigilation?.duties || []).map((d: any) => ({
+      ...d,
+      durationFormatted: this.formatMinutes(d.durationMinutes),
+    }));
+  }
+
   showCgpaStudentDetail() {
     this.selectedDetailLabel = 'Student-wise CGPA';
     this.showDetailPanel = true;
@@ -3719,14 +3731,14 @@ export class ReportsnewComponent implements OnInit {
       if (staff.invigilation?.duties?.length) {
         doc.setFontSize(8);
         doc.text(
-          `Invigilation: ${staff.invigilation.totalHours || '-'} | ${staff.invigilation.count} session(s)`,
+          `Invigilation: ${staff.invigilation.totalFormatted || '-'} | ${staff.invigilation.count} session(s)`,
           14,
           startY,
         );
         startY += 4;
         addSectionTable(
           'Invigilation Hours',
-          ['Date', 'Exam', 'Session', 'Room', 'Slot', 'Start', 'End'],
+          ['Date', 'Exam', 'Session', 'Room', 'Slot', 'Start', 'End', 'Duration'],
           [
             'examDateFormatted',
             'examName',
@@ -3735,8 +3747,9 @@ export class ReportsnewComponent implements OnInit {
             'slot',
             'slotStartTime',
             'slotEndTime',
+            'durationFormatted',
           ],
-          staff.invigilation.duties,
+          this.invigDutyRows(staff),
           [20, 184, 166],
           [240, 253, 250],
         );
@@ -4059,8 +4072,17 @@ export class ReportsnewComponent implements OnInit {
         addSection(
           'Invigilation Hours',
           staff.invigilation.count,
-          null,
-          ['Date', 'Exam', 'Session', 'Room', 'Slot', 'Start Time', 'End Time'],
+          staff.invigilation.totalFormatted || null,
+          [
+            'Date',
+            'Exam',
+            'Session',
+            'Room',
+            'Slot',
+            'Start Time',
+            'End Time',
+            'Duration',
+          ],
           [
             'examDateFormatted',
             'examName',
@@ -4069,8 +4091,9 @@ export class ReportsnewComponent implements OnInit {
             'slot',
             'slotStartTime',
             'slotEndTime',
+            'durationFormatted',
           ],
-          staff.invigilation.duties,
+          this.invigDutyRows(staff),
         );
       if (staff.tasks?.tasks?.length)
         addSection(

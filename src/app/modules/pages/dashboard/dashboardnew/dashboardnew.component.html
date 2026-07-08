@@ -148,6 +148,9 @@
                     <i class="fa-solid fa-clock fa-xs"></i> Period-wise
                     <span class="absent-tab-count">{{ todayPeriodAbsentList.length }}</span>
                 </button>
+                <button class="btn-export" (click)="exportAbsentExcel()" title="Export Excel">
+                    <i class="fa-solid fa-download"></i>
+                </button>
             </div>
         </div>
 

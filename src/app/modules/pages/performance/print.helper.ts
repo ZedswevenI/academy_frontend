@@ -44,6 +44,7 @@ export interface PrintStudent {
 }
 
 export interface PrintMockExam {
+  examId: string;
   examName: string;
   syncedAt: number;
   obtainedMarks: number;
@@ -102,7 +103,7 @@ export const buildCPTPrintHtml = async (
     : `<h2>Z7i INSTITUTE</h2><p>JEE | NEET | Foundation</p>`;
   const examTablesHtml = mockExams
     .map((exam) => {
-      const stats = batchStatsMap.get(exam.examName) || [];
+      const stats = batchStatsMap.get(exam.examId) || [];
       const statsMap = new Map(stats.map((s) => [s.sectionId, s]));
       const rows = exam.sectionResults
         .map((sec, i) => {
@@ -237,7 +238,6 @@ export const buildCPTPrintHtml = async (
           <tbody>
             <tr><td>Name</td><td>${student.studentName || '—'}</td></tr>
             <tr><td>Class</td><td>${student.classNo ? 'Class ' + student.classNo : '—'}</td></tr>
-            <tr><td>ID No</td><td>${student.admissionNo || '—'}</td></tr>
             <tr><td>Enrollment Number</td><td>${student.admissionNo || '—'}</td></tr>
             <tr><td>Program</td><td>${student.programName || '—'}</td></tr>
           </tbody>
@@ -654,6 +654,7 @@ export const exportToPdf = async (
     const pdfWidth = 210;
     const pdfHeight = 297;
     const margin = 10;
+    const blockGapMm = 6;
     const usableWidth = pdfWidth - margin * 2;
     const usableHeight = pdfHeight - margin * 2;
     const pxToMm = usableWidth / 794;
@@ -720,9 +721,10 @@ export const exportToPdf = async (
             currentYMm += currentSliceMm;
             yPosPx += currentSlicePx;
           }
+          currentYMm += blockGapMm;
         } else {
           pdf.addImage(imgData, 'JPEG', margin, currentYMm, usableWidth, blockHeightMm);
-          currentYMm += blockHeightMm;
+          currentYMm += blockHeightMm + blockGapMm;
         }
       }
       if (pageList.indexOf(pageEl) < pageList.length - 1) {
