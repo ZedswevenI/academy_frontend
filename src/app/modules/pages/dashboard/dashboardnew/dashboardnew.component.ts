@@ -90,6 +90,11 @@ interface AbsentStudent {
   batchCode: string;
   batchName: string;
   date: number;
+  attendanceId?: string;
+  studentPhone?: string | null;
+  studentPhone1?: string | null;
+  studentPhone2?: string | null;
+  parentPhone?: string | null;
 }
 
 interface PeriodAbsentStudent {
@@ -102,6 +107,11 @@ interface PeriodAbsentStudent {
   periodNo: number;
   subjectId: string;
   facultyId: string;
+  attendanceId?: string;
+  studentPhone?: string | null;
+  studentPhone1?: string | null;
+  studentPhone2?: string | null;
+  parentPhone?: string | null;
 }
 
 @Component({
@@ -216,6 +226,13 @@ todayAbsentList: AbsentStudent[] = [];
 todayPeriodAbsentList: PeriodAbsentStudent[] = [];
 todayAbsentCount = 0;
 activeAbsentTab: 'school' | 'period' = 'school';
+
+remarksModalOpen = false;
+remarksModalTab: 'school' | 'period' = 'school';
+remarksModalStudent: AbsentStudent | PeriodAbsentStudent | null = null;
+remarksModalText = '';
+remarksSaving = false;
+remarksError: string | null = null;
 
   attendanceLineData: ChartData<'line'> = { labels: [], datasets: [] };
   attendanceLineOptions: ChartConfiguration<'line'>['options'] = {
@@ -656,6 +673,7 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
         'Admission No': s.admissionNo,
         'Batch Code': s.batchCode,
         'Batch Name': s.batchName,
+        Phone: this.getAbsentPhones(s).join(', '),
         Remarks: s.remarks || '',
       }));
       sheetName = 'Day-wise Absent';
@@ -667,6 +685,7 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
         'Admission No': s.admissionNo,
         Batch: s.batchCode,
         Period: `P${s.periodNo}`,
+        Phone: this.getAbsentPhones(s).join(', '),
         Remarks: s.remarks || '',
       }));
       sheetName = 'Period-wise Absent';
@@ -678,6 +697,78 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
     const workbook: XLSX.WorkBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     XLSX.writeFile(workbook, fileName);
+  }
+
+  getAbsentPhones(s: AbsentStudent | PeriodAbsentStudent): string[] {
+    const nums = [s.studentPhone, s.studentPhone1, s.studentPhone2, s.parentPhone].filter(
+      (p): p is string => !!p,
+    );
+    return Array.from(new Set(nums)).slice(0, 3);
+  }
+
+  asPeriodAbsent(s: AbsentStudent | PeriodAbsentStudent): PeriodAbsentStudent | null {
+    return this.remarksModalTab === 'period' ? (s as PeriodAbsentStudent) : null;
+  }
+
+  openRemarksModal(s: AbsentStudent | PeriodAbsentStudent, tab: 'school' | 'period'): void {
+    this.remarksModalTab = tab;
+    this.remarksModalStudent = s;
+    this.remarksModalText = s.remarks || '';
+    this.remarksError = null;
+    this.remarksModalOpen = true;
+  }
+
+  closeRemarksModal(): void {
+    this.remarksModalOpen = false;
+    this.remarksModalStudent = null;
+    this.remarksModalText = '';
+    this.remarksError = null;
+  }
+
+  saveRemarksModal(): void {
+    const student = this.remarksModalStudent;
+    if (!student) return;
+    const remarks = this.remarksModalText.trim();
+    if (!remarks) {
+      this.remarksError = 'Please enter remarks before saving.';
+      return;
+    }
+    if (!student.attendanceId) {
+      this.remarksError =
+        'This absentee entry has no attendance record id yet. Please refresh the dashboard or contact support if this persists.';
+      return;
+    }
+    const studentId = student.studentId;
+    const attendanceId = student.attendanceId;
+    const tab = this.remarksModalTab;
+    this.remarksSaving = true;
+    this.remarksError = null;
+    const req$ =
+      tab === 'school'
+        ? this.dashboardService.updateSchoolAttendanceRemarks(this.entiId, attendanceId, studentId, remarks)
+        : this.dashboardService.updatePeriodAttendanceRemarks(this.entiId, attendanceId, studentId, remarks);
+    req$
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.remarksSaving = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (!res?.status) {
+            this.remarksError = res?.message || 'Failed to update remarks';
+            return;
+          }
+          const list = tab === 'school' ? this.todayAbsentList : this.todayPeriodAbsentList;
+          const target = list.find(
+            (x) => x.studentId === studentId && x.attendanceId === attendanceId,
+          );
+          if (target) target.remarks = remarks || null;
+          this.closeRemarksModal();
+        },
+        error: (err: any) => {
+          this.remarksError = err?.error?.message || 'Failed to update remarks';
+        },
+      });
   }
 
   private buildStaffDepts(data: any): void {

@@ -70,4 +70,12 @@ export class DashboardService {
   getAttendanceTrend(entiId: string, period: string = 'week', attendanceType: 'school' | 'period' = 'school', batchCode: string = ''): Observable<any> {
     return this.api.fetchData({ entiId, period, attendanceType, batchCode }, this.module, 'attendance-trend');
   }
+
+  updateSchoolAttendanceRemarks(entiId: string, attendanceId: string, studentId: string, remarks: string): Observable<any> {
+    return this.api.fetchData({ entiId, attendanceId, studentId, remarks }, 'attendance', 'remarks/school');
+  }
+
+  updatePeriodAttendanceRemarks(entiId: string, attendanceId: string, studentId: string, remarks: string): Observable<any> {
+    return this.api.fetchData({ entiId, attendanceId, studentId, remarks }, 'attendance', 'remarks/period');
+  }
 }
