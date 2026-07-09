@@ -158,7 +158,7 @@
         <ng-container *ngIf="activeAbsentTab === 'school'">
             <div class="absent-table" *ngIf="todayAbsentList.length; else emptyDayAbsent">
                 <div class="absent-row absent-head">
-                    <span>Student</span> <span>Admission No</span><span>Batch</span><span>Remarks</span>
+                    <span>Student</span> <span>Admission No</span><span>Batch</span><span>Phone</span><span>Remarks</span><span>Action</span>
                 </div>
                 <div class="absent-row" *ngFor="let s of todayAbsentList">
                     <span class="ptm-name">{{ s.studentName }}</span>
@@ -167,7 +167,19 @@
                         <div class="ptm-name">{{ s.batchCode }}</div>
                         <div class="ptm-sub">{{ s.batchName }}</div>
                     </span>
+                    <span class="absent-phones">
+                        <a class="phone-chip" *ngFor="let p of getAbsentPhones(s)" [href]="'tel:' + p">
+                            <i class="fa-solid fa-phone fa-xs"></i>{{ p }}
+                        </a>
+                        <span class="absent-remark none" *ngIf="!getAbsentPhones(s).length">—</span>
+                    </span>
                     <span class="absent-remark" [class.none]="!s.remarks">{{ s.remarks || '—' }}</span>
+                    <span class="absent-action-cell">
+                        <button class="remark-edit-btn" title="Add / edit remarks"
+                            (click)="openRemarksModal(s, 'school')">
+                            <i class="fa-solid fa-pen fa-xs"></i>
+                        </button>
+                    </span>
                 </div>
             </div>
             <ng-template #emptyDayAbsent>
@@ -180,14 +192,26 @@
             <div class="absent-table" *ngIf="todayPeriodAbsentList.length; else emptyPeriodAbsent">
                 <div class="absent-row absent-head period-row">
                     <span>Student</span><span>Admission
-                        No</span><span>Batch</span><span>Period</span><span>Remarks</span>
+                        No</span><span>Batch</span><span>Period</span><span>Phone</span><span>Remarks</span><span>Action</span>
                 </div>
                 <div class="absent-row period-row" *ngFor="let s of todayPeriodAbsentList">
                     <span class="ptm-name">{{ s.studentName }}</span>
                     <span class="ptm-name">{{ s.admissionNo }}</span>
                     <span class="ptm-sub">{{ s.batchCode }}</span>
                     <span><span class="period-badge">P{{ s.periodNo }}</span></span>
+                    <span class="absent-phones">
+                        <a class="phone-chip" *ngFor="let p of getAbsentPhones(s)" [href]="'tel:' + p">
+                            <i class="fa-solid fa-phone fa-xs"></i>{{ p }}
+                        </a>
+                        <span class="absent-remark none" *ngIf="!getAbsentPhones(s).length">—</span>
+                    </span>
                     <span class="absent-remark" [class.none]="!s.remarks">{{ s.remarks || '—' }}</span>
+                    <span class="absent-action-cell">
+                        <button class="remark-edit-btn" title="Add / edit remarks"
+                            (click)="openRemarksModal(s, 'period')">
+                            <i class="fa-solid fa-pen fa-xs"></i>
+                        </button>
+                    </span>
                 </div>
             </div>
             <ng-template #emptyPeriodAbsent>
@@ -391,6 +415,41 @@
                     </div>
                 </li>
             </ul>
+        </div>
+    </div>
+
+    <!-- Remarks Modal -->
+    <div class="remarks-modal-backdrop" *ngIf="remarksModalOpen">
+        <div class="remarks-modal">
+            <div class="remarks-modal-header">
+                <h4>Add / Edit Remarks</h4>
+                <button class="remarks-modal-close" (click)="closeRemarksModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="remarks-modal-body" *ngIf="remarksModalStudent as s">
+                <div class="remarks-context-badge" [class.period]="remarksModalTab === 'period'">
+                    <i class="fa-solid" [class.fa-school]="remarksModalTab === 'school'"
+                        [class.fa-clock]="remarksModalTab === 'period'"></i>
+                    {{ remarksModalTab === 'school' ? 'School (day-wise) attendance' : 'Period attendance · P' +
+                    asPeriodAbsent(s)?.periodNo }}
+                </div>
+                <div class="remarks-student-name">{{ s.studentName }}</div>
+                <div class="remarks-student-sub">{{ s.admissionNo }} · {{ s.batchCode }}</div>
+                <textarea class="remarks-textarea" rows="3" placeholder="Enter remarks (e.g. Parent informed via call)"
+                    [(ngModel)]="remarksModalText"></textarea>
+                <div class="remarks-modal-error" *ngIf="remarksError">
+                    <i class="fa-solid fa-circle-exclamation"></i> {{ remarksError }}
+                </div>
+            </div>
+            <div class="remarks-modal-footer">
+                <button class="btn-ghost" (click)="closeRemarksModal()" [disabled]="remarksSaving">Cancel</button>
+                <button class="btn-primary" (click)="saveRemarksModal()"
+                    [disabled]="remarksSaving || !remarksModalText.trim()">
+                    <i class="fa-solid fa-spinner fa-spin" *ngIf="remarksSaving"></i>
+                    {{ remarksSaving ? 'Saving...' : 'Save' }}
+                </button>
+            </div>
         </div>
     </div>
 </div>
