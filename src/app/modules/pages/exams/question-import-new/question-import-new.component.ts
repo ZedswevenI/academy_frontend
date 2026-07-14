@@ -498,11 +498,11 @@ export class QuestionImportNewComponent implements OnInit {
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
     html = html.replace(
       /\$\$(.+?)\$\$/g,
-      '<span class="latex-formula">$$$1$$</span>',
+      (_m, p1) => `<span class="latex-formula">$$${p1}$$</span>`,
     );
     html = html.replace(
       /\$([^$]+?)\$/g,
-      '<span class="latex-formula">$$1$</span>',
+      (_m, p1) => `<span class="latex-formula">$${p1}$</span>`,
     );
     return html;
   }
