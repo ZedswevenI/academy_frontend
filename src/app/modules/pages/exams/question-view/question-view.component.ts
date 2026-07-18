@@ -245,6 +245,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
                 return {
                   ...item,
                   key: item?.key || String.fromCharCode(65 + i),
+                  text,
                   textHtml: this.sanitizeHtml(text),
                 };
               }),
@@ -258,6 +259,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
                 return {
                   ...item,
                   key: item?.key || String.fromCharCode(80 + i),
+                  text,
                   textHtml: this.sanitizeHtml(text),
                 };
               }),
@@ -282,7 +284,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         //   })),
         // };
         // Process passageHtml and instructionHtml
-        let passageHtml = q.passageId?.passageHtml || q.passageHtml || '';
+        let passageHtml =
+          q.passageData?.passageHtml || q.passageId?.passageHtml || q.passageHtml || '';
         let instructionHtml = q.instructionHtml || '';
         passageHtml = await this.replaceDownloadUrls(passageHtml);
         instructionHtml = await this.replaceDownloadUrls(instructionHtml);
@@ -1142,7 +1145,10 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         const questionHtml = qEl
           ? qEl.nativeElement.innerHTML
           : safeHtml(q.questionHtml);
-        const passageHtml = safeHtml(q.passageHtml);
+        const passageEl = document.getElementById(`passage-content-${i}`);
+        const passageHtml = passageEl
+          ? passageEl.innerHTML
+          : safeHtml(q.passageHtml);
         const passageBlock =
           q.enablePassage && passageHtml
             ? `<div class="passage-block"><div class="block-label">📖 Passage</div><div>${passageHtml}</div></div>`
@@ -1192,13 +1198,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           const leftRows = (q.leftColumn as any[])
             .map(
               (l: any) =>
-                `<tr><td class="matrix-key">${l.key}.</td><td class="matrix-cell">${safeHtml(l.textHtml)}</td></tr>`,
+                `<tr><td class="matrix-key">${l.key}.</td><td class="matrix-cell">${this.renderLatexInHtml(l.text)}</td></tr>`,
             )
             .join('');
           const rightRows = (q.rightColumn as any[])
             .map(
               (r: any) =>
-                `<tr><td class="matrix-key">${r.key}.</td><td class="matrix-cell">${safeHtml(r.textHtml)}</td></tr>`,
+                `<tr><td class="matrix-key">${r.key}.</td><td class="matrix-cell">${this.renderLatexInHtml(r.text)}</td></tr>`,
             )
             .join('');
           const matchesTable =

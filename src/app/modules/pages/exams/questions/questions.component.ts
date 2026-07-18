@@ -465,8 +465,9 @@ async viewQuestion(row: any): Promise<void> {
   this.viewQuestionHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(qHtml));
 
   // passage
-  if (this.viewData.enablePassage && this.viewData.passageHtml) {
-    let pH = await this.replaceDownloadUrls(this.viewData.passageHtml);
+  const passageHtml = this.viewData.passageData?.passageHtml || this.viewData.passageHtml;
+  if (this.viewData.enablePassage && passageHtml) {
+    let pH = await this.replaceDownloadUrls(passageHtml);
     this.viewPassageHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(pH));
   } else { this.viewPassageHtml = ''; }
 
