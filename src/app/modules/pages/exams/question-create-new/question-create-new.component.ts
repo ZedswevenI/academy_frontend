@@ -356,7 +356,8 @@ export class QuestionCreateNewComponent implements OnInit {
           // passageId: q.passageId || null,
           // passageText: q.passageHtml || '',
           passageId: q.passageId?._id || q.passageId || null,
-          passageText: q.passageId?.passageHtml || q.passageHtml || '',
+          passageText:
+            q.passageData?.passageHtml || q.passageId?.passageHtml || q.passageHtml || '',
           instruction: instructionHtml,
           solution: solutionHtml,
           trueFalseAnswer:
