@@ -98,6 +98,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -128,6 +129,7 @@ export class FeedbackresultsComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrump: BredcrumpService,
+    private backNav: BackNavigationService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
   }
@@ -265,7 +267,7 @@ export class FeedbackresultsComponent implements OnInit {
     return String(val ?? '');
   }
   goBack(): void {
-    this.router.navigate(['/app/feedback']);
+    this.backNav.goBack({ route: '/app/feedback' });
   }
 
   // ── Consolidated PDF Report ───────────────────────────────────────────────

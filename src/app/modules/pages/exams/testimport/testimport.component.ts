@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import * as XLSX from 'xlsx';
 
 type ExcelRow = {
@@ -24,7 +25,16 @@ type ExcelRow = {
   styleUrl: './testimport.component.scss'
 })
 export class TestimportComponent {
-  constructor(private commonApi: CommonapiService, private alert: AlertService) {}
+  constructor(
+    private commonApi: CommonapiService,
+    private alert: AlertService,
+    private backNav: BackNavigationService,
+  ) {}
+
+  goBack(): void {
+    this.backNav.goBack({ route: '/app/exams/exams' });
+  }
+
   mode: 'insert' | 'upsert' = 'insert';
   loading = false;
   excelRows: ExcelRow[] = [];

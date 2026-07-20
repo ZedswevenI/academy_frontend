@@ -5,6 +5,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { forkJoin, map, Subject } from 'rxjs';
 import { takeUntil, catchError, of, finalize } from 'rxjs';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 const safeTrim = (v: any): string =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -229,7 +230,8 @@ export class ViewTableComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private alert: AlertService,
     private commonApi: CommonapiService,
-    private breadcrumb: BredcrumpService
+    private breadcrumb: BredcrumpService,
+    private backNav: BackNavigationService
   ) {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId');
@@ -870,7 +872,7 @@ export class ViewTableComponent implements OnInit, OnDestroy {
   }
 
   back() {
-    this.router.navigate(['/app/timetable']);
+    this.backNav.goBack({ route: '/app/timetable' });
   }
 
   private loadWeekIndex(batchCode: string) {

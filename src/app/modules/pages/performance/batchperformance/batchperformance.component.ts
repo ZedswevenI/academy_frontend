@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import {
   buildCPTPageHtml,
   buildSchoolPageHtml,
@@ -41,6 +42,7 @@ export class BatchperformanceComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrump: BredcrumpService,
+    private backNav: BackNavigationService,
   ) {}
 
   ngOnInit(): void {
@@ -133,7 +135,7 @@ export class BatchperformanceComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/app/performance']);
+    this.backNav.goBack({ route: '/app/performance' });
   }
 
   pct(val: any): string {

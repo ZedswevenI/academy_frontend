@@ -6,6 +6,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import * as XLSX from 'xlsx';
 
 const safeTrim = (v: any) =>
@@ -104,11 +105,16 @@ export class StudentViewComponent implements OnInit {
     private alert: AlertService,
     private route: ActivatedRoute,
     private fb: FormBuilder,
+    private backNav: BackNavigationService,
   ) {
     this.breadcrump.set([
       { label: 'Student', link: '/app/student' },
       { label: 'View' },
     ]);
+  }
+
+  goBack(): void {
+    this.backNav.goBack({ route: '/app/student' });
   }
 
   ngOnInit(): void {

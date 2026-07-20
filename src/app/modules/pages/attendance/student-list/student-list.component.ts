@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-student-list',
@@ -45,6 +46,7 @@ export class StudentListComponent implements OnInit, OnDestroy {
     public router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private backNav: BackNavigationService,
   ) {
     this.breadcrumb.set([
       { label: 'Attendance', link: '/app/attendance' },
@@ -212,6 +214,6 @@ export class StudentListComponent implements OnInit, OnDestroy {
   }
 
  goBack() {
-    this.router.navigate(['/app/attendance']);
+    this.backNav.goBack({ route: '/app/attendance' });
   }
 }

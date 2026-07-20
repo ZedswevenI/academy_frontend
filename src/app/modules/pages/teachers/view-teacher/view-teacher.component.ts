@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-view-teacher',
@@ -81,12 +82,17 @@ export class ViewTeacherComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private backNav: BackNavigationService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
       { label: 'Teachers', link: '/app/teacher' },
       { label: 'View' },
     ]);
+  }
+
+  goBack(): void {
+    this.backNav.goBack({ route: '/app/teacher' });
   }
 
   ngOnInit(): void {

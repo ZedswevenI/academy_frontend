@@ -3,6 +3,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-knowledge-view',
@@ -35,7 +36,8 @@ export class KnowledgeViewComponent implements OnInit {
     private commonApi: CommonapiService,
     private breadcrumb: BredcrumpService,
     private router: Router,
-    private alert: AlertService
+    private alert: AlertService,
+    private backNav: BackNavigationService
   ) {
     this.breadcrumb.set([
       { label: 'Library', link: '/app/knowledge' },
@@ -49,6 +51,10 @@ export class KnowledgeViewComponent implements OnInit {
     } else {
       this.router.navigate(['/app/knowledge']);
     }
+  }
+
+  goBack(): void {
+    this.backNav.goBack({ route: '/app/knowledge' });
   }
 
   ngOnInit(): void {

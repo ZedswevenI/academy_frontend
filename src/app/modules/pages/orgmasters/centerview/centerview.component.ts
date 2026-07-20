@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-centerview',
@@ -70,6 +71,7 @@ export class CenterviewComponent implements OnInit {
     private api: CommonapiService,
     private alert: AlertService,
     private breadcrumb: BredcrumpService,
+    private backNav: BackNavigationService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -100,7 +102,7 @@ export class CenterviewComponent implements OnInit {
   }
 
   back() {
-    this.router.navigate(['/app/org-master/center']);
+    this.backNav.goBack({ route: '/app/org-master/center' });
   }
 
   loadCenter() {

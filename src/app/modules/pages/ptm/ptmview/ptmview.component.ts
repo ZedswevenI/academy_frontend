@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -120,6 +121,7 @@ export class PtmviewComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrump: BredcrumpService,
+    private backNav: BackNavigationService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
   }
@@ -841,7 +843,7 @@ export class PtmviewComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/app/ptm']);
+    this.backNav.goBack({ route: '/app/ptm' });
   }
 
   private openModal(id: string): void {

@@ -4,6 +4,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import {
   buildCPTPrintHtml,
   buildSchoolPrintHtml,
@@ -58,6 +59,7 @@ export class StudentperformanceComponent implements OnInit {
     private alert: AlertService,
     private breadcrump: BredcrumpService,
     private auth: AuthService,
+    private backNav: BackNavigationService,
   ) {}
 
   ngOnInit(): void {
@@ -276,7 +278,7 @@ export class StudentperformanceComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/app/performance']);
+    this.backNav.goBack({ route: '/app/performance' });
   }
 
   formatDate(ts: number): string {

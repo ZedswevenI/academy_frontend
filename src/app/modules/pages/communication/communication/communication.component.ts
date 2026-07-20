@@ -173,6 +173,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -233,12 +234,17 @@ export class CommunicationComponent {
     private router: Router,
     private alertService: AlertService,
     private commonApi: CommonapiService,
+    private backNav: BackNavigationService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrump.set([
       { label: 'Communiation', link: '/app/communication' },
       { label: 'Create' },
     ]);
+  }
+
+  goBack(): void {
+    this.backNav.goBack({ route: '/app/communication' });
   }
 
   ngOnInit() {
