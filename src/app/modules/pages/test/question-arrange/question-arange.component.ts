@@ -8,6 +8,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { QuestionTransformService } from './transform.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -51,7 +52,8 @@ export class QuestionArrangementComponent implements OnInit {
     private sanitizer: DomSanitizer,
     private transformService: QuestionTransformService,
     private cdr: ChangeDetectorRef,
-    private breadcrumb: BredcrumpService
+    private breadcrumb: BredcrumpService,
+    private backNav: BackNavigationService
   ) {
     this.breadcrumb.set([
       { label: 'Assignment', link: '/app/assignment' },
@@ -285,7 +287,7 @@ export class QuestionArrangementComponent implements OnInit {
       next: (res: any) => {
         if (res?.status) {
           this.showToast('Order saved successfully!', 'success');
-          this.router.navigate(['/app/assignment']);
+          this.backNav.goBack({ route: '/app/assignment' });
         }
       },
       error: (err) => {

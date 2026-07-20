@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
@@ -128,6 +129,7 @@ export class ViewBatchComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private backNav: BackNavigationService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
   }
@@ -318,7 +320,7 @@ export class ViewBatchComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/app/batch']);
+    this.backNav.goBack({ route: '/app/batch' });
   }
 
   get batchDuration(): string {
@@ -1920,7 +1922,9 @@ export class ViewBatchComponent implements OnInit {
 
   viewStudent(s: any) {
     const stu = s?._raw || s;
-    this.router.navigate(['/app/student/view', stu.studentId]);
+    this.router.navigate(['/app/student/view', stu.studentId], {
+      state: { source: 'batch', batchId: this.batchId },
+    });
   }
 
   viewTeacher(staffId: any) {

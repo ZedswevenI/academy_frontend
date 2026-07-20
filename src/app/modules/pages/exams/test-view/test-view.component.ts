@@ -4,6 +4,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -200,6 +201,7 @@ export class TestViewComponent implements OnInit {
     private fb: FormBuilder,
     public authService: AuthService,
     private sanitizer: DomSanitizer,
+    private backNav: BackNavigationService,
   ) {
     const state: any = history.state;
     if (state?.exam) {
@@ -318,6 +320,12 @@ export class TestViewComponent implements OnInit {
   }
   closeDuplicateModal() {
     this.showDuplicateModal = false;
+  }
+  goBack() {
+    const route = this.examData?.isImported
+      ? '/app/exams/imported-exams'
+      : '/app/exams/exams';
+    this.backNav.goBack({ route });
   }
   rearrangeQuestions() {
     this.router.navigate(['/app/exams/exams/question-rearrange'], {

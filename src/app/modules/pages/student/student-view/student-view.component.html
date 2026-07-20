@@ -62,7 +62,7 @@
                         </i>
                         {{ student.basic?.isTabletBlocked ? 'Unlock Tablet' : 'Lock Tablet' }}
                     </button>
-                    <button class="btn btn-back fs-16 fw-medium" routerLink="/app/student">
+                    <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
                         <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Students
                     </button>
                 </div>
@@ -681,7 +681,7 @@
     <div *ngIf="!loading && !student" class="text-center py-5 text-muted">
         <i class="fa-solid fa-user-slash fa-3x mb-3 d-block"></i>
         <p>Student not found.</p>
-        <button class="btn btn-sm btn-outline-primary rounded-pill" routerLink="/app/student">
+        <button class="btn btn-sm btn-outline-primary rounded-pill" (click)="goBack()">
             Back to Students
         </button>
     </div>

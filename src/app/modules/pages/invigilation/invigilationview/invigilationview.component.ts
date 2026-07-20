@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { InvigilationPrintService } from '../invigilationPrint.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-invigilationview',
@@ -16,7 +17,7 @@ export class InvigilationviewComponent implements OnInit {
   loading = false;
   printLoading = false;
 
-  constructor(private commonApi: CommonapiService, private alert: AlertService, private printSvc: InvigilationPrintService, private route: ActivatedRoute, private router: Router) {}
+  constructor(private commonApi: CommonapiService, private alert: AlertService, private printSvc: InvigilationPrintService, private route: ActivatedRoute, private router: Router, private backNav: BackNavigationService) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id') || '';
@@ -47,7 +48,7 @@ export class InvigilationviewComponent implements OnInit {
   }
 
   back(): void {
-    this.router.navigate(['/app/invigilation']);
+    this.backNav.goBack({ route: '/app/invigilation' });
   }
 
   print(): void {

@@ -73,7 +73,7 @@
                     </div>
                 </div>
                 <div class="col-12 text-end mt-3">
-                    <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/task">
+                    <button class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">
                         Back
                     </button>
                     <button *ngIf="taskData?.status === 'Pending' || taskData?.status === 'PENDING'"

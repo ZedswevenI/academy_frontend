@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -35,7 +36,8 @@ export class CircularViewComponent implements OnInit {
     private router: Router,
     private breadcrumb: BredcrumpService,
     private commonApi: CommonapiService,
-    private alert: AlertService
+    private alert: AlertService,
+    private backNav: BackNavigationService
   ) {
     const nav = this.router.getCurrentNavigation();
     const state = nav?.extras?.state?.['circular'];
@@ -201,7 +203,7 @@ export class CircularViewComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/app/circular']);
+    this.backNav.goBack({ route: '/app/circular' });
   }
 
   downloadFile(url: string): void {

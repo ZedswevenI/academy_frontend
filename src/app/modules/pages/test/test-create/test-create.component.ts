@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-ass-create',
@@ -44,7 +45,8 @@ export class TestCreateComponent implements OnInit {
     private commonApi:  CommonapiService,
     private alert:      AlertService,
     private cdr:        ChangeDetectorRef,
-    private authService: AuthService
+    private authService: AuthService,
+    private backNav:    BackNavigationService
   ) {
     const state: any = history.state;
     this.tenantId = localStorage.getItem('tenantId') || '';
@@ -399,7 +401,7 @@ private disableEditModeFields(): void {
       status:            formValue.status
     };
     this.commonApi.fetchData(payload, 'assignment', 'create').subscribe({
-      next:  (res: any) => { if (res?.status) { this.alert.success('Created successfully'); this.router.navigate(['/app/assignment']); }},
+      next:  (res: any) => { if (res?.status) { this.alert.success('Created successfully'); this.backNav.goBack({ route: '/app/assignment' }); }},
       error: ()         => this.alert.error('Error creating assignment')
     });
   }
@@ -412,12 +414,12 @@ private disableEditModeFields(): void {
       status:            formValue.status
     };
     this.commonApi.fetchData(payload, 'assignment', 'edit').subscribe({
-      next:  (res: any) => { if (res?.status) { this.alert.success('Updated successfully'); this.router.navigate(['/app/assignment']); }},
+      next:  (res: any) => { if (res?.status) { this.alert.success('Updated successfully'); this.backNav.goBack({ route: '/app/assignment' }); }},
       error: ()         => this.alert.error('Error updating assignment')
     });
   }
 
   addAss(): void {
-    this.router.navigate(['/app/assignment']);
+    this.backNav.goBack({ route: '/app/assignment' });
   }
 }
