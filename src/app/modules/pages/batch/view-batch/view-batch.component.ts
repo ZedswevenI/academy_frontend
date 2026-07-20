@@ -1922,7 +1922,9 @@ export class ViewBatchComponent implements OnInit {
 
   viewStudent(s: any) {
     const stu = s?._raw || s;
-    this.router.navigate(['/app/student/view', stu.studentId]);
+    this.router.navigate(['/app/student/view', stu.studentId], {
+      state: { source: 'batch', batchId: this.batchId },
+    });
   }
 
   viewTeacher(staffId: any) {

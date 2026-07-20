@@ -114,7 +114,13 @@ export class StudentViewComponent implements OnInit {
   }
 
   goBack(): void {
-    this.backNav.goBack({ route: '/app/student' });
+    const state: any = history.state || {};
+    this.backNav.goBack(
+      { route: '/app/student' },
+      {
+        batch: { route: ['/app/batch/view', state.batchId] },
+      },
+    );
   }
 
   ngOnInit(): void {
