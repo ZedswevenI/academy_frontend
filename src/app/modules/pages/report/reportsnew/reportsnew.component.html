@@ -104,16 +104,43 @@
                     (click)="showFacultyLoadDetail()">
                     <i class="fa-solid fa-table-list me-1"></i> Load Detail
                 </button>
-                <button
-                    *ngIf="reportTableData.length > 0 || hasFacultyLoadCustomData || hasAssignmentCustomData || hasFacultyReportData"
-                    class="btn btn-outline-danger fs-16 fw-medium" (click)="exportToPdf()">
-                    <i class="fa-solid fa-file-pdf btn-icon"></i> Export PDF
-                </button>
-                <button
-                    *ngIf="reportTableData.length > 0 || hasFacultyLoadCustomData || hasAssignmentCustomData || hasFacultyReportData"
-                    class="btn btn-export fs-16 fw-medium" (click)="exportToExcel()">
-                    <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
-                </button>
+                <ng-container
+                    *ngIf="reportTableData.length > 0 || hasFacultyLoadCustomData || hasAssignmentCustomData || hasFacultyReportData">
+                    <ng-container *ngIf="!hasMaskedColumns; else maskedExportButtons">
+                        <button class="btn btn-outline-danger fs-16 fw-medium" (click)="exportToPdf()">
+                            <i class="fa-solid fa-file-pdf btn-icon"></i> Export PDF
+                        </button>
+                        <button class="btn btn-export fs-16 fw-medium" (click)="exportToExcel()">
+                            <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
+                        </button>
+                    </ng-container>
+                    <ng-template #maskedExportButtons>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-danger fs-16 fw-medium dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-file-pdf btn-icon"></i> Export PDF
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToPdf(false)">
+                                        <i class="fa-solid fa-eye-slash me-2 text-muted"></i>Hidden (masked)</a></li>
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToPdf(true)">
+                                        <i class="fa-solid fa-eye me-2 text-primary"></i>Viewable (full)</a></li>
+                            </ul>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-export fs-16 fw-medium dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToExcel(false)">
+                                        <i class="fa-solid fa-eye-slash me-2 text-muted"></i>Hidden (masked)</a></li>
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToExcel(true)">
+                                        <i class="fa-solid fa-eye me-2 text-primary"></i>Viewable (full)</a></li>
+                            </ul>
+                        </div>
+                    </ng-template>
+                </ng-container>
                 <button class="btn btn-back fs-16 fw-medium" (click)="clearReport()">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </button>
@@ -550,8 +577,8 @@
                     </select>
                 </div>
                 <!-- ADD after the existing staff selector block: -->
-                <div class="col-md-3 staff-multiselect-wrapper"
-                    *ngIf="selectedReport.key === 'teacher-load' || 'teacher-faculty-report'" style="position:relative">
+                <div class="col-md-3 staff-multiselect-wrapper" *ngIf="needsStaffMultiFilter()"
+                    style="position:relative">
                     <label class="form-label fw-medium">Staff <span
                             class="text-muted fw-normal small">(optional)</span></label>
                     <button type="button"
@@ -656,6 +683,15 @@
                         <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate" />
                     </div>
                 </ng-container>
+                <!-- Marked / Not Marked status filter -->
+                <div class="col-md-2" *ngIf="selectedReport.key === 'teacher-attendance'">
+                    <label class="form-label fw-medium">Status</label>
+                    <select class="form-select form-select-sm" [(ngModel)]="attendanceMarkedFilter">
+                        <option value="ALL">All</option>
+                        <option value="MARKED">Marked</option>
+                        <option value="NOT_MARKED">Not Marked</option>
+                    </select>
+                </div>
                 <!-- Subject filter -->
                 <div class="col-md-2" *ngIf="
             [
@@ -678,7 +714,8 @@
                         </option>
                     </select>
                 </div>
-                <div class="col-md-3 topic-multiselect-wrapper" *ngIf="selectedReport.key === 'batch-slash-detail'"
+                <div class="col-md-3 topic-multiselect-wrapper"
+                    *ngIf="['batch-slash-detail', 'batch-assignment-report'].includes(selectedReport.key)"
                     style="position:relative">
                     <label class="form-label fw-medium">Topic <span
                             class="text-muted fw-normal small">(optional)</span></label>
@@ -816,34 +853,9 @@
                 <table class="table table-sm table-hover align-middle mb-0">
                     <thead>
                         <tr>
+                            <th *ngIf="hasMaskedColumns" style="width: 36px;"></th>
                             <th *ngFor="let col of reportColumns">
-                                <div class="d-flex align-items-center gap-1">
-                                    <span>{{ col.label }}</span>
-                                    <button *ngIf="col.masked" class="btn btn-sm p-0 ms-1" style="
-                      font-size: 12px;
-                      line-height: 1;
-                      background: rgba(255, 255, 255, 0.2);
-                      border: none;
-                      border-radius: 3px;
-                      width: 20px;
-                      height: 20px;
-                      display: inline-flex;
-                      align-items: center;
-                      justify-content: center;
-                      color: #1c90ff;
-                      cursor: pointer;
-                    " (click)="toggleColumnReveal(col.key, $event)" [title]="
-                      isColumnRevealed(col.key)
-                        ? 'Click to mask'
-                        : 'Click to reveal'
-                    ">
-                                        <i [class]="
-                        isColumnRevealed(col.key)
-                          ? 'fa-solid fa-eye-slash'
-                          : 'fa-solid fa-eye'
-                      "></i>
-                                    </button>
-                                </div>
+                                <span>{{ col.label }}</span>
                             </th>
                         </tr>
                     </thead>
@@ -854,6 +866,31 @@
                   ? '2px solid #d1d5db'
                   : ''
               ">
+                            <td *ngIf="hasMaskedColumns">
+                                <button type="button" class="btn btn-sm p-0" style="
+                      font-size: 12px;
+                      line-height: 1;
+                      background: transparent;
+                      border: none;
+                      width: 22px;
+                      height: 22px;
+                      display: inline-flex;
+                      align-items: center;
+                      justify-content: center;
+                      color: #1c90ff;
+                      cursor: pointer;
+                    " (click)="toggleRowReveal(row, $event)" [title]="
+                      isRowRevealed(row)
+                        ? 'Click to hide phone/email for this row'
+                        : 'Click to reveal phone/email for this row'
+                    ">
+                                    <i [class]="
+                        isRowRevealed(row)
+                          ? 'fa-solid fa-eye-slash'
+                          : 'fa-solid fa-eye'
+                      "></i>
+                                </button>
+                            </td>
                             <td *ngFor="let col of reportColumns">
                                 {{ getCellDisplayValue(row, col) }}
                             </td>
@@ -907,138 +944,6 @@
                             </tr>
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </ng-container>
-        <!-- Faculty Load Report — custom structured view -->
-        <ng-container *ngIf="selectedReport.key === 'teacher-load' && facultyLoadData.length > 0">
-            <div *ngFor="let staff of facultyLoadData" class="mb-4">
-
-                <!-- Staff header -->
-                <div class="report-table-card mb-3" style="background:#eff6ff; border-left: 4px solid #3b82f6;">
-                    <div class="d-flex align-items-center gap-3">
-                        <div>
-                            <h6 class="fw-bold mb-0">
-                                <i class="fa-solid fa-chalkboard-teacher me-2 text-primary"></i>
-                                {{ staff.staffName }}
-                                <span class="text-muted fw-normal small ms-2" *ngIf="staff.staffCode">({{
-                                    staff.staffCode }})</span>
-                            </h6>
-                            <small class="text-muted" *ngIf="staff.centerName">{{ staff.centerName }}</small>
-                        </div>
-                    </div>
-                </div>
-                <!-- One table per subject -->
-                <div *ngFor="let subject of staff.subjects" class="report-table-card mb-3">
-                    <!-- Subject header -->
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h6 class="fw-semibold mb-0">
-                                <i class="fa-solid fa-book me-2 text-secondary"></i>{{ subject.subjectName }}
-                            </h6>
-                            <small class="text-muted">
-                                Total Scheduled: <strong>{{ subject.totalScheduledHours }}</strong>
-                                <span *ngIf="subject.cancelledPeriods?.length" class="ms-3 text-danger">
-                                    Cancelled: {{ subject.cancelledPeriods.length }} period(s)
-                                </span>
-                                <span *ngIf="subject.replacedPeriods?.length" class="ms-3 text-success">
-                                    Additional: {{ subject.replacedPeriods.length }} period(s)
-                                </span>
-                            </small>
-                        </div>
-                    </div>
-                    <!-- Scheduled periods table -->
-                    <ng-container *ngIf="subject.scheduledPeriods?.length">
-                        <p class="fw-semibold text-primary mb-2" style="font-size:13px">
-                            <i class="fa-solid fa-check-circle me-1"></i> Scheduled Periods
-                        </p>
-                        <div class="table-responsive mb-3">
-                            <table class="table table-sm table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Batch Name</th>
-                                        <th>Batch Code</th>
-                                        <th>From Time</th>
-                                        <th>End Time</th>
-                                        <th>Hours</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let p of subject.scheduledPeriods">
-                                        <td>{{ p.dateFormatted }}</td>
-                                        <td>{{ p.batchName || '-' }}</td>
-                                        <td>{{ p.batchCode }}</td>
-                                        <td>{{ p.fromTime }}</td>
-                                        <td>{{ p.endTime }}</td>
-                                        <td>{{ p.hours }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </ng-container>
-                    <!-- Cancelled / replaced periods table -->
-                    <ng-container *ngIf="subject.cancelledPeriods?.length">
-                        <p class="fw-semibold text-danger mb-2" style="font-size:13px">
-                            <i class="fa-solid fa-xmark-circle me-1"></i> Cancelled / Replaced Periods
-                        </p>
-                        <div class="table-responsive mb-3">
-                            <table class="table table-sm table-hover align-middle mb-0">
-                                <thead style="background:#fee2e2">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Batch Name</th>
-                                        <th>Batch Code</th>
-                                        <th>From Time</th>
-                                        <th>End Time</th>
-                                        <th>Hours</th>
-                                        <th>Note</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let p of subject.cancelledPeriods">
-                                        <td>{{ p.dateFormatted }}</td>
-                                        <td>{{ p.batchName || '-' }}</td>
-                                        <td>{{ p.batchCode }}</td>
-                                        <td>{{ p.fromTime }}</td>
-                                        <td>{{ p.endTime }}</td>
-                                        <td>{{ p.hours }}</td>
-                                        <td class="text-danger small">{{ p.note || '-' }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </ng-container>
-                    <!-- Additional (replacement) periods table -->
-                    <ng-container *ngIf="subject.replacedPeriods?.length">
-                        <p class="fw-semibold text-success mb-2" style="font-size:13px">
-                            <i class="fa-solid fa-plus-circle me-1"></i> Additional (Replacement) Periods
-                        </p>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover align-middle mb-0">
-                                <thead style="background:#dcfce7">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Batch Name</th>
-                                        <th>Batch Code</th>
-                                        <th>From Time</th>
-                                        <th>End Time</th>
-                                        <th>Hours</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let p of subject.replacedPeriods">
-                                        <td>{{ p.dateFormatted }}</td>
-                                        <td>{{ p.batchName || '-' }}</td>
-                                        <td>{{ p.batchCode }}</td>
-                                        <td>{{ p.fromTime }}</td>
-                                        <td>{{ p.endTime }}</td>
-                                        <td>{{ p.hours }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </ng-container>
                 </div>
             </div>
         </ng-container>

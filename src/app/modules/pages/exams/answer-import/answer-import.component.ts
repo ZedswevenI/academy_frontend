@@ -744,7 +744,15 @@ export class AnswerImportComponent implements OnInit {
   }
 
   goBack() {
-    this.backNav.goBack({ route: '/app/exams/exams' });
+    this.backNav.goBack(
+      { route: '/app/exams/exams' },
+      {
+        'exam-view': {
+          route: '/app/exams/exams/view',
+          state: { exam: this.examData },
+        },
+      },
+    );
   }
 
   // ── Download sample DOCX ──────────────────────────────────────────────────

@@ -366,4 +366,123 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     XLSX.writeFile(workbook, fileName);
   }
 
+  // ===== Periodic Report (date range) — new, additive, uses schedule/withattendance-range =====
+  showPeriodicModal = false;
+  periodicFromDateStr = '';
+  periodicToDateStr = '';
+  periodicLoading = false;
+  periodicError = '';
+
+  openPeriodicReport(): void {
+    this.periodicFromDateStr = '';
+    this.periodicToDateStr = '';
+    this.periodicError = '';
+    this.periodicLoading = false;
+    this.showPeriodicModal = true;
+  }
+
+  closePeriodicReport(): void {
+    this.showPeriodicModal = false;
+  }
+
+  private dateStrToUtcMs(dateStr: string): number | null {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    return Date.UTC(y, m - 1, d);
+  }
+
+  private formatDateLabel(ms: number): string {
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    const d = new Date(ms);
+    return `${dayLabels[d.getUTCDay()]} ${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  }
+
+  generatePeriodicReport(type: 'all' | 'marked' | 'pending'): void {
+    const startDate = this.dateStrToUtcMs(this.periodicFromDateStr);
+    const endDate = this.dateStrToUtcMs(this.periodicToDateStr);
+    if (!startDate || !endDate) {
+      this.periodicError = 'Please select both From and To dates.';
+      return;
+    }
+    if (startDate > endDate) {
+      this.periodicError = 'From date must be on or before To date.';
+      return;
+    }
+    this.periodicError = '';
+    this.periodicLoading = true;
+    const tenantId = localStorage.getItem('tenantId');
+    const payload = { tenantId, startDate, endDate };
+    this.commonApi
+      .fetchData(payload, 'attendance', 'schedule/withattendance-range')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.periodicLoading = false;
+          const days: any[] = res?.data ?? [];
+          let rows = days.flatMap((day: any) =>
+            (day.periods || []).map((p: any) => ({
+              ...this.enrichRow(p, true),
+              dateMs: day.date,
+              dateLabel: this.formatDateLabel(day.date),
+            })),
+          );
+          if (type === 'marked') {
+            rows = rows.filter((r) => r._isMarked);
+          } else if (type === 'pending') {
+            rows = rows.filter((r) => !r._isMarked);
+          }
+          if (rows.length === 0) {
+            this.periodicError = 'No records found for the selected range/filter.';
+            return;
+          }
+          this.exportPeriodicRowsToExcel(rows, type);
+          this.showPeriodicModal = false;
+        },
+        error: () => {
+          this.periodicLoading = false;
+          this.periodicError = 'Failed to fetch the periodic report. Please try again.';
+        },
+      });
+  }
+
+  private exportPeriodicRowsToExcel(
+    rows: any[],
+    type: 'all' | 'marked' | 'pending',
+  ): void {
+    const worksheetData = rows.map((row) => ({
+      Date: row.dateLabel,
+      Batch: row.batchCode,
+      Timing: row.timeLabel,
+      Subject: row.subjectName,
+      Phase: row.phaseName,
+      Faculty: row.facultyName,
+      Type: row.periodType,
+      Mode: row.mode,
+      Status: row.statusBadge,
+      Attendance: row.attendanceSummary,
+    }));
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(worksheetData);
+    const max_width = worksheetData.reduce(
+      (w, r) => Math.max(w, r.Subject.length),
+      10,
+    );
+    worksheet['!cols'] = [
+      { wch: 16 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: max_width },
+      { wch: 15 },
+    ];
+    const workbook: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+    const fromLabel = this.periodicFromDateStr.replace(/-/g, '');
+    const toLabel = this.periodicToDateStr.replace(/-/g, '');
+    const fileName = `Attendance_Periodic_${type.toUpperCase()}_${fromLabel}_to_${toLabel}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  }
 }

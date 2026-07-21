@@ -99,6 +99,15 @@
                                         <i class="fa-solid fa-clock me-2 text-warning"></i> Download Pending
                                     </a>
                                 </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center cursor-pointer"
+                                        (click)="openPeriodicReport()">
+                                        <i class="fa-solid fa-calendar-week me-2 text-primary"></i> Periodic Report
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                         <span *ngIf="isAO && isFutureDate" class="text-muted small">
@@ -117,6 +126,47 @@
                     </custom-table>
                 </div>
             </ng-container>
+        </div>
+    </div>
+</div>
+
+<!-- Periodic Report modal -->
+<div class="app-modal-backdrop" *ngIf="showPeriodicModal">
+    <div class="app-modal app-modal-sm">
+        <div class="app-modal-header d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0 fw-semibold">Periodic Report</h6>
+                <span class="text-muted small">Export attendance for a date range.</span>
+            </div>
+            <button type="button" class="btn-close" (click)="closePeriodicReport()" aria-label="Close"></button>
+        </div>
+        <div class="app-modal-body">
+            <div *ngIf="periodicError" class="alert alert-danger py-2 mb-3">{{ periodicError }}</div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <label class="form-label fw-medium">From Date</label>
+                    <input type="date" class="form-control form-control-sm" [(ngModel)]="periodicFromDateStr" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-medium">To Date</label>
+                    <input type="date" class="form-control form-control-sm" [(ngModel)]="periodicToDateStr" />
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-2 mt-4">
+                <button type="button" class="btn btn-export fs-16 fw-medium" [disabled]="periodicLoading"
+                    (click)="generatePeriodicReport('all')">
+                    <span *ngIf="periodicLoading" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="fa-solid fa-list me-2" *ngIf="!periodicLoading"></i>Download All
+                </button>
+                <button type="button" class="btn btn-outline-success fs-16 fw-medium" [disabled]="periodicLoading"
+                    (click)="generatePeriodicReport('marked')">
+                    <i class="fa-solid fa-check me-2"></i>Download Marked
+                </button>
+                <button type="button" class="btn btn-outline-warning fs-16 fw-medium" [disabled]="periodicLoading"
+                    (click)="generatePeriodicReport('pending')">
+                    <i class="fa-solid fa-clock me-2"></i>Download Not Marked
+                </button>
+            </div>
         </div>
     </div>
 </div>

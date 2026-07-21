@@ -339,15 +339,15 @@ export class ConsolidatedReportComponent implements OnInit {
         1: { cellWidth: 18 },
       };
       let colIdx = 2;
+      // Pct columns — fixed reserved width (placed right after STR / RES)
+      this.partKeys.forEach(() => {
+        columnStyles[colIdx++] = { cellWidth: pctW };
+      });
       // Score columns — dynamic width
       this.partKeys.forEach((part) => {
         (this.partHeaders[part] || []).forEach(() => {
           columnStyles[colIdx++] = { cellWidth: dynW };
         });
-      });
-      // Pct columns — fixed reserved width
-      this.partKeys.forEach(() => {
-        columnStyles[colIdx++] = { cellWidth: pctW };
       });
       const totalCols = 2 + scoreColCount + pctColCount;
       const colHeaderRow: any[] = [
@@ -377,6 +377,22 @@ export class ConsolidatedReportComponent implements OnInit {
         },
       ];
       this.partKeys.forEach((part) => {
+        const col = pctColors[part] || {
+          fill: [241, 245, 249],
+          text: [55, 65, 81],
+        };
+        colHeaderRow.push({
+          content: this.partPctLabel(part),
+          styles: {
+            halign: 'center',
+            fontStyle: 'bold',
+            fontSize: 6.5,
+            fillColor: col.fill,
+            textColor: col.text,
+          },
+        });
+      });
+      this.partKeys.forEach((part) => {
         const col = partColors[part] || {
           fill: [241, 245, 249],
           text: [55, 65, 81],
@@ -393,22 +409,6 @@ export class ConsolidatedReportComponent implements OnInit {
               overflow: 'linebreak',
             },
           });
-        });
-      });
-      this.partKeys.forEach((part) => {
-        const col = pctColors[part] || {
-          fill: [241, 245, 249],
-          text: [55, 65, 81],
-        };
-        colHeaderRow.push({
-          content: this.partPctLabel(part),
-          styles: {
-            halign: 'center',
-            fontStyle: 'bold',
-            fontSize: 6.5,
-            fillColor: col.fill,
-            textColor: col.text,
-          },
         });
       });
 
@@ -502,23 +502,6 @@ export class ConsolidatedReportComponent implements OnInit {
           ];
 
           this.partKeys.forEach((part) => {
-            const bg =
-              part === 'A'
-                ? [239, 246, 255]
-                : part === 'B'
-                  ? [255, 251, 235]
-                  : [240, 253, 244];
-            const headerLen = (this.partHeaders[part] || []).length;
-            const scores = r.partScores?.[part] || [];
-            for (let qi = 0; qi < headerLen; qi++) {
-              const v = scores[qi] != null ? scores[qi] : null;
-              row.push({
-                content: v != null ? v.toFixed(2) : '—',
-                styles: { halign: 'center', fontSize: 6, fillColor: bg },
-              });
-            }
-          });
-          this.partKeys.forEach((part) => {
             const pct = r.partPct?.[part];
             const col = pctColors[part] || {
               fill: [241, 245, 249],
@@ -545,6 +528,23 @@ export class ConsolidatedReportComponent implements OnInit {
               },
             });
           });
+          this.partKeys.forEach((part) => {
+            const bg =
+              part === 'A'
+                ? [239, 246, 255]
+                : part === 'B'
+                  ? [255, 251, 235]
+                  : [240, 253, 244];
+            const headerLen = (this.partHeaders[part] || []).length;
+            const scores = r.partScores?.[part] || [];
+            for (let qi = 0; qi < headerLen; qi++) {
+              const v = scores[qi] != null ? scores[qi] : null;
+              row.push({
+                content: v != null ? v.toFixed(2) : '—',
+                styles: { halign: 'center', fontSize: 6, fillColor: bg },
+              });
+            }
+          });
 
           body.push(row);
         });
@@ -561,14 +561,6 @@ export class ConsolidatedReportComponent implements OnInit {
           },
         ];
         this.partKeys.forEach((part) => {
-          (this.partHeaders[part] || []).forEach(() =>
-            staffAvgRow.push({
-              content: '',
-              styles: { fillColor: [241, 245, 249] },
-            }),
-          );
-        });
-        this.partKeys.forEach((part) => {
           const col = pctColors[part] || {
             fill: [241, 245, 249],
             text: [55, 65, 81],
@@ -583,6 +575,14 @@ export class ConsolidatedReportComponent implements OnInit {
               textColor: col.text,
             },
           });
+        });
+        this.partKeys.forEach((part) => {
+          (this.partHeaders[part] || []).forEach(() =>
+            staffAvgRow.push({
+              content: '',
+              styles: { fillColor: [241, 245, 249] },
+            }),
+          );
         });
         body.push(staffAvgRow);
         autoTable(doc, {
@@ -637,14 +637,6 @@ export class ConsolidatedReportComponent implements OnInit {
         },
       ];
       this.partKeys.forEach((part) => {
-        (this.partHeaders[part] || []).forEach(() =>
-          summaryRow.push({
-            content: '',
-            styles: { fillColor: [241, 245, 249] },
-          }),
-        );
-      });
-      this.partKeys.forEach((part) => {
         const col = pctColors[part] || {
           fill: [241, 245, 249],
           text: [55, 65, 81],
@@ -659,6 +651,14 @@ export class ConsolidatedReportComponent implements OnInit {
             textColor: col.text,
           },
         });
+      });
+      this.partKeys.forEach((part) => {
+        (this.partHeaders[part] || []).forEach(() =>
+          summaryRow.push({
+            content: '',
+            styles: { fillColor: [241, 245, 249] },
+          }),
+        );
       });
 
       autoTable(doc, {
@@ -817,8 +817,13 @@ export class ConsolidatedReportComponent implements OnInit {
         }
       };
 
-      this.remarksData.forEach((staff: any) => {
-        checkPage(14);
+      this.remarksData.forEach((staff: any, staffIdx: number) => {
+        if (staffIdx > 0) {
+          doc.addPage();
+          curY = 15;
+        } else {
+          checkPage(14);
+        }
         doc.setFillColor(30, 41, 59);
         doc.rect(ml, curY - 4, maxW, 8, 'F');
         bold(9);

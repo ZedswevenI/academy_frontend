@@ -14,6 +14,9 @@ const ROLE_KEY = 'userRole';
 const EMAIL_KEY = 'email';
 const NAME_KEY = 'name';
 const CENTER_ID_KEY = 'centerId';
+const CENTERS_ACCESS_KEY = 'centersAccess';
+const SELECTED_CENTER_KEY = 'selectedCenterId';
+const ACCESSIBLE_CENTERS_CACHE_KEY = 'accessibleCentersCache';
 const STAFF_ID_KEY = 'staffId';
 const SUBJECT_ID_KEY = 'subjectId';
 const FACULTY_TYPE_KEY = 'facultyType';
@@ -58,6 +61,8 @@ export class AuthService {
           localStorage.setItem(EMAIL_KEY, d.email);
           localStorage.setItem(NAME_KEY, d.name);
           localStorage.setItem(CENTER_ID_KEY, d.centerId ?? '');
+          localStorage.setItem(CENTERS_ACCESS_KEY, JSON.stringify(d.centers ?? []));
+          localStorage.removeItem(SELECTED_CENTER_KEY);
           localStorage.setItem(STAFF_ID_KEY, d.staffId ?? '');
           localStorage.setItem(SUBJECT_ID_KEY, d.subjectId ?? '');
           localStorage.setItem(FACULTY_TYPE_KEY, d.facultyType ?? '');
@@ -129,6 +134,9 @@ export class AuthService {
       EMAIL_KEY,
       NAME_KEY,
       CENTER_ID_KEY,
+      CENTERS_ACCESS_KEY,
+      SELECTED_CENTER_KEY,
+      ACCESSIBLE_CENTERS_CACHE_KEY,
       STAFF_ID_KEY,
       SUBJECT_ID_KEY,
       FACULTY_TYPE_KEY,
@@ -183,6 +191,28 @@ export class AuthService {
 
   getCenterId(): string {
     return localStorage.getItem(CENTER_ID_KEY) ?? '';
+  }
+
+  /** Raw `centers` array from the login response. Empty array means "access to all centers". */
+  getCentersAccess(): any[] {
+    try {
+      return JSON.parse(localStorage.getItem(CENTERS_ACCESS_KEY) ?? '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  getSelectedCenterId(): string {
+    return localStorage.getItem(SELECTED_CENTER_KEY) ?? '';
+  }
+
+  setSelectedCenterId(centerId: string): void {
+    localStorage.setItem(SELECTED_CENTER_KEY, centerId);
+  }
+
+  /** Cache of the resolved accessible-center list, read synchronously by CommonapiService to decide whether a center selection is required before a request may proceed. */
+  setAccessibleCentersCache(centers: any[]): void {
+    localStorage.setItem(ACCESSIBLE_CENTERS_CACHE_KEY, JSON.stringify(centers));
   }
 
   getStaffId(): string {

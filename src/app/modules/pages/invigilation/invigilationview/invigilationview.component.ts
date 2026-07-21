@@ -44,7 +44,11 @@ export class InvigilationviewComponent implements OnInit {
   }
 
   edit(): void {
-    if (this.record) this.router.navigate(['/app/invigilation/edit', this.record._id]);
+    if (this.record) {
+      this.router.navigate(['/app/invigilation/edit', this.record._id], {
+        state: { source: 'invigilation-view' },
+      });
+    }
   }
 
   back(): void {
