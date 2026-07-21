@@ -10,6 +10,49 @@
   </div>
   <!-- Right: actions + user -->
   <div class="topbar-right">
+    <!-- Center selector -->
+    <div class="center-dd" *ngIf="selectedCenter">
+      <ng-container *ngIf="!editingCenter">
+        <button type="button" class="icon-btn edit-center-btn" title="Change Center" (click)="startEditCenter()">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <span class="center-trigger readonly">
+          <span class="center-dot" [class.all]="selectedCenter.centerId === ALL_CENTERS_ID"></span>
+          {{ selectedCenter.centerName }}
+        </span>
+      </ng-container>
+      <ng-container *ngIf="editingCenter">
+        <div class="center-picker" *ngIf="uiCenterOptions.length > 1">
+          <button type="button" class="center-trigger center-trigger-btn" [class.open]="centerPanelOpen"
+            (click)="toggleCenterPanel()">
+            <span class="center-dot" [class.all]="pendingCenterId === ALL_CENTERS_ID"></span>
+            {{ pendingCenter?.centerName }}
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </button>
+          <ul class="center-menu" *ngIf="centerPanelOpen">
+            <li *ngFor="let c of uiCenterOptions">
+              <a class="dropdown-item" [class.active]="c.centerId === pendingCenterId"
+                href="javascript:void(0)" (click)="choosePendingCenter(c.centerId)">
+                <span class="center-dot" [class.all]="c.centerId === ALL_CENTERS_ID"></span>
+                {{ c.centerName }}
+                <i class="fa-solid fa-check check" *ngIf="c.centerId === pendingCenterId"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <span *ngIf="uiCenterOptions.length <= 1" class="center-trigger">
+          <span class="center-dot" [class.all]="selectedCenter.centerId === ALL_CENTERS_ID"></span>
+          {{ selectedCenter.centerName }}
+        </span>
+        <button type="button" class="icon-btn edit-center-btn confirm" title="Confirm" (click)="submitCenterChange()">
+          <i class="fa-solid fa-check"></i>
+        </button>
+        <button type="button" class="icon-btn edit-center-btn" title="Cancel" (click)="cancelEditCenter()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </ng-container>
+    </div>
+    <div class="divider d-none d-md-block"></div>
     <button class="icon-btn has-dot" title="Notifications">
       <i class="fa-regular fa-bell"></i>
       <span class="dot"></span>

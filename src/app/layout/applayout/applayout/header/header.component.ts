@@ -1,9 +1,15 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { Output, EventEmitter } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import {
+  ALL_CENTERS_ID,
+  CenterContextService,
+  CenterOption,
+} from '../../../../service/center/center-context.service';
 declare var bootstrap: any;
 
 @Component({
@@ -12,7 +18,7 @@ declare var bootstrap: any;
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit, OnDestroy {
   username: any = '';
   userole: any = '';
   useremail: any = '';
@@ -24,19 +30,85 @@ export class HeaderComponent {
   cpForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
   cpShow = { current: false, newPwd: false, confirm: false };
 
+  readonly ALL_CENTERS_ID = ALL_CENTERS_ID;
+  uiCenterOptions: CenterOption[] = [];
+  selectedCenter: CenterOption | null = null;
+  editingCenter = false;
+  pendingCenterId = '';
+  centerPanelOpen = false;
+  private centerSubs = new Subscription();
+
   constructor(
     private router: Router,
     private api: CommonapiService,
     private alert: AlertService,
     private authService: AuthService,
+    private centerContext: CenterContextService,
   ) {
     this.username = localStorage.getItem('name');
     this.useremail = localStorage.getItem('email');
     this.userole = localStorage.getItem('userRole');
   }
 
+  ngOnInit(): void {
+    this.centerContext.init();
+    this.centerSubs.add(
+      this.centerContext.uiCenterOptions$.subscribe(
+        (centers) => (this.uiCenterOptions = centers),
+      ),
+    );
+    this.centerSubs.add(
+      this.centerContext.selectedCenter$.subscribe(
+        (center) => (this.selectedCenter = center),
+      ),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.centerSubs.unsubscribe();
+  }
+
+  get pendingCenter(): CenterOption | null {
+    return (
+      this.uiCenterOptions.find((c) => c.centerId === this.pendingCenterId) ||
+      null
+    );
+  }
+
+  startEditCenter(): void {
+    this.pendingCenterId = this.selectedCenter?.centerId || '';
+    this.editingCenter = true;
+    this.centerPanelOpen = false;
+  }
+
+  toggleCenterPanel(): void {
+    this.centerPanelOpen = !this.centerPanelOpen;
+  }
+
+  choosePendingCenter(centerId: string): void {
+    this.pendingCenterId = centerId;
+    this.centerPanelOpen = false;
+  }
+
+  cancelEditCenter(): void {
+    this.editingCenter = false;
+    this.centerPanelOpen = false;
+  }
+
+  submitCenterChange(): void {
+    const changed =
+      !!this.pendingCenterId &&
+      this.pendingCenterId !== this.selectedCenter?.centerId;
+    this.editingCenter = false;
+    this.centerPanelOpen = false;
+    if (!changed) return;
+    this.centerContext.setSelectedCenter(this.pendingCenterId);
+    window.location.reload();
+  }
+
   logout() {
     sessionStorage.clear();
+    this.centerContext.reset();
     this.authService.logout();
   }
 
