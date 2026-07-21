@@ -264,26 +264,6 @@ export class FeedbackreportComponent implements OnInit {
             content: 'RESPONSES',
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
           },
-          ...aHdrs.map((h: any) => ({
-            content: h.label,
-            styles: {
-              halign: 'center',
-              fontStyle: 'bold',
-              fontSize: 6,
-              fillColor: [219, 234, 254],
-              textColor: [30, 64, 175],
-            },
-          })),
-          ...bHdrs.map((h: any) => ({
-            content: h.label,
-            styles: {
-              halign: 'center',
-              fontStyle: 'bold',
-              fontSize: 6,
-              fillColor: [254, 243, 199],
-              textColor: [146, 64, 14],
-            },
-          })),
           {
             content: 'TEA%',
             styles: {
@@ -304,6 +284,26 @@ export class FeedbackreportComponent implements OnInit {
               textColor: [146, 64, 14],
             },
           },
+          ...aHdrs.map((h: any) => ({
+            content: h.label,
+            styles: {
+              halign: 'center',
+              fontStyle: 'bold',
+              fontSize: 6,
+              fillColor: [219, 234, 254],
+              textColor: [30, 64, 175],
+            },
+          })),
+          ...bHdrs.map((h: any) => ({
+            content: h.label,
+            styles: {
+              halign: 'center',
+              fontStyle: 'bold',
+              fontSize: 6,
+              fillColor: [254, 243, 199],
+              textColor: [146, 64, 14],
+            },
+          })),
         ],
       ];
       const body: any[][] = this.reportRows.map((r: any) => {
@@ -339,22 +339,6 @@ export class FeedbackreportComponent implements OnInit {
             content: r.responseCount,
             styles: { halign: 'center', fontSize: 6.5 },
           },
-          ...(r.partAScores || []).map((v: any) => ({
-            content: v != null ? v.toFixed(2) : '—',
-            styles: {
-              halign: 'center',
-              fontSize: 6,
-              fillColor: [239, 246, 255],
-            },
-          })),
-          ...(r.partBScores || []).map((v: any) => ({
-            content: v != null ? v.toFixed(2) : '—',
-            styles: {
-              halign: 'center',
-              fontSize: 6,
-              fillColor: [255, 251, 235],
-            },
-          })),
           {
             content: r.teaPct != null ? r.teaPct.toFixed(1) + '%' : '—',
             styles: {
@@ -375,6 +359,22 @@ export class FeedbackreportComponent implements OnInit {
               fillColor: [255, 251, 235],
             },
           },
+          ...(r.partAScores || []).map((v: any) => ({
+            content: v != null ? v.toFixed(2) : '—',
+            styles: {
+              halign: 'center',
+              fontSize: 6,
+              fillColor: [239, 246, 255],
+            },
+          })),
+          ...(r.partBScores || []).map((v: any) => ({
+            content: v != null ? v.toFixed(2) : '—',
+            styles: {
+              halign: 'center',
+              fontSize: 6,
+              fillColor: [255, 251, 235],
+            },
+          })),
         ];
       });
       const avgTeaNum = this.reportRows.filter((r) => r.teaPct != null);
@@ -402,14 +402,6 @@ export class FeedbackreportComponent implements OnInit {
             fillColor: [241, 245, 249],
           },
         },
-        ...aHdrs.map(() => ({
-          content: '',
-          styles: { fillColor: [241, 245, 249] },
-        })),
-        ...bHdrs.map(() => ({
-          content: '',
-          styles: { fillColor: [241, 245, 249] },
-        })),
         {
           content: tAvg,
           styles: {
@@ -430,6 +422,14 @@ export class FeedbackreportComponent implements OnInit {
             textColor: [146, 64, 14],
           },
         },
+        ...aHdrs.map(() => ({
+          content: '',
+          styles: { fillColor: [241, 245, 249] },
+        })),
+        ...bHdrs.map(() => ({
+          content: '',
+          styles: { fillColor: [241, 245, 249] },
+        })),
       ]);
       autoTable(doc, {
         startY: 28,
