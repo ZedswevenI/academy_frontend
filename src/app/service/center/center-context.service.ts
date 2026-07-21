@@ -104,19 +104,18 @@ export class CenterContextService {
           }
 
           const savedId = this.authService.getSelectedCenterId();
+          const restored = accessible.find((c) => c.centerId === savedId);
           if (savedId === ALL_CENTERS_ID && offersAll) {
             this.selectedCenterSubject.next(ALL_CENTERS_OPTION);
-            this.needsSelectionSubject.next(false);
-            return;
-          }
-          const restored = accessible.find((c) => c.centerId === savedId);
-          if (restored) {
+          } else if (restored) {
             this.selectedCenterSubject.next(restored);
-            this.needsSelectionSubject.next(false);
           } else {
-            this.selectedCenterSubject.next(null);
-            this.needsSelectionSubject.next(true);
+            // No prior selection — default to "All Centers" rather than forcing
+            // the user to pick one; they can narrow it down via the header edit button.
+            this.selectedCenterSubject.next(ALL_CENTERS_OPTION);
+            this.authService.setSelectedCenterId(ALL_CENTERS_ID);
           }
+          this.needsSelectionSubject.next(false);
         },
         error: () => {
           this.loaded = false;

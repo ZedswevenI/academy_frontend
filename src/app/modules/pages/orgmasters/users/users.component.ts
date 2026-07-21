@@ -687,6 +687,7 @@ export class UsersComponent implements OnInit {
     { key: 'email', label: 'Email', sortable: true },
     { key: 'phone', label: 'Phone', sortable: false },
     { key: 'empCode', label: 'Emp Code', sortable: false },
+    { key: 'centerNames', label: 'Centers', sortable: false },
     { key: 'roleLabel', label: 'Role', sortable: false },
     { key: 'status', label: 'Status', sortable: false },
   ];
@@ -853,11 +854,56 @@ export class UsersComponent implements OnInit {
       role: [null, Validators.required],
       empCode: [''],
       password: [''],
-      centerId: [null, Validators.required],
+      centerIds: [[] as string[]],
       isActive: [true],
     });
     this.applyPasswordRules();
+    this.applyCenterValidator();
+    this.userForm.get('role')?.valueChanges.subscribe(() => this.applyCenterValidator());
     this.loadCenters();
+  }
+
+  /** L1/L2/L3 are tenant-wide roles — centers are optional for them; all other roles must have at least one. */
+  get centersRequired(): boolean {
+    const role = this.userForm.get('role')?.value;
+    return !['L1', 'L2', 'L3'].includes(role);
+  }
+
+  private applyCenterValidator(): void {
+    const ctrl = this.userForm.get('centerIds');
+    if (!ctrl) return;
+    if (this.centersRequired) {
+      ctrl.setValidators([(c) => (Array.isArray(c.value) && c.value.length > 0) ? null : { required: true }]);
+    } else {
+      ctrl.clearValidators();
+    }
+    ctrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  isCenterSelected(centerId: string): boolean {
+    const arr: string[] = this.userForm.get('centerIds')?.value || [];
+    return arr.includes(centerId);
+  }
+
+  toggleCenter(centerId: string, checked: boolean): void {
+    const ctrl = this.userForm.get('centerIds');
+    const arr: string[] = [...(ctrl?.value || [])];
+    const idx = arr.indexOf(centerId);
+    if (checked && idx === -1) arr.push(centerId);
+    if (!checked && idx !== -1) arr.splice(idx, 1);
+    ctrl?.setValue(arr);
+    ctrl?.markAsTouched();
+  }
+
+  get selectAllCenters(): boolean {
+    const arr: string[] = this.userForm.get('centerIds')?.value || [];
+    return this.centerOptions.length > 0 && arr.length === this.centerOptions.length;
+  }
+
+  toggleAllCenters(checked: boolean): void {
+    const ctrl = this.userForm.get('centerIds');
+    ctrl?.setValue(checked ? this.centerOptions.map((c) => c.value) : []);
+    ctrl?.markAsTouched();
   }
 
   private applyPasswordRules() {
@@ -920,6 +966,7 @@ export class UsersComponent implements OnInit {
           ...u,
           empCode: u.empCode || '-',
           roleLabel: u.roleLabel || this.roleOptions.find((r) => r.value === u.roleLevel)?.label || u.roleLevel || '-',
+          centerNames: this.resolveCenterNames(u),
         }));
         this.totalRecords = this.toNum(res?.count);
         this.loading = false;
@@ -935,30 +982,60 @@ export class UsersComponent implements OnInit {
     this.fetchTableData(this.lastTableParams || { page: 1, pageSize: 10 });
   }
 
+  /**
+   * `centers[]` is the source of truth going forward, but existing rows that
+   * haven't been backfilled by the migration still only carry the legacy
+   * singular centerId/centerName — fall back to those so the UI stays correct
+   * during the transition.
+   */
+  private resolveCenterIds(row: any): string[] {
+    const centers = Array.isArray(row?.centers) ? row.centers : [];
+    if (centers.length) {
+      return centers.map((c: any) => String(c.centerId || c._id || '').trim()).filter(Boolean);
+    }
+    const legacyId = String(row?.centerId || '').trim();
+    return legacyId ? [legacyId] : [];
+  }
+
+  private resolveCenterNames(row: any): string[] {
+    const centers = Array.isArray(row?.centers) ? row.centers : [];
+    if (centers.length) {
+      return centers.map((c: any) => c.centerName).filter(Boolean);
+    }
+    const legacyId = String(row?.centerId || '').trim();
+    if (!legacyId) return ['All Centers'];
+    if (row?.centerName) return [row.centerName];
+    const opt = this.centerOptions.find((c) => c.value === legacyId);
+    return [opt?.centerName || legacyId];
+  }
+
   add(): void {
     this.formMode = 'create';
     this.editingId = null;
-    this.userForm.reset({ name: '', email: '', phone: '', role: null, centerId: null, isActive: true });
+    this.userForm.reset({ name: '', email: '', phone: '', role: null, centerIds: [], isActive: true });
     this.userForm.get('empCode')?.enable({ emitEvent: false });
     this.userForm.get('empCode')?.setValue('', { emitEvent: false });
     this.applyPasswordRules();
+    this.applyCenterValidator();
     this.showForm = true;
   }
 
   edit(row: any): void {
     this.formMode = 'edit';
     this.editingId = row?._id || null;
+    const centerIds = this.resolveCenterIds(row);
     this.userForm.patchValue({
       name: row?.name || '',
       email: row?.email || '',
       phone: row?.phone || '',
       role: row?.roleLevel || null,
-      centerId: row?.centerId || null,
+      centerIds,
       isActive: (row?.status || '') === 'Active',
     });
     this.userForm.get('empCode')?.setValue(row?.empCode || '', { emitEvent: false });
     this.userForm.get('empCode')?.disable({ emitEvent: false });
     this.applyPasswordRules();
+    this.applyCenterValidator();
     this.showForm = true;
   }
 
@@ -974,8 +1051,7 @@ export class UsersComponent implements OnInit {
       return;
     }
     const raw = this.userForm.getRawValue() || {};
-    const centerId = String(raw.centerId || '').trim();
-    const selectedCenter = this.centerOptions.find((c) => String(c.value) === centerId);
+    const centerIds: string[] = (Array.isArray(raw.centerIds) ? raw.centerIds : []).filter(Boolean);
 
     const payload: any = {
       entiId: this.entiId,
@@ -984,8 +1060,7 @@ export class UsersComponent implements OnInit {
       phone: String(raw.phone || '').trim(),
       roleLevel: String(raw.role || 'L4').trim(),
       status: raw.isActive ? 'Active' : 'Inactive',
-      centerId: centerId || null,
-      centerName: selectedCenter?.centerName || null,
+      centerIds,
     };
 
     const empCode = String(raw.empCode || '').trim();
