@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-marks-import',
@@ -34,6 +35,7 @@ export class MarksImportComponent implements OnInit {
     private alert: AlertService,
     private router: Router,
     private breadcrumb: BredcrumpService,
+    private backNav: BackNavigationService,
   ) {
     this.tenantId = localStorage.getItem('tenantId') || '';
   }
@@ -397,6 +399,6 @@ export class MarksImportComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/app/exams/exams']);
+    this.backNav.goBack({ route: '/app/exams/imported-exams' });
   }
 }

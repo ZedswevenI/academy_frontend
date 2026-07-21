@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -44,12 +45,26 @@ export class InvigilationcreateComponent implements OnInit {
     private alert: AlertService,
     private route: ActivatedRoute,
     private router: Router,
+    private backNav: BackNavigationService,
   ) {}
 
   ngOnInit(): void {
     this.editId = this.route.snapshot.paramMap.get('id') || '';
     this.isEdit = !!this.editId;
     if (this.isEdit) this.loadRecord();
+  }
+
+  private goBackFromForm(): void {
+    if (this.isEdit && this.editId) {
+      this.backNav.goBack(
+        { route: '/app/invigilation' },
+        {
+          'invigilation-view': { route: ['/app/invigilation/view', this.editId] },
+        },
+      );
+    } else {
+      this.backNav.goBack({ route: '/app/invigilation' });
+    }
   }
 
   private loadRecord(): void {
@@ -243,7 +258,7 @@ export class InvigilationcreateComponent implements OnInit {
         this.alert.success(
           `Invigilation ${this.isEdit ? 'updated' : 'created'} successfully`,
         );
-        this.router.navigate(['/app/invigilation']);
+        this.goBackFromForm();
       },
       error: (err: any) => {
         this.alert.error(
@@ -256,6 +271,6 @@ export class InvigilationcreateComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/app/invigilation']);
+    this.goBackFromForm();
   }
 }

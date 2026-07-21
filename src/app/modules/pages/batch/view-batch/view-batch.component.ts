@@ -1930,6 +1930,7 @@ export class ViewBatchComponent implements OnInit {
   viewTeacher(staffId: any) {
     this.router.navigate(['/app/teacher/view'], {
       queryParams: { staffId: staffId },
+      state: { source: 'batch', batchId: this.batchId },
     });
   }
 }

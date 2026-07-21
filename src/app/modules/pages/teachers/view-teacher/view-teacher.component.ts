@@ -92,7 +92,13 @@ export class ViewTeacherComponent implements OnInit {
   }
 
   goBack(): void {
-    this.backNav.goBack({ route: '/app/teacher' });
+    const state: any = history.state || {};
+    this.backNav.goBack(
+      { route: '/app/teacher' },
+      {
+        batch: { route: ['/app/batch/view', state.batchId] },
+      },
+    );
   }
 
   ngOnInit(): void {

@@ -334,7 +334,7 @@ export class TestViewComponent implements OnInit {
   }
   importAnswers() {
     this.router.navigate(['/app/exams/exams/answer-import'], {
-      state: { exam: this.examData },
+      state: { exam: this.examData, source: 'exam-view' },
     });
   }
 

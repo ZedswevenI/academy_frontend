@@ -267,6 +267,10 @@ export class FeedbackresultsComponent implements OnInit {
     return String(val ?? '');
   }
   goBack(): void {
+    if (this.activeTab === 'report') {
+      this.switchTab('results');
+      return;
+    }
     this.backNav.goBack({ route: '/app/feedback' });
   }
 
