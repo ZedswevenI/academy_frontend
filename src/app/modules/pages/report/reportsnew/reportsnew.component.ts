@@ -1,4 +1,5 @@
 import { Component, OnInit, HostListener } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
@@ -223,6 +224,8 @@ export class ReportsnewComponent implements OnInit {
   filterSubjectId = '';
   filterType = '';
   filterEntryType = '';
+  /** Marked/Not-Marked filter for the teacher-attendance report. */
+  attendanceMarkedFilter: 'ALL' | 'MARKED' | 'NOT_MARKED' = 'ALL';
   subjectOptions: any[] = [];
   programOptions: any[] = [];
   centerOptions: any[] = [];
@@ -301,6 +304,55 @@ export class ReportsnewComponent implements OnInit {
     this.breadcrumb.set([{ label: 'Reports' }]);
     this.loadBatches();
     this.loadStaff();
+    this.loadLogo();
+  }
+
+  /** Cached base64 logo used to stamp every exported PDF page. */
+  private logoDataUrl = '';
+
+  private async loadLogo(): Promise<void> {
+    if (this.logoDataUrl) return;
+    try {
+      const response = await fetch('/assets/z7i_logo.png');
+      const blob = await response.blob();
+      this.logoDataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      this.logoDataUrl = '';
+    }
+  }
+
+  /** Native z7i_logo.png is 375x94px (~3.99:1) — keep that ratio so it never looks stretched. */
+  private static readonly LOGO_ASPECT_RATIO = 375 / 94;
+
+  /** Stamps the logo in the top-left corner of the PDF's current page, preserving its aspect ratio. Safe no-op if the logo hasn't loaded. */
+  private addLogoToPdf(doc: jsPDF): void {
+    if (!this.logoDataUrl) return;
+    try {
+      const width = 24;
+      const height = width / ReportsnewComponent.LOGO_ASPECT_RATIO;
+      doc.addImage(this.logoDataUrl, 'PNG', 14, 5, width, height);
+    } catch {
+      // Ignore malformed/unavailable image data — export should never fail because of the logo.
+    }
+  }
+
+  /**
+   * Stamps the logo on every page of the finished document — including pages
+   * jspdf-autotable creates internally when a table overflows a page, which
+   * the per-section addLogoToPdf() calls made while building the doc can't reach.
+   * Call this once, right before doc.save().
+   */
+  private stampLogoOnAllPages(doc: jsPDF): void {
+    if (!this.logoDataUrl) return;
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      this.addLogoToPdf(doc);
+    }
   }
 
   switchTab(tab: 'batch' | 'student' | 'teacher' | 'assignments') {
@@ -377,6 +429,7 @@ export class ReportsnewComponent implements OnInit {
     this.filterSubjectId = '';
     this.filterType = '';
     this.filterEntryType = '';
+    this.attendanceMarkedFilter = 'ALL';
     this.selectedBatchId = '';
     this.selectedBatchCode = '';
     this.selectedBatchIds = [];
@@ -456,6 +509,8 @@ export class ReportsnewComponent implements OnInit {
           this.staffOptions = (res?.data || []).map((s: any) => ({
             value: s.staffId || s._id,
             label: (s.staffCode ? s.staffCode + ' - ' : '') + s.staffName,
+            staffName: s.staffName,
+            staffCode: s.staffCode,
           }));
           this.filteredStaffOptions = [...this.staffOptions];
         },
@@ -712,7 +767,6 @@ export class ReportsnewComponent implements OnInit {
           },
         });
     } else {
-      const { forkJoin } = require('rxjs');
       const calls = batchCodes.map((bc: string) =>
         this.commonApi.fetchData(
           { entiId: this.tenantId },
@@ -925,7 +979,7 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-batches':
         module = 'reports/teacher';
         endpoint = 'batches';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.filterStatus) payload.status = this.filterStatus;
         break;
       case 'teacher-load':
@@ -941,7 +995,7 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-tasks':
         module = 'reports/teacher';
         endpoint = 'tasks';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.filterStatus) payload.status = this.filterStatus;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
@@ -949,7 +1003,7 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-late-entries':
         module = 'reports/teacher';
         endpoint = 'late-entries';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.selectedBatchCodes.length)
           payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
@@ -958,7 +1012,7 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-early-leaving':
         module = 'reports/teacher';
         endpoint = 'early-leaving';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.selectedBatchCodes.length)
           payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
@@ -967,7 +1021,7 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-assignments':
         module = 'reports/teacher';
         endpoint = 'assignments';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.selectedBatchIds.length)
           payload.batchIds = this.selectedBatchIds;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
@@ -976,16 +1030,17 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-attendance':
         module = 'reports/teacher';
         endpoint = 'attendance';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.selectedBatchCodes.length)
           payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
         if (this.toDate) payload.toDate = new Date(this.toDate).getTime();
+        payload.statusFilter = this.attendanceMarkedFilter;
         break;
       case 'teacher-feedback':
         module = 'reports/teacher';
         endpoint = 'feedback';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.selectedBatchCodes.length)
           payload.batchCodes = this.selectedBatchCodes;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
@@ -994,7 +1049,7 @@ export class ReportsnewComponent implements OnInit {
       case 'teacher-exams':
         module = 'reports/teacher';
         endpoint = 'exams';
-        payload.staffId = this.selectedStaffId;
+        if (this.selectedStaffIds.length) payload.staffIds = this.selectedStaffIds;
         if (this.selectedBatchIds.length)
           payload.batchIds = this.selectedBatchIds;
         if (this.fromDate) payload.fromDate = new Date(this.fromDate).getTime();
@@ -1011,6 +1066,7 @@ export class ReportsnewComponent implements OnInit {
         payload.batchIds = this.selectedBatchIds;
         payload.view = this.assignmentReportView;
         if (this.filterSubjectId) payload.subjectId = this.filterSubjectId;
+        if (this.selectedTopicIds.length) payload.topicIds = this.selectedTopicIds;
         if (this.assignmentReportView === 'student') {
           payload.admissionNos = this.selectedAdmissionNos;
         }
@@ -1397,6 +1453,11 @@ export class ReportsnewComponent implements OnInit {
           this.reportTableData = res.data || [];
           this.attendanceDetailData = res.detail || [];
           this.reportSummary = res.summary || null;
+          // Bulk mode has no per-student subject/school-attendance breakdown —
+          // clear any leftover data from a previous single-student query so
+          // its "Subject Summary"/"School Attendance" buttons don't linger.
+          this.subjectSummaryData = [];
+          this.schoolAttData = [];
           if (this.reportSummary) {
             this.summaryItems = Object.keys(this.reportSummary)
               .filter(
@@ -1460,10 +1521,22 @@ export class ReportsnewComponent implements OnInit {
             { key: 'admissionNo', label: 'Admission No' },
             { key: 'studentName', label: 'Student' },
             { key: 'batchCode', label: 'Batch' },
-            { key: 'totalRemarks', label: 'Total Remarks' },
+            { key: 'remarksText', label: 'Remarks' },
           ];
-          this.reportTableData = data;
           this.remarksDetailData2 = res.detail || [];
+          const remarksByAdmissionNo = new Map<string, string[]>();
+          this.remarksDetailData2.forEach((r: any) => {
+            const key = r.admissionNo;
+            if (!key) return;
+            if (!remarksByAdmissionNo.has(key)) remarksByAdmissionNo.set(key, []);
+            if (r.remark) remarksByAdmissionNo.get(key)!.push(r.remark);
+          });
+          this.reportTableData = data.map((r: any) => ({
+            ...r,
+            remarksText:
+              (remarksByAdmissionNo.get(r.admissionNo) || []).join('; ') ||
+              '-',
+          }));
           this.reportSummary = res.summary || null;
           if (this.reportSummary) {
             this.summaryItems = Object.keys(this.reportSummary)
@@ -1535,28 +1608,97 @@ export class ReportsnewComponent implements OnInit {
         this.summaryItems = [];
         break;
       case 'teacher-batches':
+        // API returns one entry per staff with a nested `batches[]` (and a
+        // per-staff `summary`) — flatten to one row per staff-batch pairing.
         this.reportColumns = [
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
           { key: 'batchCode', label: 'Batch Code' },
           { key: 'batchName', label: 'Batch' },
           { key: 'programName', label: 'Program' },
-          { key: 'subjectName', label: 'Subject' },
+          { key: 'centerName', label: 'Center' },
           { key: 'academicYear', label: 'Year' },
+          { key: 'classNo', label: 'Class' },
+          { key: 'section', label: 'Section' },
+          { key: 'subjectName', label: 'Subject' },
           { key: 'studentCount', label: 'Students' },
           { key: 'isClassTeacher', label: 'Class Teacher' },
+          { key: 'isSubjectTeacher', label: 'Subject Teacher' },
           { key: 'status', label: 'Status' },
         ];
-        this.reportTableData = data;
+        this.reportTableData = data.flatMap((staff: any) => {
+          const rows = staff.batches || [];
+          if (!rows.length) {
+            return [
+              {
+                staffName: staff.staffName,
+                staffCode: staff.staffCode,
+                batchCode: '-',
+                batchName: 'No batches assigned',
+              },
+            ];
+          }
+          return rows.map((b: any) => ({
+            staffName: staff.staffName,
+            staffCode: staff.staffCode,
+            ...b,
+          }));
+        });
         break;
       case 'teacher-load':
         this.facultyLoadData = res.data || [];
-        this.reportTableData = [];
-        this.reportColumns = [];
+        this.reportColumns = [
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
+          { key: 'subjectName', label: 'Subject' },
+          { key: 'status', label: 'Status' },
+          { key: 'dateFormatted', label: 'Date' },
+          { key: 'batchName', label: 'Batch Name' },
+          { key: 'batchCode', label: 'Batch Code' },
+          { key: 'fromTime', label: 'From Time' },
+          { key: 'endTime', label: 'End Time' },
+          { key: 'hours', label: 'Hours' },
+          { key: 'note', label: 'Note' },
+        ];
+        this.reportTableData = this.facultyLoadData.flatMap((staff: any) =>
+          (staff.subjects || []).flatMap((subject: any) => [
+            ...(subject.scheduledPeriods || []).map((p: any) => ({
+              staffName: staff.staffName,
+              staffCode: staff.staffCode,
+              subjectName: subject.subjectName,
+              status: 'Scheduled',
+              ...p,
+              note: '',
+            })),
+            ...(subject.cancelledPeriods || []).map((p: any) => ({
+              staffName: staff.staffName,
+              staffCode: staff.staffCode,
+              subjectName: subject.subjectName,
+              status: 'Cancelled/Replaced',
+              ...p,
+            })),
+            ...(subject.replacedPeriods || []).map((p: any) => ({
+              staffName: staff.staffName,
+              staffCode: staff.staffCode,
+              subjectName: subject.subjectName,
+              status: 'Additional (Replacement)',
+              ...p,
+              note: '',
+            })),
+          ]),
+        );
         this.reportSummary = null;
         this.summaryItems = [];
         break;
-      case 'teacher-tasks':
+      case 'teacher-tasks': {
+        // API returns one entry per staff (identified only by staffId, no
+        // name/code) with a nested `data[]` of that staff's tasks and a
+        // per-staff `summary` — resolve the name/code from staffOptions and
+        // flatten to one row per task.
         this.reportColumns = [
           { key: 'slNo', label: '#' },
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
           { key: 'taskName', label: 'Task' },
           { key: 'dueDateFormatted', label: 'Due Date' },
           { key: 'status', label: 'Status' },
@@ -1564,69 +1706,164 @@ export class ReportsnewComponent implements OnInit {
           { key: 'daysOverdue', label: 'Overdue Days' },
           { key: 'remarks', label: 'Remarks' },
         ];
-        this.reportTableData = data;
+        const staffLookup = new Map(
+          this.staffOptions.map((s: any) => [s.value, s]),
+        );
+        this.reportTableData = data.flatMap((staff: any) => {
+          const info: any = staffLookup.get(staff.staffId);
+          return (staff.data || []).map((t: any) => ({
+            staffName: info?.staffName || staff.staffId,
+            staffCode: info?.staffCode || '',
+            ...t,
+          }));
+        });
         break;
-      case 'teacher-late-entries':
+      }
+      case 'teacher-late-entries': {
+        // Same per-staff wrapper shape as teacher-tasks: staffId only (no
+        // name/code), nested `data[]` of individual late-entry records.
         this.reportColumns = [
           { key: 'slNo', label: '#' },
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
           { key: 'dateFormatted', label: 'Date' },
           { key: 'batchCode', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'delayMinutes', label: 'Delay (min)' },
           { key: 'reason', label: 'Reason' },
         ];
-        this.reportTableData = data;
+        const staffLookup = new Map(
+          this.staffOptions.map((s: any) => [s.value, s]),
+        );
+        this.reportTableData = data.flatMap((staff: any) => {
+          const info: any = staffLookup.get(staff.staffId);
+          return (staff.data || []).map((e: any) => ({
+            staffName: info?.staffName || staff.staffId,
+            staffCode: info?.staffCode || '',
+            ...e,
+          }));
+        });
         break;
-      case 'teacher-early-leaving':
+      }
+      case 'teacher-early-leaving': {
+        // Same per-staff wrapper shape as teacher-late-entries.
         this.reportColumns = [
           { key: 'slNo', label: '#' },
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
           { key: 'dateFormatted', label: 'Date' },
           { key: 'batchCode', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'earlyByMinutes', label: 'Early (min)' },
           { key: 'reason', label: 'Reason' },
         ];
-        this.reportTableData = data;
+        const staffLookup = new Map(
+          this.staffOptions.map((s: any) => [s.value, s]),
+        );
+        this.reportTableData = data.flatMap((staff: any) => {
+          const info: any = staffLookup.get(staff.staffId);
+          return (staff.data || []).map((e: any) => ({
+            staffName: info?.staffName || staff.staffId,
+            staffCode: info?.staffCode || '',
+            ...e,
+          }));
+        });
         break;
-      case 'teacher-assignments':
+      }
+      case 'teacher-assignments': {
+        // Same per-staff wrapper shape as teacher-tasks/late-entries.
         this.reportColumns = [
           { key: 'slNo', label: '#' },
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
+          { key: 'testNo', label: 'Test No' },
           { key: 'batchCode', label: 'Batch' },
           { key: 'subjectName', label: 'Subject' },
           { key: 'enabledAtFormatted', label: 'Enabled' },
           { key: 'totalStudents', label: 'Students' },
+          { key: 'assigned', label: 'Assigned' },
+          { key: 'inProgress', label: 'In Progress' },
           { key: 'completed', label: 'Completed' },
           { key: 'completionPct', label: 'Completion %' },
         ];
-        this.reportTableData = data;
-        break;
-      case 'teacher-attendance':
-        this.reportColumns = [
-          { key: 'dateFormatted', label: 'Date' },
-          { key: 'day', label: 'Day' },
-          { key: 'totalPeriods', label: 'Total Periods' },
-          { key: 'markedCount', label: 'Marked' },
-          { key: 'notMarkedCount', label: 'Not Marked' },
-        ];
-        this.reportTableData = data;
-        this.periodDetailData = data.flatMap((d: any) =>
-          (d.periods || []).map((p: any) => ({
-            dateFormatted: d.dateFormatted,
-            day: d.day,
-            batchCode: p.batchCode,
-            periodNo: p.periodNo,
-            subjectName: p.subjectName,
-            startTime: p.startTime,
-            endTime: p.endTime,
-            isMarked: p.isMarked,
-            presentCount: p.presentCount,
-            absentCount: p.absentCount,
-            totalStudents: p.totalStudents,
-          })),
+        const staffLookup = new Map(
+          this.staffOptions.map((s: any) => [s.value, s]),
         );
+        this.reportTableData = data.flatMap((staff: any) => {
+          const info: any = staffLookup.get(staff.staffId);
+          return (staff.data || []).map((t: any) => ({
+            staffName: info?.staffName || staff.staffId,
+            staffCode: info?.staffCode || '',
+            ...t,
+          }));
+        });
         break;
+      }
+      case 'teacher-attendance': {
+        // data[] is per-staff (staffName/staffCode included) wrapping a
+        // nested dailyReport[], each with its own nested periods[].
+        this.periodDetailData = data.flatMap((staff: any) =>
+          (staff.dailyReport || []).flatMap((d: any) =>
+            (d.periods || []).map((p: any) => ({
+              staffName: staff.staffName,
+              staffCode: staff.staffCode,
+              dateFormatted: d.dateFormatted,
+              day: d.day,
+              batchCode: p.batchCode,
+              periodNo: p.periodNo,
+              subjectName: p.subjectName,
+              startTime: p.startTime,
+              endTime: p.endTime,
+              isMarked: p.isMarked,
+              presentCount: p.presentCount,
+              absentCount: p.absentCount,
+              totalStudents: p.totalStudents,
+            })),
+          ),
+        );
+        if (this.attendanceMarkedFilter === 'ALL') {
+          this.reportColumns = [
+            { key: 'staffName', label: 'Staff' },
+            { key: 'staffCode', label: 'Staff Code' },
+            { key: 'dateFormatted', label: 'Date' },
+            { key: 'day', label: 'Day' },
+            { key: 'totalPeriods', label: 'Total Periods' },
+            { key: 'markedCount', label: 'Marked' },
+            { key: 'notMarkedCount', label: 'Not Marked' },
+          ];
+          this.reportTableData = data.flatMap((staff: any) =>
+            (staff.dailyReport || []).map((d: any) => ({
+              staffName: staff.staffName,
+              staffCode: staff.staffCode,
+              ...d,
+            })),
+          );
+        } else {
+          // Marked/Not-Marked is a period-level distinction — switch the main
+          // table to the flat period list filtered to the chosen status,
+          // since the day-level row is an aggregate and can't represent it.
+          const wantMarked = this.attendanceMarkedFilter === 'MARKED';
+          this.reportColumns = [
+            { key: 'staffName', label: 'Staff' },
+            { key: 'staffCode', label: 'Staff Code' },
+            { key: 'dateFormatted', label: 'Date' },
+            { key: 'day', label: 'Day' },
+            { key: 'batchCode', label: 'Batch' },
+            { key: 'periodNo', label: 'Period' },
+            { key: 'subjectName', label: 'Subject' },
+            { key: 'startTime', label: 'Start' },
+            { key: 'endTime', label: 'End' },
+          ];
+          this.reportTableData = this.periodDetailData.filter(
+            (p: any) => !!p.isMarked === wantMarked,
+          );
+        }
+        break;
+      }
       case 'teacher-feedback':
         this.reportColumns = [
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
           { key: 'admissionNo', label: 'Admission No' },
           { key: 'studentName', label: 'Student' },
           { key: 'batchCode', label: 'Batch' },
@@ -1653,6 +1890,8 @@ export class ReportsnewComponent implements OnInit {
         break;
       case 'teacher-exams':
         this.reportColumns = [
+          { key: 'staffName', label: 'Staff' },
+          { key: 'staffCode', label: 'Staff Code' },
           { key: 'examCode', label: 'Code' },
           { key: 'examName', label: 'Name' },
           { key: 'totalMarks', label: 'Marks' },
@@ -1824,7 +2063,7 @@ export class ReportsnewComponent implements OnInit {
         ];
       case 'Subject-wise Summary':
         return [
-          { key: 'subjectId', label: 'Subject ID' },
+          { key: 'subjectName', label: 'Subject' },
           { key: 'total', label: 'Total' },
           { key: 'present', label: 'Present' },
           { key: 'absent', label: 'Absent' },
@@ -2241,11 +2480,36 @@ export class ReportsnewComponent implements OnInit {
     return false;
   }
 
+  /** Teacher reports that allow picking multiple staff (or none, meaning "All Staff") via the checkbox multiselect. */
+  private static readonly MULTI_STAFF_REPORT_KEYS = [
+    'teacher-load',
+    'teacher-faculty-report',
+    'teacher-batches',
+    'teacher-tasks',
+    'teacher-late-entries',
+    'teacher-early-leaving',
+    'teacher-assignments',
+    'teacher-attendance',
+    'teacher-feedback',
+    'teacher-exams',
+  ];
+
   needsStaffFilter(): boolean {
     if (!this.selectedReport) return false;
-    if (this.selectedReport.key === 'teacher-load') return false;
-    if (this.selectedReport.key === 'teacher-faculty-report') return false;
+    if (
+      ReportsnewComponent.MULTI_STAFF_REPORT_KEYS.includes(
+        this.selectedReport.key,
+      )
+    )
+      return false;
     return this.selectedReport.key.startsWith('teacher-');
+  }
+
+  needsStaffMultiFilter(): boolean {
+    if (!this.selectedReport) return false;
+    return ReportsnewComponent.MULTI_STAFF_REPORT_KEYS.includes(
+      this.selectedReport.key,
+    );
   }
 
   needsBatchFilterForTeacher(): boolean {
@@ -2738,6 +3002,7 @@ export class ReportsnewComponent implements OnInit {
       return;
     if (this.customPdfExport(this.selectedReport.key)) return;
     const doc = new jsPDF({ orientation: 'landscape' });
+    this.addLogoToPdf(doc);
     const title = this.selectedReport.label + ' Report';
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -2768,12 +3033,14 @@ export class ReportsnewComponent implements OnInit {
       },
       alternateRowStyles: { fillColor: [249, 250, 251] },
     });
+    this.stampLogoOnAllPages(doc);
     doc.save(`${this.selectedReport.label.replace(/\s+/g, '_')}_Report.pdf`);
   }
 
   private exportPhaseAllotmentPdf() {
     if (!this.reportTableData.length || !this.selectedReport) return;
     const doc = new jsPDF({ orientation: 'landscape' });
+    this.addLogoToPdf(doc);
     const headers = this.reportColumns.map((c: any) => c.label);
     const keys = this.reportColumns.map((c: any) => c.key);
     const batchGroups = new Map<string, any[]>();
@@ -2786,6 +3053,7 @@ export class ReportsnewComponent implements OnInit {
     for (const [bc, batchRows] of batchGroups.entries()) {
       if (!isFirstBatch) doc.addPage();
       isFirstBatch = false;
+      this.addLogoToPdf(doc);
       const batchName = batchRows[0]?.batchName || '';
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -2824,6 +3092,7 @@ export class ReportsnewComponent implements OnInit {
         },
       });
     }
+    this.stampLogoOnAllPages(doc);
     doc.save(`Phase_Allotment_Report.pdf`);
   }
 
@@ -2896,6 +3165,7 @@ export class ReportsnewComponent implements OnInit {
   private exportSubjectHoursPdf() {
     if (!this.reportTableData.length || !this.selectedReport) return;
     const doc = new jsPDF({ orientation: 'landscape' });
+    this.addLogoToPdf(doc);
     const headers = this.reportColumns.map((c: any) => c.label);
     const keys = this.reportColumns.map((c: any) => c.key);
     const batchGroups = new Map<string, any[]>();
@@ -2908,6 +3178,7 @@ export class ReportsnewComponent implements OnInit {
     for (const [bc, batchRows] of batchGroups.entries()) {
       if (!isFirstBatch) doc.addPage();
       isFirstBatch = false;
+      this.addLogoToPdf(doc);
       const batchName = batchRows[0]?.batchName || '';
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -2954,6 +3225,7 @@ export class ReportsnewComponent implements OnInit {
       });
     }
 
+    this.stampLogoOnAllPages(doc);
     doc.save('Subject_Hours_Report.pdf');
   }
 
@@ -3199,6 +3471,7 @@ export class ReportsnewComponent implements OnInit {
       for (const batch of this.assignmentBatchResults) {
         if (!isFirst) doc.addPage();
         isFirst = false;
+        this.addLogoToPdf(doc);
         doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
         doc.text('Assignment Report', 14, 14);
@@ -3209,39 +3482,59 @@ export class ReportsnewComponent implements OnInit {
           14,
           21,
         );
+        const subjectLabel = this.filterSubjectId
+          ? this.subjectOptions.find((s: any) => s.value === this.filterSubjectId)
+              ?.label || ''
+          : 'All Subjects';
+        const topicLabel = this.selectedTopicIds.length
+          ? this.selectedTopicIds
+              .map(
+                (id) =>
+                  this.slashTopicOptions.find((t: any) => t.value === id)?.label,
+              )
+              .filter(Boolean)
+              .join(', ')
+          : 'All Topics';
+        doc.text(`Subject: ${subjectLabel}   |   Topic: ${topicLabel}`, 14, 27);
         doc.text(
           `Generated: ${new Date().toLocaleDateString('en-IN')}`,
           14,
-          27,
+          33,
+        );
+        const sortedColumns = [...(batch.columns || [])].sort(
+          (a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
         );
         const headers = [
           'S.No',
-          'Enrollment No',
-          'Student Name',
-          ...batch.columns.map((c: any) => c.colLabel),
+          'Student',
+          ...sortedColumns.map((c: any) => `${c.catName}\n${c.subCatName}`),
           'SGPA',
           'GSGPA',
         ];
         const keys = [
           'slNo',
-          'admissionNo',
-          'studentName',
-          ...batch.columns.map((c: any) => c.colKey),
+          'student',
+          ...sortedColumns.map((c: any) => c.colKey),
           'SGPA',
           'GSGPA',
         ];
         const allRows = [...batch.students, batch.batchAverage];
         const rows = allRows.map((row: any) =>
-          keys.map((key) =>
-            row[key] !== null && row[key] !== undefined
+          keys.map((key) => {
+            if (key === 'student') {
+              return row.admissionNo
+                ? `${row.admissionNo} - ${row.studentName || ''}`
+                : row.studentName || '-';
+            }
+            return row[key] !== null && row[key] !== undefined
               ? String(row[key])
-              : '-',
-          ),
+              : '-';
+          }),
         );
         autoTable(doc, {
           head: [headers],
           body: rows,
-          startY: 32,
+          startY: 38,
           styles: { fontSize: 7, cellPadding: 1.5 },
           headStyles: {
             fillColor: [59, 130, 246],
@@ -3266,6 +3559,7 @@ export class ReportsnewComponent implements OnInit {
       for (const stu of this.assignmentStudentResults) {
         if (!isFirst) doc.addPage();
         isFirst = false;
+        this.addLogoToPdf(doc);
         doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
         doc.text('Assignment Report', 14, 14);
@@ -3316,12 +3610,96 @@ export class ReportsnewComponent implements OnInit {
         });
       }
     }
+    this.stampLogoOnAllPages(doc);
     doc.save('Assignment_Report.pdf');
+  }
+
+  private exportSlashDetailPdf() {
+    if (!this.reportTableData.length) return;
+    const doc = new jsPDF({ orientation: 'landscape' });
+
+    const subjectLabel = this.filterSubjectId
+      ? this.subjectOptions.find((s: any) => s.value === this.filterSubjectId)
+          ?.label || ''
+      : 'All Subjects';
+
+    const byBatch = new Map<string, any[]>();
+    for (const row of this.reportTableData) {
+      const key = row.batchCode || 'Unknown';
+      if (!byBatch.has(key)) byBatch.set(key, []);
+      byBatch.get(key)!.push(row);
+    }
+
+    let isFirstTable = true;
+    for (const [batchCode, batchRows] of byBatch.entries()) {
+      const batchName = batchRows[0]?.batchName || '';
+
+      // One table per Topic + Sub Topic combination, not one flat list.
+      const byTopic = new Map<string, any[]>();
+      for (const row of batchRows) {
+        const key = `${row.topicId || row.topicName || ''}::${row.subTopicId || row.subTopicName || ''}`;
+        if (!byTopic.has(key)) byTopic.set(key, []);
+        byTopic.get(key)!.push(row);
+      }
+
+      for (const [, topicRows] of byTopic.entries()) {
+        if (!isFirstTable) doc.addPage();
+        isFirstTable = false;
+        this.addLogoToPdf(doc);
+
+        const topicName = topicRows[0]?.topicName || '-';
+        const subTopicName = topicRows[0]?.subTopicName;
+
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Slash Report', 14, 14);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const topicPart = subTopicName
+          ? `Topic: ${topicName}   |   Sub Topic: ${subTopicName}`
+          : `Topic: ${topicName}`;
+        doc.text(
+          `Batch: ${batchCode} - ${batchName}   |   Subject: ${subjectLabel}   |   ${topicPart}   |   Generated: ${new Date().toLocaleDateString('en-IN')}`,
+          14,
+          21,
+        );
+
+        const headers = [
+          'Enrollment No',
+          'Student Name',
+          'Available/Completed/Not Completed',
+        ];
+        const keys = ['admissionNo', 'studentName', 'report'];
+        const rows = topicRows.map((r: any) =>
+          keys.map((key) =>
+            r[key] !== null && r[key] !== undefined ? String(r[key]) : '-',
+          ),
+        );
+        autoTable(doc, {
+          head: [headers],
+          body: rows,
+          startY: 30,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: {
+            fillColor: [59, 130, 246],
+            textColor: 255,
+            fontStyle: 'bold',
+          },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
+        });
+      }
+    }
+    this.stampLogoOnAllPages(doc);
+    doc.save('Slash_Report.pdf');
   }
 
   onSubjectChange(val: string) {
     this.filterSubjectId = val;
-    if (this.selectedReport?.key === 'batch-slash-detail') {
+    if (
+      ['batch-slash-detail', 'batch-assignment-report'].includes(
+        this.selectedReport?.key || '',
+      )
+    ) {
       this.selectedTopicIds = [];
       this.loadTopicsByBatchSubject(this.selectedBatchIds, val);
     }
@@ -3402,6 +3780,7 @@ export class ReportsnewComponent implements OnInit {
       for (const subject of staff.subjects || []) {
         if (!isFirst) doc.addPage();
         isFirst = false;
+        this.addLogoToPdf(doc);
 
         // Header
         doc.setFontSize(13);
@@ -3509,6 +3888,7 @@ export class ReportsnewComponent implements OnInit {
         }
       }
     }
+    this.stampLogoOnAllPages(doc);
     doc.save('Faculty_Load_Report.pdf');
   }
 
@@ -3583,6 +3963,7 @@ export class ReportsnewComponent implements OnInit {
       console.log('staff ', staff);
       if (!isFirst) doc.addPage();
       isFirst = false;
+      this.addLogoToPdf(doc);
       const pageWidth = doc.internal.pageSize.getWidth();
       const dateRangeStr =
         this.fromDate && this.toDate
@@ -3954,6 +4335,7 @@ export class ReportsnewComponent implements OnInit {
         });
       }
     }
+    this.stampLogoOnAllPages(doc);
     doc.save('Faculty_Report.pdf');
   }
 
@@ -4231,6 +4613,10 @@ export class ReportsnewComponent implements OnInit {
     }
     if (reportKey === 'batch-assignment-report') {
       this.exportAssignmentReportPdf();
+      return true;
+    }
+    if (reportKey === 'batch-slash-detail') {
+      this.exportSlashDetailPdf();
       return true;
     }
     if (reportKey === 'teacher-load') {
