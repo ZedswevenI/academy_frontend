@@ -717,11 +717,13 @@ export class PtmComponent implements OnInit {
     if (!this.ptmToDelete) return;
     const body = {
       tenantId: this.tenantId,
+      userId: localStorage.getItem('userId'),
       batchCode: this.ptmToDelete.batchCode,
       ptmDate: this.ptmToDelete.ptmDate,
       startTime: this.ptmToDelete.startTime,
+      endTime: this.ptmToDelete.endTime,
     };
-    this.commonApi.fetchData(body, 'ims/ptm', 'removesession').subscribe({
+    this.commonApi.fetchData(body, 'ims/ptm', 'session/remove').subscribe({
       next: (res: any) => {
         if (res?.status) {
           this.alert.success('PTM session deleted successfully');

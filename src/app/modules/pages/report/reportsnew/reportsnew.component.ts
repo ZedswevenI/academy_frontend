@@ -255,6 +255,8 @@ export class ReportsnewComponent implements OnInit {
     'parentPhone',
   ]);
   revealedColumns: Set<string> = new Set();
+  /** Row-level reveal state for masked columns (phone/email), keyed by admissionNo. */
+  revealedRowKeys: Set<string> = new Set();
   phaseAllotmentBatchOptions: any[] = [];
   allBatchesFullList: any[] = [];
   assignmentReportView: 'batch' | 'student' = 'batch';
@@ -467,6 +469,7 @@ export class ReportsnewComponent implements OnInit {
     this.remarksDetailData2 = [];
     this.lateEntriesDetailData = [];
     this.revealedColumns = new Set();
+    this.revealedRowKeys = new Set();
     this.phaseAllotmentBatchOptions = [...this.batchOptions];
     this.assignmentReportView = 'batch';
     this.assignmentBatchResults = [];
@@ -1160,23 +1163,50 @@ export class ReportsnewComponent implements OnInit {
           ...r,
         }));
         break;
-      case 'batch-staff':
+      case 'batch-staff': {
+        // Pivot: one row per batch, one column per subject (union across all
+        // batches), cell = the staff code teaching that subject in that batch.
+        const staffRows: any[] = res.currentStaff || [];
+        const subjectMap = new Map<string, string>(); // subjectId -> subjectName
+        const byBatch = new Map<
+          string,
+          { batchCode: string; batchName: string; subjects: Map<string, string> }
+        >();
+        staffRows.forEach((r: any) => {
+          if (r.subjectId && !subjectMap.has(r.subjectId)) {
+            subjectMap.set(r.subjectId, r.subjectName || r.subjectId);
+          }
+          const key = r.batchCode || 'Unknown';
+          if (!byBatch.has(key)) {
+            byBatch.set(key, {
+              batchCode: r.batchCode,
+              batchName: r.batchName,
+              subjects: new Map(),
+            });
+          }
+          if (r.subjectId) {
+            byBatch.get(key)!.subjects.set(r.subjectId, r.staffCode || '-');
+          }
+        });
+        const sortedSubjects = Array.from(subjectMap.entries()).sort((a, b) =>
+          a[1].localeCompare(b[1]),
+        );
         this.reportColumns = [
-          { key: 'slNo', label: '#' },
-          ...(!this.selectedBatchIds.length || this.allBatchesSelected
-            ? [{ key: 'batchCode', label: 'Batch' }]
-            : []),
-          { key: 'staffName', label: 'Name' },
-          { key: 'staffCode', label: 'Code' },
-          { key: 'subjectName', label: 'Subject' },
-          { key: 'facultyType', label: 'Type' },
-          { key: 'phone', label: 'Phone' },
-          { key: 'email', label: 'Email' },
-          { key: 'role', label: 'Role' },
-          { key: 'status', label: 'Status' },
+          { key: 'batchName', label: 'Batch Name' },
+          ...sortedSubjects.map(([subjectId, subjectName]) => ({
+            key: `subj_${subjectId}`,
+            label: subjectName,
+          })),
         ];
-        this.reportTableData = res.currentStaff || [];
+        this.reportTableData = Array.from(byBatch.values()).map((b) => {
+          const row: any = { batchName: b.batchName || b.batchCode };
+          sortedSubjects.forEach(([subjectId]) => {
+            row[`subj_${subjectId}`] = b.subjects.get(subjectId) || '-';
+          });
+          return row;
+        });
         break;
+      }
       case 'batch-timetable':
         this.reportColumns = [
           { key: 'dateFormatted', label: 'Date' },
@@ -2148,7 +2178,7 @@ export class ReportsnewComponent implements OnInit {
     }
   }
 
-  exportToExcel() {
+  exportToExcel(forceReveal?: boolean) {
     if (!this.selectedReport) return;
     if (
       !this.reportTableData.length &&
@@ -2165,7 +2195,9 @@ export class ReportsnewComponent implements OnInit {
         const col = this.reportColumns[idx];
         let val = row[key];
         if (typeof val === 'boolean') val = val ? 'Yes' : 'No';
-        if (col?.masked && val && !this.isColumnRevealed(key)) {
+        const revealed =
+          forceReveal !== undefined ? forceReveal : this.isRowRevealed(row);
+        if (col?.masked && val && !revealed) {
           obj[headers[idx]] = this.maskValue(String(val));
         } else {
           obj[headers[idx]] = val ?? '';
@@ -2937,21 +2969,31 @@ export class ReportsnewComponent implements OnInit {
     return 'X'.repeat(s.length - 4) + s.slice(-4);
   }
 
-  isColumnRevealed(colKey: string): boolean {
-    return this.revealedColumns.has(colKey);
+  /** Whether the active report has any masked (phone/email) columns — drives the row-level reveal eye column. */
+  get hasMaskedColumns(): boolean {
+    return this.reportColumns.some((c: any) => c.masked);
   }
 
-  toggleColumnReveal(colKey: string, event: Event) {
+  private rowRevealKey(row: any): string {
+    return row?.admissionNo || row?.slNo || JSON.stringify(row);
+  }
+
+  isRowRevealed(row: any): boolean {
+    return this.revealedRowKeys.has(this.rowRevealKey(row));
+  }
+
+  toggleRowReveal(row: any, event: Event) {
     event.stopPropagation();
-    if (this.revealedColumns.has(colKey)) this.revealedColumns.delete(colKey);
-    else this.revealedColumns.add(colKey);
+    const key = this.rowRevealKey(row);
+    if (this.revealedRowKeys.has(key)) this.revealedRowKeys.delete(key);
+    else this.revealedRowKeys.add(key);
   }
 
   getCellDisplayValue(row: any, col: any): string {
     const val = row[col.key];
     if (val === null || val === undefined) return '-';
     if (typeof val === 'boolean') return val ? 'Yes' : 'No';
-    if (col.masked && !this.isColumnRevealed(col.key)) {
+    if (col.masked && !this.isRowRevealed(row)) {
       return this.maskValue(String(val));
     }
     return String(val);
@@ -2991,7 +3033,7 @@ export class ReportsnewComponent implements OnInit {
       });
   }
 
-  exportToPdf() {
+  exportToPdf(forceReveal?: boolean) {
     if (!this.selectedReport) return;
     if (
       !this.reportTableData.length &&
@@ -3015,7 +3057,9 @@ export class ReportsnewComponent implements OnInit {
         const col = this.reportColumns[idx];
         let val = row[key];
         if (typeof val === 'boolean') return val ? 'Yes' : 'No';
-        if (col?.masked && val && !this.isColumnRevealed(key)) {
+        const revealed =
+          forceReveal !== undefined ? forceReveal : this.isRowRevealed(row);
+        if (col?.masked && val && !revealed) {
           return this.maskValue(String(val));
         }
         return val !== null && val !== undefined ? String(val) : '-';

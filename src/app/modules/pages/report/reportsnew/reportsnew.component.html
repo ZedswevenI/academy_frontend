@@ -104,16 +104,43 @@
                     (click)="showFacultyLoadDetail()">
                     <i class="fa-solid fa-table-list me-1"></i> Load Detail
                 </button>
-                <button
-                    *ngIf="reportTableData.length > 0 || hasFacultyLoadCustomData || hasAssignmentCustomData || hasFacultyReportData"
-                    class="btn btn-outline-danger fs-16 fw-medium" (click)="exportToPdf()">
-                    <i class="fa-solid fa-file-pdf btn-icon"></i> Export PDF
-                </button>
-                <button
-                    *ngIf="reportTableData.length > 0 || hasFacultyLoadCustomData || hasAssignmentCustomData || hasFacultyReportData"
-                    class="btn btn-export fs-16 fw-medium" (click)="exportToExcel()">
-                    <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
-                </button>
+                <ng-container
+                    *ngIf="reportTableData.length > 0 || hasFacultyLoadCustomData || hasAssignmentCustomData || hasFacultyReportData">
+                    <ng-container *ngIf="!hasMaskedColumns; else maskedExportButtons">
+                        <button class="btn btn-outline-danger fs-16 fw-medium" (click)="exportToPdf()">
+                            <i class="fa-solid fa-file-pdf btn-icon"></i> Export PDF
+                        </button>
+                        <button class="btn btn-export fs-16 fw-medium" (click)="exportToExcel()">
+                            <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
+                        </button>
+                    </ng-container>
+                    <ng-template #maskedExportButtons>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-danger fs-16 fw-medium dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-file-pdf btn-icon"></i> Export PDF
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToPdf(false)">
+                                        <i class="fa-solid fa-eye-slash me-2 text-muted"></i>Hidden (masked)</a></li>
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToPdf(true)">
+                                        <i class="fa-solid fa-eye me-2 text-primary"></i>Viewable (full)</a></li>
+                            </ul>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-export fs-16 fw-medium dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToExcel(false)">
+                                        <i class="fa-solid fa-eye-slash me-2 text-muted"></i>Hidden (masked)</a></li>
+                                <li><a class="dropdown-item cursor-pointer" (click)="exportToExcel(true)">
+                                        <i class="fa-solid fa-eye me-2 text-primary"></i>Viewable (full)</a></li>
+                            </ul>
+                        </div>
+                    </ng-template>
+                </ng-container>
                 <button class="btn btn-back fs-16 fw-medium" (click)="clearReport()">
                     <i class="fa-solid fa-arrow-left"></i> Back
                 </button>
@@ -826,34 +853,9 @@
                 <table class="table table-sm table-hover align-middle mb-0">
                     <thead>
                         <tr>
+                            <th *ngIf="hasMaskedColumns" style="width: 36px;"></th>
                             <th *ngFor="let col of reportColumns">
-                                <div class="d-flex align-items-center gap-1">
-                                    <span>{{ col.label }}</span>
-                                    <button *ngIf="col.masked" class="btn btn-sm p-0 ms-1" style="
-                      font-size: 12px;
-                      line-height: 1;
-                      background: rgba(255, 255, 255, 0.2);
-                      border: none;
-                      border-radius: 3px;
-                      width: 20px;
-                      height: 20px;
-                      display: inline-flex;
-                      align-items: center;
-                      justify-content: center;
-                      color: #1c90ff;
-                      cursor: pointer;
-                    " (click)="toggleColumnReveal(col.key, $event)" [title]="
-                      isColumnRevealed(col.key)
-                        ? 'Click to mask'
-                        : 'Click to reveal'
-                    ">
-                                        <i [class]="
-                        isColumnRevealed(col.key)
-                          ? 'fa-solid fa-eye-slash'
-                          : 'fa-solid fa-eye'
-                      "></i>
-                                    </button>
-                                </div>
+                                <span>{{ col.label }}</span>
                             </th>
                         </tr>
                     </thead>
@@ -864,6 +866,31 @@
                   ? '2px solid #d1d5db'
                   : ''
               ">
+                            <td *ngIf="hasMaskedColumns">
+                                <button type="button" class="btn btn-sm p-0" style="
+                      font-size: 12px;
+                      line-height: 1;
+                      background: transparent;
+                      border: none;
+                      width: 22px;
+                      height: 22px;
+                      display: inline-flex;
+                      align-items: center;
+                      justify-content: center;
+                      color: #1c90ff;
+                      cursor: pointer;
+                    " (click)="toggleRowReveal(row, $event)" [title]="
+                      isRowRevealed(row)
+                        ? 'Click to hide phone/email for this row'
+                        : 'Click to reveal phone/email for this row'
+                    ">
+                                    <i [class]="
+                        isRowRevealed(row)
+                          ? 'fa-solid fa-eye-slash'
+                          : 'fa-solid fa-eye'
+                      "></i>
+                                </button>
+                            </td>
                             <td *ngFor="let col of reportColumns">
                                 {{ getCellDisplayValue(row, col) }}
                             </td>
