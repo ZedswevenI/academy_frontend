@@ -1408,19 +1408,70 @@ export class QuestionCreateNewComponent implements OnInit {
       (window as any).MathJax.typesetPromise([editor]);
   }
 
+  // Tags Word/MSO paste sometimes carries that we never want in stored
+  // question content (scripts/styles, or empty structural markers like
+  // <o:p>) — removed entirely rather than unwrapped.
+  private static readonly PASTE_STRIP_TAGS = [
+    'SCRIPT',
+    'STYLE',
+    'LINK',
+    'META',
+    'TITLE',
+    'HEAD',
+    'XML',
+    'O:P',
+  ];
+
+  // Per-tag attribute whitelist for pasted content. Every other attribute
+  // (style, class, lang, dir, and all the mso-* / v:* cruft) is stripped —
+  // that's where Word's negative text-indent / position:absolute hacks
+  // that broke question-view's layout were coming from.
+  private static readonly PASTE_ATTR_WHITELIST: Record<string, string[]> = {
+    IMG: ['src', 'alt'],
+    A: ['href', 'target', 'rel'],
+    TD: ['colspan', 'rowspan'],
+    TH: ['colspan', 'rowspan'],
+  };
+
+  private sanitizePastedHtml(html: string): string {
+    if (!html) return '';
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    QuestionCreateNewComponent.PASTE_STRIP_TAGS.forEach((tag) => {
+      doc.querySelectorAll(tag).forEach((el) => el.remove());
+    });
+    const stripAttrs = (node: Element) => {
+      Array.from(node.children).forEach((child) => {
+        const allowed =
+          QuestionCreateNewComponent.PASTE_ATTR_WHITELIST[child.tagName] ||
+          [];
+        Array.from(child.attributes).forEach((attr) => {
+          if (!allowed.includes(attr.name.toLowerCase())) {
+            child.removeAttribute(attr.name);
+          }
+        });
+        stripAttrs(child);
+      });
+    };
+    stripAttrs(doc.body);
+    // Strip any leftover HTML comments (e.g. MSO conditional comments).
+    return doc.body.innerHTML.replace(/<!--[\s\S]*?-->/g, '');
+  }
+
   onPasteImage(event: ClipboardEvent, editorId: string) {
     const clipboardData = event.clipboardData;
     if (!clipboardData) return;
+    event.preventDefault();
+    const editor = document.getElementById(editorId) as HTMLDivElement | null;
+    if (!editor) return;
+
+    // Direct image paste (e.g. a screenshot) — no HTML payload to sanitize.
     for (let i = 0; i < clipboardData.items.length; i++) {
       const item = clipboardData.items[i];
       if (item.type.indexOf('image') !== -1) {
-        event.preventDefault();
         const file = item.getAsFile();
-        if (!file) return;
+        if (!file) continue;
         const reader = new FileReader();
         reader.onload = () => {
-          const editor = document.getElementById(editorId) as HTMLDivElement;
-          if (!editor) return;
           editor.focus();
           document.execCommand(
             'insertHTML',
@@ -1429,8 +1480,40 @@ export class QuestionCreateNewComponent implements OnInit {
           );
         };
         reader.readAsDataURL(file);
+        return;
       }
     }
+
+    // Rich text/Word paste — strip MSO formatting before inserting so the
+    // hanging-indent / absolute-position hacks never reach stored content.
+    editor.focus();
+    const html = clipboardData.getData('text/html');
+    if (html) {
+      document.execCommand('insertHTML', false, this.sanitizePastedHtml(html));
+    } else {
+      const text = clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  }
+
+  // Cleans up a question/option/solution/matrix editor that already has
+  // Word/MSO formatting baked in from before the paste sanitizer existed
+  // (or from any other source of raw HTML). Runs the same sanitizer used
+  // on paste directly against the editor's current content, then fires a
+  // synthetic 'input' event so the existing (input) binding on that
+  // editor — whichever form control it happens to sync to — picks up the
+  // cleaned value exactly as if the user had typed it.
+  cleanEditorFormatting(editorId: string): void {
+    const editor = document.getElementById(editorId) as HTMLDivElement | null;
+    if (!editor) return;
+    const cleaned = this.sanitizePastedHtml(editor.innerHTML);
+    if (cleaned === editor.innerHTML) {
+      this.alert.warning('No formatting artifacts found to clean');
+      return;
+    }
+    editor.innerHTML = cleaned;
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+    this.alert.success('Formatting cleaned');
   }
 
   openPassagePopup(): void {

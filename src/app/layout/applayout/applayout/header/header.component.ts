@@ -10,6 +10,10 @@ import {
   CenterContextService,
   CenterOption,
 } from '../../../../service/center/center-context.service';
+import {
+  NotificationItem,
+  NotificationService,
+} from '../../../../service/notification/notification.service';
 declare var bootstrap: any;
 
 @Component({
@@ -38,12 +42,19 @@ export class HeaderComponent implements OnInit, OnDestroy {
   centerPanelOpen = false;
   private centerSubs = new Subscription();
 
+  notifPanelOpen = false;
+  unreadCount = 0;
+  notifications: NotificationItem[] = [];
+  notifLoading = false;
+  private notifSubs = new Subscription();
+
   constructor(
     private router: Router,
     private api: CommonapiService,
     private alert: AlertService,
     private authService: AuthService,
     private centerContext: CenterContextService,
+    private notificationService: NotificationService,
   ) {
     this.username = localStorage.getItem('name');
     this.useremail = localStorage.getItem('email');
@@ -62,10 +73,57 @@ export class HeaderComponent implements OnInit, OnDestroy {
         (center) => (this.selectedCenter = center),
       ),
     );
+
+    this.notifSubs.add(
+      this.notificationService.unreadCount$.subscribe(
+        (count) => (this.unreadCount = count),
+      ),
+    );
+    this.notifSubs.add(
+      this.notificationService.notifications$.subscribe(
+        (items) => (this.notifications = items),
+      ),
+    );
+    this.notifSubs.add(
+      this.notificationService.loading$.subscribe(
+        (loading) => (this.notifLoading = loading),
+      ),
+    );
+    this.notificationService.startPolling();
   }
 
   ngOnDestroy(): void {
     this.centerSubs.unsubscribe();
+    this.notifSubs.unsubscribe();
+    this.notificationService.stopPolling();
+  }
+
+  toggleNotifPanel(): void {
+    this.notifPanelOpen = !this.notifPanelOpen;
+    if (this.notifPanelOpen) {
+      this.notificationService.fetchList({ page: 1, limit: 20 });
+    }
+  }
+
+  closeNotifPanel(): void {
+    this.notifPanelOpen = false;
+  }
+
+  onNotificationClick(item: NotificationItem): void {
+    if (!item.isRead) this.notificationService.markRead(item.notificationId);
+  }
+
+  markAllNotificationsRead(): void {
+    this.notificationService.markAllRead();
+  }
+
+  removeNotification(item: NotificationItem, event: Event): void {
+    event.stopPropagation();
+    this.notificationService.remove(item.notificationId);
+  }
+
+  trackByNotificationId(_: number, item: NotificationItem): string {
+    return item.notificationId;
   }
 
   get pendingCenter(): CenterOption | null {
@@ -109,6 +167,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   logout() {
     sessionStorage.clear();
     this.centerContext.reset();
+    this.notificationService.reset();
     this.authService.logout();
   }
 

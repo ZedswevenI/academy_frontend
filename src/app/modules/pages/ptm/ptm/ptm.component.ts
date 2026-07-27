@@ -765,7 +765,12 @@ export class PtmComponent implements OnInit {
     reader.onload = (e: any) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        // cellDates: true — without it, Excel cells that are formatted as a
+        // Date/Time (which Windows Excel auto-applies far more readily than
+        // Mac Excel when a cell looks like a date) come back as a raw serial
+        // number (e.g. 45129) instead of a string, which then gets sent to
+        // the backend verbatim and misparsed as a bare year.
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
         if (!rows.length) {
@@ -781,7 +786,7 @@ export class PtmComponent implements OnInit {
           this.fileName = '';
           return;
         }
-        this.parsedRows = rows;
+        this.parsedRows = rows.map((row) => this.normalizeDateColumns(row));
         this.validateRows();
       } catch (err: any) {
         this.alert.error('Parse error: ' + (err?.message ?? 'Unknown'));
@@ -789,6 +794,53 @@ export class PtmComponent implements OnInit {
       }
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  // Normalizes the three date/time columns coming from Excel into the
+  // fixed string format the backend/template expects (YYYY-MM-DD /
+  // HH:mm:ss), regardless of whether the source cell was typed as a
+  // Date/Time by Excel (comes through as a JS Date thanks to cellDates:
+  // true, or occasionally as a raw serial number) or as plain text (left
+  // untouched either way).
+  private normalizeDateColumns(row: any): any {
+    return {
+      ...row,
+      'PTM Date': this.toDateString(row['PTM Date']),
+      'PTM Start Time': this.toTimeString(row['PTM Start Time']),
+      'PTM End Time': this.toTimeString(row['PTM End Time']),
+    };
+  }
+
+  private excelSerialToDate(serial: number): Date {
+    const parsed = (XLSX as any).SSF.parse_date_code(serial);
+    return new Date(
+      Date.UTC(
+        parsed.y,
+        parsed.m - 1,
+        parsed.d,
+        parsed.H,
+        parsed.M,
+        Math.round(parsed.S),
+      ),
+    );
+  }
+
+  private toDateString(value: any): any {
+    let d: Date | null = null;
+    if (value instanceof Date) d = value;
+    else if (typeof value === 'number') d = this.excelSerialToDate(value);
+    if (!d) return typeof value === 'string' ? value.trim() : value;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  }
+
+  private toTimeString(value: any): any {
+    let d: Date | null = null;
+    if (value instanceof Date) d = value;
+    else if (typeof value === 'number') d = this.excelSerialToDate(value);
+    if (!d) return typeof value === 'string' ? value.trim() : value;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
   }
 
   private validateRows(): void {

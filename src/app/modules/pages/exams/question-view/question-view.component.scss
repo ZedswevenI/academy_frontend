@@ -3,15 +3,42 @@
   line-height: 1.6;
   word-wrap: break-word;
 
+  // Establish a positioning context so content pasted from Word/MSO
+  // (which often carries inline position:absolute offsets, or hanging
+  // indents like text-indent:-.5in with no offsetting margin-left, both
+  // meant for the original page layout) is contained inside this box
+  // instead of drifting outside the card.
+  position: relative;
+  overflow-x: hidden;
+}
+
+// NOTE: everything below targets markup pasted in via [innerHTML]
+// (q.questionHtml / opt.textHtml / q.solutionHtml). Angular's emulated
+// view encapsulation only tags elements created by *this* component's
+// own template with the scoping attribute — raw HTML inserted through
+// [innerHTML] never receives it, so scoped rules like ".question-html
+// img" silently never match that content. ::ng-deep is required here to
+// actually reach it.
+::ng-deep .question-html {
+  // Word/MSO paste artifacts: neutralize hanging-indent and absolute
+  // positioning tricks that push text/images left of the container.
+  p, li, div, span, td, th {
+    text-indent: 0 !important;
+  }
+
   // Image styling - Important for physics diagrams
   img {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    float: none !important;
     max-width: 100%;
     height: auto;
     display: block;
-    margin: 15px 0;
+    margin: 15px auto !important;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    
+
     &:hover {
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
@@ -167,13 +194,28 @@
 
   .option-content {
     flex: 1;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  // ::ng-deep required: opt.textHtml is raw pasted markup, not
+  // rendered by this component's own template (see note above
+  // .question-html), so scoped rules never reach it otherwise.
+  ::ng-deep .option-content {
+    p, li, div, span, td, th {
+      text-indent: 0 !important;
+    }
 
     // Images in options (diagrams, structures)
     img {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      float: none !important;
       max-width: 100%;
       height: auto;
       display: block;
-      margin: 10px 0;
+      margin: 10px auto !important;
       border-radius: 3px;
       max-height: 300px;
     }
@@ -216,13 +258,28 @@
 
   .solution-content {
     margin-top: 10px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  // ::ng-deep required: q.solutionHtml is raw pasted markup, not
+  // rendered by this component's own template (see note above
+  // .question-html), so scoped rules never reach it otherwise.
+  ::ng-deep .solution-content {
+    p, li, div, span, td, th {
+      text-indent: 0 !important;
+    }
 
     // Images in solution (diagrams, chemical structures)
     img {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      float: none !important;
       max-width: 100%;
       height: auto;
       display: block;
-      margin: 15px 0;
+      margin: 15px auto !important;
       border-radius: 4px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }

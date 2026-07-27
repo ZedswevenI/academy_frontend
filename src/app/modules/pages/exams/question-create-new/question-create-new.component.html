@@ -267,6 +267,12 @@
                                                 (click)="execCommand('removeFormat')" title="Clear"><i
                                                     class="fas fa-remove-format"></i></button>
                                         </div>
+                                        <div class="btn-group btn-group-sm me-1">
+                                            <button type="button" class="btn btn-outline-warning"
+                                                (click)="cleanEditorFormatting('questionEditor')"
+                                                title="Clean Word/MSO Formatting"><i
+                                                    class="fas fa-broom"></i></button>
+                                        </div>
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-outline-info"
                                                 (click)="openPreview('Question', 'questionEditor')" title="Preview"><i
@@ -402,13 +408,20 @@
                                                                         title="Insert LaTeX"><i
                                                                             class="fas fa-superscript"></i> TeX</button>
                                                                 </div>
-                                                                <!-- Clear + Preview -->
+                                                                <!-- Clear + Clean + Preview -->
                                                                 <div class="btn-group btn-group-sm me-1">
                                                                     <button type="button"
                                                                         class="btn btn-outline-secondary btn-sm"
                                                                         (click)="execOptionCommand(i, 'removeFormat')"
                                                                         title="Clear Formatting"><i
                                                                             class="fas fa-remove-format"></i></button>
+                                                                </div>
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-warning btn-sm"
+                                                                        (click)="cleanEditorFormatting('optionEditor-' + i)"
+                                                                        title="Clean Word/MSO Formatting"><i
+                                                                            class="fas fa-broom"></i></button>
                                                                 </div>
                                                                 <div class="btn-group btn-group-sm">
                                                                     <button type="button"
@@ -475,6 +488,7 @@
                             <label class="form-label fw-bold">Sample Answer (optional reference)</label>
                             <div class="editor-container border rounded">
                                 <div id="subjectiveEditor" class="editor-content p-3" contenteditable="true"
+                                    (paste)="onPasteImage($event, 'subjectiveEditor')"
                                     (input)="onEditorInput($event, 'subjectiveAnswer')"
                                     style="min-height:80px; word-wrap:break-word;">
                                 </div>
@@ -486,6 +500,7 @@
                             <label class="form-label fw-bold">Expected Answer / Key Points</label>
                             <div class="editor-container border rounded">
                                 <div id="subjectiveEditor" class="editor-content p-3" contenteditable="true"
+                                    (paste)="onPasteImage($event, 'subjectiveEditor')"
                                     (input)="onEditorInput($event, 'subjectiveAnswer')"
                                     style="min-height:100px; word-wrap:break-word; white-space:pre-wrap; overflow-y:auto;">
                                 </div>
@@ -578,6 +593,14 @@
                                                                     (click)="insertMatrixLeftLatex(i)"><i
                                                                         class="fas fa-superscript"></i> TeX</button>
                                                             </div>
+                                                            <div class="btn-group btn-group-sm me-1">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-warning btn-sm"
+                                                                    (click)="cleanEditorFormatting('matrixLeftEditor-' + i)"
+                                                                    title="Clean Word/MSO Formatting">
+                                                                    <i class="fas fa-broom"></i>
+                                                                </button>
+                                                            </div>
                                                             <div class="btn-group btn-group-sm">
                                                                 <button type="button"
                                                                     class="btn btn-outline-info btn-sm"
@@ -625,6 +648,14 @@
                                                                     class="btn btn-outline-secondary btn-sm"
                                                                     (click)="insertMatrixRightLatex(i)"><i
                                                                         class="fas fa-superscript"></i> TeX</button>
+                                                            </div>
+                                                            <div class="btn-group btn-group-sm me-1">
+                                                                <button type="button"
+                                                                    class="btn btn-outline-warning btn-sm"
+                                                                    (click)="cleanEditorFormatting('matrixRightEditor-' + i)"
+                                                                    title="Clean Word/MSO Formatting">
+                                                                    <i class="fas fa-broom"></i>
+                                                                </button>
                                                             </div>
                                                             <div class="btn-group btn-group-sm">
                                                                 <button type="button"
@@ -739,6 +770,14 @@
                                                                         <i class="fas fa-superscript"></i> TeX
                                                                     </button>
                                                                 </div>
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-warning btn-sm"
+                                                                        (click)="cleanEditorFormatting('matrixLeftEditor-' + i)"
+                                                                        title="Clean Word/MSO Formatting">
+                                                                        <i class="fas fa-broom"></i>
+                                                                    </button>
+                                                                </div>
                                                                 <div class="btn-group btn-group-sm">
                                                                     <button type="button"
                                                                         class="btn btn-outline-info btn-sm"
@@ -788,6 +827,14 @@
                                                                         class="btn btn-outline-secondary btn-sm"
                                                                         (click)="insertMatrixRightLatex(i)">
                                                                         <i class="fas fa-superscript"></i> TeX
+                                                                    </button>
+                                                                </div>
+                                                                <div class="btn-group btn-group-sm me-1">
+                                                                    <button type="button"
+                                                                        class="btn btn-outline-warning btn-sm"
+                                                                        (click)="cleanEditorFormatting('matrixRightEditor-' + i)"
+                                                                        title="Clean Word/MSO Formatting">
+                                                                        <i class="fas fa-broom"></i>
                                                                     </button>
                                                                 </div>
                                                                 <div class="btn-group btn-group-sm">
@@ -921,6 +968,12 @@
                                                 <button type="button" class="btn btn-outline-secondary"
                                                     (click)="insertLatex('solutionEditor')"><i
                                                         class="fas fa-superscript"></i> TeX</button>
+                                            </div>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-warning"
+                                                    (click)="cleanEditorFormatting('solutionEditor')"
+                                                    title="Clean Word/MSO Formatting"><i
+                                                        class="fas fa-broom"></i></button>
                                             </div>
                                         </div>
                                     </div>

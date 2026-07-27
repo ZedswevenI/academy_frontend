@@ -53,10 +53,45 @@
       </ng-container>
     </div>
     <div class="divider d-none d-md-block"></div>
-    <button class="icon-btn has-dot" title="Notifications">
-      <i class="fa-regular fa-bell"></i>
-      <span class="dot"></span>
-    </button>
+    <div class="notif-dd">
+      <button class="icon-btn" [class.has-dot]="unreadCount > 0" title="Notifications"
+        (click)="toggleNotifPanel()">
+        <i class="fa-regular fa-bell"></i>
+        <span class="dot" *ngIf="unreadCount > 0"></span>
+      </button>
+      <div class="notif-panel" *ngIf="notifPanelOpen">
+        <div class="notif-panel-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Notifications</span>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" *ngIf="unreadCount > 0"
+              (click)="markAllNotificationsRead()">
+              Mark all as read
+            </button>
+            <button type="button" class="btn-close btn-close-sm" (click)="closeNotifPanel()" aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="notif-panel-body">
+          <div *ngIf="notifLoading" class="text-center py-4 text-muted small">
+            <div class="spinner-border spinner-border-sm me-2"></div>Loading...
+          </div>
+          <div *ngIf="!notifLoading && notifications.length === 0" class="text-center py-4 text-muted small">
+            No notifications
+          </div>
+          <div *ngFor="let n of notifications; trackBy: trackByNotificationId" class="notif-item"
+            [class.unread]="!n.isRead" (click)="onNotificationClick(n)">
+            <span class="notif-dot" *ngIf="!n.isRead"></span>
+            <div class="notif-item-content">
+              <div class="notif-item-title">{{ n.title }}</div>
+              <div class="notif-item-body">{{ n.body }}</div>
+              <div class="notif-item-time">{{ n.createdAt | date:'dd MMM, h:mm a' }}</div>
+            </div>
+            <button type="button" class="notif-item-remove" title="Dismiss" (click)="removeNotification(n, $event)">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="divider d-none d-md-block"></div>
     <!-- User pill -->
     <div class="dropdown user-dropdown">
