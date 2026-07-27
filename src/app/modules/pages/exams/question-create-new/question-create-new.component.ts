@@ -1431,6 +1431,12 @@ export class QuestionCreateNewComponent implements OnInit {
     A: ['href', 'target', 'rel'],
     TD: ['colspan', 'rowspan'],
     TH: ['colspan', 'rowspan'],
+    // 'class' is otherwise stripped everywhere — this one exception keeps
+    // the "Clean Formatting" button from erasing the light-blue highlight
+    // badge on an already-inserted `$$...$$` LaTeX block (the math text
+    // itself is unaffected either way, since it's plain text content, not
+    // an attribute — this only preserves the cosmetic editor styling).
+    SPAN: ['class'],
   };
 
   private sanitizePastedHtml(html: string): string {
@@ -1445,7 +1451,11 @@ export class QuestionCreateNewComponent implements OnInit {
           QuestionCreateNewComponent.PASTE_ATTR_WHITELIST[child.tagName] ||
           [];
         Array.from(child.attributes).forEach((attr) => {
-          if (!allowed.includes(attr.name.toLowerCase())) {
+          const name = attr.name.toLowerCase();
+          const keep =
+            allowed.includes(name) &&
+            (name !== 'class' || attr.value.trim() === 'latex-formula');
+          if (!keep) {
             child.removeAttribute(attr.name);
           }
         });
