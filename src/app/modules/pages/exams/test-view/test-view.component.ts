@@ -1436,6 +1436,12 @@ export class TestViewComponent implements OnInit {
     }
   }
 
+  formatClass(classNo: number): string {
+    if (!classNo) return '-';
+    if (classNo === 13) return '12th Pass';
+    return `Class ${classNo}`;
+  }
+
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
     const d = new Date(dateStr);

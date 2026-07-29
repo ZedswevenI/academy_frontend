@@ -1689,13 +1689,21 @@ export class QuestionCreateNewComponent implements OnInit {
 
   // isFormReadyToSubmit() — add manual content checks:
 
+  // A question/option counts as "filled" if it has visible text OR an
+  // image — plain tag-stripping alone treats an image-only <img> block as
+  // empty, which was permanently blocking Submit for image-only questions
+  // and options.
+  private hasContent(html: string): boolean {
+    if (!html) return false;
+    if (/<img[\s>]/i.test(html)) return true;
+    return !!html.replace(/<[^>]*>/g, '').trim();
+  }
+
   isFormReadyToSubmit(): boolean {
     if (this.questionForm.invalid) return false;
     const qt = this.getSelectedQuestionType();
-    const questionText = (this.questionForm.get('questionText')?.value || '')
-      .replace(/<[^>]*>/g, '')
-      .trim();
-    if (!questionText) return false;
+    const questionText = this.questionForm.get('questionText')?.value || '';
+    if (!this.hasContent(questionText)) return false;
     if (this.isBankMode) {
       if (!this.questionForm.get('bankSubjectId')?.value) return false;
       if (!(this.questionForm.get('topicId')?.value || '').trim()) return false;
@@ -1705,10 +1713,9 @@ export class QuestionCreateNewComponent implements OnInit {
       if (!this.questionForm.get('sectionId')?.value) return false;
     }
     if (['mcq_single', 'mcq_multi', 'passage_qns'].includes(qt)) {
-      const filledOptions = this.options.controls.filter((c) => {
-        const t = (c.get('text')?.value || '').replace(/<[^>]*>/g, '').trim();
-        return !!t;
-      });
+      const filledOptions = this.options.controls.filter((c) =>
+        this.hasContent(c.get('text')?.value || ''),
+      );
       if (filledOptions.length < 2) return false;
       const correctCount = this.options.controls.filter(
         (c) => c.get('isCorrect')?.value,
