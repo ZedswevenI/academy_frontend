@@ -145,7 +145,7 @@
       </div>
       <div class="d-flex align-items-center gap-2">
         <!-- Draft actions -->
-        <ng-container *ngIf="isDraft">
+        <ng-container *ngIf="canEditQuestions">
           <button class="btn btn-sm btn-outline-primary" (click)="editQuestion(q)">Edit</button>
           <button class="btn btn-sm btn-outline-danger" (click)="deleteQuestion(q)">Delete</button>
         </ng-container>

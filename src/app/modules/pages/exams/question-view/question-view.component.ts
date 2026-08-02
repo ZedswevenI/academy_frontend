@@ -108,6 +108,22 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   backRoute = '/app/exams/exams';
   backState: any = null;
 
+  // Per-question Edit/Delete — allowed for draft, published and
+  // result_published exams; still hidden once an exam is completed or
+  // disabled. Derived live from questionData.status so it stays correct
+  // through any status change (publish, result publish, etc.) without a
+  // separate flag to keep in sync.
+  private static readonly EDITABLE_QUESTION_STATUSES = [
+    'draft',
+    'published',
+    'result_published',
+  ];
+
+  get canEditQuestions(): boolean {
+    const status = (this.questionData?.status || '').toLowerCase();
+    return QuestionViewComponent.EDITABLE_QUESTION_STATUSES.includes(status);
+  }
+
   ngOnInit(): void {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
