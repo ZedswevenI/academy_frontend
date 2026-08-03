@@ -257,6 +257,26 @@ export class TestViewComponent implements OnInit {
   get canShowGrace(): boolean {
     return this.examData?.status !== 'draft';
   }
+  get canAddOfflineMarks(): boolean {
+    return !this.examData?.isImported && this.examData?.status !== 'draft';
+  }
+
+  /** The participants report has no explicit "offline" flag — but a
+   * result submitted via the offline endpoints never has a real logged-in
+   * session, so `studentId` is never populated for those rows (confirmed
+   * against real data: every offline row has studentId: null, a
+   * startedAt pinned to the exam's scheduled start time, and a huge/bogus
+   * timeTakenMins as a result — this is the reliable signal to key off). */
+  isOfflineParticipant(p: any): boolean {
+    return !p?.studentId;
+  }
+
+  /* ================= OFFLINE MARKS ================= */
+  openOfflineMarks(prefillAdmissionNo: string | null = null): void {
+    this.router.navigate(['/app/exams/exams/offline-marks', this.examData.examId], {
+      state: { exam: this.examData, prefillAdmissionNo },
+    });
+  }
 
   /* ================= NAV ACTIONS ================= */
   showDuplicateModal = false;
