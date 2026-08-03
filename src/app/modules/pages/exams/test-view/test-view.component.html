@@ -50,6 +50,11 @@
               <i class="fa-solid fa-cloud-arrow-up me-2 text-success"></i>Import Answers
             </a>
           </li>
+          <li *ngIf="canAddOfflineMarks">
+            <a class="dropdown-item" (click)="openOfflineMarks()">
+              <i class="fa-solid fa-file-pen me-2 text-warning"></i>Add Offline Marks
+            </a>
+          </li>
           <li *ngIf="canAssignBatch">
             <a class="dropdown-item" (click)="openBatchModal()">
               <i class="fa-solid fa-users me-2 text-info"></i>Assign Batch
@@ -686,6 +691,7 @@
               <th>Max Score</th>
               <th>Score</th>
               <th>Per %</th>
+              <th *ngIf="!examData.isImported">Mode</th>
               <th *ngIf="!examData.isImported">Time</th>
               <th *ngIf="!examData.isImported">Action</th>
             </tr>
@@ -717,12 +723,24 @@
                   {{ p.percentage }}%
                 </span>
               </td>
-              <td *ngIf="!examData.isImported">{{ p.timeTakenMins }}m</td>
               <td *ngIf="!examData.isImported">
-                <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
-                  (click)="viewStudentResult(p)" title="View Result">
-                  <i class="fa-regular fa-eye"></i>
-                </button>
+                <span class="badge rounded-pill" [ngClass]="isOfflineParticipant(p) ? 'bg-warning-subtle text-warning-emphasis' : 'bg-primary-subtle text-primary-emphasis'">
+                  {{ isOfflineParticipant(p) ? 'Offline' : 'Online' }}
+                </span>
+              </td>
+              <td *ngIf="!examData.isImported">{{ isOfflineParticipant(p) ? '--' : (p.timeTakenMins + 'm') }}</td>
+              <td *ngIf="!examData.isImported">
+                <div class="d-flex gap-1">
+                  <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
+                    (click)="viewStudentResult(p)" title="View Result">
+                    <i class="fa-regular fa-eye"></i>
+                  </button>
+                  <button *ngIf="canAddOfflineMarks" class="btn btn-sm btn-outline-warning rounded-circle"
+                    style="width:32px;height:32px;padding:0;" (click)="openOfflineMarks(p.admissionNo)"
+                    title="Correct this student's result">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>

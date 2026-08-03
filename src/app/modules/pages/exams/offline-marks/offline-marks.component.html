@@ -1,0 +1,278 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+  <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+
+    <!-- HEADER -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+      <div>
+        <h1 class="fw-bold mb-0" style="font-size: 24px;">
+          <i class="fa-solid fa-file-pen me-2"></i>Add Offline Marks
+        </h1>
+        <div class="text-muted small mt-1" *ngIf="examName">{{ examName }} <span *ngIf="examCode">({{ examCode }})</span></div>
+      </div>
+      <button type="button" class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+        <i class="fa-solid fa-arrow-left me-1"></i> Back
+      </button>
+    </div>
+
+    <!-- TABS -->
+    <ul class="nav nav-pills gap-2 mb-4">
+      <li class="nav-item">
+        <button type="button" class="btn rounded-pill px-3" [class.btn-primary]="activeTab === 'single'"
+          [class.btn-outline-secondary]="activeTab !== 'single'" (click)="switchTab('single')">
+          <i class="fa-solid fa-user-pen me-1"></i> Single Student
+        </button>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="btn rounded-pill px-3" [class.btn-primary]="activeTab === 'bulk'"
+          [class.btn-outline-secondary]="activeTab !== 'bulk'" (click)="switchTab('bulk')">
+          <i class="fa-solid fa-file-excel me-1"></i> Bulk Import (Excel)
+        </button>
+      </li>
+    </ul>
+
+    <div *ngIf="loadingQuestions" class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+      <div class="text-muted small mt-2">Loading exam questions...</div>
+    </div>
+
+        <!-- ============================================================ -->
+        <!--                      SINGLE STUDENT TAB                      -->
+        <!-- ============================================================ -->
+        <div *ngIf="!loadingQuestions && activeTab === 'single'">
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">Batch <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="batchId" (ngModelChange)="onBatchChange()">
+                <option value="">— Select batch —</option>
+                <option *ngFor="let b of batches" [value]="b.batchId">{{ b.label }}</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">Student <span class="text-danger">*</span></label>
+              <div class="offline-autocomplete" [class.disabled]="!batchId">
+                <input type="text" class="form-control" [ngModel]="studentSearchText"
+                  (ngModelChange)="onStudentSearchChange($event)" (focus)="showStudentDropdown = true"
+                  (blur)="onStudentSearchBlur()" [disabled]="!batchId"
+                  [placeholder]="batchId ? 'Search name or admission no...' : 'Select a batch first'" />
+                <span *ngIf="studentsLoading" class="spinner-border spinner-border-sm autocomplete-spinner"></span>
+                <div class="offline-autocomplete-menu" *ngIf="showStudentDropdown && batchId && !studentsLoading">
+                  <div class="offline-autocomplete-item" *ngFor="let s of filteredStudentOptions"
+                    (mousedown)="selectStudent(s)">
+                    {{ s.label }}
+                  </div>
+                  <div *ngIf="!filteredStudentOptions.length" class="offline-autocomplete-empty">
+                    No matching students — you can still type an admission no directly.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">Completed At <span class="text-muted fw-normal">(optional)</span></label>
+              <input type="datetime-local" class="form-control" [(ngModel)]="completedAtLocal" />
+            </div>
+          </div>
+
+          <div #formErrorsAnchor *ngIf="formErrors.length" class="alert alert-danger py-2 mb-3">
+            <div class="fw-semibold small mb-1">
+              <i class="fa-solid fa-circle-exclamation me-1"></i>Fix the following before submitting:
+            </div>
+            <ul class="mb-0 small ps-3">
+              <li *ngFor="let e of formErrors">{{ e }}</li>
+            </ul>
+          </div>
+
+          <div class="offline-q-list">
+            <div class="offline-qcard" *ngFor="let q of questions; let i = index"
+              [class.has-error]="errorQuestionIds.has(q.questionId)">
+              <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                <div class="d-flex align-items-start gap-2">
+                  <span class="qnum-badge">Q{{ i + 1 }}</span>
+                  <div class="fw-medium small">{{ q.questionText || q.questionNo }}</div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                  <span class="badge bg-info-subtle text-info-emphasis">{{ q.questionType }}</span>
+                  <div class="form-check form-switch mb-0" title="Mark this question as skipped (left blank on paper)">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                      [checked]="draftFor(q.questionId).isSkipped" (change)="toggleSkip(q.questionId)" />
+                    <label class="form-check-label small text-muted">Skipped</label>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="!draftFor(q.questionId).isSkipped">
+
+                <!-- MCQ single / multi / passage_qns (option-based only) -->
+                <div *ngIf="(q.questionType === 'mcq_single' || q.questionType === 'mcq_multi' || q.questionType === 'passage_qns') && !isFreeTextPassage(q)"
+                  class="d-flex flex-wrap gap-2">
+                  <button type="button" *ngFor="let opt of q.questionOptions" class="offline-opt"
+                    [class.sel]="isOptionSelected(q, opt.key)" (click)="selectOption(q, opt.key)">
+                    <span class="k" [class.round]="!isMultiSelect(q)">{{ opt.key }}</span>
+                  </button>
+                  <span class="text-muted small align-self-center ms-1">
+                    {{ isMultiSelect(q) ? '(multiple allowed)' : '(single answer)' }}
+                  </span>
+                </div>
+
+                <!-- True / False -->
+                <div *ngIf="q.questionType === 'true_false'" class="d-flex gap-2">
+                  <button type="button" class="offline-opt wide" [class.sel]="draftFor(q.questionId).boolValue === true"
+                    (click)="setBool(q.questionId, true)">True</button>
+                  <button type="button" class="offline-opt wide" [class.sel]="draftFor(q.questionId).boolValue === false"
+                    (click)="setBool(q.questionId, false)">False</button>
+                </div>
+
+                <!-- Numeric / Integer -->
+                <div *ngIf="q.questionType === 'numeric' || q.questionType === 'integer'" style="max-width:220px;">
+                  <input type="number" class="form-control form-control-sm" [(ngModel)]="draftFor(q.questionId).numberValue"
+                    [placeholder]="q.questionType === 'integer' ? 'Whole number' : 'Number'" />
+                </div>
+
+                <!-- Subjective / Short answer / free-text passage question -->
+                <div *ngIf="q.questionType === 'short_answer' || q.questionType === 'subjective' || isFreeTextPassage(q)">
+                  <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="draftFor(q.questionId).textValue"
+                    placeholder="Enter the student's written answer..."></textarea>
+                </div>
+
+                <!-- Matrix -->
+                <div *ngIf="q.questionType === 'matrix'" class="matrix-grid">
+                  <div class="matrix-row" *ngFor="let l of q.leftColumn">
+                    <span class="matrix-left">{{ l.key }}</span>
+                    <div class="d-flex flex-wrap gap-1">
+                      <button type="button" *ngFor="let r of q.rightColumn" class="offline-opt sm"
+                        [class.sel]="isMatrixRightSelected(q.questionId, l.key, r.key)"
+                        (click)="toggleMatrixRight(q.questionId, l.key, r.key)">
+                        <span class="k sq">{{ r.key }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div *ngIf="draftFor(q.questionId).isSkipped" class="text-muted small fst-italic">
+                Left blank on paper — recorded as skipped.
+              </div>
+            </div>
+
+            <div *ngIf="!questions.length" class="text-center text-muted py-4">
+              No questions found for this exam.
+            </div>
+          </div>
+
+          <div *ngIf="alreadyExists" class="alert alert-warning d-flex align-items-start gap-2 mt-3">
+            <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+            <div>
+              <strong>A result already exists for this student and exam.</strong>
+              Submitting again would fail — use Correction to overwrite it with what's entered above.
+              <div class="mt-2">
+                <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="submitting"
+                  (click)="submitAsCorrection()">
+                  <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+                  Save as Correction
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-back fs-16 fw-medium" (click)="goBack()">Cancel</button>
+            <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="submitting || !questions.length"
+              (click)="submitSingle()">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+              {{ submitting ? 'Submitting...' : 'Submit Offline Result' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!--                         BULK IMPORT TAB                      -->
+        <!-- ============================================================ -->
+        <div *ngIf="!loadingQuestions && activeTab === 'bulk'">
+
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="text-muted small">One row per student · one column per question ({{ questions.length }} questions)</div>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" (click)="downloadTemplate()">
+              <i class="fa-solid fa-download me-1"></i> Download Template
+            </button>
+          </div>
+
+          <importfiles label="Select File (.xlsx / .xls)" [required]="true" [multiple]="false" accept=".xlsx,.xls"
+            (filesChanged)="onBulkFileSelected($event)"></importfiles>
+
+          <div *ngIf="bulkParsing" class="text-center py-3">
+            <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+            <span class="text-muted small">Parsing file...</span>
+          </div>
+
+          <div *ngIf="!bulkParsing && bulkRows.length" class="mt-3">
+            <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+              <table class="table table-bordered table-sm align-middle mb-0">
+                <thead class="table-light" style="position: sticky; top: 0;">
+                  <tr>
+                    <th>#</th>
+                    <th>Admission No</th>
+                    <th>Batch</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let r of bulkRows" [class.table-danger]="!r.valid" [class.table-success]="r.status === 'success'">
+                    <td class="text-muted">{{ r.rowNo }}</td>
+                    <td>{{ r.admissionNo || '—' }}</td>
+                    <td>{{ r.batchId || '—' }}</td>
+                    <td>
+                      <span *ngIf="r.status === 'success'" class="badge bg-success">Submitted</span>
+                      <span *ngIf="r.status === 'failed'" class="badge bg-danger">Failed</span>
+                      <span *ngIf="r.status === 'pending' && r.valid" class="badge bg-primary-subtle text-primary">Ready</span>
+                      <span *ngIf="r.status === 'pending' && !r.valid" class="badge bg-danger-subtle text-danger">Invalid</span>
+                    </td>
+                    <td class="small">
+                      <span *ngIf="r.status === 'failed'" class="text-danger">{{ r.failureReason }}</span>
+                      <ul *ngIf="r.errors.length" class="mb-0 ps-3 text-danger">
+                        <li *ngFor="let e of r.errors">{{ e }}</li>
+                      </ul>
+                      <span *ngIf="r.status === 'success'" class="text-success">Recorded successfully</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <small class="text-muted">
+                {{ bulkValidCount }} row(s) ready to submit
+                <span *ngIf="bulkFailedRows.length"> · {{ bulkFailedRows.length }} failed on last attempt</span>
+              </small>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" (click)="resetBulkImport()">
+                  Clear
+                </button>
+                <button *ngIf="bulkFailedRows.length" type="button" class="btn btn-outline-danger btn-sm rounded-pill"
+                  [disabled]="bulkSubmitting" (click)="submitBulk(true)">
+                  Retry {{ bulkFailedRows.length }} Failed Row(s)
+                </button>
+                <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="bulkSubmitting || !bulkValidCount"
+                  (click)="submitBulk(false)">
+                  <span *ngIf="bulkSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                  {{ bulkSubmitting ? 'Submitting...' : 'Submit ' + bulkValidCount + ' Row(s)' }}
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="bulkResultSummary" class="mt-3 d-flex gap-3">
+              <div class="flex-fill border rounded-3 p-2 text-center bg-success-subtle">
+                <div class="fw-bold text-success fs-5">{{ bulkResultSummary.successCount }}</div>
+                <div class="text-muted small">Succeeded</div>
+              </div>
+              <div class="flex-fill border rounded-3 p-2 text-center bg-danger-subtle">
+                <div class="fw-bold text-danger fs-5">{{ bulkResultSummary.failedCount }}</div>
+                <div class="text-muted small">Failed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+  </div>
+</div>

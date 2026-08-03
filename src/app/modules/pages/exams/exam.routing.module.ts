@@ -20,6 +20,7 @@ import { ImportedExamsComponent } from './imported-exams/imported-exams.componen
 import { QuestionCreateNewComponent } from './question-create-new/question-create-new.component';
 import { PassageSelectorNewComponent } from './passage-selector-new/passage-selector-new.component';
 import { QuestionImportNewComponent } from './question-import-new/question-import-new.component';
+import { OfflineMarksComponent } from './offline-marks/offline-marks.component';
 
 const routes: Routes = [
   { path: 'instructions', component: ExamInstructionsComponent, title: 'Exam-Instructions' },
@@ -38,6 +39,7 @@ const routes: Routes = [
   { path: 'exams/result-view', component: ResultViewComponent, title: 'Exam-Result-View' },
   { path: 'exams/student-result', component: StudentResultComponent, title: 'Exam-Student-Result' },
   { path: 'exams/marks-import', component: MarksImportComponent, title: 'Exam-Marks-Import' },
+  { path: 'exams/offline-marks/:examId', component: OfflineMarksComponent, title: 'Exam-Offline-Marks' },
   { path: 'imported-exams', component: ImportedExamsComponent, title: 'Imported-Exams' }
 ];
 

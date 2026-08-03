@@ -229,7 +229,10 @@
                         <tbody>
                             <tr *ngFor="let a of studentResult?.answers; let i = index">
                                 <td class="ps-4 fw-bold">Q{{ i + 1 }}</td>
-                                <td>{{ getSectionName(a.sectionId) }}</td>
+                                <td>
+                                    {{ getSectionName(a.sectionId) }}
+                                    <span class="text-muted small ms-1" *ngIf="a.questionNo">({{ a.questionNo }})</span>
+                                </td>
                                 <td class="text-center">
                                     <span *ngIf="a.isSkipped"
                                         class="badge bg-warning-soft text-warning border-warning-soft px-3">Skipped</span>
