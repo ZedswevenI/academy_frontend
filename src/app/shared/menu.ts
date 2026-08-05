@@ -311,6 +311,12 @@ export const MENU_ITEMS: MenuItem[] = [
         icon: 'fa-solid fa-user',
         route: '/app/org-master/users',
         roles: ['L1']
+      },
+      {
+        label: 'Help Center',
+        icon: 'fa-solid fa-circle-question',
+        route: '/app/org-master/help-center',
+        roles: ['L1']
       }
     ]
   }

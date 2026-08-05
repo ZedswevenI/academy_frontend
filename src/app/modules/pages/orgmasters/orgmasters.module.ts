@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { BankaccountsComponent } from './bankaccounts/bankaccounts.component';
 import { CenterComponent } from './center/center.component';
@@ -17,10 +18,11 @@ import { SubtopicComponent } from './subtopic/subtopic.component';
 import { TopicComponent } from './topic/topic.component';
 import { SchoolexamsComponent } from './schoolexams/schoolexams.component';
 import { UsersComponent } from './users/users.component';
+import { HelpCenterComponent } from './helpcenter/help-center.component';
 
 
 @NgModule({
-  declarations: [InstituteComponent, CenterComponent, StaffComponent, ProgramComponent, DepartmentComponent, SubjectComponent, BankaccountsComponent, TopicComponent, SubtopicComponent, ExamcategoryComponent, ExamsubcategoryComponent, CenterviewComponent, SchoolexamsComponent, UsersComponent],
-  imports: [CommonModule, OrgmastersRoutingModule, FormsModule, ReactiveFormsModule, UiElementsModule]
+  declarations: [InstituteComponent, CenterComponent, StaffComponent, ProgramComponent, DepartmentComponent, SubjectComponent, BankaccountsComponent, TopicComponent, SubtopicComponent, ExamcategoryComponent, ExamsubcategoryComponent, CenterviewComponent, SchoolexamsComponent, UsersComponent, HelpCenterComponent],
+  imports: [CommonModule, OrgmastersRoutingModule, FormsModule, ReactiveFormsModule, UiElementsModule, DragDropModule]
 })
 export class OrgmastersModule {}

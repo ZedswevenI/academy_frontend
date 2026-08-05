@@ -60,6 +60,115 @@ export class StudentComponent {
     { label: 'Dropout', value: 'DROPOUT' },
   ];
 
+  // ── Student Details Export state ─────────────────────────────────────────
+  showExport = false;
+  exporting = false;
+  exportFieldGroups: {
+    label: string;
+    fields: { key: string; path: string; label: string }[];
+  }[] = [
+    {
+      label: 'Basic Info',
+      fields: [
+        { key: 'admissionNo', path: 'admissionNo', label: 'Enrolment No' },
+        {
+          key: 'registrationNumber',
+          path: 'registrationNumber',
+          label: 'Registration Number',
+        },
+        {
+          key: 'portalStudentId',
+          path: 'portalStudentId',
+          label: 'Scholarship Test No',
+        },
+        {
+          key: 'studentSchoolId',
+          path: 'studentSchoolId',
+          label: 'School ID',
+        },
+        { key: 'status', path: 'status', label: 'Status' },
+        { key: 'photoUrl', path: 'photoUrl', label: 'Photo URL' },
+        {
+          key: 'isTabletBlocked',
+          path: 'isTabletBlocked',
+          label: 'Tablet Blocked',
+        },
+      ],
+    },
+    {
+      label: 'Academic',
+      fields: [
+        { key: 'academicYear', path: 'academicYear', label: 'Academic Year' },
+        {
+          key: 'currentAcademicYear',
+          path: 'currentAcademicYear',
+          label: 'Current Academic Year',
+        },
+        { key: 'programCode', path: 'programCode', label: 'Program Code' },
+        { key: 'programName', path: 'programName', label: 'Program Name' },
+        { key: 'centerCode', path: 'centerCode', label: 'Center Code' },
+        { key: 'centerName', path: 'centerName', label: 'Center Name' },
+        { key: 'batchCode', path: 'batchCode', label: 'Batch Code' },
+        {
+          key: 'courseStartYear',
+          path: 'courseStartYear',
+          label: 'Course Start Year',
+        },
+        { key: 'yearNo', path: 'yearNo', label: 'Year No' },
+        { key: 'classNo', path: 'classNo', label: 'Class No' },
+        {
+          key: 'batchRemovalRemarks',
+          path: 'batchRemovalRemarks',
+          label: 'Batch Removal Remarks',
+        },
+        { key: 'createdAt', path: 'createdAt', label: 'Created At' },
+        { key: 'updatedAt', path: 'updatedAt', label: 'Updated At' },
+      ],
+    },
+    {
+      label: 'Contact',
+      fields: [
+        { key: 'student.name', path: 'student.name', label: 'Name' },
+        { key: 'student.phone', path: 'student.phone', label: 'Mobile' },
+        { key: 'student.phone1', path: 'student.phone1', label: 'Mobile 2' },
+        { key: 'student.phone2', path: 'student.phone2', label: 'Mobile 3' },
+        { key: 'student.email', path: 'student.email', label: 'Email' },
+        { key: 'student.email1', path: 'student.email1', label: 'Email 2' },
+        { key: 'student.email2', path: 'student.email2', label: 'Email 3' },
+        {
+          key: 'student.parentName',
+          path: 'student.parentName',
+          label: 'Parent Name',
+        },
+        {
+          key: 'student.parentPhone',
+          path: 'student.parentPhone',
+          label: 'Parent Mobile',
+        },
+        { key: 'student.address', path: 'student.address', label: 'Address' },
+        { key: 'student.city', path: 'student.city', label: 'City' },
+        { key: 'student.state', path: 'student.state', label: 'State' },
+        { key: 'student.pincode', path: 'student.pincode', label: 'Pincode' },
+      ],
+    },
+    {
+      label: 'Advanced',
+      fields: [
+        { key: 'ayHistory', path: 'ayHistory', label: 'AY History' },
+        { key: 'boardExams', path: 'boardExams', label: 'Board Exams' },
+      ],
+    },
+  ];
+  readonly EXPORT_DEFAULT_FIELDS = [
+    'admissionNo',
+    'student.name',
+    'batchCode',
+    'programName',
+    'centerName',
+    'status',
+  ];
+  selectedExportFields = new Set<string>(this.EXPORT_DEFAULT_FIELDS);
+
   constructor(
     private breadcrump: BredcrumpService,
     private router: Router,
@@ -355,5 +464,113 @@ export class StudentComponent {
   }
   onAlumniImported(): void {
     /* optionally refresh list */
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // STUDENT DETAILS EXPORT
+  // ══════════════════════════════════════════════════════════════════════════
+
+  openExport() {
+    this.showExport = true;
+  }
+
+  closeExport() {
+    if (this.exporting) return;
+    this.showExport = false;
+  }
+
+  isFieldSelected(key: string): boolean {
+    return this.selectedExportFields.has(key);
+  }
+
+  toggleExportField(key: string) {
+    if (key === 'admissionNo') return; // always included
+    if (this.selectedExportFields.has(key)) {
+      this.selectedExportFields.delete(key);
+    } else {
+      this.selectedExportFields.add(key);
+    }
+  }
+
+  selectAllExportFields() {
+    this.exportFieldGroups.forEach((g) =>
+      g.fields.forEach((f) => this.selectedExportFields.add(f.key)),
+    );
+  }
+
+  clearExportFields() {
+    this.selectedExportFields = new Set<string>(['admissionNo']);
+  }
+
+  private getByPath(obj: any, path: string): any {
+    return path
+      .split('.')
+      .reduce((acc, key) => (acc == null ? acc : acc[key]), obj);
+  }
+
+  confirmExport() {
+    if (this.exporting) return;
+    const fields = Array.from(this.selectedExportFields);
+    if (!fields.length) {
+      this.alert.error('Select at least one field to export');
+      return;
+    }
+
+    const body: any = { tenantId: this.tenantId, fields };
+    if (this.filters.search) body.search = this.filters.search;
+    if (this.filters.programId) body.programId = this.filters.programId;
+    if (this.filters.centerId) body.centerId = this.filters.centerId;
+    if (this.filters.batchCode) body.batchCode = this.filters.batchCode;
+    if (this.filters.status && this.filters.status !== 'ALL')
+      body.status = this.filters.status;
+
+    this.exporting = true;
+    this.commonApi.fetchData(body, 'student', 'export').subscribe({
+      next: (res: any) => {
+        this.exporting = false;
+        const rows = res?.data || [];
+        if (!rows.length) {
+          this.alert.warning('No students found to export.');
+          return;
+        }
+        this.downloadExportExcel(rows, fields);
+        this.showExport = false;
+      },
+      error: (err: any) => {
+        this.exporting = false;
+        this.alert.error(err?.error?.message || 'Failed to export students');
+      },
+    });
+  }
+
+  private downloadExportExcel(rows: any[], fields: string[]) {
+    const labelByKey = new Map<string, string>();
+    this.exportFieldGroups.forEach((g) =>
+      g.fields.forEach((f) => labelByKey.set(f.key, f.label)),
+    );
+
+    const sheetRows = rows.map((row: any) => {
+      const out: any = {};
+      fields.forEach((path) => {
+        const label = labelByKey.get(path) || path;
+        let value = this.getByPath(row, path);
+        if (Array.isArray(value)) {
+          value = JSON.stringify(value);
+        }
+        out[label] = value ?? '';
+      });
+      return out;
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(sheetRows),
+      'Students',
+    );
+    XLSX.writeFile(
+      wb,
+      `Students_Export_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
   }
 }

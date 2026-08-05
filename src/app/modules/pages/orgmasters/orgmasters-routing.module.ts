@@ -14,6 +14,7 @@ import { ExamsubcategoryComponent } from './examsubcategory/examsubcategory.comp
 import { CenterviewComponent } from './centerview/centerview.component';
 import { SchoolexamsComponent } from './schoolexams/schoolexams.component';
 import { UsersComponent } from './users/users.component';
+import { HelpCenterComponent } from './helpcenter/help-center.component';
 
 const routes: Routes = [
   {
@@ -71,6 +72,10 @@ const routes: Routes = [
   {
     path: 'users',
     component: UsersComponent
+  },
+  {
+    path: 'help-center',
+    component: HelpCenterComponent
   }
 ];
 

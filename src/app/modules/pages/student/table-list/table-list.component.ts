@@ -5,7 +5,6 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { forkJoin, Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
-import * as XLSX from 'xlsx';
 
 interface Message {
   text: string;
@@ -53,7 +52,6 @@ export class TableListComponent {
   originalData: any[] = [];
   totalRecords = 0;
   loading = false;
-  exportingStudents = false;
 
   private batchNameByCode$!: Observable<Map<string, string>>;
 
@@ -178,82 +176,6 @@ export class TableListComponent {
     // this.router.navigate(['/app/student/view'])
     const s = row?._raw || row;
     this.router.navigate(['/app/student/view', s.studentId]);
-  }
-
-  exportAllStudents() {
-    this.exportingStudents = true;
-    const pageSize = 500;
-    const body = { entiId: localStorage.getItem('tenantId') };
-    const fetchPage = (page: number) => {
-      const q = this.buildQuery({ page, pageSize });
-      return this.commonApi.fetchData(body, 'student', `list?${this.toQueryString(q)}`);
-    };
-
-    forkJoin({
-      first: fetchPage(1),
-      batchMap: this.batchNameByCode$,
-    }).subscribe({
-      next: ({ first, batchMap }: any) => {
-        const total = first?.count || 0;
-        const firstRows = first?.data || [];
-        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-        if (totalPages <= 1) {
-          this.downloadStudentsExcel(this.withBatchNames(firstRows, batchMap));
-          return;
-        }
-
-        const remaining = [];
-        for (let p = 2; p <= totalPages; p++) remaining.push(fetchPage(p));
-
-        forkJoin(remaining).subscribe({
-          next: (pages: any[]) => {
-            const allRows = [
-              ...firstRows,
-              ...pages.flatMap((r: any) => r?.data || []),
-            ];
-            this.downloadStudentsExcel(this.withBatchNames(allRows, batchMap));
-          },
-          error: () => {
-            this.exportingStudents = false;
-            this.alert.error('Failed to export all students');
-          },
-        });
-      },
-      error: () => {
-        this.exportingStudents = false;
-        this.alert.error('Failed to export students');
-      },
-    });
-  }
-
-  private downloadStudentsExcel(rows: any[]) {
-    this.exportingStudents = false;
-    if (!rows.length) {
-      this.alert.warning('No students to export.');
-      return;
-    }
-    const sheetRows = rows.map((s: any) => ({
-      'Student Name': s.student?.name || '-',
-      'Admission No': s.admissionNo || '-',
-      Program: s.programName || '-',
-      Center: s.centerName || '-',
-      'Batch Code': s.batchCode || '-',
-      'Batch Name': s.batchName || '-',
-      Status: s.status || '-',
-      Mobile: s.student?.phone || '-',
-      'Academic Year': s.academicYear || '-',
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(sheetRows),
-      'Students',
-    );
-    XLSX.writeFile(
-      wb,
-      `Students_Export_${new Date().toISOString().slice(0, 10)}.xlsx`,
-    );
   }
 
   chatStudent(row: any) {

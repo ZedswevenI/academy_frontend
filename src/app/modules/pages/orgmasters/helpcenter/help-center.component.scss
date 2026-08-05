@@ -1,0 +1,181 @@
+.help-panes {
+  min-height: 420px;
+}
+
+.pane-left {
+  border-right: 1px solid #E4E7EF;
+  padding: 0.75rem;
+}
+
+.pane-right {
+  padding: 0.5rem 1rem;
+}
+
+.pane-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748B;
+  padding: 0.3rem 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.mod-list,
+.topic-row-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mod-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 0.15rem;
+  cursor: default;
+
+  &:hover {
+    background: #F3F5FA;
+  }
+
+  &.active {
+    background: #EFF6FF;
+    color: #1848A6;
+    font-weight: 600;
+  }
+}
+
+.drag-handle {
+  color: #94A3B8;
+  cursor: grab;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+}
+
+.mod-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.count-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: #E4E7EF;
+  color: #64748B;
+  padding: 0.1rem 0.45rem;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.mod-row.active .count-pill {
+  background: #2563EB;
+  color: #fff;
+}
+
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid #E4E7EF;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #64748B;
+  flex-shrink: 0;
+
+  &:hover {
+    border-color: #2563EB;
+    color: #2563EB;
+  }
+}
+
+.topic-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid #F1F5F9;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.topic-thumb {
+  width: 44px;
+  height: 30px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #333, #111);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.topic-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.topic-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.topic-desc {
+  font-size: 0.75rem;
+  color: #64748B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+
+  &.status-active {
+    background: #E7F6EF;
+    color: #1A8A5F;
+  }
+
+  &.status-inactive {
+    background: #E4E7EF;
+    color: #64748B;
+  }
+}
+
+.thumb-preview .badge {
+  font-weight: 500;
+  font-size: 0.74rem;
+}
+
+.cdk-drag-preview {
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+  border-radius: 8px;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
+.cdk-drop-list-dragging .mod-row:not(.cdk-drag-placeholder),
+.cdk-drop-list-dragging .topic-row:not(.cdk-drag-placeholder) {
+  transition: transform 200ms ease;
+}
