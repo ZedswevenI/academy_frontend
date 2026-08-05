@@ -17,6 +17,8 @@
 
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot } from '@angular/router';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { AuthService } from '../service/auth/auth.service';
 import { PermissionService, Portal } from './permission.service';
 import { AlertService } from '../service/alert/alert.service';
@@ -30,30 +32,40 @@ export class PermissionGuard implements CanActivate {
     private router: Router,
   ) {}
 
-  canActivate(route: ActivatedRouteSnapshot, _state: RouterStateSnapshot): boolean {
+  canActivate(route: ActivatedRouteSnapshot, _state: RouterStateSnapshot): Observable<boolean> | boolean {
     if (!this.auth.hasValidSession()) {
       this.router.navigate(['/auth/login']);
       return false;
     }
 
-    const required = route.data?.['permission'] as string | string[] | undefined;
-    const requiredPortal = route.data?.['portal'] as Portal | undefined;
+    // canActivate runs before ANY component in the route tree is created —
+    // including ApplayoutComponent, whose ngOnInit() is what normally
+    // triggers PermissionService to fetch. Waiting on ensureLoaded() here
+    // (instead of reading the in-memory array synchronously) is what makes
+    // a fresh page reload work instead of racing an empty permissions[]
+    // to a false "not authorised" redirect.
+    return this.permission.ensureLoaded().pipe(
+      map(() => {
+        const required = route.data?.['permission'] as string | string[] | undefined;
+        const requiredPortal = route.data?.['portal'] as Portal | undefined;
 
-    if (requiredPortal && !this.permission.hasPortal(requiredPortal)) {
-      this.alert.error('You are not authorised to access this portal.');
-      this.router.navigate(['/auth/login']);
-      return false;
-    }
+        if (requiredPortal && !this.permission.hasPortal(requiredPortal)) {
+          this.alert.error('You are not authorised to access this portal.');
+          this.router.navigate(['/auth/login']);
+          return false;
+        }
 
-    if (required) {
-      const keys = Array.isArray(required) ? required : [required];
-      if (!this.permission.hasAny(keys)) {
-        this.alert.error("You don't have permission to access this page.");
-        this.router.navigate(['/auth/login']);
-        return false;
-      }
-    }
+        if (required) {
+          const keys = Array.isArray(required) ? required : [required];
+          if (!this.permission.hasAny(keys)) {
+            this.alert.error("You don't have permission to access this page.");
+            this.router.navigate(['/auth/login']);
+            return false;
+          }
+        }
 
-    return true;
+        return true;
+      }),
+    );
   }
 }

@@ -1,0 +1,175 @@
+<div class="user-form-page" *ngIf="user">
+
+    <div class="uf-header">
+        <div class="d-flex align-items-center gap-3">
+            <button type="button" class="uf-back" (click)="close()" aria-label="Back to user list">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <div>
+                <div class="uf-eyebrow">
+                    <i class="fa-solid fa-user-shield me-1"></i> Org Masters / Users
+                </div>
+                <h5 class="mb-0 fw-semibold">{{ user.name || 'User' }}</h5>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="uf-admin-flag" *ngIf="user.isAdmin">
+                <i class="fa-solid fa-shield-halved me-1"></i> Super Admin
+            </span>
+            <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="close()">Close</button>
+            <button type="button" class="btn btn-edit fs-16 fw-medium" (click)="goToEdit()">
+                <i class="fa-regular fa-pen-to-square btn-icon"></i> Edit
+            </button>
+            <button type="button" class="btn btn-create fs-16 fw-medium" *ngIf="canManageAccess()" (click)="goToAccess()">
+                <i class="fa-solid fa-user-shield btn-icon"></i> Manage Access
+            </button>
+        </div>
+    </div>
+
+    <div class="uf-body">
+        <div class="uf-layout">
+
+            <aside class="uf-rail">
+                <nav class="uf-nav">
+                    <a href="#v-sec-basic"><i class="fa-regular fa-id-card"></i> Basic Details</a>
+                    <a href="#v-sec-centers"><i class="fa-solid fa-building"></i> Center Access</a>
+                    <a href="#v-sec-portal"><i class="fa-solid fa-window-restore"></i> Portal Access</a>
+                    <a href="#v-sec-permissions"><i class="fa-solid fa-key"></i> Permissions</a>
+                </nav>
+                <div class="uf-summary">
+                    <div class="uf-summary-row">
+                        <span>Centers</span>
+                        <b>{{ centerNames.length }}</b>
+                    </div>
+                    <div class="uf-summary-row">
+                        <span>Portals</span>
+                        <b>{{ user.portal?.length || 0 }}</b>
+                    </div>
+                    <div class="uf-summary-row">
+                        <span>Permissions</span>
+                        <b>{{ grantedCount }} / {{ totalPermissionCount }}</b>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="uf-sections">
+
+                <section id="v-sec-basic" class="uf-card">
+                    <div class="uf-card-head">
+                        <i class="fa-regular fa-id-card"></i>
+                        <div>
+                            <h6>Basic Details</h6>
+                            <span>Identity and contact information for this login.</span>
+                        </div>
+                    </div>
+                    <div class="uf-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="uf-view-label">Full Name</label>
+                                <div class="uf-view-value">{{ user.name || '—' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="uf-view-label">Email</label>
+                                <div class="uf-view-value">{{ user.email || '—' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="uf-view-label">Phone</label>
+                                <div class="uf-view-value">{{ user.phone || '—' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="uf-view-label">Employee Code</label>
+                                <div class="uf-view-value">{{ user.empCode || '—' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="uf-view-label">Role Level</label>
+                                <div class="uf-view-value">{{ user.roleLabel || user.roleLevel || '—' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="uf-view-label">Status</label>
+                                <div class="uf-view-value">
+                                    <span class="badge" [class.bg-success]="user.status === 'Active'"
+                                        [class.bg-secondary]="user.status !== 'Active'">
+                                        {{ user.status || 'Unknown' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="v-sec-centers" class="uf-card">
+                    <div class="uf-card-head">
+                        <i class="fa-solid fa-building"></i>
+                        <div>
+                            <h6>Center Access</h6>
+                            <span>Which center(s) this user's data and actions are scoped to.</span>
+                        </div>
+                        <span class="uf-count-chip">{{ centerNames.length }}</span>
+                    </div>
+                    <div class="uf-card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border" *ngFor="let c of centerNames">{{ c }}</span>
+                            <span class="text-muted small" *ngIf="!centerNames.length">No centers assigned</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="v-sec-portal" class="uf-card">
+                    <div class="uf-card-head">
+                        <i class="fa-solid fa-window-restore"></i>
+                        <div>
+                            <h6>Portal Access</h6>
+                            <span>Which application(s) this login may enter.</span>
+                        </div>
+                    </div>
+                    <div class="uf-card-body">
+                        <div class="uf-portal-row">
+                            <div class="uf-portal-toggle" style="cursor:default;" [class.active]="hasPortal(p.value)"
+                                *ngFor="let p of portalOptions">
+                                <i class="fa-solid" [class.fa-headset]="p.value === 'CRM'"
+                                    [class.fa-graduation-cap]="p.value === 'ACADEMIC'"></i>
+                                <span>{{ p.label }}</span>
+                                <i class="fa-solid fa-circle-check uf-portal-tick"></i>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="v-sec-permissions" class="uf-card">
+                    <div class="uf-card-head">
+                        <i class="fa-solid fa-key"></i>
+                        <div>
+                            <h6>Permissions</h6>
+                            <span>Every action this user is currently granted, grouped by module.</span>
+                        </div>
+                        <span class="uf-count-chip">{{ grantedCount }} granted</span>
+                    </div>
+                    <div class="uf-card-body">
+                        <div class="uf-perm-grid" *ngIf="grantedGroups.length; else noPerms">
+                            <div class="uf-perm-module is-full" *ngFor="let group of grantedGroups">
+                                <div class="uf-perm-module-head" style="cursor:default;">
+                                    <span class="uf-perm-module-name">{{ group.moduleLabel }}</span>
+                                    <span class="uf-perm-module-count">{{ group.permissions.length }}</span>
+                                </div>
+                                <div class="uf-perm-actions">
+                                    <div class="uf-perm-action checked" style="cursor:default;"
+                                        *ngFor="let perm of group.permissions">
+                                        <i class="fa-solid fa-check text-success me-1" style="font-size:11px;"></i>
+                                        <span>{{ perm.action }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <ng-template #noPerms>
+                            <div class="uf-perm-empty">
+                                <i class="fa-regular fa-face-frown"></i>
+                                <span>No permissions granted{{ user.isAdmin ? ' — bypassed entirely as Super Admin' : '' }}</span>
+                            </div>
+                        </ng-template>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+</div>

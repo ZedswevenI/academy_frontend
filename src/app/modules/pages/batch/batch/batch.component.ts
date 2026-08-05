@@ -1442,7 +1442,12 @@ export class BatchComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
-    // this.router.navigate(['/app/assetMaster/asset/view', row._id]);
+    // Row click bypasses the "View" icon's *appHasPermission gate — the
+    // destination route is still guarded server-side by PermissionGuard, but
+    // without this check a user lacking batch:view would click through and
+    // hit the guard's redirect-to-login flow, which reads as a confusing
+    // forced logout rather than "you can't do that".
+    if (!this.permissionService.hasPermission('batch:view')) return;
     const b = row?._raw || row;
     this.router.navigate(['/app/batch/view', b?.batchId]);
   }

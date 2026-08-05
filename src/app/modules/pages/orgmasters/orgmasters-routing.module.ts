@@ -14,6 +14,9 @@ import { ExamsubcategoryComponent } from './examsubcategory/examsubcategory.comp
 import { CenterviewComponent } from './centerview/centerview.component';
 import { SchoolexamsComponent } from './schoolexams/schoolexams.component';
 import { UsersComponent } from './users/users.component';
+import { UserFormComponent } from './users/user-form/user-form.component';
+import { UserViewComponent } from './users/user-view/user-view.component';
+import { UserAccessComponent } from './users/user-access/user-access.component';
 import { HelpCenterComponent } from './helpcenter/help-center.component';
 
 const routes: Routes = [
@@ -72,6 +75,24 @@ const routes: Routes = [
   {
     path: 'users',
     component: UsersComponent
+  },
+  {
+    path: 'users/create',
+    component: UserFormComponent
+  },
+  {
+    path: 'users/edit/:id',
+    component: UserFormComponent
+  },
+  {
+    // :userId is the app-level userId (POST /ims/user/view-by-userid),
+    // NOT the Mongo _id used by edit/:id and access/:id below.
+    path: 'users/view/:userId',
+    component: UserViewComponent
+  },
+  {
+    path: 'users/access/:id',
+    component: UserAccessComponent
   },
   {
     path: 'help-center',

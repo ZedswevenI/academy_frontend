@@ -13,7 +13,8 @@
 // ============================================================
 
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, finalize, map, shareReplay } from 'rxjs/operators';
 import { CommonapiService } from '../service/commonapi/commonapi.service';
 import { AuthService } from '../service/auth/auth.service';
 
@@ -25,7 +26,7 @@ export class PermissionService {
   permissions$ = this.permissionsSubject.asObservable();
 
   private loaded = false;
-  private loading = false;
+  private inFlight$: Observable<string[]> | null = null;
 
   constructor(
     private commonApi: CommonapiService,
@@ -36,37 +37,40 @@ export class PermissionService {
 
   /**
    * Ensures the in-memory permission array is populated for the current
-   * session. Call once per authenticated page load (ApplayoutComponent
-   * ngOnInit — same trigger point as CenterContextService.init()).
-   * No-ops if already loaded/loading, already populated (e.g. just seeded
-   * by signIn()), or the user is admin (who never needs the array — every
-   * check short-circuits on isAdmin() instead).
+   * session, and returns an Observable that only emits once that's true —
+   * unlike the old fire-and-forget init(), callers that need to make a
+   * decision (PermissionGuard) can wait on this instead of racing it.
+   *
+   * PermissionGuard.canActivate() and ApplayoutComponent.ngOnInit() both
+   * call this. Guards resolve BEFORE any component in the route tree is
+   * created, so on a fresh reload the guard reaches this first — that's
+   * fine, ApplayoutComponent's later call just hits the "already
+   * loaded"/in-flight short-circuit below instead of firing a second
+   * request.
    */
-  init(force = false): void {
-    if (this.loading) return;
-    if (!force && (this.loaded || this.permissionsSubject.value.length > 0)) {
-      this.loaded = true;
-      return;
-    }
+  ensureLoaded(force = false): Observable<string[]> {
     if (this.authService.getIsAdmin()) {
       this.loaded = true;
-      return;
+      return of(this.permissionsSubject.value);
     }
-    if (!this.authService.hasValidSession()) return;
+    if (!force && (this.loaded || this.permissionsSubject.value.length > 0)) {
+      return of(this.permissionsSubject.value);
+    }
+    if (this.inFlight$) return this.inFlight$;
+    if (!this.authService.hasValidSession()) return of([]);
 
-    this.loading = true;
     const entiId = this.authService.getTenantId();
     // Must be `targetUserId`, not `userId` — the auth middleware silently
     // overwrites a `userId` body field with the caller's own id for audit
     // purposes on every authenticated call.
     const targetUserId = this.authService.getUserId();
 
-    this.commonApi.fetchData({ entiId, targetUserId }, 'ims/user', 'permissions').subscribe({
-      next: (res: any) => {
-        this.loading = false;
+    this.inFlight$ = this.commonApi.fetchData({ entiId, targetUserId }, 'ims/user', 'permissions').pipe(
+      map((res: any) => {
         this.loaded = true;
         const data = res?.data ?? {};
-        this.permissionsSubject.next(Array.isArray(data.permissions) ? data.permissions : []);
+        const perms = Array.isArray(data.permissions) ? data.permissions : [];
+        this.permissionsSubject.next(perms);
         // The endpoint returns the live portal/isAdmin snapshot alongside
         // permissions — keep AuthService's cached copy in sync too, so a
         // refresh here also picks up a portal or admin-flag change without
@@ -75,19 +79,30 @@ export class PermissionService {
           Array.isArray(data.portal) ? data.portal : [],
           !!data.isAdmin,
         );
-      },
-      error: () => {
-        // Leave loaded=false so the next init() (e.g. next page navigation)
-        // retries rather than silently locking the user out for the rest
-        // of the session on a transient network failure.
-        this.loading = false;
-      },
-    });
+        return perms;
+      }),
+      catchError(() => {
+        // Leave loaded=false so the NEXT ensureLoaded() call (e.g. next
+        // navigation) retries, rather than silently locking the user out
+        // for the rest of the session on a transient network failure.
+        return of(this.permissionsSubject.value);
+      }),
+      finalize(() => {
+        this.inFlight$ = null;
+      }),
+      shareReplay(1),
+    );
+    return this.inFlight$;
+  }
+
+  /** Fire-and-forget variant for call sites that don't need to wait
+   *  (e.g. ApplayoutComponent, mirroring CenterContextService.init()). */
+  init(force = false): void {
+    this.ensureLoaded(force).subscribe();
   }
 
   /** Force a fresh fetch — e.g. after a "your access was updated" signal, or
-   *  periodically on app focus. Same call as init(), just explicit about
-   *  bypassing the "already loaded" short-circuit. */
+   *  periodically on app focus. */
   refresh(): void {
     this.init(true);
   }
@@ -100,7 +115,7 @@ export class PermissionService {
 
   reset(): void {
     this.loaded = false;
-    this.loading = false;
+    this.inFlight$ = null;
     this.permissionsSubject.next([]);
   }
 
