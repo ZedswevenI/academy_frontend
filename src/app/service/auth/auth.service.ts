@@ -63,6 +63,14 @@ export class AuthService {
           localStorage.setItem(CENTER_ID_KEY, d.centerId ?? '');
           localStorage.setItem(CENTERS_ACCESS_KEY, JSON.stringify(d.centers ?? []));
           localStorage.removeItem(SELECTED_CENTER_KEY);
+          // Also drop any stale accessible-centers cache from a previous
+          // session (closed tab without logging out, expired token, a
+          // different user on this browser, etc). Leaving it in place let
+          // CommonapiService's resolveCenterId() see a multi-center cache
+          // with no selection and block EVERY request — including
+          // CenterContextService.init()'s own bootstrap call that would
+          // otherwise refresh it, deadlocking the app until logout.
+          localStorage.removeItem(ACCESSIBLE_CENTERS_CACHE_KEY);
           localStorage.setItem(STAFF_ID_KEY, d.staffId ?? '');
           localStorage.setItem(SUBJECT_ID_KEY, d.subjectId ?? '');
           localStorage.setItem(FACULTY_TYPE_KEY, d.facultyType ?? '');
