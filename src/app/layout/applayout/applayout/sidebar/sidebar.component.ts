@@ -1,44 +1,15 @@
-// import { Component } from '@angular/core';
-// import { MENU_ASSIGNMENT, MENU_ITEMS, MenuItem } from '../../../../shared/menu';
-// import { Input, Output, EventEmitter } from '@angular/core';
-// import { Router } from '@angular/router';
-// import { AuthService } from '../../../../service/auth/auth.service';
-
-// @Component({
-//   selector: 'app-sidebar',
-//   standalone: false,
-//   templateUrl: './sidebar.component.html',
-//   styleUrl: './sidebar.component.scss'
-// })
-// export class SidebarComponent {
-//   menuItems: MenuItem[] = MENU_ITEMS;
-
-//   @Input() open = false;
-//   @Output() close = new EventEmitter<void>();
-
-//   constructor(private router: Router,private authService: AuthService) {
-//     authService.assignmentRole() ? this.menuItems = MENU_ASSIGNMENT : MENU_ITEMS;
-//   }
-
-//   logout() {
-//     this.router.navigate(['/auth/login']);
-//   }
-
-//   toggleMenu(menu: any) {
-//     menu.expanded = !menu.expanded;
-//   }
-// }
-
 // ============================================================
-//  sidebar.component.ts  –  Role-filtered menu
-//  Replaces existing sidebar.component.ts
+//  sidebar.component.ts  –  Permission-filtered menu
+//  Replaces role-based filtering — see shared/menu.ts for the
+//  MenuItem.permission convention.
 // ============================================================
 
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import { MENU_ITEMS, MenuItem } from '../../../../shared/menu';
-import { RoleLevel } from '../../../../shared/role.config';
 
 @Component({
   selector: 'app-sidebar',
@@ -46,27 +17,46 @@ import { RoleLevel } from '../../../../shared/role.config';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, OnDestroy {
   @Input() open = false;
   @Output() close = new EventEmitter<void>();
 
   menuItems: MenuItem[] = [];
+  private sub?: Subscription;
 
-  constructor(private router: Router, private authService: AuthService) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private permissionService: PermissionService,
+  ) {}
 
   ngOnInit(): void {
-    const role = this.authService.getRole() as RoleLevel;
-    this.menuItems = this.filterMenuByRole(MENU_ITEMS, role);
+    // Re-filter whenever permissions change (in-memory permissions may still
+    // be loading on first render after a page reload — see PermissionService).
+    this.sub = this.permissionService.permissions$.subscribe(() => {
+      this.menuItems = this.filterMenuByPermission(MENU_ITEMS);
+    });
   }
 
-  private filterMenuByRole(items: MenuItem[], role: RoleLevel): MenuItem[] {
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
+
+  private filterMenuByPermission(items: MenuItem[]): MenuItem[] {
     return items
-      .filter(item => item.roles.includes(role))
-      .map(item => ({
-        ...item,
-        children: item.children ? this.filterMenuByRole(item.children, role) : undefined
-      }))
-      .filter(item => !item.children || item.children.length > 0);
+      .map((item): MenuItem | null => {
+        if (item.children) {
+          const children = this.filterMenuByPermission(item.children);
+          return children.length ? { ...item, children } : null;
+        }
+        const keys = Array.isArray(item.permission)
+          ? item.permission
+          : item.permission
+            ? [item.permission]
+            : [];
+        return keys.length && this.permissionService.hasAny(keys) ? item : null;
+      })
+      .filter((item): item is MenuItem => item !== null);
   }
 
   logout(): void {

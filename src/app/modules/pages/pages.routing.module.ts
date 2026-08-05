@@ -119,6 +119,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { RoleGuard } from '../../shared/role.guard';
+import { PermissionGuard } from '../../shared/permission.guard';
 
 const routes: Routes = [
   {
@@ -127,8 +128,12 @@ const routes: Routes = [
     loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule)
   },
   {
+    // Pilot: migrated off RoleGuard onto PermissionGuard. Requires
+    // 'batch:list' in the logged-in user's permissions[] — assign it via
+    // Org Masters → Users for anyone who needs Batch access.
     path: 'batch',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'batch:list' },
     loadChildren: () => import('../pages/batch/batch.module').then(m => m.BatchModule)
   },
   {

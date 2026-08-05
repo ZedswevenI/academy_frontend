@@ -5,6 +5,7 @@ import {
   CenterOption,
 } from '../../../service/center/center-context.service';
 import { AuthService } from '../../../service/auth/auth.service';
+import { PermissionService } from '../../../shared/permission.service';
 
 @Component({
   selector: 'app-applayout',
@@ -24,10 +25,12 @@ export class ApplayoutComponent implements OnInit, OnDestroy {
   constructor(
     private centerContext: CenterContextService,
     private authService: AuthService,
+    private permissionService: PermissionService,
   ) {}
 
   ngOnInit(): void {
     this.centerContext.init();
+    this.permissionService.init();
     this.centerSubs.add(
       this.centerContext.uiCenterOptions$.subscribe(
         (centers) => (this.uiCenterOptions = centers),

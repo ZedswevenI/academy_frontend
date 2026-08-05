@@ -1,4 +1,4 @@
-import { NgZone, Injectable } from '@angular/core';
+import { Injector, NgZone, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environments';
@@ -6,6 +6,7 @@ import { BehaviorSubject, Observable, Subject, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { AlertService } from '../alert/alert.service';
 import { RoleLevel } from '../../shared/role.config';
+import { PermissionService } from '../../shared/permission.service';
 
 const TOKEN_KEY = 'token';
 const TENANT_KEY = 'tenantId';
@@ -20,6 +21,13 @@ const ACCESSIBLE_CENTERS_CACHE_KEY = 'accessibleCentersCache';
 const STAFF_ID_KEY = 'staffId';
 const SUBJECT_ID_KEY = 'subjectId';
 const FACULTY_TYPE_KEY = 'facultyType';
+const PORTAL_KEY = 'portal';
+const IS_ADMIN_KEY = 'isAdmin';
+
+/** Every portal this frontend deployment is allowed to serve. This app is the
+ *  Academic portal — a login whose `portal[]` doesn't include it is rejected,
+ *  regardless of what other portals (e.g. CRM) that user can otherwise reach. */
+const REQUIRED_PORTAL = 'ACADEMIC';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -38,7 +46,15 @@ export class AuthService {
     private router: Router,
     private ngZone: NgZone,
     private alert: AlertService,
+    private injector: Injector,
   ) {}
+
+  /** Lazy — PermissionService injects AuthService, so a normal constructor
+   *  param here would be a DI cycle. Resolved on first use instead, by which
+   *  point both singletons already exist. */
+  private get permissionService(): PermissionService {
+    return this.injector.get(PermissionService);
+  }
 
   // ── Auth ──────────────────────────────────────────────────
 
@@ -54,6 +70,24 @@ export class AuthService {
         tap((response: any) => {
           if (!response?.data) throw new Error('Unexpected response.');
           const d = response.data;
+
+          // Portal gate — an isAdmin login gets every portal automatically
+          // (server-side), so only non-admin logins are checked here. A login
+          // that can't reach this portal never touches localStorage: no
+          // partial session is left behind for a stale guard to trip over.
+          const portals: string[] = Array.isArray(d.portal) ? d.portal : [];
+          if (!d.isAdmin && !portals.includes(REQUIRED_PORTAL)) {
+            this.uploading = false;
+            // Shaped like an HttpErrorResponse (`err.error.message`) so it
+            // flows through the existing catchError below and the caller's
+            // own error handler (see login.component.ts) without a second,
+            // duplicate alert being raised here.
+            // Synchronous throw inside tap() propagates as an error to the
+            // subscriber — `return throwError(...)` would NOT work here,
+            // tap() ignores its callback's return value.
+            throw { error: { message: 'You are not authorised to access this portal.' } };
+          }
+
           localStorage.setItem(TOKEN_KEY, d.token);
           localStorage.setItem(TENANT_KEY, d.tenantId);
           localStorage.setItem(USER_ID_KEY, d.userId);
@@ -74,6 +108,16 @@ export class AuthService {
           localStorage.setItem(STAFF_ID_KEY, d.staffId ?? '');
           localStorage.setItem(SUBJECT_ID_KEY, d.subjectId ?? '');
           localStorage.setItem(FACULTY_TYPE_KEY, d.facultyType ?? '');
+          localStorage.setItem(PORTAL_KEY, JSON.stringify(portals));
+          localStorage.setItem(IS_ADMIN_KEY, JSON.stringify(!!d.isAdmin));
+
+          // Permissions are NOT persisted to localStorage — they live only in
+          // PermissionService's in-memory store, seeded here from the login
+          // response. A page reload wipes that memory; PermissionService's
+          // own init() (called from ApplayoutComponent on every authenticated
+          // page load) detects the empty array and re-fetches from the server.
+          this.permissionService.setPermissions(Array.isArray(d.permissions) ? d.permissions : []);
+
           this.uploading = false;
           this.loggedIn$.next(true);
           this.alert.success('Login Successful!!');
@@ -148,8 +192,11 @@ export class AuthService {
       STAFF_ID_KEY,
       SUBJECT_ID_KEY,
       FACULTY_TYPE_KEY,
+      PORTAL_KEY,
+      IS_ADMIN_KEY,
     ].forEach((k) => localStorage.removeItem(k));
 
+    this.permissionService.reset();
     this.loggedIn$.next(false);
     if (showAlert) this.alert.success('You are logged out successfully!');
     this.router.navigate(['/auth/login']);
@@ -185,6 +232,37 @@ export class AuthService {
 
   hasAnyRole(roles: RoleLevel[]): boolean {
     return roles.includes(this.getRole());
+  }
+
+  // ── Portal / admin helpers ─────────────────────────────────
+
+  getPortals(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem(PORTAL_KEY) ?? '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  getIsAdmin(): boolean {
+    return localStorage.getItem(IS_ADMIN_KEY) === 'true';
+  }
+
+  /** Refreshes the cached portal/isAdmin snapshot — e.g. after PermissionService
+   *  re-fetches from POST /ims/user/permissions, which returns the current
+   *  values alongside permissions[]. Keeps this session's copy in sync with
+   *  the server without requiring a full re-login. */
+  setPortalAndAdmin(portals: string[], isAdmin: boolean): void {
+    localStorage.setItem(PORTAL_KEY, JSON.stringify(Array.isArray(portals) ? portals : []));
+    localStorage.setItem(IS_ADMIN_KEY, JSON.stringify(!!isAdmin));
+  }
+
+  getUserId(): string {
+    return localStorage.getItem(USER_ID_KEY) ?? '';
+  }
+
+  getTenantId(): string {
+    return localStorage.getItem(TENANT_KEY) ?? '';
   }
 
   // ── User info helpers ─────────────────────────────────────

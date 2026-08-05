@@ -634,6 +634,7 @@ import { UserService } from '../../../../service/admin/user.service';
 import { CenterService } from '../../../../service/admin/orgmaster/center.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { ALL_PERMISSION_KEYS, PERMISSION_CATALOG, PermissionModuleGroup } from '../../../../shared/permission-catalog.data';
 import * as XLSX from 'xlsx';
 
 // FIX: L6 and L7 added
@@ -661,6 +662,7 @@ export class UsersComponent implements OnInit {
   formMode: 'create' | 'edit' = 'create';
   showForm = false;
   editingId: string | null = null;
+  editingIsAdmin = false;
   deleteModalVisible = false;
   deleteTarget: any | null = null;
   deleteMessage = '';
@@ -669,6 +671,15 @@ export class UsersComponent implements OnInit {
   entiId: any;
   centers: any[] = [];
   centerOptions: any[] = [];
+
+  // ── Permission / portal access ──────────────────────────────
+  permissionCatalog: PermissionModuleGroup[] = PERMISSION_CATALOG;
+  totalPermissionCount = ALL_PERMISSION_KEYS.length;
+  permissionSearch = '';
+  portalOptions = [
+    { value: 'CRM', label: 'CRM' },
+    { value: 'ACADEMIC', label: 'Academic' },
+  ];
   users: any[] = [];
   totalRecords = 0;
   loading = false;
@@ -855,6 +866,8 @@ export class UsersComponent implements OnInit {
       empCode: [''],
       password: [''],
       centerIds: [[] as string[]],
+      portal: [[] as string[]],
+      permissions: [[] as string[]],
       isActive: [true],
     });
     this.applyPasswordRules();
@@ -903,6 +916,82 @@ export class UsersComponent implements OnInit {
   toggleAllCenters(checked: boolean): void {
     const ctrl = this.userForm.get('centerIds');
     ctrl?.setValue(checked ? this.centerOptions.map((c) => c.value) : []);
+    ctrl?.markAsTouched();
+  }
+
+  // ── Portal toggles ───────────────────────────────────────────
+  isPortalSelected(value: string): boolean {
+    const arr: string[] = this.userForm.get('portal')?.value || [];
+    return arr.includes(value);
+  }
+
+  togglePortal(value: string, checked: boolean): void {
+    const ctrl = this.userForm.get('portal');
+    const arr: string[] = [...(ctrl?.value || [])];
+    const idx = arr.indexOf(value);
+    if (checked && idx === -1) arr.push(value);
+    if (!checked && idx !== -1) arr.splice(idx, 1);
+    ctrl?.setValue(arr);
+    ctrl?.markAsTouched();
+  }
+
+  // ── Permission checkbox-tree toggles ────────────────────────
+  get filteredPermissionCatalog(): PermissionModuleGroup[] {
+    const q = this.permissionSearch.trim().toLowerCase();
+    if (!q) return this.permissionCatalog;
+    return this.permissionCatalog
+      .map((g) => ({
+        ...g,
+        permissions: g.permissions.filter(
+          (p) => p.label.toLowerCase().includes(q) || p.permissionKey.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((g) => g.permissions.length > 0 || g.moduleLabel.toLowerCase().includes(q));
+  }
+
+  get selectedPermissionCount(): number {
+    return (this.userForm.get('permissions')?.value || []).length;
+  }
+
+  isPermissionSelected(key: string): boolean {
+    const arr: string[] = this.userForm.get('permissions')?.value || [];
+    return arr.includes(key);
+  }
+
+  togglePermission(key: string, checked: boolean): void {
+    const ctrl = this.userForm.get('permissions');
+    const arr: string[] = [...(ctrl?.value || [])];
+    const idx = arr.indexOf(key);
+    if (checked && idx === -1) arr.push(key);
+    if (!checked && idx !== -1) arr.splice(idx, 1);
+    ctrl?.setValue(arr);
+    ctrl?.markAsTouched();
+  }
+
+  isModuleFullySelected(group: PermissionModuleGroup): boolean {
+    const arr: string[] = this.userForm.get('permissions')?.value || [];
+    return group.permissions.length > 0 && group.permissions.every((p) => arr.includes(p.permissionKey));
+  }
+
+  isModulePartiallySelected(group: PermissionModuleGroup): boolean {
+    const arr: string[] = this.userForm.get('permissions')?.value || [];
+    const selected = group.permissions.filter((p) => arr.includes(p.permissionKey)).length;
+    return selected > 0 && selected < group.permissions.length;
+  }
+
+  toggleModule(group: PermissionModuleGroup, checked: boolean): void {
+    const ctrl = this.userForm.get('permissions');
+    const arr = new Set<string>(ctrl?.value || []);
+    const keys = group.permissions.map((p) => p.permissionKey);
+    if (checked) keys.forEach((k) => arr.add(k));
+    else keys.forEach((k) => arr.delete(k));
+    ctrl?.setValue(Array.from(arr));
+    ctrl?.markAsTouched();
+  }
+
+  toggleAllPermissions(checked: boolean): void {
+    const ctrl = this.userForm.get('permissions');
+    ctrl?.setValue(checked ? this.permissionCatalog.flatMap((g) => g.permissions.map((p) => p.permissionKey)) : []);
     ctrl?.markAsTouched();
   }
 
@@ -1012,9 +1101,15 @@ export class UsersComponent implements OnInit {
   add(): void {
     this.formMode = 'create';
     this.editingId = null;
-    this.userForm.reset({ name: '', email: '', phone: '', role: null, centerIds: [], isActive: true });
+    this.editingIsAdmin = false;
+    this.userForm.reset({
+      name: '', email: '', phone: '', role: null,
+      centerIds: [], portal: [], permissions: [], isActive: true,
+    });
     this.userForm.get('empCode')?.enable({ emitEvent: false });
     this.userForm.get('empCode')?.setValue('', { emitEvent: false });
+    this.userForm.get('permissions')?.enable({ emitEvent: false });
+    this.userForm.get('portal')?.enable({ emitEvent: false });
     this.applyPasswordRules();
     this.applyCenterValidator();
     this.showForm = true;
@@ -1030,10 +1125,28 @@ export class UsersComponent implements OnInit {
       phone: row?.phone || '',
       role: row?.roleLevel || null,
       centerIds,
+      portal: Array.isArray(row?.portal) ? row.portal : [],
+      permissions: Array.isArray(row?.permissions) ? row.permissions : [],
       isActive: (row?.status || '') === 'Active',
     });
     this.userForm.get('empCode')?.setValue(row?.empCode || '', { emitEvent: false });
     this.userForm.get('empCode')?.disable({ emitEvent: false });
+
+    // Admin users bypass permissions entirely (isAdmin === true short-circuits
+    // every check) — the backend 400s if you try to edit their access, so the
+    // picker is locked here rather than letting the save round-trip fail.
+    const targetIsAdmin = !!row?.isAdmin;
+    this.editingIsAdmin = targetIsAdmin;
+    const permCtrl = this.userForm.get('permissions');
+    const portalCtrl = this.userForm.get('portal');
+    if (targetIsAdmin) {
+      permCtrl?.disable({ emitEvent: false });
+      portalCtrl?.disable({ emitEvent: false });
+    } else {
+      permCtrl?.enable({ emitEvent: false });
+      portalCtrl?.enable({ emitEvent: false });
+    }
+
     this.applyPasswordRules();
     this.applyCenterValidator();
     this.showForm = true;
@@ -1052,6 +1165,8 @@ export class UsersComponent implements OnInit {
     }
     const raw = this.userForm.getRawValue() || {};
     const centerIds: string[] = (Array.isArray(raw.centerIds) ? raw.centerIds : []).filter(Boolean);
+    const portal: string[] = (Array.isArray(raw.portal) ? raw.portal : []).filter(Boolean);
+    const permissions: string[] = (Array.isArray(raw.permissions) ? raw.permissions : []).filter(Boolean);
 
     const payload: any = {
       entiId: this.entiId,
@@ -1061,6 +1176,8 @@ export class UsersComponent implements OnInit {
       roleLevel: String(raw.role || 'L4').trim(),
       status: raw.isActive ? 'Active' : 'Inactive',
       centerIds,
+      portal,
+      permissions,
     };
 
     const empCode = String(raw.empCode || '').trim();
@@ -1083,6 +1200,9 @@ export class UsersComponent implements OnInit {
         this.showForm = false;
         this.refreshTable();
       },
+      // Surfaced verbatim: a catalog-drift 400 ("Unknown permission key(s): ...")
+      // is the earliest signal the local PERMISSION_CATALOG has fallen out of
+      // sync with the backend's live catalog.
       error: (err: any) => this.alertService.error(err?.error?.message || 'Server error'),
     });
   }
