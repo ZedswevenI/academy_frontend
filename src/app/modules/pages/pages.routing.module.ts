@@ -258,8 +258,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/phase/phase.module').then(m => m.PhaseModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'circular:list'.
     path: 'circular',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'circular:list' },
     loadChildren: () => import('../pages/circular/circular.module').then(m => m.CircularModule)
   },
   {

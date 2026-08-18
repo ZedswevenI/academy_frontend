@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-circular',
@@ -49,6 +50,10 @@ export class CircularComponent implements OnInit {
     { key: 'status', label: 'Status', sortable: false },
     { key: 'publishedAtFormatted', label: 'Published', sortable: false },
   ];
+  // FIX: was `hidden:` on Edit and Publish — custom-table's template only
+  // ever reads `action.show` (a HIDE predicate), so both were silent no-ops
+  // and the icons stayed visible on published circulars. Renamed with
+  // inverted logic and combined with permission checks.
   actions = [
     {
       type: 'icon',
@@ -56,6 +61,7 @@ export class CircularComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('circular:view'),
       callback: (row: any) =>
         this.router.navigate(['/app/circular/view'], {
           state: { circular: row },
@@ -72,7 +78,7 @@ export class CircularComponent implements OnInit {
           state: { circular: row },
         });
       },
-      hidden: (row: any) => row.status.toUpperCase() === 'PUBLISHED',
+      show: (row: any) => row.status.toUpperCase() === 'PUBLISHED' || !this.permissionService.hasPermission('circular:edit'),
     },
     {
       type: 'icon',
@@ -82,7 +88,7 @@ export class CircularComponent implements OnInit {
       hoverColor: '#7C3AED',
       callback: (row: any) =>
         row.status === 'DRAFT' ? this.openPublishModal(row) : null,
-      hidden: (row: any) => row.status.toUpperCase() === 'PUBLISHED',
+      show: (row: any) => row.status.toUpperCase() === 'PUBLISHED' || !this.permissionService.hasPermission('circular:publish'),
     },
     {
       type: 'icon',
@@ -90,6 +96,7 @@ export class CircularComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('circular:delete'),
       callback: (row: any) => this.openDeleteModal(row),
     },
   ];
@@ -104,6 +111,7 @@ export class CircularComponent implements OnInit {
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Circulars' }]);
@@ -329,6 +337,9 @@ export class CircularComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // Row click bypasses the View icon's `show` gate — same navigation as
+    // that action, so it needs the same check independently.
+    if (!this.permissionService.hasPermission('circular:view')) return;
     this.router.navigate(['/app/circular/view'], { state: { circular: row } });
   }
 }
