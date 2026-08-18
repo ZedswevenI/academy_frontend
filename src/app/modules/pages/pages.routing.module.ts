@@ -288,7 +288,9 @@ const routes: Routes = [
     canActivate: [RoleGuard],
     loadChildren: () => import('../pages/reports-new/reports-new.module').then(m => m.ReportsNewModule)
   },
-  { path: 'invigilation', loadChildren: () => import('../pages/invigilation/invigilation.module').then(m => m.InvigilationModule) }
+  // Was completely unguarded (no RoleGuard, no data.permission) — now
+  // requires 'invigilation:list'.
+  { path: 'invigilation', canActivate: [PermissionGuard], data: { permission: 'invigilation:list' }, loadChildren: () => import('../pages/invigilation/invigilation.module').then(m => m.InvigilationModule) }
 ];
 
 @NgModule({
