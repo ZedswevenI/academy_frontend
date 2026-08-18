@@ -76,20 +76,22 @@
                     <button class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">
                         Back
                     </button>
-                    <button *ngIf="taskData?.status === 'Pending' || taskData?.status === 'PENDING'"
-                        class="btn btn-import fs-16 fw-medium me-2" (click)="markInProgress()">
-                        Mark In Progress
-                    </button>
-                    <button *ngIf="
-              taskData?.status === 'IN_PROGRESS' ||
-              taskData?.status === 'In Progress'
-            " class="btn btn-shuffle fs-16 fw-medium" (click)="needTime()">
-                        Need More Time
-                    </button>
-                    <button *ngIf="taskData?.status !== 'COMPLETED'" class="btn btn-create fs-16 fw-medium" 
-                    (click)="onAct()">
-                        Update Status
-                    </button>
+                    <ng-container *appHasPermission="'task:edit'">
+                        <button *ngIf="taskData?.status === 'Pending' || taskData?.status === 'PENDING'"
+                            class="btn btn-import fs-16 fw-medium me-2" (click)="markInProgress()">
+                            Mark In Progress
+                        </button>
+                        <button *ngIf="
+                  taskData?.status === 'IN_PROGRESS' ||
+                  taskData?.status === 'In Progress'
+                " class="btn btn-shuffle fs-16 fw-medium" (click)="needTime()">
+                            Need More Time
+                        </button>
+                        <button *ngIf="taskData?.status !== 'COMPLETED'" class="btn btn-create fs-16 fw-medium"
+                            (click)="onAct()">
+                            Update Status
+                        </button>
+                    </ng-container>
                 </div>
             </form>
         </div>

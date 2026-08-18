@@ -233,8 +233,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/knowledge/knowledge.module').then(m => m.KnowledgeModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'task:list'.
     path: 'task',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'task:list' },
     loadChildren: () => import('../pages/task/task.module').then(m => m.TaskModule)
   },
   {
