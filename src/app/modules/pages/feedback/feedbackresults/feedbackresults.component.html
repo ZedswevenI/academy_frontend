@@ -390,7 +390,7 @@
         <ng-container *ngIf="!reportLoading && reportRows.length">
             <!-- Export button -->
             <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-export fs-16 fw-medium" (click)="downloadReport()" [disabled]="reportLoading">
+                <button class="btn btn-export fs-16 fw-medium" *appHasPermission="'feedback:consolidatedReport'" (click)="downloadReport()" [disabled]="reportLoading">
                     <i class="fa-solid fa-file-pdf btn-icon"></i>Export PDF
                 </button>
             </div>

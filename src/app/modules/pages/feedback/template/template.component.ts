@@ -4,6 +4,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import jsPDF from 'jspdf';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-template',
@@ -58,12 +59,14 @@ export class TemplateComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#16A34A',
+      show: () => !this.permissionService.hasPermission('feedbackTemplate:edit'),
       callback: (row: any) => this.openEditModal(row),
     },
     {
       type: 'toggle',
       tooltip: 'Toggle Status',
       isActive: (row: any) => row.status !== 'INACTIVE',
+      show: () => !this.permissionService.hasPermission('feedbackTemplate:toggleStatus'),
       callback: (row: any) => this.toggleStatus(row),
     },
     {
@@ -72,6 +75,7 @@ export class TemplateComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('feedbackTemplate:delete'),
       callback: (row: any) => this.openDeleteModal(row),
     },
     {
@@ -80,6 +84,7 @@ export class TemplateComponent implements OnInit {
       tooltip: 'Export PDF',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('feedbackTemplate:export'),
       callback: (row: any) => this.exportTemplatePdf(row),
     },
   ];
@@ -98,6 +103,7 @@ export class TemplateComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrump: BredcrumpService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([

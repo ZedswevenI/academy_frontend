@@ -205,8 +205,12 @@ const routes: Routes = [
     loadChildren: () => import('../pages/activity/activity.module').then(m => m.ActivityModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard. Templates live under this
+    // same parent path but use a different key prefix (feedbackTemplate:*),
+    // so the gate accepts either — sub-routes enforce the exact key needed.
     path: 'feedback',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: ['feedback:list', 'feedbackTemplate:list'] },
     loadChildren: () => import('../pages/feedback/feedback.module').then(m => m.FeedbackModule)
   },
   {

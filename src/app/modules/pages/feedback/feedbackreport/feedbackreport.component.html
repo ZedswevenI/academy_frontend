@@ -12,7 +12,7 @@
                     {{ formatDate(formData.startDate) }} → {{ formatDate(formData.endDate) }}
                 </div>
             </div>
-            <button class="btn btn-import fs-16 fw-medium" (click)="exportPdf()"
+            <button class="btn btn-import fs-16 fw-medium" *appHasPermission="'feedback:consolidatedReport'" (click)="exportPdf()"
                 [disabled]="exporting || !reportRows.length">
                 <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2"></span>
                 <i class="fa-solid fa-file-pdf btn-icon" *ngIf="!exporting"></i>
