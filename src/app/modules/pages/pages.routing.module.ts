@@ -218,8 +218,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/performance/performance.module').then(m => m.PerformanceModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'ptm:list'.
     path: 'ptm',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'ptm:list' },
     loadChildren: () => import('../pages/ptm/ptm.module').then(m => m.PtmModule)
   },
   {

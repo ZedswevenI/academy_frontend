@@ -247,7 +247,7 @@
                 <button class="btn btn-import fs-16 fw-medium" (click)="openImportModal()">
                     <i class="fa-solid fa-file-import btn-icon"></i>Bulk Import
                 </button>
-                <button *appHasRole="['L3','L1']" class="btn btn-create fs-16 fw-medium" routerLink="/app/ptm/create">
+                <button *appHasPermission="'ptm:create'" class="btn btn-create fs-16 fw-medium" routerLink="/app/ptm/create">
                     <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">Add PTM
                 </button>
             </div>

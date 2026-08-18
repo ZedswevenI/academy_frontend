@@ -477,6 +477,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -515,6 +516,10 @@ export class PtmComponent implements OnInit {
     { key: 'completedCount', label: 'Completed', sortable: false },
   ];
 
+  // FIX: was `hidden:` — custom-table's template only ever reads
+  // `action.show` (a HIDE predicate), so this was a silent no-op and the
+  // Delete icon showed on completed sessions too. Renamed with inverted
+  // logic and combined with the ptm:delete permission check.
   actions = [
     {
       type: 'icon',
@@ -531,7 +536,7 @@ export class PtmComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#DC2626',
       callback: (row: any) => this.openDeleteModal(row),
-      hidden: (row: any) => row.status === 'COMPLETED',
+      show: (row: any) => row.status === 'COMPLETED' || !this.permissionService.hasPermission('ptm:delete'),
     },
   ];
 
@@ -583,6 +588,7 @@ export class PtmComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'PTM' }]);
@@ -599,8 +605,8 @@ export class PtmComponent implements OnInit {
   }
 
   showimport(): boolean {
-    const role = this.authService.getRole();
-    return role === 'L1' || role === 'L3';
+    // Schedule import shares ptm:create per the catalog.
+    return this.permissionService.hasPermission('ptm:create');
   }
 
   // ====================================================
