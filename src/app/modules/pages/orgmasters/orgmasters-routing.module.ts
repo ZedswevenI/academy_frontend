@@ -18,6 +18,7 @@ import { UserFormComponent } from './users/user-form/user-form.component';
 import { UserViewComponent } from './users/user-view/user-view.component';
 import { UserAccessComponent } from './users/user-access/user-access.component';
 import { HelpCenterComponent } from './helpcenter/help-center.component';
+import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
   {
@@ -69,8 +70,13 @@ const routes: Routes = [
     component: SubtopicComponent
   },
   {
+    // Migrated off the shared org-master RoleGuard onto its own PermissionGuard
+    // — requires 'orgSchoolExam:list' (org-master's other children stay
+    // gated only by the parent RoleGuard for now).
     path: 'school/exams',
-    component: SchoolexamsComponent
+    component: SchoolexamsComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgSchoolExam:list' }
   },
   {
     path: 'users',
