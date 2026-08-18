@@ -188,8 +188,13 @@ const routes: Routes = [
     loadChildren: () => import('../pages/chat/chat.module').then(m => m.ChatModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard. Five sub-areas share this
+    // parent path under distinct key prefixes (communication/communicationTemplate/
+    // communicationEvent/communicationBulkMail/communicationLog) — the gate accepts
+    // any of them; sub-routes enforce the exact key needed.
     path: 'communication',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: ['communication:create', 'communicationTemplate:list', 'communicationEvent:list', 'communicationBulkMail:send', 'communicationLog:list'] },
     loadChildren: () => import('../pages/communication/communication.module').then(m => m.CommunicationModule)
   },
   {
