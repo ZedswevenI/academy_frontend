@@ -104,6 +104,7 @@
                     (click)="showFacultyLoadDetail()">
                     <i class="fa-solid fa-table-list me-1"></i> Load Detail
                 </button>
+                <ng-container *appHasPermission="'reports:export'">
                 <ng-container
                     *ngIf="reportTableData.length > 0 || hasFacultyLoadCustomData || hasAssignmentCustomData || hasFacultyReportData">
                     <ng-container *ngIf="!hasMaskedColumns; else maskedExportButtons">
@@ -140,6 +141,7 @@
                             </ul>
                         </div>
                     </ng-template>
+                </ng-container>
                 </ng-container>
                 <button class="btn btn-back fs-16 fw-medium" (click)="clearReport()">
                     <i class="fa-solid fa-arrow-left"></i> Back

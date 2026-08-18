@@ -165,8 +165,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/test/test.module').then(m => m.TestModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'reports:view'.
     path: 'report',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'reports:view' },
     loadChildren: () => import('../pages/report/report.module').then(m => m.ReportModule)
   },
   {
