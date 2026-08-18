@@ -587,7 +587,7 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-close-custom fs-16 fw-medium"
                     data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-create fs-16 fw-medium"
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'support:assignStaff'"
                     [disabled]="assignForm.invalid || assignLoading" (click)="submitAssign()">
                     <span *ngIf="assignLoading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ assignLoading ? 'Assigning...' : 'Assign' }}
@@ -620,7 +620,7 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                     data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-create fs-16 fw-medium"
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'support:updatePriority'"
                     [disabled]="priorityForm.invalid || priorityLoading" (click)="submitPriority()">
                     <span *ngIf="priorityLoading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ priorityLoading ? 'Updating...' : 'Update Priority' }}
@@ -663,7 +663,7 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-close-custom fs-16 fw-medium"
                     data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-create fs-16 fw-medium"
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'support:updateStatus'"
                     [disabled]="statusForm.invalid || statusLoading" (click)="submitStatus()">
                     <span *ngIf="statusLoading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ statusLoading ? 'Updating...' : 'Update Status' }}

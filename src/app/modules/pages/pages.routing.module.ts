@@ -219,8 +219,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/feedback/feedback.module').then(m => m.FeedbackModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'support:list'.
     path: 'support',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'support:list' },
     loadChildren: () => import('../pages/support/support.module').then(m => m.SupportModule)
   },
   {
