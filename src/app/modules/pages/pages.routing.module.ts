@@ -225,13 +225,17 @@ const routes: Routes = [
     loadChildren: () => import('../pages/ptm/ptm.module').then(m => m.PtmModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'package:list'.
     path: 'package',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'package:list' },
     loadChildren: () => import('../pages/package/package.module').then(m => m.PackageModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'knowledge:list'.
     path: 'knowledge',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'knowledge:list' },
     loadChildren: () => import('../pages/knowledge/knowledge.module').then(m => m.KnowledgeModule)
   },
   {

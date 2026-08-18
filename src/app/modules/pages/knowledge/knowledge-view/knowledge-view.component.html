@@ -52,7 +52,8 @@
             <i class="fa-solid me-1" [class.fa-plus]="!showAddBatch" [class.fa-times]="showAddBatch"></i>
             {{ showAddBatch ? 'Cancel' : 'Add Batch' }}
           </button> -->
-          <button [ngClass]="showAddBatch ? 'btn btn-close-custom' : 'btn btn-create'" class="fs-16 fw-medium"
+          <button *appHasPermission="'knowledge:edit'"
+            [ngClass]="showAddBatch ? 'btn btn-close-custom' : 'btn btn-create'" class="fs-16 fw-medium"
             (click)="showAddBatch = !showAddBatch">
             <i class="fa-solid me-1" [class.fa-plus]="!showAddBatch" [class.fa-times]="showAddBatch"></i>
 
