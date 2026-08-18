@@ -12,6 +12,7 @@
                     style="font-size: 0.85rem">
                     {{ selectedDateLabel }}
                 </span>
+                <ng-container *appHasPermission="'schoolAttendance:export'">
                 <div class="dropdown" *ngIf="selectedDate && !isFutureDate && batches.length">
                     <button class="btn btn-export fs-16 fw-medium dropdown-toggle" type="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
@@ -47,7 +48,8 @@
                         </li>
                     </ul>
                 </div>
-                <button class="btn btn-create" (click)="loadBatchStatusReport()">
+                </ng-container>
+                <button class="btn btn-create" *appHasPermission="'schoolAttendance:list'" (click)="loadBatchStatusReport()">
                     <i class="fa-solid fa-chart-column me-1"></i>School Attendance Report
                 </button>
             </div>
@@ -131,8 +133,8 @@
                             {{ d.label }}
                         </div>
                         <hr class="my-2" />
-                        <button class="btn btn-sm btn-outline-danger w-100" (click)="removeHoliday(d.value)"
-                            [disabled]="removingHoliday">
+                        <button class="btn btn-sm btn-outline-danger w-100" *appHasPermission="'schoolAttendance:removeHoliday'"
+                            (click)="removeHoliday(d.value)" [disabled]="removingHoliday">
                             <span *ngIf="removingHoliday" class="spinner-border spinner-border-sm me-1"></span>
                             <i class="fa-solid fa-trash-can me-1" *ngIf="!removingHoliday"></i>
                             Remove Holiday
@@ -161,8 +163,8 @@
                             <input class="form-control form-control-sm" [(ngModel)]="declareForm.name"
                                 placeholder="e.g. Diwali, Sunday, Flood" (keyup.enter)="declareHoliday()" />
                         </div>
-                        <button class="btn btn-sm btn-warning w-100 fw-semibold" (click)="declareHoliday()"
-                            [disabled]="declaringHoliday || !declareForm.name.trim()">
+                        <button class="btn btn-sm btn-warning w-100 fw-semibold" *appHasPermission="'schoolAttendance:declareHoliday'"
+                            (click)="declareHoliday()" [disabled]="declaringHoliday || !declareForm.name.trim()">
                             <span *ngIf="declaringHoliday" class="spinner-border spinner-border-sm me-1"></span>
                             <i class="fa-solid fa-umbrella-beach me-1" *ngIf="!declaringHoliday"></i>
                             Declare for All Batches
@@ -252,37 +254,41 @@
                 ">
                                 <i class="fa-solid fa-lock me-1"></i>Finalised
                             </div>
-                            <button *ngIf="!isHoliday(b.batchCode) && !isFinalised(b.batchCode)"
-                                class="btn btn-sm flex-grow-1" [ngClass]="{
-                  'btn-success': canMarkBatch(b) && !isMarked(b.batchCode),
-                  'btn-outline-primary':
-                    canMarkBatch(b) && isMarked(b.batchCode),
-                  'btn-outline-secondary': !canMarkBatch(b),
-                }" (click)="goToMark(b)">
-                                <i class="fa-solid me-1" [ngClass]="{
-                    'fa-clipboard-check':
-                      canMarkBatch(b) && !isMarked(b.batchCode),
-                    'fa-pen-to-square':
-                      canMarkBatch(b) && isMarked(b.batchCode),
-                    'fa-eye': !canMarkBatch(b),
-                  }"></i>
-                                <span *ngIf="canMarkBatch(b) && !isMarked(b.batchCode)">Mark</span>
-                                <span *ngIf="canMarkBatch(b) && isMarked(b.batchCode)">Edit</span>
-                                <span *ngIf="!canMarkBatch(b)">View</span>
-                            </button>
-                            <button *ngIf="
-                  !isHoliday(b.batchCode) &&
-                  isMarked(b.batchCode) &&
-                  !isFinalised(b.batchCode) &&
-                  canMarkBatch(b)
-                " class="btn btn-sm btn-warning fw-semibold" title="Finalise Attendance"
-                                [disabled]="finalisingBatch === b.batchCode" (click)="finaliseAttendance(b)">
-                                <span *ngIf="finalisingBatch === b.batchCode"
-                                    class="spinner-border spinner-border-sm"></span>
-                                <i class="fa-solid fa-check-double" *ngIf="finalisingBatch !== b.batchCode"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" title="Download Monthly Report"
-                                (click)="openPrintModal(b)">
+                            <ng-container *appHasPermission="['schoolAttendance:mark','schoolAttendance:list']">
+                                <button *ngIf="!isHoliday(b.batchCode) && !isFinalised(b.batchCode)"
+                                    class="btn btn-sm flex-grow-1" [ngClass]="{
+                      'btn-success': canMarkBatch(b) && !isMarked(b.batchCode),
+                      'btn-outline-primary':
+                        canMarkBatch(b) && isMarked(b.batchCode),
+                      'btn-outline-secondary': !canMarkBatch(b),
+                    }" (click)="goToMark(b)">
+                                    <i class="fa-solid me-1" [ngClass]="{
+                        'fa-clipboard-check':
+                          canMarkBatch(b) && !isMarked(b.batchCode),
+                        'fa-pen-to-square':
+                          canMarkBatch(b) && isMarked(b.batchCode),
+                        'fa-eye': !canMarkBatch(b),
+                      }"></i>
+                                    <span *ngIf="canMarkBatch(b) && !isMarked(b.batchCode)">Mark</span>
+                                    <span *ngIf="canMarkBatch(b) && isMarked(b.batchCode)">Edit</span>
+                                    <span *ngIf="!canMarkBatch(b)">View</span>
+                                </button>
+                            </ng-container>
+                            <ng-container *appHasPermission="'schoolAttendance:finalise'">
+                                <button *ngIf="
+                      !isHoliday(b.batchCode) &&
+                      isMarked(b.batchCode) &&
+                      !isFinalised(b.batchCode) &&
+                      canMarkBatch(b)
+                    " class="btn btn-sm btn-warning fw-semibold" title="Finalise Attendance"
+                                    [disabled]="finalisingBatch === b.batchCode" (click)="finaliseAttendance(b)">
+                                    <span *ngIf="finalisingBatch === b.batchCode"
+                                        class="spinner-border spinner-border-sm"></span>
+                                    <i class="fa-solid fa-check-double" *ngIf="finalisingBatch !== b.batchCode"></i>
+                                </button>
+                            </ng-container>
+                            <button class="btn btn-sm btn-outline-secondary" *appHasPermission="'schoolAttendance:print'"
+                                title="Download Monthly Report" (click)="openPrintModal(b)">
                                 <i class="fa-solid fa-file-pdf text-danger"></i>
                             </button>
                         </div>
@@ -326,7 +332,8 @@
                 <button class="btn btn-sm btn-outline-secondary" (click)="closePrintModal()">
                     Cancel
                 </button>
-                <button class="btn btn-sm btn-danger" (click)="downloadPdf()" [disabled]="printLoading || !printMonth">
+                <button class="btn btn-sm btn-danger" *appHasPermission="'schoolAttendance:print'"
+                    (click)="downloadPdf()" [disabled]="printLoading || !printMonth">
                     <span *ngIf="printLoading" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-file-pdf me-1" *ngIf="!printLoading"></i>
                     Download PDF
@@ -452,8 +459,8 @@
                 <small class="text-muted me-auto">
                     {{ statusReport.length }} batch(es)
                 </small>
-                <button class="btn btn-import fw-medium fs-16" (click)="exportStatusReportToExcel()"
-                    [disabled]="!statusReport.length">
+                <button class="btn btn-import fw-medium fs-16" *appHasPermission="'schoolAttendance:export'"
+                    (click)="exportStatusReportToExcel()" [disabled]="!statusReport.length">
                     <i class="fa-solid fa-file-excel me-1"></i>Export Excel
                 </button>
                 <button class="btn btn-sm btn-outline-secondary" (click)="closeStatusReport()">Close</button>

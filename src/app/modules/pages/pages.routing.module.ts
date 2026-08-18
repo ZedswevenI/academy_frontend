@@ -153,8 +153,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/attendance/attendance.module').then(m => m.AttendanceModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'schoolAttendance:list'.
     path: 'school-attendance',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'schoolAttendance:list' },
     loadChildren: () => import('../pages/schoolattendance/schoolattendance.module').then(m => m.SchoolattendanceModule)
   },
   {

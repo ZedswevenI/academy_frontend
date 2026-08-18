@@ -12,6 +12,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -70,6 +71,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     private auth: AuthService,
     private alert: AlertService,
     private elRef: ElementRef,
+    private permissionService: PermissionService,
   ) {
     this.breadcrumb.set([{ label: 'School Attendance' }]);
   }
@@ -78,7 +80,12 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     this.roleLevel = this.auth.getRole();
     this.isAO = ['L1', 'L3'].includes(this.roleLevel);
     this.isTeacher = ['L4', 'L5'].includes(this.roleLevel);
-    this.canDeclare = ['L1', 'L3', 'L4'].includes(this.roleLevel);
+    // Popover-open gate — the popover itself offers Declare OR Remove
+    // depending on state, so either permission is enough to open it; the
+    // individual buttons inside are gated separately by their exact key.
+    this.canDeclare =
+      ['L1', 'L3', 'L4'].includes(this.roleLevel) &&
+      this.permissionService.hasAny(['schoolAttendance:declareHoliday', 'schoolAttendance:removeHoliday']);
     this.staffId = this.auth.getStaffId();
     this.buildWeekDates(this.getTodayUtcMs());
     const today =
