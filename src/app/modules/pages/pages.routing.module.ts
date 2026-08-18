@@ -198,8 +198,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/enableassignment/enableassignment.module').then(m => m.EnableassignmentModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'activity:list'.
     path: 'activity',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'activity:list' },
     loadChildren: () => import('../pages/activity/activity.module').then(m => m.ActivityModule)
   },
   {
