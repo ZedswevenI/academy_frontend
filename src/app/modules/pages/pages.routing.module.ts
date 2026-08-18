@@ -145,8 +145,11 @@ const routes: Routes = [
     loadChildren: () => import('../pages/timetable/timetable.module').then(m => m.TimetableModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'attendance:list'.
+    // Sub-routes carry their own guards too (see attendance.routing.module.ts).
     path: 'attendance',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'attendance:list' },
     loadChildren: () => import('../pages/attendance/attendance.module').then(m => m.AttendanceModule)
   },
   {

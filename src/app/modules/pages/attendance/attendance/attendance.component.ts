@@ -6,6 +6,7 @@ import { takeUntil } from 'rxjs/operators';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
+import { PermissionService } from '../../../../shared/permission.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -51,6 +52,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     private router: Router,
     private commonApi: CommonapiService,
     private auth: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.breadcrumb.set([{ label: 'Attendance' }]);
   }
@@ -231,22 +233,26 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }
 
   buildActions(): void {
+    // FIX: was `hidden:` — custom-table's template only ever reads
+    // `action.show` (a HIDE predicate), so this property name was a silent
+    // no-op and both buttons showed on every row regardless of state. Now
+    // combines the existing row-state/role logic with a permission check.
     this.actions = [
       {
         type: 'simple',
         color: 'primary',
         text: 'Mark Attendance',
         callback: (row: any) => this.goToMark(row),
-        hidden: (row: any) => !row._showAction || row._isMarked,
+        show: (row: any) =>
+          !row._showAction || row._isMarked || !this.permissionService.hasPermission('attendance:mark'),
       },
       {
         type: 'simple',
         color: 'secondary',
         text: 'Edit Attendance',
         callback: (row: any) => this.goToMark(row),
-        hidden: (row: any) =>
-          !row._showAction || !row._isMarked || this.isTeacher,
-        // hidden: (row: any) => !row._showAction || !row._isMarked,
+        show: (row: any) =>
+          !row._showAction || !row._isMarked || this.isTeacher || !this.permissionService.hasPermission('attendance:edit'),
       },
     ];
   }
