@@ -6,6 +6,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { extractYouTubeId } from '../../../../shared/youtube.util';
+import { PermissionService } from '../../../../shared/permission.service';
 
 const NEW_MODULE_SENTINEL = '__new__';
 
@@ -65,9 +66,14 @@ export class HelpCenterComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private permissionService: PermissionService,
   ) {
     this.userId = localStorage.getItem('userId') || '';
     this.breadcrumb.set([{ label: 'Org-Masters' }, { label: 'Help Center' }]);
+  }
+
+  get canEditHelpCenter(): boolean {
+    return this.permissionService.hasPermission('orgHelpCenter:edit');
   }
 
   ngOnInit(): void {
@@ -165,6 +171,7 @@ export class HelpCenterComponent implements OnInit {
   // MODULE REORDER (single-item endpoint — fire one call per shifted module)
   // ====================================================
   dropModule(event: CdkDragDrop<HelpModule[]>): void {
+    if (!this.canEditHelpCenter) return;
     if (event.previousIndex === event.currentIndex) return;
     moveItemInArray(this.modules, event.previousIndex, event.currentIndex);
     const updates = this.modules.map((m, i) => ({ ...m, moduleSortOrder: i }));
@@ -195,6 +202,7 @@ export class HelpCenterComponent implements OnInit {
   // TOPIC REORDER (bulk endpoint)
   // ====================================================
   dropTopic(event: CdkDragDrop<HelpTopic[]>): void {
+    if (!this.canEditHelpCenter) return;
     if (event.previousIndex === event.currentIndex) return;
     moveItemInArray(this.topics, event.previousIndex, event.currentIndex);
     const items = this.topics.map((t, i) => {

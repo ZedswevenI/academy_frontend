@@ -9,13 +9,13 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openImport()"
+                <button class="btn btn-import fs-16 fw-medium me-2" *appHasPermission="'orgSubject:create'" (click)="openImport()"
                     [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Import Subjects</span>
                 </button>
 
-                <button class="btn btn-create fs-16 fw-medium1" (click)="add()"
+                <button class="btn btn-create fs-16 fw-medium1" *appHasPermission="'orgSubject:create'" (click)="add()"
                     [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-plus"></i>
                     <span>Add Subject</span>
@@ -83,7 +83,9 @@
                             Cancel
                         </button>
 
-                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="subjectForm.invalid || saving">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium"
+                            *appHasPermission="formMode === 'create' ? 'orgSubject:create' : 'orgSubject:edit'"
+                            [disabled]="subjectForm.invalid || saving">
                             <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
                                 aria-hidden="true"></span>
                             {{ formMode === 'create' ? 'Save Subject' : 'Update Subject' }}
@@ -141,7 +143,7 @@
                             Reset
                         </button>
 
-                        <button type="button" class="btn btn-primary" (click)="confirmImport()"
+                        <button type="button" class="btn btn-primary" *appHasPermission="'orgSubject:create'" (click)="confirmImport()"
                             [disabled]="!importPreviewRows.length || importHasInvalidRows || importing">
                             <span *ngIf="importing" class="spinner-border spinner-border-sm me-2" role="status"
                                 aria-hidden="true"></span>

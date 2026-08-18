@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-examsubcategory',
@@ -48,6 +49,7 @@ export class ExamsubcategoryComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgExamCategory:addSubCategories'),
       callback: (row: any) => this.edit(row),
     },
     {
@@ -56,6 +58,7 @@ export class ExamsubcategoryComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('orgExamCategory:addSubCategories'),
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -67,6 +70,7 @@ export class ExamsubcategoryComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([

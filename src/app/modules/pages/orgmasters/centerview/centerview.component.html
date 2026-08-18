@@ -65,7 +65,7 @@
                 <div class="text-muted small">Add multiple venues under this center</div>
             </div>
 
-            <button class="btn btn-create fs-16 fw-medium" (click)="addVenue()">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgCenter:create'" (click)="addVenue()">
                 <i class="fa-solid fa-plus btn-icon"></i>
                 <span>Add Venue</span>
             </button>

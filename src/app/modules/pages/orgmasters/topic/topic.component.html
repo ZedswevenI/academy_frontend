@@ -9,13 +9,13 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openImport()"
+                <button class="btn btn-import fs-16 fw-medium me-2" *appHasPermission="'orgTopic:create'" (click)="openImport()"
                     [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Import Topics</span>
                 </button>
 
-                <button class="btn btn-create fs-16 fw-medium" (click)="add()"
+                <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgTopic:create'" (click)="add()"
                     [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-plus"></i>
                     <span>Add Topic</span>
@@ -93,7 +93,9 @@
                             Cancel
                         </button>
 
-                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="form.invalid || saving">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium"
+                            *appHasPermission="formMode === 'create' ? 'orgTopic:create' : 'orgTopic:edit'"
+                            [disabled]="form.invalid || saving">
                             <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
                                 aria-hidden="true"></span>
                             {{ formMode === "create" ? "Save" : "Update" }}
@@ -158,7 +160,7 @@
                             Reset
                         </button>
 
-                        <button type="button" class="btn btn-primary" (click)="confirmImport()" [disabled]="
+                        <button type="button" class="btn btn-primary" *appHasPermission="'orgTopic:create'" (click)="confirmImport()" [disabled]="
                 !importPreviewRows.length || importHasInvalidRows || importing
               ">
                             <span *ngIf="importing" class="spinner-border spinner-border-sm me-2" role="status"
@@ -290,7 +292,7 @@
                             [disabled]="savingSubtopics">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="savingSubtopics">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgTopic:addSubTopics'" [disabled]="savingSubtopics">
                             <span *ngIf="savingSubtopics" class="spinner-border spinner-border-sm me-2" role="status"
                                 aria-hidden="true"></span>
                             Save Sub-Topics

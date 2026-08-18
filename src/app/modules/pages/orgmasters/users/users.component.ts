@@ -12,6 +12,7 @@ import { UserService } from '../../../../service/admin/user.service';
 import { CenterService } from '../../../../service/admin/orgmaster/center.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import * as XLSX from 'xlsx';
 
 type RoleKey = 'L1' | 'L2' | 'L3' | 'L4' | 'L5' | 'L6' | 'L7';
@@ -86,6 +87,7 @@ export class UsersComponent implements OnInit {
       hoverColor: '#0066FF',
       // View is keyed by the app-level userId (POST /ims/user/view-by-userid),
       // unlike Edit/Access below which use the Mongo _id (recId).
+      show: () => !this.permissionService.hasPermission('orgUser:view'),
       callback: (row: any) => this.router.navigate(['/app/org-master/users/view', row.userId]),
     },
     {
@@ -97,7 +99,7 @@ export class UsersComponent implements OnInit {
       tooltip: 'Manage Access',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      show: (row: any) => !this.canManageAccess(row),
+      show: (row: any) => !this.canManageAccess(row) || !this.permissionService.hasPermission('orgUser:assignAccess'),
       callback: (row: any) => this.router.navigate(['/app/org-master/users/access', row._id]),
     },
     {
@@ -106,6 +108,7 @@ export class UsersComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgUser:edit'),
       callback: (row: any) => this.router.navigate(['/app/org-master/users/edit', row._id]),
     },
     {
@@ -114,6 +117,7 @@ export class UsersComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#D42B2B',
+      show: () => !this.permissionService.hasPermission('orgUser:delete'),
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -227,6 +231,7 @@ export class UsersComponent implements OnInit {
     private api: CommonapiService,
     private cdr: ChangeDetectorRef,
     private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Org-Master' }, { label: 'Users' }]);

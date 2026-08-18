@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-department',
@@ -55,14 +56,16 @@ export class DepartmentComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgDept:edit'),
       callback: (row: any) => this.edit(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
-      color: '#6B7280', 
+      color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('orgDept:delete'),
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -72,6 +75,7 @@ export class DepartmentComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([

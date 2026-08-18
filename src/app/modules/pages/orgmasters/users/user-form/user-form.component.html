@@ -19,7 +19,9 @@
                 <i class="fa-solid fa-shield-halved me-1"></i> Super Admin — access locked
             </span>
             <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancel()">Cancel</button>
-            <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="userForm.invalid">
+            <button type="submit" class="btn btn-create fs-16 fw-medium"
+                *appHasPermission="mode === 'create' ? 'orgUser:create' : 'orgUser:edit'"
+                [disabled]="userForm.invalid">
                 <i class="fa-solid" [class.fa-user-plus]="mode === 'create'" [class.fa-check]="mode === 'edit'"></i>
                 {{ mode === 'create' ? 'Create User' : 'Save Changes' }}
             </button>

@@ -27,47 +27,71 @@ const routes: Routes = [
   },
   {
     path: 'center',
-    component: CenterComponent
+    component: CenterComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgCenter:list' }
   },
   {
     path: 'center/view/:id',
-    component: CenterviewComponent
+    component: CenterviewComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgCenter:view' }
   },
   {
     path: 'staff',
-    component: StaffComponent
+    component: StaffComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgStaff:list' }
   },
   {
     path: 'program',
-    component: ProgramComponent
+    component: ProgramComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgProgram:list' }
   },
   {
     path: 'department',
-    component: DepartmentComponent
+    component: DepartmentComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgDept:list' }
   },
   {
     path: 'subject',
-    component: SubjectComponent
+    component: SubjectComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgSubject:list' }
   },
   {
     path: 'bankaccounts',
-    component: BankaccountsComponent
+    component: BankaccountsComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgBankAccount:list' }
   },
   {
     path: 'category',
-    component: ExamcategoryComponent
+    component: ExamcategoryComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgExamCategory:list' }
   },
   {
+    // Every action on this screen (list/create/edit/delete/import) is bundled
+    // under the one orgExamCategory:addSubCategories key — no separate list key exists.
     path: 'sub-category',
-    component: ExamsubcategoryComponent
+    component: ExamsubcategoryComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgExamCategory:addSubCategories' }
   },
   {
     path: 'topics',
-    component: TopicComponent
+    component: TopicComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgTopic:list' }
   },
   {
     path: 'sub-topic',
-    component: SubtopicComponent
+    component: SubtopicComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgSubTopic:list' }
   },
   {
     // Migrated off the shared org-master RoleGuard onto its own PermissionGuard
@@ -80,29 +104,41 @@ const routes: Routes = [
   },
   {
     path: 'users',
-    component: UsersComponent
+    component: UsersComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgUser:list' }
   },
   {
     path: 'users/create',
-    component: UserFormComponent
+    component: UserFormComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgUser:create' }
   },
   {
     path: 'users/edit/:id',
-    component: UserFormComponent
+    component: UserFormComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgUser:edit' }
   },
   {
     // :userId is the app-level userId (POST /ims/user/view-by-userid),
     // NOT the Mongo _id used by edit/:id and access/:id below.
     path: 'users/view/:userId',
-    component: UserViewComponent
+    component: UserViewComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgUser:view' }
   },
   {
     path: 'users/access/:id',
-    component: UserAccessComponent
+    component: UserAccessComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgUser:assignAccess' }
   },
   {
     path: 'help-center',
-    component: HelpCenterComponent
+    component: HelpCenterComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgHelpCenter:list' }
   }
 ];
 

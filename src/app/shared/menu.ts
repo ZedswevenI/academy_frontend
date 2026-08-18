@@ -309,7 +309,13 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Sub Category',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-category',
-        permission: 'orgExamCategory:list'
+        permission: 'orgExamCategory:addSubCategories'
+      },
+      {
+        label: 'Bank Accounts',
+        icon: 'fa-solid fa-building-columns',
+        route: '/app/org-master/bankaccounts',
+        permission: 'orgBankAccount:list'
       },
       {
         label: 'Users',
