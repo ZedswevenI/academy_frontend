@@ -3,6 +3,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import { forkJoin, Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 
@@ -62,6 +63,7 @@ export class TableListComponent {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('student:view'),
       callback: (row: any) => this.viewStudent(row),
     },
     // {
@@ -79,6 +81,7 @@ export class TableListComponent {
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private permissionService: PermissionService,
   ) {
     this.breadcrump.set([{ label: 'Student' }]);
     this.batchNameByCode$ = this.commonApi

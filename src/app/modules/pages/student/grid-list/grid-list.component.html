@@ -68,7 +68,7 @@
 
         <!-- Footer -->
         <div class="d-flex justify-content-end align-items-center">
-          <a href="javascript:void(0)" class="view-link" (click)="viewStudent(s)">
+          <a href="javascript:void(0)" class="view-link" *appHasPermission="'student:view'" (click)="viewStudent(s)">
             View details <i class="fa-solid fa-arrow-right"></i>
           </a>
         </div>

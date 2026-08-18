@@ -170,8 +170,11 @@ const routes: Routes = [
     loadChildren: () => import('../pages/teachers/teacher.module').then(m => m.TeacherModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'student:list'.
+    // Sub-routes carry their own guards too (see student.routing.module.ts).
     path: 'student',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'student:list' },
     loadChildren: () => import('../pages/student/student.module').then(m => m.StudentModule)
   },
   {
