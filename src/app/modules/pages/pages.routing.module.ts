@@ -137,8 +137,11 @@ const routes: Routes = [
     loadChildren: () => import('../pages/batch/batch.module').then(m => m.BatchModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'timetable:list'.
+    // Sub-routes carry their own guards too (see timetable.routing.module.ts).
     path: 'timetable',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'timetable:list' },
     loadChildren: () => import('../pages/timetable/timetable.module').then(m => m.TimetableModule)
   },
   {

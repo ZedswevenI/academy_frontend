@@ -6,8 +6,8 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil, catchError, of, finalize, map } from 'rxjs';
 import * as XLSX from 'xlsx';
-import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
+import { PermissionService } from '../../../../shared/permission.service';
 
 const safeTrim = (v: any): string =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -142,7 +142,7 @@ export class TimetablenewComponent implements OnInit, OnDestroy {
     private breadcrumb: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
-    private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId');
@@ -171,9 +171,7 @@ export class TimetablenewComponent implements OnInit, OnDestroy {
   }
 
   showimport() {
-    return (
-      this.authService.getRole() === 'L1' || this.authService.getRole() === 'L3'
-    );
+    return this.permissionService.hasPermission('timetable:create');
   }
 
   fetchTableData(params: {
