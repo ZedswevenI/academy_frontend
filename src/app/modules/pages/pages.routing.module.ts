@@ -123,8 +123,10 @@ import { PermissionGuard } from '../../shared/permission.guard';
 
 const routes: Routes = [
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'dashboard:view'.
     path: 'dashboard',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'dashboard:view' },
     loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule)
   },
   {
