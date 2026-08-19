@@ -8,6 +8,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import katex from 'katex';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-exam-list',
@@ -95,6 +96,7 @@ export class TestComponent implements OnInit, OnDestroy {
       tooltip: 'View Exam',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('exam:view'),
       callback: (row: any) => this.viewExam(row),
     },
     {
@@ -107,7 +109,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'View Questions',
           icon: 'fa-solid fa-list-ol',
-          show: (row: any) => !!row.isImported,
+          show: (row: any) => !!row.isImported || !this.permissionService.hasPermission('exam:view'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.viewQuestions(row);
@@ -119,7 +121,8 @@ export class TestComponent implements OnInit, OnDestroy {
           show: (row: any) =>
             row.status === 'result_published' ||
             row.status === 'completed' ||
-            !!row.isImported,
+            !!row.isImported ||
+            !this.permissionService.hasPermission('exam:edit'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.editExam(row);
@@ -128,6 +131,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Duplicate Exam',
           icon: 'fa-regular fa-copy',
+          show: () => !this.permissionService.hasAny(['exam:duplicate', 'exam:create']),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.promptDuplicateExam(row);
@@ -136,7 +140,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Add Question',
           icon: 'fa-solid fa-plus',
-          show: (row: any) => row.status !== 'draft' || !!row.isImported,
+          show: (row: any) => (row.status !== 'draft' || !!row.isImported) || !this.permissionService.hasPermission('exam:addQuestion'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.addQuestions(row);
@@ -145,7 +149,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Import Questions',
           icon: 'fa-solid fa-file-import',
-          show: (row: any) => row.status !== 'draft' || !!row.isImported,
+          show: (row: any) => (row.status !== 'draft' || !!row.isImported) || !this.permissionService.hasPermission('exam:importQuestions'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.importQuestions(row);
@@ -154,7 +158,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Import Answers',
           icon: 'fa-solid fa-clipboard-check',
-          show: (row: any) => !!row.isImported,
+          show: (row: any) => !!row.isImported || !this.permissionService.hasPermission('exam:importAnswers'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.importAnswers(row);
@@ -166,7 +170,8 @@ export class TestComponent implements OnInit, OnDestroy {
           show: (row: any) =>
             row.status === 'result_published' ||
             row.status === 'completed' ||
-            !!row.isImported,
+            !!row.isImported ||
+            !this.permissionService.hasPermission('exam:rearrangeQuestions'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.rearrange(row);
@@ -175,7 +180,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Publish Exam',
           icon: 'fa-solid fa-paper-plane',
-          show: (row: any) => row.status !== 'draft' || !!row.isImported,
+          show: (row: any) => (row.status !== 'draft' || !!row.isImported) || !this.permissionService.hasPermission('exam:publish'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.publishExam(row);
@@ -184,7 +189,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Assign Batch',
           icon: 'fa-solid fa-users',
-          show: (row: any) => row.status === 'result_published',
+          show: (row: any) => row.status === 'result_published' || !this.permissionService.hasPermission('exam:assignBatch'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.openBatchModal(row);
@@ -194,8 +199,9 @@ export class TestComponent implements OnInit, OnDestroy {
           text: 'Publish Result',
           icon: 'fa-solid fa-bullhorn',
           show: (row: any) =>
-            row.status !== 'published' &&
-            !(row.graces && row.graces.length > 0),
+            (row.status !== 'published' &&
+            !(row.graces && row.graces.length > 0)) ||
+            !this.permissionService.hasPermission('exam:publishResult'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.publishResult(row);
@@ -204,7 +210,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Result',
           icon: 'fa-solid fa-chart-bar',
-          show: (row: any) => row.status !== 'result_published',
+          show: (row: any) => row.status !== 'result_published' || !this.permissionService.hasPermission('exam:view'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.viewResult(row);
@@ -213,7 +219,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Reevaluate',
           icon: 'fa-solid fa-arrows-rotate',
-          show: (row: any) => row.status !== 'result_published',
+          show: (row: any) => row.status !== 'result_published' || !this.permissionService.hasPermission('exam:reevaluate'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.reevaluateResults(row);
@@ -222,7 +228,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Grace Marks',
           icon: 'fa-solid fa-gift',
-          show: (row: any) => row.status === 'draft',
+          show: (row: any) => row.status === 'draft' || !this.permissionService.hasPermission('exam:graceMarks'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.openGraceModal(row);
@@ -231,7 +237,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Delete',
           icon: 'fa-regular fa-trash-can',
-          show: (row: any) => row.status === 'result_published',
+          show: (row: any) => row.status === 'result_published' || !this.permissionService.hasPermission('exam:delete'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.deleteExam(row);
@@ -240,7 +246,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Disable Exam',
           icon: 'fa-solid fa-ban',
-          show: (row: any) => row.status !== 'result_published',
+          show: (row: any) => row.status !== 'result_published' || !this.permissionService.hasPermission('exam:disable'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.disableExam(row);
@@ -249,7 +255,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Enable Exam',
           icon: 'fa-solid fa-circle-check',
-          show: (row: any) => row.status !== 'disabled',
+          show: (row: any) => row.status !== 'disabled' || !this.permissionService.hasPermission('exam:enable'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.enableExam(row);
@@ -268,11 +274,8 @@ export class TestComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     public authService: AuthService,
     private sanitizer: DomSanitizer,
-  ) {
-    if (this.authService.assignmentRole()) {
-      this.actions.pop();
-    }
-  }
+    private permissionService: PermissionService,
+  ) {}
 
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Exams' }]);
@@ -1434,6 +1437,8 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('exam:view')) return;
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
 

@@ -288,8 +288,12 @@ const routes: Routes = [
     loadChildren: () => import('./inward/inward.module').then(m => m.InwardModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard. Three sub-areas share this
+    // parent path under distinct key prefixes (exam/examContent/examImport) —
+    // the gate accepts any of them; sub-routes enforce the exact key needed.
     path: 'exams',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: ['exam:list', 'examContent:list', 'examImport:list'] },
     loadChildren: () => import('../pages/exams/exam.module').then(m => m.ExamModule)
   },
   {

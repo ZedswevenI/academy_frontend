@@ -221,7 +221,7 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Questions',
         icon: 'fa-solid fa-circle-question',
         route: '/app/exams/questions',
-        permission: 'examContent:list'
+        permission: 'exam:view'
       },
       {
         label: 'Exams',

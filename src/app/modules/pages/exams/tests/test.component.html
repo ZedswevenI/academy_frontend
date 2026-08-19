@@ -11,7 +11,7 @@
                             <i class="fa-solid fa-filter"></i>
                             {{ showFilters ? 'Hide Filters' : 'Filters' }}
                         </button>
-                        <button *appHasRole="['L5','L1']" class="btn btn-create fs-16 fw-medium" type="button"
+                        <button *appHasPermission="'exam:create'" class="btn btn-create fs-16 fw-medium" type="button"
                             routerLink="/app/exams/exams/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Add Exam</button>
@@ -134,7 +134,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                     (click)="closeBatchModal()">Cancel</button>
-                <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="batchAssigning"
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:assignBatch'" [disabled]="batchAssigning"
                     (click)="saveBatchChanges()">
                     <span *ngIf="batchAssigning">
                         <span class="spinner-border spinner-border-sm me-1"></span> Saving...
@@ -183,7 +183,7 @@
                                         <small class="text-muted fs-11 mt-1 d-block">Applied on: {{ g.appliedAt |
                                             date:'short' }}</small>
                                     </div>
-                                    <button class="btn btn-sm btn-link text-danger p-0" (click)="removeGrace(g.graceId)"
+                                    <button class="btn btn-sm btn-link text-danger p-0" *appHasPermission="'exam:graceMarks'" (click)="removeGrace(g.graceId)"
                                         [disabled]="graceRemovingGraceId === g.graceId">
                                         <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== g.graceId"></i>
                                         <span class="spinner-border spinner-border-sm"
@@ -256,7 +256,7 @@
                             </div>
                         </div>
                         <div class="col-12 mt-3 text-end">
-                            <button type="submit" class="btn btn-primary btn-sm w-100" [disabled]="graceApplying">
+                            <button type="submit" class="btn btn-primary btn-sm w-100" *appHasPermission="'exam:graceMarks'" [disabled]="graceApplying">
                                 <span class="spinner-border spinner-border-sm me-1" *ngIf="graceApplying"></span>
                                 {{ graceApplying ? 'Applying...' : 'Apply Grace' }}
                             </button>
@@ -360,9 +360,9 @@
                 <p class="mb-4">Do you want to duplicate this exam <strong>with questions</strong> or <strong>without
                         questions</strong>?</p>
                 <div class="d-flex justify-content-center gap-3">
-                    <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="duplicateExam(false)">Without
+                    <button class="btn btn-close-custom fs-16 fw-medium me-2" *appHasPermission="'exam:create'" (click)="duplicateExam(false)">Without
                         Questions</button>
-                    <button class="btn btn-create fs-16 fw-medium" (click)="duplicateExam(true)">With Questions</button>
+                    <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:duplicate'" (click)="duplicateExam(true)">With Questions</button>
                 </div>
             </div>
         </div>
@@ -418,7 +418,7 @@
                     [disabled]="publishingResult">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmPublishResult()"
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:publishResult'" (click)="confirmPublishResult()"
                     [disabled]="publishingResult">
                     <span *ngIf="publishingResult" class="spinner-border spinner-border-sm me-2" role="status"></span>
                     <i class="fa-solid fa-bullhorn me-1" *ngIf="!publishingResult"></i>
@@ -454,7 +454,7 @@
                     [disabled]="reevaluating">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmReevaluate()"
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:reevaluate'" (click)="confirmReevaluate()"
                     [disabled]="reevaluating || !reevaluateNote.trim()">
                     <span *ngIf="reevaluating" class="spinner-border spinner-border-sm me-2" role="status"></span>
                     <i class="fa-solid fa-arrows-rotate me-1" *ngIf="!reevaluating"></i>

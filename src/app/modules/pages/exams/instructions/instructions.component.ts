@@ -5,6 +5,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-exam-instructions',
@@ -70,6 +71,7 @@ export class ExamInstructionsComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#10b981',
+      show: () => !this.permissionService.hasPermission('examContent:view'),
       callback: (row: any) => this.viewInstruction(row)
     },
     {
@@ -78,6 +80,7 @@ export class ExamInstructionsComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('examContent:edit'),
       callback: (row: any) => this.editInstruction(row)
     },
     {
@@ -86,6 +89,7 @@ export class ExamInstructionsComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#dc2626',
+      show: () => !this.permissionService.hasPermission('examContent:delete'),
       callback: (row: any) => this.deleteInstruction(row)
     }
   ];
@@ -96,6 +100,7 @@ export class ExamInstructionsComponent implements OnInit {
     private alert: AlertService,
     private fb: FormBuilder,
     private sanitizer: DomSanitizer,
+    private permissionService: PermissionService,
   ) { }
 
   ngOnInit(): void {
@@ -422,6 +427,7 @@ export class ExamInstructionsComponent implements OnInit {
   }
 
   async onRowSelected(row: any) {
+    if (!this.permissionService.hasPermission('examContent:view')) return;
     this.viewData = row;
     this.showViewModal = true;
 

@@ -12,10 +12,10 @@
               <i class="fa-solid fa-filter"></i>
               {{ showFilters ? 'Hide Filters' : 'Filters' }}
             </button>
-            <button class="btn btn-import fs-16 fw-medium me-2" type="button" (click)="goToImport()">
+            <button class="btn btn-import fs-16 fw-medium me-2" type="button" *appHasPermission="'exam:importQuestions'" (click)="goToImport()">
               <i class="fa-solid fa-file-import me-1"></i> Import
             </button>
-            <button class="btn btn-create fs-16 fw-medium" type="button" (click)="goToCreate()">
+            <button class="btn btn-create fs-16 fw-medium" type="button" *appHasPermission="'exam:addQuestion'" (click)="goToCreate()">
               <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
               Add Question
             </button>
