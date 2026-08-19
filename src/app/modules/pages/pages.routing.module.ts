@@ -238,8 +238,11 @@ const routes: Routes = [
     loadChildren: () => import('../pages/support/support.module').then(m => m.SupportModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard. Accepts either list or
+    // view since the roster and student-detail screens each carry their own key.
     path: 'performance',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: ['performance:list', 'performance:view'] },
     loadChildren: () => import('../pages/performance/performance.module').then(m => m.PerformanceModule)
   },
   {

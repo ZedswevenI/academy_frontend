@@ -27,18 +27,18 @@
                     </div>
                 </div>
                 <div>
-                    <button *ngIf="['L1','L3','L4'].includes(roleLevel)" class="btn btn-shuffle fs-16 fw-medium me-2"
+                    <button *appHasPermission="'performance:sync'" class="btn btn-shuffle fs-16 fw-medium me-2"
                         [disabled]="syncing" (click)="syncStudent()">
                         <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
                         {{ syncing ? 'Syncing...' : 'Sync' }}
                     </button>
-                    <button class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingCPT" (click)="printCPT()">
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingCPT" (click)="printCPT()">
                         <span *ngIf="exportingCPT" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!exportingCPT" class="fa-solid fa-file-pdf me-1"></i>
                         {{ exportingCPT ? 'Exporting...' : 'Z7i Performance' }}
                     </button>
-                    <button class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingSchool"
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingSchool"
                         (click)="printSchool()">
                         <span *ngIf="exportingSchool" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!exportingSchool" class="fa-solid fa-file-pdf me-1"></i>

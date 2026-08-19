@@ -8,18 +8,20 @@
             </h1>
             <div class="d-flex gap-2">
                 <!-- In the header div next to existing buttons -->
-                <button *ngIf="selectedBatchId" class="btn btn-export fs-16 fw-medium me-2" [disabled]="printingAllCPT"
-                    (click)="printAllCPT()">
-                    <span *ngIf="printingAllCPT" class="spinner-border spinner-border-sm me-1"></span>
-                    <i *ngIf="!printingAllCPT" class="fa-solid fa-print me-1"></i>
-                    {{ printingAllCPT ? 'Exporting...' : 'Z7i Performance' }}
-                </button>
-                <button *ngIf="selectedBatchId" class="btn btn-export fs-16 fw-medium me-2"
-                    [disabled]="printingAllSchool" (click)="printAllSchool()">
-                    <span *ngIf="printingAllSchool" class="spinner-border spinner-border-sm me-1"></span>
-                    <i *ngIf="!printingAllSchool" class="fa-solid fa-print me-1"></i>
-                    {{ printingAllSchool ? 'Exporting...' : 'School Performance' }}
-                </button>
+                <ng-container *ngIf="selectedBatchId">
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2" [disabled]="printingAllCPT"
+                        (click)="printAllCPT()">
+                        <span *ngIf="printingAllCPT" class="spinner-border spinner-border-sm me-1"></span>
+                        <i *ngIf="!printingAllCPT" class="fa-solid fa-print me-1"></i>
+                        {{ printingAllCPT ? 'Exporting...' : 'Z7i Performance' }}
+                    </button>
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2"
+                        [disabled]="printingAllSchool" (click)="printAllSchool()">
+                        <span *ngIf="printingAllSchool" class="spinner-border spinner-border-sm me-1"></span>
+                        <i *ngIf="!printingAllSchool" class="fa-solid fa-print me-1"></i>
+                        {{ printingAllSchool ? 'Exporting...' : 'School Performance' }}
+                    </button>
+                </ng-container>
                 <button *ngIf="canSync && selectedBatchId" class="btn btn-edit fs-16 fw-medium me-2"
                     [disabled]="syncing" (click)="syncBatch()">
                     <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
@@ -123,7 +125,7 @@
 
             <div class="modal-footer border-0 px-4 pb-4 pt-0 gap-2">
                 <button class="btn btn-close-custom fs-16 fw-medium me-2" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-create fs-16 fw-medium" [disabled]="overrideSaving || !overrideForm.subjectId"
+                <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'performance:override'" [disabled]="overrideSaving || !overrideForm.subjectId"
                     (click)="saveOverride()">
                     <span *ngIf="overrideSaving" class="spinner-border spinner-border-sm me-1"></span>
                     {{ overrideSaving ? 'Saving...' : 'Save Override' }}
