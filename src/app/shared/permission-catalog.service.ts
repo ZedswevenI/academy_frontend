@@ -24,6 +24,41 @@ export interface PermissionModuleGroup {
   permissions: PermissionEntry[];
 }
 
+/** "orgProgram" -> "Program", "orgSubTopic" -> "Sub Topic", "orgExamCategory" -> "Exam Category" */
+function friendlySubmoduleName(moduleKey: string): string {
+  const stripped = moduleKey.replace(/^[a-z]+/, '') || moduleKey;
+  const spaced = stripped
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Group display names are derived from each group's first permission label
+ * (text before " - "), e.g. "Org Masters - Add Program" -> "Org Masters".
+ * Several raw `module` keys (orgProgram, orgStaff, orgCenter, ...) share that
+ * same human-readable prefix, so naively using it collapses every Org
+ * Masters submodule to one identical "Org Masters" label. When that
+ * collision happens, disambiguate by appending the submodule name derived
+ * from the raw `module` key — e.g. "Org Masters - Program".
+ */
+export function computeModuleLabels(groups: PermissionModuleGroup[]): Map<string, string> {
+  const base = new Map<string, string>();
+  groups.forEach((g) => {
+    base.set(g.module, g.permissions[0]?.label?.split(' - ')[0]?.trim() || g.module);
+  });
+
+  const counts = new Map<string, number>();
+  base.forEach((label) => counts.set(label, (counts.get(label) || 0) + 1));
+
+  const resolved = new Map<string, string>();
+  base.forEach((label, module) => {
+    resolved.set(module, (counts.get(label) || 0) > 1 ? `${label} - ${friendlySubmoduleName(module)}` : label);
+  });
+  return resolved;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PermissionCatalogService {
   private cache$: Observable<PermissionModuleGroup[]> | null = null;

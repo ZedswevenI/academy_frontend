@@ -17,7 +17,7 @@ import { AlertService } from '../../../../../service/alert/alert.service';
 import { UserService } from '../../../../../service/admin/user.service';
 import { CenterService } from '../../../../../service/admin/orgmaster/center.service';
 import { AuthService } from '../../../../../service/auth/auth.service';
-import { PermissionCatalogService, PermissionModuleGroup } from '../../../../../shared/permission-catalog.service';
+import { PermissionCatalogService, PermissionModuleGroup, computeModuleLabels } from '../../../../../shared/permission-catalog.service';
 
 interface DisplayPermissionGroup extends PermissionModuleGroup {
   moduleLabel: string;
@@ -159,10 +159,11 @@ export class UserAccessComponent implements OnInit {
     this.permissionCatalogService.getCatalog().subscribe({
       next: (groups) => {
         this.catalogLoading = false;
+        const labels = computeModuleLabels(groups);
         this.permissionCatalog = groups
           .map((g) => ({
             ...g,
-            moduleLabel: g.permissions[0]?.label?.split(' - ')[0]?.trim() || g.module,
+            moduleLabel: labels.get(g.module) || g.module,
           }))
           .sort((a, b) => a.moduleLabel.localeCompare(b.moduleLabel));
         this.totalPermissionCount = groups.reduce((n, g) => n + g.permissions.length, 0);
