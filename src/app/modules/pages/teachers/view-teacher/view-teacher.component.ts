@@ -6,6 +6,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-view-teacher',
@@ -72,6 +73,7 @@ export class ViewTeacherComponent implements OnInit {
       tooltip: 'Update Date',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('teacher:edit'),
       callback: (_row: any) => { this.showRelievingModal = true; },
     },
   ];
@@ -83,6 +85,7 @@ export class ViewTeacherComponent implements OnInit {
     private alert: AlertService,
     private commonApi: CommonapiService,
     private backNav: BackNavigationService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -217,16 +220,16 @@ export class ViewTeacherComponent implements OnInit {
   }
 
   updateRelievingDate() {
+    if (!this.permissionService.hasPermission('teacher:edit')) return;
     if (!this.newRelievingDate || this.saving) return;
     const payload = {
       entiId: this.entiId,
-      userId: localStorage.getItem('userId') || '',
-      staffId: this.staffId,
+      recId: this.basicInfo?._id,
       relievingDate: new Date(this.newRelievingDate).getTime(),
     };
     this.saving = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'update')
+      .fetchData(payload, this.moduleName, 'relieving/update')
       .pipe(finalize(() => (this.saving = false)))
       .subscribe({
         next: (res: any) => {
@@ -243,16 +246,16 @@ export class ViewTeacherComponent implements OnInit {
   }
 
   retireEmployee() {
+    if (!this.permissionService.hasPermission('teacher:edit')) return;
     if (this.saving) return;
     const payload = {
       entiId: this.entiId,
-      userId: localStorage.getItem('userId') || '',
-      staffId: this.staffId,
+      recId: this.basicInfo?._id,
       status: 'Inactive',
     };
     this.saving = true;
     this.commonApi
-      .fetchData(payload, this.moduleName, 'update')
+      .fetchData(payload, this.moduleName, 'relieving/update')
       .pipe(finalize(() => (this.saving = false)))
       .subscribe({
         next: (res: any) => {
