@@ -160,8 +160,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/schoolattendance/schoolattendance.module').then(m => m.SchoolattendanceModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'test:list'.
     path: 'assignment',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'test:list' },
     loadChildren: () => import('../pages/test/test.module').then(m => m.TestModule)
   },
   {
@@ -200,8 +202,12 @@ const routes: Routes = [
     loadChildren: () => import('../pages/communication/communication.module').then(m => m.CommunicationModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard. This screen also embeds
+    // the per-batch assign/unassign UI (assignmentBatch:*), so the gate
+    // accepts either module's list-equivalent key.
     path: 'enableassignment',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: ['enableAssignment:list', 'assignmentBatch:list'] },
     loadChildren: () => import('../pages/enableassignment/enableassignment.module').then(m => m.EnableassignmentModule)
   },
   {

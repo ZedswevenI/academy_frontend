@@ -8,16 +8,17 @@ import { QuestionImportComponent } from './question-import/question-import.compo
 import { TestimportComponent } from './testimport/testimport.component';
 import { QuestionViewComponent } from './question-view/question-view.component';
 import { QuestionArrangementComponent } from './question-arrange/question-arange.component';
+import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-  { path: '', component: TestComponent, title: 'Assignments' },
-  { path: 'create', component: TestCreateComponent, title: 'Assignment-Create' },
-  { path: 'import', component: TestimportComponent, title: 'Assignment-Import' },
-  { path: 'question-create', component: QuestionCreatorComponent, title: 'Assignment-Question-Create' },
-  { path: 'question-view', component: QuestionViewComponent, title: 'Assignment-Question-View' },
-  { path: 'question-rearrange', component: QuestionArrangementComponent, title: 'Assignment-Question-rearrangeOrder' },
-  { path: 'question-import', component: QuestionImportComponent, title: 'Assignment-Question-Import' },
-  { path: 'view', component: TestViewComponent, title: 'Assignment-View' }
+  { path: '', component: TestComponent, title: 'Assignments', canActivate: [PermissionGuard], data: { permission: 'test:list' } },
+  { path: 'create', component: TestCreateComponent, title: 'Assignment-Create', canActivate: [PermissionGuard], data: { permission: ['test:create', 'test:edit'] } },
+  { path: 'import', component: TestimportComponent, title: 'Assignment-Import', canActivate: [PermissionGuard], data: { permission: 'test:create' } },
+  { path: 'question-create', component: QuestionCreatorComponent, title: 'Assignment-Question-Create', canActivate: [PermissionGuard], data: { permission: 'test:addQuestion' } },
+  { path: 'question-view', component: QuestionViewComponent, title: 'Assignment-Question-View', canActivate: [PermissionGuard], data: { permission: 'test:view' } },
+  { path: 'question-rearrange', component: QuestionArrangementComponent, title: 'Assignment-Question-rearrangeOrder', canActivate: [PermissionGuard], data: { permission: 'test:rearrangeQuestions' } },
+  { path: 'question-import', component: QuestionImportComponent, title: 'Assignment-Question-Import', canActivate: [PermissionGuard], data: { permission: 'test:importQuestions' } },
+  { path: 'view', component: TestViewComponent, title: 'Assignment-View', canActivate: [PermissionGuard], data: { permission: 'test:view' } }
 ];
 
 @NgModule({

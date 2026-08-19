@@ -12,11 +12,11 @@
                             <i class="fa-solid fa-filter"></i>
                             {{ showFilters ? 'Hide Filters' : 'Filters' }}
                         </button>
-                         <button *ngIf="!authService.assignmentRole()" class="btn btn-import fs-16 fw-medium me-2" type="button"
+                         <button *appHasPermission="'test:create'" class="btn btn-import fs-16 fw-medium me-2" type="button"
                             routerLink="/app/assignment/import">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Import Assignments</button>
-                        <button *ngIf="!authService.assignmentRole()" class="btn btn-create fs-16 fw-medium" type="button"
+                        <button *appHasPermission="'test:create'" class="btn btn-create fs-16 fw-medium" type="button"
                             routerLink="/app/assignment/create">
                             <img src="assets/icons/plus.svg" alt="Location" width="20" height="20" class="me-2">
                             Add Assignment</button>
