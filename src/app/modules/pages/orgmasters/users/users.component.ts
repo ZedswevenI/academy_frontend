@@ -230,7 +230,7 @@ export class UsersComponent implements OnInit {
     private centerService: CenterService,
     private api: CommonapiService,
     private cdr: ChangeDetectorRef,
-    private authService: AuthService,
+    public authService: AuthService,
     private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');

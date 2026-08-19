@@ -18,6 +18,7 @@ import { UserFormComponent } from './users/user-form/user-form.component';
 import { UserViewComponent } from './users/user-view/user-view.component';
 import { UserAccessComponent } from './users/user-access/user-access.component';
 import { HelpCenterComponent } from './helpcenter/help-center.component';
+import { PermissionReferenceComponent } from './permission-reference/permission-reference.component';
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
@@ -139,6 +140,15 @@ const routes: Routes = [
     component: HelpCenterComponent,
     canActivate: [PermissionGuard],
     data: { permission: 'orgHelpCenter:list' }
+  },
+  {
+    // Admin-only cross-reference of the full permission catalog — not tied
+    // to a single permission key, gated instead by AuthService.getIsAdmin()
+    // inside the component (same convention as users/access/:id).
+    path: 'permissions-reference',
+    component: PermissionReferenceComponent,
+    canActivate: [PermissionGuard],
+    data: { permission: 'orgUser:assignAccess' }
   }
 ];
 
