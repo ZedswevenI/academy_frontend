@@ -9,7 +9,7 @@
             <i class="fa-solid fa-hourglass-half me-2"></i>Phase Plan
           </h1>
           <!-- Header buttons -->
-          <div *appHasRole="['L1', 'L3']" class="d-flex gap-2">
+          <div *appHasPermission="'phase:create'" class="d-flex gap-2">
             <button class="btn btn-import fs-16 fw-medium me-2" type="button"
               (click)="openImportModal()">
               <i class="fa-solid fa-file-import me-0"></i>
@@ -74,7 +74,7 @@
     <!-- Table -->
     <div class="mt-3" *ngIf="isProceed">
       <div class="d-flex justify-content-end mb-2">
-        <button class="btn btn-export fs-16 fw-medium"
+        <button class="btn btn-export fs-16 fw-medium" *appHasPermission="'phase:view'"
           type="button" [disabled]="!dataArray.length" (click)="exportAllPhases()">
           <i class="fa-solid fa-file-export btn-icon"></i>Export All
         </button>
@@ -181,11 +181,11 @@
         <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" data-bs-dismiss="modal">
           Close
         </button>
-        <button *appHasRole="['L1']" type="button" class="btn btn-export fs-16 fw-medium me-2"
+        <button *appHasPermission="'phase:view'" type="button" class="btn btn-export fs-16 fw-medium me-2"
           (click)="exportPhase()">
           <i class="fa-solid fa-file-export btn-icon"></i>Export
         </button>
-        <button type="button" class="btn btn-edit fs-16 fw-medium" data-bs-dismiss="modal"
+        <button *appHasPermission="'phase:edit'" type="button" class="btn btn-edit fs-16 fw-medium" data-bs-dismiss="modal"
           (click)="onEdit(selectedPhase)">
           <i class="fa-solid fa-pen-to-square btn-icon"></i>Edit
         </button>
@@ -337,7 +337,7 @@
           Close
         </button>
 
-        <button type="button" class="btn btn-primary rounded-pill px-4" (click)="submitImport()"
+        <button type="button" class="btn btn-primary rounded-pill px-4" *appHasPermission="'phase:create'" (click)="submitImport()"
           [disabled]="importLoading || parsing || !importRows.length">
           <span *ngIf="importLoading" class="spinner-border spinner-border-sm me-2"></span>
           {{ importLoading ? 'Importing...' : 'Import Now' }}

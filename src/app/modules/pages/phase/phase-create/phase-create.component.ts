@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-phase-create',
@@ -42,6 +43,7 @@ export class PhaseCreateComponent implements OnInit {
     private fb: FormBuilder,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId') || '';
     const state: any = history.state;
@@ -191,6 +193,7 @@ export class PhaseCreateComponent implements OnInit {
   }
 
   submitPhase(): void {
+    if (!this.permissionService.hasPermission(this.isEditMode ? 'phase:edit' : 'phase:create')) return;
     if (this.phaseForm.invalid) {
       this.alert.error('Please fill all required fields correctly');
       this.phaseForm.markAllAsTouched();

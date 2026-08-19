@@ -274,8 +274,10 @@ const routes: Routes = [
     loadChildren: () => import('../pages/orgmasters/orgmasters.module').then(m => m.OrgmastersModule)
   },
   {
+    // Migrated off RoleGuard onto PermissionGuard — requires 'phase:list'.
     path: 'phase',
-    canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
+    data: { permission: 'phase:list' },
     loadChildren: () => import('../pages/phase/phase.module').then(m => m.PhaseModule)
   },
   {
