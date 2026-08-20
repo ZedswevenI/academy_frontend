@@ -16,6 +16,7 @@ import { AlertService } from '../../../../../service/alert/alert.service';
 import { UserService } from '../../../../../service/admin/user.service';
 import { CenterService } from '../../../../../service/admin/orgmaster/center.service';
 import { PermissionCatalogService, PermissionModuleGroup, computeModuleLabels } from '../../../../../shared/permission-catalog.service';
+import { resolveDependencies } from '../../../../../shared/permission-dependencies';
 
 interface DisplayPermissionGroup extends PermissionModuleGroup {
   moduleLabel: string;
@@ -267,11 +268,17 @@ export class UserFormComponent implements OnInit {
 
   togglePermission(key: string, checked: boolean): void {
     const ctrl = this.userForm.get('permissions');
-    const arr: string[] = [...(ctrl?.value || [])];
-    const idx = arr.indexOf(key);
-    if (checked && idx === -1) arr.push(key);
-    if (!checked && idx !== -1) arr.splice(idx, 1);
-    ctrl?.setValue(arr);
+    const arr = new Set<string>(ctrl?.value || []);
+    if (checked) {
+      arr.add(key);
+      // Auto-grant the auxiliary "list" permissions this key's screen
+      // depends on for its filter dropdowns/reference data — otherwise
+      // the action is visible but silently 403s on those lookups.
+      resolveDependencies([key]).forEach((dep) => arr.add(dep));
+    } else {
+      arr.delete(key);
+    }
+    ctrl?.setValue(Array.from(arr));
     ctrl?.markAsTouched();
   }
 
@@ -290,8 +297,12 @@ export class UserFormComponent implements OnInit {
     const ctrl = this.userForm.get('permissions');
     const arr = new Set<string>(ctrl?.value || []);
     const keys = group.permissions.map((p) => p.permissionKey);
-    if (checked) keys.forEach((k) => arr.add(k));
-    else keys.forEach((k) => arr.delete(k));
+    if (checked) {
+      keys.forEach((k) => arr.add(k));
+      resolveDependencies(keys).forEach((dep) => arr.add(dep));
+    } else {
+      keys.forEach((k) => arr.delete(k));
+    }
     ctrl?.setValue(Array.from(arr));
     ctrl?.markAsTouched();
   }
