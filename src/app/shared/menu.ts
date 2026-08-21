@@ -310,25 +310,28 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Topic',
         icon: 'fa-solid fa-book-open',
         route: '/app/org-master/topics',
-        permission: 'orgTopic:list'
+        permission: ['orgTopic:list', 'orgTopic:create'],
+         requireAll: true
       },
       {
         label: 'Sub Topic',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-topic',
-        permission: 'orgSubTopic:list'
+        permission: ['orgSubTopic:list', 'orgSubTopic:create'],
+             requireAll: true
       },
       {
         label: 'Category',
         icon: 'fa-solid fa-book-open',
         route: '/app/org-master/category',
-        permission: 'orgExamCategory:list'
+        permission: ['orgExamCategory:list', 'orgExamCategory:create'],
+        requireAll: true
       },
       {
         label: 'Sub Category',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-category',
-        permission: 'orgExamCategory:addSubCategories'
+        permission: ['orgExamCategory:addSubCategories', 'orgExamCategory:createSubCategories']
       },
       {
         label: 'Bank Accounts',

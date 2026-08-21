@@ -67,13 +67,19 @@ const routes: Routes = [
     path: 'department',
     component: DepartmentComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgDept:list' }
+    data: {
+      permission: ['orgDept:list', 'orgDept:list'],
+      requireAll: true
+    }
   },
   {
     path: 'subject',
     component: SubjectComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgSubject:list' }
+    data: {
+      permission: ['orgSubject:list', 'orgSubject:create'],
+      requireAll: true
+    }
   },
   {
     path: 'bankaccounts',
@@ -85,7 +91,10 @@ const routes: Routes = [
     path: 'category',
     component: ExamcategoryComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgExamCategory:list' }
+    data: {
+      permission: ['orgExamCategory:list', 'orgExamCategory:create'],
+      requireAll: true
+    },
   },
   {
     // Every action on this screen (list/create/edit/delete/import) is bundled
@@ -93,19 +102,28 @@ const routes: Routes = [
     path: 'sub-category',
     component: ExamsubcategoryComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgExamCategory:addSubCategories' }
+    data: {
+      permission: ['orgExamCategory:addSubCategories', 'orgExamCategory:createSubCategories'],
+      requireAll: true
+    }
   },
   {
     path: 'topics',
     component: TopicComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgTopic:list' }
+    data: {
+      permission: ['orgTopic:list', 'orgTopic:create'],
+      requireAll: true
+    }
   },
   {
     path: 'sub-topic',
     component: SubtopicComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgSubTopic:list' }
+    data: {
+      permission: ['orgSubTopic:list', 'orgSubTopic:create'],
+      requireAll: true
+    }
   },
   {
     // Migrated off the shared org-master RoleGuard onto its own PermissionGuard
