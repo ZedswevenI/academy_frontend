@@ -66,7 +66,7 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: 'fa-solid fa-chalkboard-user',
     route: '/app/teacher',
     permission: ['teacher:list', 'teacher:view'],
-     requireAll: true
+    requireAll: true
   },
   {
     label: 'Assignments',
@@ -120,7 +120,7 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: 'fa-solid fa-book-open',
     route: '/app/knowledge',
     permission: ['knowledge:list', 'knowledge:view'],
-     requireAll: true
+    requireAll: true
   },
   {
     label: 'Study Material',
@@ -285,7 +285,7 @@ export const MENU_ITEMS: MenuItem[] = [
         icon: 'fa-solid fa-users',
         route: '/app/org-master/staff',
         permission: ['orgStaff:list', 'orgStaff:view'],
-         requireAll: true
+        requireAll: true
       },
       {
         label: 'Program',
@@ -304,21 +304,22 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Subject',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/subject',
-        permission: 'orgSubject:list'
+        permission: ['orgSubject:list', 'orgSubject:create'],
+        requireAll: true
       },
       {
         label: 'Topic',
         icon: 'fa-solid fa-book-open',
         route: '/app/org-master/topics',
         permission: ['orgTopic:list', 'orgTopic:create'],
-         requireAll: true
+        requireAll: true
       },
       {
         label: 'Sub Topic',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-topic',
         permission: ['orgSubTopic:list', 'orgSubTopic:create'],
-             requireAll: true
+        requireAll: true
       },
       {
         label: 'Category',
