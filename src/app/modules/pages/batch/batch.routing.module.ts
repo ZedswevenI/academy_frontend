@@ -14,7 +14,7 @@ import { PermissionGuard } from '../../../shared/permission.guard';
 // so a typed-in URL can't bypass the permission that gates the equivalent
 // inline action.
 const routes: Routes = [
-    { path: '', component: BatchComponent, title: 'My Batch'},
+    { path: '', component: BatchComponent, title: 'My Batch', canActivate: [PermissionGuard], data: {permission: ['batch:list', 'batch:view']} },
     { path: 'edit', component: EditBatchComponent, title: 'My Batch', canActivate: [PermissionGuard], data: { permission: 'batch:edit' } },
     { path: 'addFaculty', component: AddFacultyComponent, title: 'My Batch', canActivate: [PermissionGuard], data: { permission: 'batch:assignFaculty' } },
     { path: 'assign', component: AssignStudentComponent, title: 'My Batch', canActivate: [PermissionGuard], data: { permission: 'batch:assignStudents' } },

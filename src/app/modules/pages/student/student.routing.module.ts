@@ -8,10 +8,10 @@ import { GridListComponent } from './grid-list/grid-list.component';
 import { TableListComponent } from './table-list/table-list.component';
 
 const routes: Routes = [
-  { path: '', component: StudentComponent, title: 'Student', canActivate: [PermissionGuard], data: { permission: 'student:list' } },
+  { path: '', component: StudentComponent, title: 'Student', canActivate: [PermissionGuard], data: { permission: ['student:list', 'student:view'] } },
   { path: 'view/:id', component: StudentViewComponent, title: 'Student', canActivate: [PermissionGuard], data: { permission: 'student:view' } },
   { path: 'grid', component: GridListComponent, title: 'Student', canActivate: [PermissionGuard], data: { permission: 'student:list' } },
-  { path: 'list', component: TableListComponent, title: 'Student', canActivate: [PermissionGuard], data: { permission: 'student:list' } },
+  { path: 'list', component: TableListComponent, title: 'Student', canActivate: [PermissionGuard], data: { permission: ['student:list', 'student:view'] } },
 ];
 
 @NgModule({

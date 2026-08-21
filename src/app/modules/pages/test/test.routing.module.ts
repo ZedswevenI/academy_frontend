@@ -11,7 +11,7 @@ import { QuestionArrangementComponent } from './question-arrange/question-arange
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-  { path: '', component: TestComponent, title: 'Assignments', canActivate: [PermissionGuard], data: { permission: 'test:list' } },
+  { path: '', component: TestComponent, title: 'Assignments', canActivate: [PermissionGuard], data: { permission: ['test:list', 'test:view'] } },
   { path: 'create', component: TestCreateComponent, title: 'Assignment-Create', canActivate: [PermissionGuard], data: { permission: ['test:create', 'test:edit'] } },
   { path: 'import', component: TestimportComponent, title: 'Assignment-Import', canActivate: [PermissionGuard], data: { permission: 'test:create' } },
   { path: 'question-create', component: QuestionCreatorComponent, title: 'Assignment-Question-Create', canActivate: [PermissionGuard], data: { permission: 'test:addQuestion' } },

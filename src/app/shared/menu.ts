@@ -12,6 +12,7 @@ export interface MenuItem {
   permission?: string | string[];
   children?: MenuItem[];
   expanded?: boolean;
+  requireAll?: boolean;
 }
 
 export interface NavItem {
@@ -31,13 +32,15 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Batch',
     icon: 'fa-solid fa-layer-group',
     route: '/app/batch',
-    permission: 'batch:list'
+    permission: ['batch:list', 'batch:view'],
+    requireAll: true
   },
   {
     label: 'Timetable',
     icon: 'fa-solid fa-calendar-days',
     route: '/app/timetable',
-    permission: 'timetable:list'
+    permission: ['timetable:list', 'timetable:view'],
+    requireAll: true
   },
   {
     label: 'Attendance',
@@ -55,19 +58,22 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Students',
     icon: 'fa-solid fa-user-graduate',
     route: '/app/student',
-    permission: 'student:list'
+    permission: ['student:list', 'student:view'],
+    requireAll: true
   },
   {
     label: 'Teachers',
     icon: 'fa-solid fa-chalkboard-user',
     route: '/app/teacher',
-    permission: 'teacher:list'
+    permission: ['teacher:list', 'teacher:view'],
+     requireAll: true
   },
   {
     label: 'Assignments',
     icon: 'fa-solid fa-file-pen',
     route: '/app/assignment',
-    permission: 'test:list'
+    permission: ['test:list', 'test:view'],
+    requireAll: true
   },
   {
     label: 'Enable Assignment',
@@ -79,7 +85,8 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Phase Plan',
     icon: 'fa-solid fa-hourglass-half',
     route: '/app/phase',
-    permission: 'phase:list'
+    permission: ['phase:list', 'phase:view'],
+    requireAll: true
   },
   {
     label: 'Activities',
@@ -91,37 +98,43 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Student Performance',
     icon: 'fa-solid fa-chart-column',
     route: '/app/performance',
-    permission: 'performance:list'
+    permission: ['performance:list', 'performance:view'],
+    requireAll: true
   },
   {
     label: 'Tasks',
     icon: 'fa-solid fa-list-check',
     route: '/app/task',
-    permission: 'task:list'
+    permission: ['task:list', 'task:view'],
+    requireAll: true
   },
   {
     label: 'PTM',
     icon: 'fa-solid fa-people-group',
     route: '/app/ptm',
-    permission: 'ptm:list'
+    permission: ['ptm:list', 'ptm:view'],
+    requireAll: true
   },
   {
     label: 'Library',
     icon: 'fa-solid fa-book-open',
     route: '/app/knowledge',
-    permission: 'knowledge:list'
+    permission: ['knowledge:list', 'knowledge:view'],
+     requireAll: true
   },
   {
     label: 'Study Material',
     icon: 'fa-solid fa-box-open',
     route: '/app/package',
-    permission: 'package:list'
+    permission: ['package:list', 'package:view'],
+    requireAll: true
   },
   {
     label: 'Circular',
     icon: 'fa-solid fa-bullhorn',
     route: '/app/circular',
-    permission: 'circular:list'
+    permission: ['circular:list', 'circular:view'],
+    requireAll: true
   },
   {
     label: 'Feedback',
@@ -157,7 +170,8 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Invigilation',
     icon: 'fa-solid fa-person-chalkboard',
     route: '/app/invigilation',
-    permission: 'invigilation:list'
+    permission: ['invigilation:list', 'invigilation:view'],
+    requireAll: true
   },
   {
     label: 'Communication',
@@ -199,7 +213,8 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Support',
     icon: 'fa-solid fa-headset',
     route: '/app/support',
-    permission: 'support:list'
+    permission: ['support:list', 'support:view'],
+    requireAll: true
   },
   {
     label: 'Exams',
@@ -261,19 +276,23 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Center',
         icon: 'fa-solid fa-landmark',
         route: '/app/org-master/center',
-        permission: 'orgCenter:list'
+        // permission: 'orgCenter:list'
+        permission: ['orgCenter:list', 'orgCenter:view'],
+        requireAll: true
       },
       {
         label: 'Staff',
         icon: 'fa-solid fa-users',
         route: '/app/org-master/staff',
-        permission: 'orgStaff:list'
+        permission: ['orgStaff:list', 'orgStaff:view'],
+         requireAll: true
       },
       {
         label: 'Program',
         icon: 'fa-solid fa-graduation-cap',
         route: '/app/org-master/program',
-        permission: 'orgProgram:list'
+        permission: ['orgProgram:list', 'orgProgram:view'],
+        requireAll: true
       },
       {
         label: 'Department',
@@ -321,7 +340,8 @@ export const MENU_ITEMS: MenuItem[] = [
         label: 'Users',
         icon: 'fa-solid fa-user',
         route: '/app/org-master/users',
-        permission: 'orgUser:list'
+        permission: ['orgUser:list', 'orgUser:view'],
+        requireAll: true
       },
       {
         label: 'Help Center',

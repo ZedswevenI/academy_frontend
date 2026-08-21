@@ -275,7 +275,8 @@ const routes: Routes = [
   },
   {
     path: 'org-master',
-    canActivate: [RoleGuard],
+    // canActivate: [RoleGuard],
+    canActivate: [PermissionGuard],
     loadChildren: () => import('../pages/orgmasters/orgmasters.module').then(m => m.OrgmastersModule)
   },
   {

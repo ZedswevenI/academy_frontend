@@ -5,7 +5,7 @@ import { ViewTeacherComponent } from './view-teacher/view-teacher.component';
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-  { path: '', component: TeacherComponent, title: 'Teachers', canActivate: [PermissionGuard], data: { permission: 'teacher:list' } },
+  { path: '', component: TeacherComponent, title: 'Teachers', canActivate: [PermissionGuard], data: { permission: ['teacher:list', 'teacher:view'] } },
   { path: 'view', component: ViewTeacherComponent, title: 'Teacher Details', canActivate: [PermissionGuard], data: { permission: 'teacher:view' } }
 ];
 

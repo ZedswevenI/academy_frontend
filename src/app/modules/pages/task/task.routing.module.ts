@@ -6,7 +6,7 @@ import { TaskCreateComponent } from './task-create/task-create.component';
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-    { path: '', component: TaskComponent, title: 'Task', canActivate: [PermissionGuard], data: { permission: 'task:list' } },
+    { path: '', component: TaskComponent, title: 'Task', canActivate: [PermissionGuard], data: { permission: ['task:list', 'task:view'] } },
     { path: 'view', component: TaskViewComponent, title: 'Task', canActivate: [PermissionGuard], data: { permission: 'task:view' } },
     // Create AND Edit share this route/component (isEditMode derived from
     // router state, not the URL) — accept either key to enter.

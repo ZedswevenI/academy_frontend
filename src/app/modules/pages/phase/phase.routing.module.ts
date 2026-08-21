@@ -6,7 +6,7 @@ import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
   { path: 'create', component: PhaseCreateComponent, title: 'Phase Plan', canActivate: [PermissionGuard], data: { permission: ['phase:create', 'phase:edit'] } },
-  { path: '', component: PhaseListComponent, title: 'Phase Plan', canActivate: [PermissionGuard], data: { permission: 'phase:list' } }
+  { path: '', component: PhaseListComponent, title: 'Phase Plan', canActivate: [PermissionGuard], data: { permission: ['phase:list', 'phase:view'] } }
 ];
 
 @NgModule({

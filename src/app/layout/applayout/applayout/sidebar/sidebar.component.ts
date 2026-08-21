@@ -42,22 +42,55 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
   }
 
+  // private filterMenuByPermission(items: MenuItem[]): MenuItem[] {
+  //   return items
+  //     .map((item): MenuItem | null => {
+  //       if (item.children) {
+  //         const children = this.filterMenuByPermission(item.children);
+  //         return children.length ? { ...item, children } : null;
+  //       }
+  //       const keys = Array.isArray(item.permission)
+  //         ? item.permission
+  //         : item.permission
+  //           ? [item.permission]
+  //           : [];
+  //       return keys.length && this.permissionService.hasAny(keys) ? item : null;
+  //     })
+  //     .filter((item): item is MenuItem => item !== null);
+  // }
+
   private filterMenuByPermission(items: MenuItem[]): MenuItem[] {
-    return items
-      .map((item): MenuItem | null => {
-        if (item.children) {
-          const children = this.filterMenuByPermission(item.children);
-          return children.length ? { ...item, children } : null;
-        }
-        const keys = Array.isArray(item.permission)
-          ? item.permission
-          : item.permission
-            ? [item.permission]
-            : [];
-        return keys.length && this.permissionService.hasAny(keys) ? item : null;
-      })
-      .filter((item): item is MenuItem => item !== null);
-  }
+  return items
+    .map((item): MenuItem | null => {
+
+      // Parent menu
+      if (item.children) {
+        const children = this.filterMenuByPermission(item.children);
+
+        return children.length
+          ? { ...item, children }
+          : null;
+      }
+
+      // Leaf menu
+      const keys = Array.isArray(item.permission)
+        ? item.permission
+        : item.permission
+          ? [item.permission]
+          : [];
+
+      if (!keys.length) {
+        return null;
+      }
+
+      const hasAccess = item.requireAll
+        ? this.permissionService.hasAll(keys)
+        : this.permissionService.hasAny(keys);
+
+      return hasAccess ? item : null;
+    })
+    .filter((item): item is MenuItem => item !== null);
+}
 
   logout(): void {
     this.authService.logout();

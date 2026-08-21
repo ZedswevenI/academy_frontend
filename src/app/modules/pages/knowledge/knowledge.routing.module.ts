@@ -6,7 +6,7 @@ import { KnowledgeCreateComponent } from './knowledge-create/knowledge-create.co
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-    { path: '', component: KnowledgeListComponent, title: 'Library', canActivate: [PermissionGuard], data: { permission: 'knowledge:list' } },
+    { path: '', component: KnowledgeListComponent, title: 'Library', canActivate: [PermissionGuard], data: { permission: ['knowledge:list', 'knowledge:view'] } },
     // Create AND Edit share this route/component (isEditMode derived from
     // router state, not the URL) — accept either key.
     { path: 'create', component: KnowledgeCreateComponent, title: 'Library', canActivate: [PermissionGuard], data: { permission: ['knowledge:create', 'knowledge:edit'] } },

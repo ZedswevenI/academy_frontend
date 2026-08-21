@@ -6,7 +6,7 @@ import { PtmviewComponent } from './ptmview/ptmview.component';
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-  { path: '', component: PtmComponent, title: 'PTM', canActivate: [PermissionGuard], data: { permission: 'ptm:list' } },
+  { path: '', component: PtmComponent, title: 'PTM', canActivate: [PermissionGuard], data: { permission: ['ptm:list', 'ptm:view']} },
   // Create AND Edit share this route/component (isEditMode derived from
   // router state, not the URL) — accept either key.
   { path: 'create', component: CreatePTMComponent, title: 'PTM', canActivate: [PermissionGuard], data: { permission: ['ptm:create', 'ptm:edit'] } },

@@ -7,7 +7,7 @@ import { BatchperformanceComponent } from './batchperformance/batchperformance.c
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-  { path: '', component: PerformanceComponent, title: 'Performance', canActivate: [PermissionGuard], data: { permission: 'performance:list' } },
+  { path: '', component: PerformanceComponent, title: 'Performance', canActivate: [PermissionGuard], data: { permission: ['performance:list', 'performance:view'] } },
   { path: 'student/:id', component: StudentperformanceComponent, title: 'Student Performance', canActivate: [PermissionGuard], data: { permission: 'performance:view' } },
   // Batch Report — out of scope for the current Student Performance migration pass, left ungated beyond the parent module gate.
   { path: 'batch-report', component: BatchperformanceComponent, title: 'Performance - Batch Report' }

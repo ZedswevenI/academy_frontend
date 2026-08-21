@@ -5,7 +5,7 @@ import { PackCreateComponent } from './pack-create/pack-create.component';
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-    { path: '', component: PackageComponent, title: 'Study Materials', canActivate: [PermissionGuard], data: { permission: 'package:list' } },
+    { path: '', component: PackageComponent, title: 'Study Materials', canActivate: [PermissionGuard], data: { permission: ['package:list', 'package:view'] } },
     // Create AND Edit share this route/component (isEditMode derived from
     // router state, not the URL) — accept either key.
     { path: 'create', component: PackCreateComponent, title: 'Study Materials', canActivate: [PermissionGuard], data: { permission: ['package:create', 'package:edit'] } }

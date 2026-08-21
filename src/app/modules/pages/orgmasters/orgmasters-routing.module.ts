@@ -30,7 +30,13 @@ const routes: Routes = [
     path: 'center',
     component: CenterComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgCenter:list' }
+    // data: { 
+    //   permission: 'orgCenter:list'
+    // }
+    data: {
+      permission: ['orgCenter:list', 'orgCenter:view'],
+      requireAll: true
+    }
   },
   {
     path: 'center/view/:id',
@@ -42,13 +48,20 @@ const routes: Routes = [
     path: 'staff',
     component: StaffComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgStaff:list' }
+    data: {
+      permission: ['orgStaff:list', 'orgStaff:view'],
+      requireAll: true
+    }
   },
   {
     path: 'program',
     component: ProgramComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgProgram:list' }
+    data: {
+      permission: ['orgProgram:list', 'orgProgram:view'],
+      requireAll: true
+    },
+
   },
   {
     path: 'department',
@@ -107,7 +120,10 @@ const routes: Routes = [
     path: 'users',
     component: UsersComponent,
     canActivate: [PermissionGuard],
-    data: { permission: 'orgUser:list' }
+    data: {
+      permission: ['orgUser:list', 'orgUser:view'],
+      requireAll: true
+    }
   },
   {
     path: 'users/create',
@@ -156,4 +172,4 @@ const routes: Routes = [
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
-export class OrgmastersRoutingModule {}
+export class OrgmastersRoutingModule { }

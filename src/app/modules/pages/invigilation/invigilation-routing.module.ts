@@ -7,7 +7,7 @@ import { InvigilationcreateComponent } from './invigilationcreate/invigilationcr
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
-  { path: '', component: InvigilationComponent, canActivate: [PermissionGuard], data: { permission: 'invigilation:list' } },
+  { path: '', component: InvigilationComponent, canActivate: [PermissionGuard], data: { permission: ['invigilation:list', 'invigilation:view'] } },
   { path: 'create', component: InvigilationcreateComponent, canActivate: [PermissionGuard], data: { permission: 'invigilation:create' } },
   { path: 'edit/:id', component: InvigilationcreateComponent, canActivate: [PermissionGuard], data: { permission: 'invigilation:edit' } },
   { path: 'view/:id', component: InvigilationviewComponent, canActivate: [PermissionGuard], data: { permission: 'invigilation:view' } },

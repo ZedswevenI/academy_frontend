@@ -30,7 +30,7 @@ export class PermissionGuard implements CanActivate {
     private permission: PermissionService,
     private alert: AlertService,
     private router: Router,
-  ) {}
+  ) { }
 
   canActivate(route: ActivatedRouteSnapshot, _state: RouterStateSnapshot): Observable<boolean> | boolean {
     if (!this.auth.hasValidSession()) {
@@ -55,9 +55,23 @@ export class PermissionGuard implements CanActivate {
           return false;
         }
 
+        // if (required) {
+        //   const keys = Array.isArray(required) ? required : [required];
+        //   if (!this.permission.hasAny(keys)) {
+        //     this.alert.error("You don't have permission to access this page.");
+        //     this.router.navigate(['/auth/login']);
+        //     return false;
+        //   }
+        // }
         if (required) {
           const keys = Array.isArray(required) ? required : [required];
-          if (!this.permission.hasAny(keys)) {
+          const requireAll = route.data?.['requireAll'] === true;
+
+          const hasAccess = requireAll
+            ? this.permission.hasAll(keys)
+            : this.permission.hasAny(keys);
+
+          if (!hasAccess) {
             this.alert.error("You don't have permission to access this page.");
             this.router.navigate(['/auth/login']);
             return false;
