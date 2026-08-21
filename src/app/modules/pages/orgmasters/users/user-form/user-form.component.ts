@@ -105,6 +105,21 @@ export class UserFormComponent implements OnInit {
 
     this.applyCenterValidator();
     this.userForm.get('role')?.valueChanges.subscribe(() => this.applyCenterValidator());
+    // L4 = Teacher role level. Teachers need at least teacher:view to reach
+    // their own profile/dashboard — auto-grant it whenever L4 is selected,
+    // so admins don't have to remember to check it by hand every time.
+    this.userForm.get('role')?.valueChanges.subscribe((role) => {
+      if (role === 'L4') this.ensureTeacherViewPermission();
+    });
+  }
+
+  private ensureTeacherViewPermission(): void {
+    const ctrl = this.userForm.get('permissions');
+    const arr = new Set<string>(ctrl?.value || []);
+    if (!arr.has('teacher:view')) {
+      arr.add('teacher:view');
+      ctrl?.setValue(Array.from(arr));
+    }
   }
 
   /** No dedicated single-user-by-id endpoint confirmed yet — reuses the same
@@ -146,6 +161,12 @@ export class UserFormComponent implements OnInit {
     });
     this.userForm.get('empCode')?.setValue(row?.empCode || '', { emitEvent: false });
     this.userForm.get('empCode')?.disable({ emitEvent: false });
+    // Backfill for existing L4 users edited before this rule existed, or
+    // whose permissions were set some other way — patchValue above already
+    // fired the role valueChanges subscription, but with the 'permissions'
+    // control still holding its pre-patch value, so it can't be relied on
+    // here; do it explicitly once the whole form has settled.
+    if (this.userForm.get('role')?.value === 'L4') this.ensureTeacherViewPermission();
 
     // Admin users bypass permissions entirely (isAdmin === true short-circuits
     // every check) — the backend 400s if you try to edit their access, so the
