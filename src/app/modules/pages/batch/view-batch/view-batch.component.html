@@ -6,12 +6,12 @@
             <strong class="text-dark ms-1">{{ batch?.classTeacherName || 'Not Assigned' }}</strong>
         </div>
         <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none"
-            (click)="openOffcanvas('classTeacher')">
+            *appHasPermission="'batch:assignFaculty'" (click)="openOffcanvas('classTeacher')">
             {{ batch?.classTeacherId ? 'Change' : 'Assign' }}
         </button>
     </div>
     <div>
-        <button class="btn btn-edit fs-16 fw-medium me-2" *appHasRole="['L1']" (click)="openOffcanvas('edit')">
+        <button class="btn btn-edit fs-16 fw-medium me-2" *appHasPermission="'batch:edit'" (click)="openOffcanvas('edit')">
             <i class="fa-regular fa-pen-to-square btn-icon"></i> Edit
         </button>
         <button class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">
@@ -37,29 +37,32 @@
     </div>
     <div class="d-flex justify-content-end align-items-start mb-3 flex-wrap gap-2">
         <!-- Shuffle -->
-        <button class="btn btn-shuffle fs-16 fw-medium" (click)="openOffcanvas('shuffle')">
+        <button class="btn btn-shuffle fs-16 fw-medium" *appHasPermission="'batch:shuffleStudents'"
+            (click)="openOffcanvas('shuffle')">
             <i class="fa-solid fa-shuffle btn-icon"></i> Shuffle
         </button>
         <!-- Late Entry -->
-        <button class="btn btn-late-entry fs-16 fw-medium" (click)="openLateEntry()">
+        <button class="btn btn-late-entry fs-16 fw-medium" *appHasPermission="'batch:logLateEntry'"
+            (click)="openLateEntry()">
             <i class="fa-solid fa-clock-rotate-left btn-icon"></i> Late Entry
         </button>
         <!-- Spl class -->
-        <button class="btn btn-import fs-16 fw-medium" (click)="openSpecialClass()">
+        <button class="btn btn-import fs-16 fw-medium" *appHasPermission="'batch:addSpecialClass'"
+            (click)="openSpecialClass()">
             <i class="fa-solid fa-calendar-plus btn-icon"></i> Special Class
         </button>
         <!-- Promote -->
-        <button class="btn btn-create fs-16 fw-medium" *appHasRole="['L1']" (click)="openPromoteModal()"
+        <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'batch:promote'" (click)="openPromoteModal()"
             [disabled]="batch?.status !== 'ACTIVE'">
             <i class="fa-solid fa-arrow-up-right-dots btn-icon"></i> Promote
         </button>
         <!-- Export -->
-        <button class="btn btn-export fs-16 fw-medium" *appHasRole="['L1']" (click)="exportBatch()">
+        <button class="btn btn-export fs-16 fw-medium" *appHasPermission="'batch:export'" (click)="exportBatch()">
             <i class="fa-solid fa-file-export btn-icon"></i> Export
         </button>
         <!-- Close -->
-        <button class="btn btn-close-custom fs-16 fw-medium" *appHasRole="['L1']" (click)="openCloseBatch()"
-            [disabled]="batch?.status === 'CLOSED'">
+        <button class="btn btn-close-custom fs-16 fw-medium" *appHasPermission="'batch:close'"
+            (click)="openCloseBatch()" [disabled]="batch?.status === 'CLOSED'">
             <i class="fa-solid fa-lock btn-icon"></i>Close
         </button>
     </div>
@@ -166,20 +169,22 @@
             </li>
         </ul>
         <div class="d-flex gap-2">
-            <button *ngIf="activeTab === 'students'" class="btn btn-create fs-16 fw-medium"
-                (click)="openOffcanvas('assign')">
-                <i class="fa-solid fa-user-plus btn-icon"></i> Assign Students
-            </button>
-            <ng-container *appHasRole="['L1']">
+            <ng-container *appHasPermission="'batch:assignStudents'">
+                <button *ngIf="activeTab === 'students'" class="btn btn-create fs-16 fw-medium"
+                    (click)="openOffcanvas('assign')">
+                    <i class="fa-solid fa-user-plus btn-icon"></i> Assign Students
+                </button>
                 <button *ngIf="activeTab === 'students'" class="btn btn-import fs-16 fw-medium"
                     (click)="openOffcanvas('import')">
                     <i class="fa-solid fa-file-import btn-icon"></i> Import from Excel
                 </button>
             </ng-container>
-            <button *ngIf="activeTab === 'faculty'" class="btn btn-create fs-16 fw-medium"
-                (click)="openOffcanvas('staff')">
-                <i class="fa-solid fa-users-gear btn-icon"></i> Manage Faculty
-            </button>
+            <ng-container *appHasPermission="'batch:assignFaculty'">
+                <button *ngIf="activeTab === 'faculty'" class="btn btn-create fs-16 fw-medium"
+                    (click)="openOffcanvas('staff')">
+                    <i class="fa-solid fa-users-gear btn-icon"></i> Manage Faculty
+                </button>
+            </ng-container>
             <!-- <button *ngIf="activeTab === 'students'" class="btn btn-sm btn-outline-primary rounded-pill"
                 (click)="openOffcanvas('assign')">
                 <i class="fa-solid fa-user-plus me-1"></i> Assign Students
@@ -206,7 +211,7 @@
             <div *ngIf="!loading && !students.length" class="text-center py-5 text-muted">
                 <i class="fa-solid fa-users fa-2x mb-2 d-block opacity-30"></i>
                 No students assigned yet.
-                <div class="mt-2">
+                <div class="mt-2" *appHasPermission="'batch:assignStudents'">
                     <button class="btn btn-sm btn-primary" (click)="openOffcanvas('assign')">Assign Students</button>
                 </div>
             </div>
@@ -237,6 +242,7 @@
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger" title="Remove"
+                                    *appHasPermission="'batch:assignStudents'"
                                     (click)="openRemoveStudent(s?.studentId, s?.student?.name)">
                                     <i class="fa-solid fa-user-minus"></i>
                                 </button>
@@ -252,7 +258,7 @@
             <div *ngIf="!staffMap.length" class="text-center py-5 text-muted">
                 <i class="fa-solid fa-chalkboard-user fa-2x mb-2 d-block opacity-30"></i>
                 No faculty mapped yet.
-                <div class="mt-2">
+                <div class="mt-2" *appHasPermission="'batch:assignFaculty'">
                     <button class="btn btn-sm btn-primary" (click)="openOffcanvas('staff')">Map Faculty</button>
                 </div>
             </div>
@@ -301,12 +307,14 @@
                         <i class="fa-solid fa-spinner fa-spin me-1"></i> Loading...
                     </div>
                 </div>
-                <button *ngIf="subjectHours.length" class="btn btn-back fs-16 fw-medium" [disabled]="exportingReport"
-                    (click)="exportFullReport()">
-                    <span *ngIf="exportingReport" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="fa-solid fa-file-excel btn-icon" *ngIf="!exportingReport"></i>
-                    {{ exportingReport ? 'Exporting...' : 'Export Report' }}
-                </button>
+                <ng-container *appHasPermission="'batch:export'">
+                    <button *ngIf="subjectHours.length" class="btn btn-back fs-16 fw-medium"
+                        [disabled]="exportingReport" (click)="exportFullReport()">
+                        <span *ngIf="exportingReport" class="spinner-border spinner-border-sm me-1"></span>
+                        <i class="fa-solid fa-file-excel btn-icon" *ngIf="!exportingReport"></i>
+                        {{ exportingReport ? 'Exporting...' : 'Export Report' }}
+                    </button>
+                </ng-container>
             </div>
             <!-- ── Subject Hours Section ─────────────────────────────────────────────── -->
             <div class="mb-4" *ngIf="subjectHours.length">

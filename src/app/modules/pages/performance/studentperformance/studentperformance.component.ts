@@ -5,6 +5,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import {
   buildCPTPrintHtml,
   buildSchoolPrintHtml,
@@ -60,12 +61,13 @@ export class StudentperformanceComponent implements OnInit {
     private breadcrump: BredcrumpService,
     private auth: AuthService,
     private backNav: BackNavigationService,
+    private permissionService: PermissionService,
   ) {}
 
   ngOnInit(): void {
     this.roleLevel = this.auth.getRole();
-    this.canAddRemark = ['L1', 'L3', 'L4'].includes(this.roleLevel);
-    this.canDeleteRemark = ['L1', 'L3'].includes(this.roleLevel);
+    this.canAddRemark = this.permissionService.hasPermission('performance:override');
+    this.canDeleteRemark = this.permissionService.hasPermission('performance:override');
     this.studentId = this.route.snapshot.paramMap.get('id') || '';
     const state = history.state;
     this.batchId = state?.batchId || '';
@@ -82,6 +84,7 @@ export class StudentperformanceComponent implements OnInit {
   }
 
   loadFull(): void {
+    if (!this.permissionService.hasPermission('performance:view')) return;
     if (!this.academicYear) return;
     this.loading = true;
     this.loadStudentProfile();
@@ -188,6 +191,7 @@ export class StudentperformanceComponent implements OnInit {
   }
 
   syncStudent(): void {
+    if (!this.permissionService.hasPermission('performance:sync')) return;
     this.syncing = true;
     this.commonApi
       .fetchData(
@@ -219,6 +223,7 @@ export class StudentperformanceComponent implements OnInit {
   }
 
   addRemark(): void {
+    if (!this.permissionService.hasPermission('performance:override')) return;
     if (!this.remarkText.trim()) {
       this.alert.error('Remarks cannot be empty');
       return;
@@ -255,6 +260,7 @@ export class StudentperformanceComponent implements OnInit {
   }
 
   deleteRemark(feedbackId: string): void {
+    if (!this.permissionService.hasPermission('performance:override')) return;
     if (!confirm('Delete this remark?')) return;
     this.commonApi
       .fetchData(
@@ -364,6 +370,7 @@ export class StudentperformanceComponent implements OnInit {
   }
 
   async printCPT(): Promise<void> {
+    if (!this.permissionService.hasPermission('performance:view')) return;
     if (!this.studentProfile) await this.loadStudentProfile();
     let exams = this.mockExams;
     if (!exams.length) exams = await this.fetchAllMockExams();
@@ -403,6 +410,7 @@ export class StudentperformanceComponent implements OnInit {
   }
 
   async printSchool(): Promise<void> {
+    if (!this.permissionService.hasPermission('performance:view')) return;
     this.exportingSchool = true;
     try {
       if (!this.studentProfile) await this.loadStudentProfile();

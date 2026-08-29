@@ -4,6 +4,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-teacher',
@@ -35,6 +36,7 @@ export class TeacherComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('teacher:view'),
       callback: (row: any) => this.viewTeacher(row),
     },
   ];
@@ -44,6 +46,7 @@ export class TeacherComponent implements OnInit {
     private alert: AlertService,
     private commonApi: CommonapiService,
     private router: Router,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Teachers' }]);
@@ -104,6 +107,8 @@ export class TeacherComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('teacher:view')) return;
     this.router.navigate(['/app/teacher/view'], {
       queryParams: { staffId: row.staffId },
     });

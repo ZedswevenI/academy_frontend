@@ -1294,8 +1294,8 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil, catchError, of, finalize } from 'rxjs';
 import * as XLSX from 'xlsx';
-import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
+import { PermissionService } from '../../../../shared/permission.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const safeTrim = (v: any): string =>
@@ -1426,6 +1426,9 @@ export class TimetableComponent implements OnInit, OnDestroy {
     },
     { key: 'lastUpdatedLabel', label: 'Last Updated', sortable: false },
   ];
+  // custom-table's `show` is a HIDE predicate (true = hidden). Each check
+  // below combines the existing row-status business logic with a permission
+  // check — OR'd together, since either reason is sufficient to hide.
   actions = [
     {
       type: 'icon',
@@ -1433,6 +1436,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
       tooltip: 'View Timetable',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('timetable:view'),
       callback: (row: any) => this.openView(row),
     },
     {
@@ -1441,7 +1445,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
       tooltip: 'Publish Timetable',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      show: (row: any) => (row?.status).toUpperCase() !== 'DRAFT',
+      show: (row: any) => (row?.status).toUpperCase() !== 'DRAFT' || !this.permissionService.hasPermission('timetable:publish'),
       callback: (row: any) => this.openPublishConfirmRow(row),
     },
     {
@@ -1450,7 +1454,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
       tooltip: 'Revert to Draft',
       color: '#6B7280',
       hoverColor: '#DC2626',
-      show: (row: any) => ( row?.status).toUpperCase() !== 'ACTIVE',
+      show: (row: any) => (row?.status).toUpperCase() !== 'ACTIVE' || !this.permissionService.hasPermission('timetable:revertDraft'),
       callback: (row: any) => this.openRevertConfirmRow(row),
     },
   ];
@@ -1465,7 +1469,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
     private breadcrumb: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
-    private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId');
@@ -1494,9 +1498,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
   }
 
   showimport() {
-    return (
-      this.authService.getRole() === 'L1' || this.authService.getRole() === 'L3'
-    );
+    return this.permissionService.hasPermission('timetable:create');
   }
 
   fetchTableData(params: {

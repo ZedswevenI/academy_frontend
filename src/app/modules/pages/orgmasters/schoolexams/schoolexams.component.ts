@@ -7,6 +7,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 const safeTrim = (v: any): string => (v == null ? '' : String(v).trim());
 
@@ -126,6 +127,7 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
     private breadcrumb: BredcrumpService,
     private router: Router,
     private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId') || '';

@@ -7,7 +7,7 @@
                     Manage the help videos shown to users on the public help page.
                 </p>
             </div>
-            <button class="btn btn-create fs-16 fw-medium" (click)="add()" [disabled]="saving">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgHelpCenter:create'" (click)="add()" [disabled]="saving">
                 <i class="fa-solid fa-plus"></i>
                 <span>Add Topic</span>
             </button>
@@ -25,12 +25,12 @@
                         No modules yet — add your first topic to create one.
                     </div>
                     <div cdkDropList (cdkDropListDropped)="dropModule($event)" class="mod-list">
-                        <div class="mod-row" *ngFor="let m of modules" cdkDrag
+                        <div class="mod-row" *ngFor="let m of modules" cdkDrag [cdkDragDisabled]="!canEditHelpCenter"
                             [class.active]="m.moduleName === selectedModuleName">
-                            <span class="drag-handle" cdkDragHandle><i class="fa-solid fa-grip-vertical"></i></span>
+                            <span class="drag-handle" *appHasPermission="'orgHelpCenter:edit'" cdkDragHandle><i class="fa-solid fa-grip-vertical"></i></span>
                             <span class="mod-name" (click)="selectModule(m.moduleName)">{{ m.moduleName }}</span>
                             <span class="count-pill">{{ m.topicCount }}</span>
-                            <button type="button" class="icon-btn" title="Rename module"
+                            <button type="button" class="icon-btn" *appHasPermission="'orgHelpCenter:edit'" title="Rename module"
                                 (click)="openRenameModule(m.moduleName)">
                                 <i class="fa-regular fa-pen-to-square"></i>
                             </button>
@@ -64,8 +64,8 @@
 
                     <div *ngIf="selectedModuleName && !loadingTopics && filteredTopics.length" cdkDropList
                         (cdkDropListDropped)="dropTopic($event)">
-                        <div class="topic-row" *ngFor="let t of filteredTopics" cdkDrag>
-                            <span class="drag-handle" cdkDragHandle><i class="fa-solid fa-grip-vertical"></i></span>
+                        <div class="topic-row" *ngFor="let t of filteredTopics" cdkDrag [cdkDragDisabled]="!canEditHelpCenter">
+                            <span class="drag-handle" *appHasPermission="'orgHelpCenter:edit'" cdkDragHandle><i class="fa-solid fa-grip-vertical"></i></span>
                             <div class="topic-thumb"><i class="fa-solid fa-play"></i></div>
                             <div class="topic-main">
                                 <div class="topic-title">{{ t.topic }}</div>
@@ -75,10 +75,10 @@
                                 [class.status-inactive]="t.status !== 'active'">
                                 {{ t.status === 'active' ? 'Active' : 'Inactive' }}
                             </span>
-                            <button type="button" class="icon-btn" title="Edit" (click)="edit(t)">
+                            <button type="button" class="icon-btn" *appHasPermission="'orgHelpCenter:edit'" title="Edit" (click)="edit(t)">
                                 <i class="fa-regular fa-pen-to-square"></i>
                             </button>
-                            <button type="button" class="icon-btn" title="Delete" (click)="openDelete(t)">
+                            <button type="button" class="icon-btn" *appHasPermission="'orgHelpCenter:delete'" title="Delete" (click)="openDelete(t)">
                                 <i class="fa-regular fa-trash-can"></i>
                             </button>
                         </div>
@@ -167,7 +167,9 @@
                             [disabled]="saving">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="form.invalid || saving">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium"
+                            *appHasPermission="formMode === 'create' ? 'orgHelpCenter:create' : 'orgHelpCenter:edit'"
+                            [disabled]="form.invalid || saving">
                             <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
                             {{ formMode === 'create' ? 'Save' : 'Update' }}
                         </button>
@@ -196,7 +198,7 @@
                         [disabled]="renaming">
                         Cancel
                     </button>
-                    <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmRename()"
+                    <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgHelpCenter:edit'" (click)="confirmRename()"
                         [disabled]="renaming || !renameValue.trim()">
                         <span *ngIf="renaming" class="spinner-border spinner-border-sm me-2" role="status"></span>
                         Rename

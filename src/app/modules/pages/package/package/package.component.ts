@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import * as XLSX from 'xlsx';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-package',
@@ -35,6 +36,7 @@ export class PackageComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('package:view'),
       callback: (row: any) => this.onView(row)
     },
     {
@@ -43,6 +45,7 @@ export class PackageComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#16A34A',
+      show: () => !this.permissionService.hasPermission('package:edit'),
       callback: (row: any) => this.router.navigate(['/app/package/create'], { state: { package: row } })
     },
     {
@@ -51,6 +54,7 @@ export class PackageComponent implements OnInit {
       tooltip: 'Enable / Disable',
       color: '#6B7280',
       hoverColor: '#2563EB',
+      show: () => !this.permissionService.hasAny(['package:enable', 'package:disable']),
       callback: (row: any) => this.openEnableDisableModal(row)
     },
     {
@@ -59,6 +63,7 @@ export class PackageComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('package:delete'),
       callback: (row: any) => this.openDeleteModal(row)
     }
   ];
@@ -97,7 +102,8 @@ export class PackageComponent implements OnInit {
     private fb: FormBuilder,
     public router: Router,
     private commonApi: CommonapiService,
-    private alert: AlertService
+    private alert: AlertService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Study Materials' }]);
@@ -487,6 +493,9 @@ export class PackageComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // Row click bypasses the View icon's `show` gate — same open-fetch-modal
+    // path as onView(), so it needs the same check independently.
+    if (!this.permissionService.hasPermission('package:view')) return;
      this.selectedPackage = row;
     this.viewEnablements = [];
     this.viewEnablementsLoading = true;

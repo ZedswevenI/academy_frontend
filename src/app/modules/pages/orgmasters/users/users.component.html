@@ -1,23 +1,29 @@
 <div class="user-page">
+
     <div class="card mb-3 shadow-sm border-0">
         <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
             <div>
                 <h5 class="mb-1 fw-semibold">User & Role Management</h5>
                 <p class="mb-0 text-muted small">
-                    Manage application users and map them to role levels (L1–L5) with predefined permissions.
+                    Manage application users, role labels, portal access and per-action permissions.
                 </p>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openImport()">
+                <button class="btn btn-outline-secondary fs-16 fw-medium me-2" *ngIf="authService.getIsAdmin()"
+                    routerLink="/app/org-master/permissions-reference">
+                    <i class="fa-solid fa-key btn-icon"></i>
+                    <span>Permission Reference</span>
+                </button>
+                <button class="btn btn-import fs-16 fw-medium me-2" *appHasPermission="'orgUser:create'" (click)="openImport()">
                     <i class="fa-solid fa-file-import btn-icon"></i>
                     <span>Import Users</span>
                 </button>
-                <button class="btn btn-export fs-16 fw-medium me-2"
+                <button class="btn btn-export fs-16 fw-medium me-2" *appHasPermission="'orgUser:edit'"
                     (click)="syncUsersWithStaff()" [disabled]="syncing">
                     <i class="fa-solid fa-rotate btn-icon" [class.fa-spin]="syncing"></i>
                     <span>{{ syncing ? 'Syncing...' : 'Sync with Staff' }}</span>
                 </button>
-                <button class="btn btn-create fs-16 fw-medium" (click)="add()">
+                <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgUser:create'" (click)="addUser()">
                     <i class="fa-solid fa-plus btn-icon"></i>
                     <span>Add User</span>
                 </button>
@@ -29,119 +35,7 @@
             </custom-table>
         </div>
     </div>
-    <div class="app-modal-backdrop" *ngIf="showForm">
-        <div class="app-modal">
-            <div class="app-modal-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-semibold">
-                        {{ formMode === 'create' ? 'Create User' : 'Edit User' }}
-                    </h6>
-                    <span class="text-muted small">
-                        {{ formMode === 'create'
-                        ? 'Create login user and assign appropriate role level.'
-                        : 'Update user details and role.' }}
-                    </span>
-                </div>
-                <button type="button" class="btn-close" (click)="cancel()" aria-label="Close"></button>
-            </div>
 
-            <div class="app-modal-body">
-                <form [formGroup]="userForm" (ngSubmit)="save()">
-                    <div class="row g-3">
-
-                        <div class="col-md-4">
-                            <formfield label="Full Name" [required]="true" [control]="userForm.get('name')"
-                                formControlName="name" placeholder="Arun Kumar">
-                            </formfield>
-                        </div>
-
-                        <div class="col-md-4">
-                            <formfield label="Email" [required]="true" [control]="userForm.get('email')"
-                                formControlName="email" placeholder="user@z7i.com">
-                            </formfield>
-                        </div>
-
-                        <div class="col-md-4">
-                            <formfield label="Phone" [required]="true" [control]="userForm.get('phone')"
-                                formControlName="phone" placeholder="10 digit phone">
-                            </formfield>
-                        </div>
-                        <div class="col-12 col-sm-6 col-lg-4">
-                            <formfield label="Employee Code" [required]="false" [control]="userForm.get('empCode')"
-                                formControlName="empCode"
-                                placeholder="{{ formMode === 'create' ? 'EMP001 (optional)' : 'Read-only' }}">
-                            </formfield>
-                            <div class="form-text" *ngIf="formMode === 'create'">
-                                Optional. Links this user to a staff record.
-                            </div>
-                            <div class="form-text text-muted" *ngIf="formMode === 'edit'">
-                                Staff link is read-only. Use Sync to re-link.
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <selectbox label="Role Level" [required]="true" [options]="roleOptions"
-                                [optionLabel]="'label'" [optionValue]="'value'" [control]="userForm.get('role')"
-                                formControlName="role">
-                            </selectbox>
-                            <button type="button" class="btn btn-link btn-sm px-0 mt-1 text-decoration-none"
-                                (click)="openRoleInfo(userForm.get('role')?.value || null)">
-                                <i class="fa-solid fa-circle-info me-1"></i>View role permissions
-                            </button>
-                        </div>
-                        <div class="col-md-4" *ngIf="formMode === 'create'">
-                            <formfield label="Password" [required]="true" [control]="userForm.get('password')"
-                                formControlName="password" placeholder="Welcome@123">
-                            </formfield>
-                            <div class="form-text">Default: Welcome&#64;123</div>
-                        </div>
-                        <!-- <div class="col-md-4 d-flex align-items-center">
-                            <checkbox label="Active" [control]="userForm.get('isActive')" formControlName="isActive">
-                            </checkbox>
-                        </div> -->
-
-                        <!-- ── CENTER multi-select ───────────────────── -->
-                        <div class="col-12">
-                            <label class="form-label fw-medium">
-                                Centers <span class="text-danger" *ngIf="centersRequired">*</span>
-                                <span class="badge bg-primary ms-2">{{ (userForm.get('centerIds')?.value || []).length }} selected</span>
-                            </label>
-                            <div class="border rounded-3 p-2" style="max-height: 200px; overflow-y: auto;">
-                                <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
-                                    <input type="checkbox" class="form-check-input me-2"
-                                        [checked]="selectAllCenters"
-                                        (change)="toggleAllCenters($any($event.target).checked)" />
-                                    <span class="fw-semibold small">Select All</span>
-                                    <span class="text-muted small ms-auto">{{ centerOptions.length }} total</span>
-                                </div>
-                                <div *ngFor="let c of centerOptions"
-                                    class="d-flex align-items-center px-2 py-1 rounded" style="cursor:pointer;">
-                                    <input type="checkbox" class="form-check-input me-2"
-                                        [checked]="isCenterSelected(c.value)"
-                                        (change)="toggleCenter(c.value, $any($event.target).checked)" />
-                                    <span class="small">{{ c.centerName }}</span>
-                                </div>
-                                <div *ngIf="centerOptions.length === 0"
-                                    class="text-muted small text-center py-2">No centers found</div>
-                            </div>
-                            <div class="form-text" *ngIf="!centersRequired">
-                                Leave empty for tenant-wide access (all centers) — applicable to L1/L2/L3 roles only.
-                            </div>
-                            <div class="text-danger small mt-1"
-                                *ngIf="userForm.get('centerIds')?.invalid && userForm.get('centerIds')?.touched">
-                                Please select at least one center.
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancel()">Cancel</button>
-                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="userForm.invalid">
-                            {{ formMode === 'create' ? 'Save User' : 'Update User' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
     <div class="app-modal-backdrop" *ngIf="roleInfoVisible">
         <div class="app-modal app-modal-sm">
             <div class="app-modal-header d-flex justify-content-between align-items-center">
@@ -260,7 +154,7 @@
             </div>
             <div class="d-flex justify-content-end gap-2 mt-3">
                 <button type="button" class="btn btn-outline-secondary" (click)="closeImport()">Cancel</button>
-                <button type="button" class="btn btn-primary" (click)="confirmImport()"
+                <button type="button" class="btn btn-primary" *appHasPermission="'orgUser:create'" (click)="confirmImport()"
                     [disabled]="!importPreviewRows.length || importHasInvalidRows || importing">
                     <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!importing"></i>
                     <i class="fa-solid fa-spinner fa-spin me-1" *ngIf="importing"></i>

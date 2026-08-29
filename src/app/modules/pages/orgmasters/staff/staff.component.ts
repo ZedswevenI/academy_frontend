@@ -4,6 +4,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import * as XLSX from 'xlsx';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-staff',
@@ -95,6 +96,7 @@ export class StaffComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgStaff:view'),
       callback: (row: any) => this.openView(row),
     },
     {
@@ -103,6 +105,7 @@ export class StaffComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgStaff:edit'),
       callback: (row: any) => this.edit(row),
     },
     {
@@ -111,6 +114,7 @@ export class StaffComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('orgStaff:delete'),
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -120,6 +124,7 @@ export class StaffComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -1053,6 +1058,8 @@ export class StaffComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('orgStaff:view')) return;
     const recId = row?.recId || row?._raw?._id;
     if (!recId) return;
     this.showView = true;

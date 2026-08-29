@@ -11,6 +11,12 @@
   padding: 2rem 2rem 4rem;
 }
 
+@media (max-width: 560px) {
+  .help-page {
+    padding: 1.25rem 0.85rem 2.5rem;
+  }
+}
+
 .help-header {
   text-align: center;
   margin-bottom: 1.75rem;
@@ -291,6 +297,19 @@
   aspect-ratio: 16 / 9;
   position: relative;
 
+  // Fallback for browsers/webviews without `aspect-ratio` support (some
+  // Android in-app browsers still lack it). Without this, the wrapper
+  // collapses to 0 height, and since the YouTube iframe below is
+  // absolutely positioned at height:100% of THIS element, it collapses
+  // to 0 too — the video is in the DOM but has no visible area. This is
+  // the classic "video not visible on mobile" bug: it shows up on mobile
+  // specifically because desktop browsers are far more likely to support
+  // aspect-ratio. The percentage-padding trick works everywhere.
+  @supports not (aspect-ratio: 16 / 9) {
+    height: 0;
+    padding-top: 56.25%; // 9 / 16
+  }
+
   // YT.Player REPLACES the #playerHost div with a bare <iframe> — it's
   // inserted by YouTube's own script, not Angular's template compiler, so
   // it never receives the _ngcontent scoping attribute and a plain scoped
@@ -373,6 +392,19 @@
   accent-color: #2563EB;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .player-controls {
+    padding: 0.5rem 0.5rem;
+    gap: 0.4rem;
+  }
+
+  // Volume slider is the first thing to go on a narrow phone — mute
+  // toggle button stays, seek bar and play/pause keep priority.
+  .ctrl-volume {
+    display: none;
+  }
 }
 
 .v-desc {

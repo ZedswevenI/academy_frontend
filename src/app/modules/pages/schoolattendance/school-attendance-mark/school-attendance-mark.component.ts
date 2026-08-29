@@ -6,6 +6,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-school-attendance-mark',
@@ -48,6 +49,7 @@ export class SchoolAttendanceMarkComponent implements OnInit, OnDestroy {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private backNav: BackNavigationService,
+    private permissionService: PermissionService,
   ) {
     this.breadcrumb.set([
       { label: 'School Attendance', link: '/app/school-attendance' },
@@ -196,6 +198,10 @@ export class SchoolAttendanceMarkComponent implements OnInit, OnDestroy {
   }
 
   get isReadOnly(): boolean {
+    // No schoolAttendance:mark — this route is only reachable via
+    // schoolAttendance:list in that case (see routing), i.e. View mode.
+    if (!this.permissionService.hasPermission('schoolAttendance:mark')) return true;
+
     const today = Date.UTC(
       new Date().getUTCFullYear(),
       new Date().getUTCMonth(),

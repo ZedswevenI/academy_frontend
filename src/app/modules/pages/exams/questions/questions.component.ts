@@ -7,6 +7,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import katex from 'katex';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-exam-questions',
@@ -99,6 +100,7 @@ viewInstructionHtml: SafeHtml = '';
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#10b981',
+      show: () => !this.permissionService.hasPermission('exam:view'),
       callback: (row: any) => this.viewQuestion(row),
     },
     {
@@ -107,6 +109,7 @@ viewInstructionHtml: SafeHtml = '';
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('exam:addQuestion'),
       callback: (row: any) => this.editQuestion(row),
     },
     {
@@ -115,6 +118,7 @@ viewInstructionHtml: SafeHtml = '';
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#dc2626',
+      show: () => !this.permissionService.hasPermission('exam:addQuestion'),
       callback: (row: any) => this.deleteQuestion(row),
     },
   ];
@@ -126,6 +130,7 @@ viewInstructionHtml: SafeHtml = '';
     private fb: FormBuilder,
     private sanitizer: DomSanitizer,
     private router: Router,
+    private permissionService: PermissionService,
   ) {}
 
   ngOnInit(): void {
@@ -457,6 +462,7 @@ viewInstructionHtml: SafeHtml = '';
 
 
 async viewQuestion(row: any): Promise<void> {
+  if (!this.permissionService.hasPermission('exam:view')) return;
   this.viewData = JSON.parse(JSON.stringify(row));
   this.showViewModal = true;
 

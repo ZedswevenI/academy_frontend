@@ -13,7 +13,7 @@
                 <i class="fa-solid fa-filter"></i>
                 {{ showFilters ? "Hide Filters" : "Filters" }}
               </button>
-              <button class="btn btn-create fs-16 fw-medium" type="button" (click)="openCreateForm()">
+              <button class="btn btn-create fs-16 fw-medium" type="button" *appHasPermission="'examContent:create'" (click)="openCreateForm()">
                 <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2" />
                 Add Passage
               </button>
@@ -136,8 +136,9 @@
           <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeForm()">
             Cancel
           </button>
-          <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="passageForm.invalid"
-            (click)="submitPassage()">
+          <button type="button" class="btn btn-create fs-16 fw-medium"
+            *appHasPermission="isEditMode ? 'examContent:edit' : 'examContent:create'"
+            [disabled]="passageForm.invalid" (click)="submitPassage()">
             {{ isEditMode ? "Update" : "Create" }}
           </button>
         </div>

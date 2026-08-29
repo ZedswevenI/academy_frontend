@@ -7,7 +7,7 @@
                     <h1 class="fw-bold mb-0" style="font-size: 30px;">
                         <i class="fa-solid fa-calendar-check me-2"></i>Activity
                     </h1>
-                    <div *appHasRole="['L1', 'L3']" class="d-flex gap-2">
+                    <div *appHasPermission="'activity:create'" class="d-flex gap-2">
                         <button class="btn btn-import fs-16 fw-medium me-2" type="button" (click)="openImportModal()">
                             <i class="fa-solid fa-file-import me-2"></i>Bulk Import
                         </button>
@@ -209,11 +209,13 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                     data-bs-dismiss="modal">Close</button>
-                <button *ngIf="selectedActivity.status !== 'COMPLETED'" type="button"
-                    class="btn btn-edit fs-16 fw-medium" data-bs-dismiss="modal"
-                    (click)="router.navigate(['/app/activity/create'], { state: { activity: selectedActivity } })">
-                    <i class="fa-solid fa-pen-to-square me-2"></i>Edit
-                </button>
+                <ng-container *appHasPermission="'activity:edit'">
+                    <button *ngIf="selectedActivity.status !== 'COMPLETED'" type="button"
+                        class="btn btn-edit fs-16 fw-medium" data-bs-dismiss="modal"
+                        (click)="router.navigate(['/app/activity/create'], { state: { activity: selectedActivity } })">
+                        <i class="fa-solid fa-pen-to-square me-2"></i>Edit
+                    </button>
+                </ng-container>
             </div>
         </div>
     </div>

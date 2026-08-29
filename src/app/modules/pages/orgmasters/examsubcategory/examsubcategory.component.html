@@ -9,13 +9,13 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button class="btn btn-import fs-16 fw-medium me-2" type="button"
+                <button class="btn btn-import fs-16 fw-medium me-2" type="button" *appHasPermission="'orgExamCategory:addSubCategories'"
                     (click)="openImport()" [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Import Sub Categories</span>
                 </button>
 
-                <button class="btn btn-create fs-16 fw-medium" type="button" (click)="add()"
+                <button class="btn btn-create fs-16 fw-medium" type="button" *appHasPermission="'orgExamCategory:addSubCategories'" (click)="add()"
                     [disabled]="loading || saving || importing">
                     <i class="fa-solid fa-plus"></i>
                     <span>Add Sub Category</span>
@@ -138,7 +138,7 @@
                         <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()" [disabled]="saving">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="saving">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgExamCategory:addSubCategories'" [disabled]="saving">
                             <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
                                 aria-hidden="true"></span>
                             {{ formMode === "create" ? "Save" : "Update" }}
@@ -206,7 +206,7 @@
               ">
                             Reset
                         </button>
-                        <button type="button" class="btn btn-primary" (click)="confirmImport()" [disabled]="
+                        <button type="button" class="btn btn-primary" *appHasPermission="'orgExamCategory:addSubCategories'" (click)="confirmImport()" [disabled]="
                 !importPreviewRows.length || importHasInvalidRows || importing
               ">
                             <span *ngIf="importing" class="spinner-border spinner-border-sm me-2" role="status"

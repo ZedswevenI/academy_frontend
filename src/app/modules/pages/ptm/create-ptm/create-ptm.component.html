@@ -141,8 +141,8 @@
                 <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="cancel()">
                     Back
                 </button>
-                <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="createPtm.invalid || endTimeError"
-                    (click)="addPTM()">
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="isEditMode ? 'ptm:edit' : 'ptm:create'"
+                    [disabled]="createPtm.invalid || endTimeError" (click)="addPTM()">
                     {{ isEditMode ? 'Update' : 'Submit' }}
                 </button>
             </div>

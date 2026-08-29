@@ -1,12 +1,18 @@
-import { RoleLevel } from './role.config';
-
 export interface MenuItem {
   label: string;
   icon: string;
   route?: string;
-  roles: RoleLevel[]; // which roles see this menu item
+  /**
+   * Permission key(s) that gate this item — checked as "any of" when an
+   * array. Leaf items with no `permission` are hidden by default (deny by
+   * default, matches PermissionService's isAdmin-bypass-only design).
+   * Parent items with `children` don't need their own `permission` — they're
+   * shown/hidden purely based on whether any child survives filtering.
+   */
+  permission?: string | string[];
   children?: MenuItem[];
   expanded?: boolean;
+  requireAll?: boolean;
 }
 
 export interface NavItem {
@@ -20,126 +26,137 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Dashboard',
     icon: 'fa-solid fa-gauge',
     route: '/app/dashboard',
-    roles: ['L1', 'L2']
+    permission: 'dashboard:view'
   },
   {
     label: 'Batch',
     icon: 'fa-solid fa-layer-group',
     route: '/app/batch',
-    roles: ['L1', 'L2', 'L3']
+    permission: ['batch:list', 'batch:view'],
+    requireAll: true
   },
   {
     label: 'Timetable',
     icon: 'fa-solid fa-calendar-days',
     route: '/app/timetable',
-    roles: ['L1', 'L3', 'L4']
+    permission: ['timetable:list', 'timetable:view'],
+    requireAll: true
   },
   {
     label: 'Attendance',
     icon: 'fa-solid fa-clipboard-check',
     route: '/app/attendance',
-    roles: ['L1', 'L3', 'L4']
+    permission: 'attendance:list'
   },
   {
     label: 'School Attendance',
     icon: 'fa-solid fa-clipboard-check',
     route: '/app/school-attendance',
-    roles: ['L1', 'L3', 'L4']
+    permission: 'schoolAttendance:list'
   },
   {
     label: 'Students',
     icon: 'fa-solid fa-user-graduate',
     route: '/app/student',
-    roles: ['L1', 'L2', 'L3']
+    permission: ['student:list', 'student:view'],
+    requireAll: true
   },
   {
     label: 'Teachers',
     icon: 'fa-solid fa-chalkboard-user',
     route: '/app/teacher',
-    roles: ['L1', 'L6']
+    permission: ['teacher:list', 'teacher:view'],
+    requireAll: true
   },
   {
     label: 'Assignments',
     icon: 'fa-solid fa-file-pen',
     route: '/app/assignment',
-    roles: ['L1', 'L7']
+    permission: ['test:list', 'test:view'],
+    requireAll: true
   },
   {
     label: 'Enable Assignment',
     icon: 'fa-solid fa-file-circle-check',
     route: '/app/enableassignment',
-    roles: ['L1', 'L4']
+    permission: 'enableAssignment:list'
   },
   {
     label: 'Phase Plan',
     icon: 'fa-solid fa-hourglass-half',
     route: '/app/phase',
-    roles: ['L1', 'L4']
+    permission: ['phase:list', 'phase:view'],
+    requireAll: true
   },
   {
     label: 'Activities',
     icon: 'fa-solid fa-list-check',
     route: '/app/activity',
-    roles: ['L1', 'L3', 'L4']
+    permission: 'activity:list'
   },
   {
     label: 'Student Performance',
     icon: 'fa-solid fa-chart-column',
     route: '/app/performance',
-    roles: ['L1', 'L4']
+    permission: ['performance:list', 'performance:view'],
+    requireAll: true
   },
   {
     label: 'Tasks',
     icon: 'fa-solid fa-list-check',
     route: '/app/task',
-    roles: ['L1', 'L2', 'L3', 'L4', 'L5']
+    permission: ['task:list', 'task:view'],
+    requireAll: true
   },
   {
     label: 'PTM',
     icon: 'fa-solid fa-people-group',
     route: '/app/ptm',
-    roles: ['L1', 'L3', 'L4']
+    permission: ['ptm:list', 'ptm:view'],
+    requireAll: true
   },
   {
     label: 'Library',
     icon: 'fa-solid fa-book-open',
     route: '/app/knowledge',
-    roles: ['L1', 'L3', 'L4']
+    permission: ['knowledge:list', 'knowledge:view'],
+    requireAll: true
   },
   {
     label: 'Study Material',
     icon: 'fa-solid fa-box-open',
     route: '/app/package',
-    roles: ['L1', 'L2']
+    permission: ['package:list', 'package:view'],
+    requireAll: true
   },
   {
     label: 'Circular',
     icon: 'fa-solid fa-bullhorn',
     route: '/app/circular',
-    roles: ['L1', 'L2', 'L3']
+    permission: ['circular:list', 'circular:view'],
+    requireAll: true
   },
   {
     label: 'Feedback',
     icon: 'fa-solid fa-award',
-    roles: ['L1', 'L3', 'L4'],
     children: [
       {
         label: 'Feedback',
         icon: 'fa-solid fa-commenting',
         route: '/app/feedback',
-        roles: ['L1', 'L3', 'L4']
+        permission: 'feedback:list'
       },
       {
         label: 'Templates',
         icon: 'fa-solid fa-newspaper',
         route: '/app/feedback/feedback/template',
-        roles: ['L1', 'L3']
+        permission: 'feedbackTemplate:list'
       },
       {
         label: 'Report',
         icon: 'fa-solid fa-table-list',
         route: '/app/feedback/consolidated-report',
-        roles: ['L1']
+        permission: 'feedback:consolidatedReport'
       }
     ]
   },
@@ -147,48 +164,48 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Reports',
     icon: 'fa-solid fa-chart-line',
     route: '/app/report',
-    roles: ['L1']
+    permission: 'reports:view'
   },
   {
     label: 'Invigilation',
     icon: 'fa-solid fa-person-chalkboard',
     route: '/app/invigilation',
-    roles: ['L1', 'L4', 'L5']
+    permission: ['invigilation:list', 'invigilation:view'],
+    requireAll: true
   },
   {
     label: 'Communication',
     icon: 'fa-solid fa-envelope-open-text',
-    roles: ['L1', 'L2', 'L3'],
     children: [
       {
         label: 'Send',
         icon: 'fa-solid fa-paper-plane',
         route: '/app/communication/send',
-        roles: ['L1', 'L2', 'L3']
+        permission: 'communication:create'
       },
       {
         label: 'Templates',
         icon: 'fa-solid fa-file-lines',
         route: '/app/communication/templates',
-        roles: ['L1', 'L2', 'L3']
+        permission: 'communicationTemplate:list'
       },
       {
         label: 'Event Mapping',
         icon: 'fa-solid fa-file-lines',
         route: '/app/communication/event-mapping',
-        roles: ['L1', 'L2', 'L3']
+        permission: 'communicationEvent:list'
       },
       {
         label: 'Send Bulk Email',
         icon: 'fa-solid fa-file-lines',
         route: '/app/communication/send-bulk',
-        roles: ['L1', 'L2', 'L3']
+        permission: 'communicationBulkMail:send'
       },
       {
         label: 'Sent Logs',
         icon: 'fa-solid fa-clock-rotate-left',
         route: '/app/communication/sent-logs',
-        roles: ['L1', 'L2', 'L3']
+        permission: 'communicationLog:list'
       }
     ]
   },
@@ -196,42 +213,42 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'Support',
     icon: 'fa-solid fa-headset',
     route: '/app/support',
-    roles: ['L1', 'L2', 'L3', 'L6']
+    permission: ['support:list', 'support:view'],
+    requireAll: true
   },
   {
     label: 'Exams',
     icon: 'fa-solid fa-file-circle-question',
-    roles: ['L1', 'L5'],
     children: [
       {
         label: 'Instructions',
         icon: 'fa-solid fa-clipboard-list',
         route: '/app/exams/instructions',
-        roles: ['L1', 'L5']
+        permission: 'examContent:list'
       },
       {
         label: 'Passage',
         icon: 'fa-solid fa-book-open-reader',
         route: '/app/exams/passage',
-        roles: ['L1', 'L5']
+        permission: 'examContent:list'
       },
       {
         label: 'Questions',
         icon: 'fa-solid fa-circle-question',
         route: '/app/exams/questions',
-        roles: ['L1', 'L5']
+        permission: 'exam:view'
       },
       {
         label: 'Exams',
         icon: 'fa-solid fa-file-pen',
         route: '/app/exams/exams',
-        roles: ['L1', 'L5']
+        permission: 'exam:list'
       },
       {
         label: 'Imported Exams',
         icon: 'fa-solid fa-file-import',
         route: '/app/exams/imported-exams',
-        roles: ['L1', 'L5']
+        permission: 'examImport:list'
       }
     ]
   },
@@ -239,84 +256,102 @@ export const MENU_ITEMS: MenuItem[] = [
     label: 'School Exams',
     icon: 'fa-solid fa-chalkboard-user',
     route: '/app/org-master/school/exams',
-    roles: ['L1', 'L5']
+    permission: 'orgSchoolExam:list'
   },
   {
     label: 'Org Masters',
     icon: 'fa-solid fa-sitemap',
-    roles: ['L1'],
     children: [
+      // NOTE: no catalog key exists yet for Institute — it's unreachable
+      // via permissions until the backend adds one (e.g. orgInstitute:list).
+      // isAdmin logins still see it (PermissionService bypasses the check),
+      // so this only affects non-admin users assigned granular permissions.
       {
         label: 'Institute',
         icon: 'fa-solid fa-building-columns',
         route: '/app/org-master/institute',
-        roles: ['L1']
+        permission: []
       },
       {
         label: 'Center',
         icon: 'fa-solid fa-landmark',
         route: '/app/org-master/center',
-        roles: ['L1']
+        // permission: 'orgCenter:list'
+        permission: ['orgCenter:list', 'orgCenter:view'],
+        requireAll: true
       },
       {
         label: 'Staff',
         icon: 'fa-solid fa-users',
         route: '/app/org-master/staff',
-        roles: ['L1']
+        permission: ['orgStaff:list', 'orgStaff:view'],
+        requireAll: true
       },
       {
         label: 'Program',
         icon: 'fa-solid fa-graduation-cap',
         route: '/app/org-master/program',
-        roles: ['L1']
+        permission: ['orgProgram:list', 'orgProgram:view'],
+        requireAll: true
       },
       {
         label: 'Department',
         icon: 'fa-solid fa-briefcase',
         route: '/app/org-master/department',
-        roles: ['L1']
+        permission: 'orgDept:list'
       },
       {
         label: 'Subject',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/subject',
-        roles: ['L1']
+        permission: ['orgSubject:list', 'orgSubject:create'],
+        requireAll: true
       },
       {
         label: 'Topic',
         icon: 'fa-solid fa-book-open',
         route: '/app/org-master/topics',
-        roles: ['L1']
+        permission: ['orgTopic:list', 'orgTopic:create'],
+        requireAll: true
       },
       {
         label: 'Sub Topic',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-topic',
-        roles: ['L1']
+        permission: ['orgSubTopic:list', 'orgSubTopic:create'],
+        requireAll: true
       },
       {
         label: 'Category',
         icon: 'fa-solid fa-book-open',
         route: '/app/org-master/category',
-        roles: ['L1']
+        permission: ['orgExamCategory:list', 'orgExamCategory:create'],
+        requireAll: true
       },
       {
         label: 'Sub Category',
         icon: 'fa-solid fa-book',
         route: '/app/org-master/sub-category',
-        roles: ['L1']
+        permission: ['orgExamCategory:addSubCategories', 'orgExamCategory:createSubCategories']
+      },
+      {
+        label: 'Bank Accounts',
+        icon: 'fa-solid fa-building-columns',
+        route: '/app/org-master/bankaccounts',
+        permission: 'orgBankAccount:list'
       },
       {
         label: 'Users',
         icon: 'fa-solid fa-user',
         route: '/app/org-master/users',
-        roles: ['L1']
+        permission: ['orgUser:list', 'orgUser:view'],
+        requireAll: true
       },
       {
         label: 'Help Center',
         icon: 'fa-solid fa-circle-question',
         route: '/app/org-master/help-center',
-        roles: ['L1']
+        permission: 'orgHelpCenter:list'
       }
     ]
   }

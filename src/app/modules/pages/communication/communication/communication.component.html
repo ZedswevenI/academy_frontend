@@ -135,7 +135,7 @@
                                 <span class="text-danger"><strong>Missing/Invalid:</strong> {{
                                     recipientPreview.missingEmailCount }}</span>
                                 <button type="button" class="btn btn-shuffle fs-16 fw-medium ms-auto"
-                                    (click)="previewRecipients()">
+                                    *appHasPermission="'communication:previewRecipients'" (click)="previewRecipients()">
                                     Refresh Preview
                                 </button>
                             </div>
@@ -186,11 +186,13 @@
                 <div class="row mt-2">
                     <div class="d-flex justify-content-end px-2">
                         <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">Back</button>
-                        <button type="button" class="btn btn-edit fs-16 fw-medium me-2" (click)="previewRecipients()"
+                        <button type="button" class="btn btn-edit fs-16 fw-medium me-2"
+                            *appHasPermission="'communication:previewRecipients'" (click)="previewRecipients()"
                             [disabled]="loading">
                             Preview Recipients
                         </button>
-                        <button type="button" class="btn btn-create fs-16 fw-medium" (click)="onSubmit()" [disabled]="loading">
+                        <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'communication:send'"
+                            (click)="onSubmit()" [disabled]="loading">
                             {{ loading ? 'Processing...' : 'Submit' }}
                         </button>
                     </div>

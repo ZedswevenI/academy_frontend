@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 @Component({
   selector: 'app-topic',
   standalone: false,
@@ -67,6 +68,7 @@ export class TopicComponent implements OnInit {
       tooltip: 'Add Sub-Topics',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgTopic:addSubTopics'),
       callback: (r: any) => this.openAddSubtopic(r),
     },
     {
@@ -75,6 +77,7 @@ export class TopicComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgTopic:edit'),
       callback: (r: any) => this.edit(r),
     },
     {
@@ -83,6 +86,7 @@ export class TopicComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('orgTopic:delete'),
       callback: (r: any) => this.openDelete(r),
     },
   ];
@@ -92,6 +96,7 @@ export class TopicComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([

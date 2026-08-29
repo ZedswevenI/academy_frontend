@@ -5,6 +5,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-imported-exams',
@@ -34,6 +35,7 @@ export class ImportedExamsComponent implements OnInit {
       tooltip: 'View Exam',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('examImport:view'),
       callback: (row: any) => this.viewExam(row)
     },
     {
@@ -42,7 +44,7 @@ export class ImportedExamsComponent implements OnInit {
       tooltip: 'Delete Imported Exam',
       color: '#6B7280',
       hoverColor: '#DC2626',
-      show: (row: any) => row.isImported !== true,
+      show: (row: any) => row.isImported !== true || !this.permissionService.hasPermission('examImport:delete'),
       callback: (row: any) => this.deleteImportedExam(row)
     }
   ];
@@ -61,7 +63,8 @@ export class ImportedExamsComponent implements OnInit {
     private alert: AlertService,
     private router: Router,
     private breadcrumb: BredcrumpService,
-    public authService: AuthService
+    public authService: AuthService,
+    private permissionService: PermissionService
   ) { }
 
   ngOnInit(): void {
@@ -169,6 +172,7 @@ export class ImportedExamsComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    if (!this.permissionService.hasPermission('examImport:view')) return;
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
 }

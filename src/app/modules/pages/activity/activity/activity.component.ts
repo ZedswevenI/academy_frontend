@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -38,6 +39,10 @@ export class ActivityComponent implements OnInit {
     { key: 'remarks', label: 'Remarks', sortable: false },
     { key: 'status', label: 'Status', sortable: false },
   ];
+  // FIX: was `hidden:` — custom-table's template only ever reads
+  // `action.show` (a HIDE predicate), so this was a silent no-op and the
+  // Edit pencil showed on completed activities too. Renamed with inverted
+  // logic and combined with permission checks.
   actions = [
     {
       type: 'icon',
@@ -45,6 +50,7 @@ export class ActivityComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('activity:view'),
       callback: (row: any) => this.onView(row),
     },
     {
@@ -57,7 +63,7 @@ export class ActivityComponent implements OnInit {
         this.router.navigate(['/app/activity/create'], {
           state: { activity: row },
         }),
-      hidden: (row: any) => row.status.toUpperCase() === 'COMPLETED',
+      show: (row: any) => row.status.toUpperCase() === 'COMPLETED' || !this.permissionService.hasPermission('activity:edit'),
     },
     {
       type: 'icon',
@@ -65,6 +71,7 @@ export class ActivityComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('activity:delete'),
       callback: (row: any) => this.openDeleteModal(row),
     },
   ];
@@ -111,6 +118,7 @@ export class ActivityComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Activity' }]);
@@ -541,6 +549,9 @@ export class ActivityComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // Row click bypasses the View icon's `show` gate — same open-modal path
+    // as onView(), so it needs the same check independently.
+    if (!this.permissionService.hasPermission('activity:view')) return;
     this.selectedActivity = row;
     this.openModal('activityViewModal');
   }

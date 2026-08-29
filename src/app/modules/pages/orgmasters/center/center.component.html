@@ -7,7 +7,7 @@
                     Manage centers under each institute with location and status.
                 </p>
             </div>
-            <button class="btn btn-create fs-16 fw-medium" (click)="add()">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgCenter:create'" (click)="add()">
                 <i class="fa-solid fa-plus btn-icon"></i>
                 <span>Add Center</span>
             </button>

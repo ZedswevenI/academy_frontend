@@ -118,8 +118,11 @@
                     </formfield>
                 </div>
 
-                <!-- Upload -->
-                <div class="col-md-6">
+                <!-- Upload — the upload endpoint (institue/library/upload) is
+                     gated by knowledge:create server-side regardless of
+                     create/edit mode — hiding for edit-only users avoids
+                     offering a control that would 403. -->
+                <div class="col-md-6" *appHasPermission="'knowledge:create'">
                     <importfiles label="Upload Material" [required]="true" [multiple]="false"
                         formControlName="attachmentUrl" accept=".pdf"
                         [existingFiles]="isEditMode ? uploadedFiles : []"
@@ -142,7 +145,7 @@
                    routerLink="/app/knowledge">
                     Back
                 </button>
-                <button type="submit" class="btn btn-create fs-16 fw-medium"
+                <button type="submit" class="btn btn-create fs-16 fw-medium" *appHasPermission="isEditMode ? 'knowledge:edit' : 'knowledge:create'"
                     [disabled]="knowledgeForm.invalid || loading">
                     <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
                     {{ loading ? (isEditMode ? 'Updating...' : 'Submitting...') : (isEditMode ? 'Update' : 'Submit') }}

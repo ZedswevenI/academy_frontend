@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-task',
@@ -17,6 +18,10 @@ export class TaskComponent implements OnInit {
   dataArray: any[] = [];
   totalRecords = 0;
   isEditMode: boolean = false;
+  // FIX: was `hidden:` — custom-table's template only ever reads
+  // `action.show` (a HIDE predicate), so this was a silent no-op and the
+  // Edit pencil showed on completed tasks too. Renamed with inverted logic
+  // and combined with the task:edit permission check.
   actions = [
     {
       type: 'icon',
@@ -25,7 +30,7 @@ export class TaskComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#16A34A',
       callback: (row: any) => this.editTask(row),
-      hidden: (row: any) => row.status.toUpperCase() === 'COMPLETED'
+      show: (row: any) => row.status.toUpperCase() === 'COMPLETED' || !this.permissionService.hasPermission('task:edit'),
     },
     {
       type: 'icon',
@@ -33,11 +38,19 @@ export class TaskComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('task:view'),
       callback: (row: any) => this.viewTask(row)
     }
   ];
 
-  constructor(private breadcrump: BredcrumpService, private router: Router, private commonApi: CommonapiService, private alert: AlertService, private authService: AuthService) {
+  constructor(
+    private breadcrump: BredcrumpService,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService,
+    private authService: AuthService,
+    private permissionService: PermissionService,
+  ) {
     this.breadcrump.set([{ label: 'Task' }]);
   }
 

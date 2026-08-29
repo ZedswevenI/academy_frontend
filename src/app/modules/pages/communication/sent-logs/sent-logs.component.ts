@@ -145,6 +145,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
+import { PermissionService } from '../../../../shared/permission.service';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -220,6 +221,7 @@ export class SentLogsComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('communicationLog:view'),
       callback: (row: any) => this.viewRow(row),
     },
     {
@@ -228,7 +230,7 @@ export class SentLogsComponent implements OnInit {
       tooltip: 'Retry',
       color: '#DC2626',
       hoverColor: '#991B1B',
-      visible: (row: any) => row.status === 'failed',
+      show: (row: any) => row.status !== 'failed' || !this.permissionService.hasPermission('communicationLog:retry'),
       callback: (row: any) => this.retryLog(row),
     },
   ];
@@ -241,7 +243,8 @@ export class SentLogsComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private commonApi: CommonapiService,
     private alert: AlertService,
-    private router: Router
+    private router: Router,
+    private permissionService: PermissionService
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -368,6 +371,7 @@ export class SentLogsComponent implements OnInit {
   }
 
   viewRow(row: any): void {
+    if (!this.permissionService.hasPermission('communicationLog:view')) return;
     this.selectedLog = row;
     this.showDetailModal = true;
   }
@@ -407,6 +411,8 @@ export class SentLogsComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('communicationLog:view')) return;
     this.selectedLog = row;
     this.showDetailModal = true;
   }

@@ -102,7 +102,9 @@
 
   <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
     <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="cancel()">Cancel</button>
-    <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="phaseForm.invalid || loading || topicsArray.length === 0"
+    <button type="button" class="btn btn-create fs-16 fw-medium"
+      *appHasPermission="isEditMode ? 'phase:edit' : 'phase:create'"
+      [disabled]="phaseForm.invalid || loading || topicsArray.length === 0"
       (click)="submitPhase()">
       <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
       {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Phase Plan' : 'Create PhasePlan') }}

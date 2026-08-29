@@ -22,7 +22,7 @@
             <button class="btn btn-back fs-16 fw-medium" type="button" (click)="toggleFilters()">
                 <i class="fa-solid fa-filter btn-icon"></i> {{ showFilters ? 'Hide Filters' : 'Filters' }}
             </button>
-            <button class="btn btn-create fs-16 fw-medium" (click)="openCreate()">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'batch:create'" (click)="openCreate()">
                 <i class="fa-solid fa-plus btn-icon"></i> Create Batch
             </button>
         </div>

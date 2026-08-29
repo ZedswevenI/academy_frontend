@@ -7,6 +7,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -34,7 +35,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     private router: Router,
     private cdr: ChangeDetectorRef,
     private breadcrump: BredcrumpService,
-    public authService: AuthService
+    public authService: AuthService,
+    private permissionService: PermissionService
   ) { this.breadcrump.set([{ label: 'Assignments', link: '/app/assignment' }, { label: 'View' }]); }
 
   ngOnInit(): void {
@@ -430,6 +432,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   }
 
   deleteQuestion(question: any) {
+    if (!this.permissionService.hasPermission('test:delete')) return;
     if (!confirm('Are you sure you want to delete this question?')) {
       return;
     }

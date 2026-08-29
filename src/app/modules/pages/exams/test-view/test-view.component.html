@@ -16,65 +16,81 @@
       </span>
     </div>
     <div class="d-flex gap-2">
-      <button *ngIf="!examData.isImported" class="btn btn-shuffle fs-16 fw-medium me-2" (click)="viewQuestions()">
-        <i class="fa-solid fa-list me-1"></i> Questions
-      </button>
+      <ng-container *ngIf="!examData.isImported">
+        <button *appHasPermission="'exam:view'" class="btn btn-shuffle fs-16 fw-medium me-2" (click)="viewQuestions()">
+          <i class="fa-solid fa-list me-1"></i> Questions
+        </button>
+      </ng-container>
       <button *ngIf="examData.status === 'result_published'" class="btn btn-export fs-16 fw-medium me-2"
         [disabled]="exportingReport" (click)="exportParticipantReport()">
         <span *ngIf="exportingReport" class="spinner-border spinner-border-sm me-1"></span>
         <i *ngIf="!exportingReport" class="fa-solid fa-file-excel me-1"></i>
         {{ exportingReport ? 'Exporting...' : 'Export Report' }}
       </button>
-      <button *ngIf="!authService.assignmentRole() && examData.status !== 'result_published'"
-        class="btn btn-edit fs-16 fw-medium me-2" (click)="editExam()">
-        <i class="fa-regular fa-pen-to-square me-1"></i> Edit
-      </button>
-      <div class="dropdown" *ngIf="!authService.assignmentRole() && !examData.isImported">
+      <ng-container *ngIf="examData.status !== 'result_published'">
+        <button *appHasPermission="'exam:edit'"
+          class="btn btn-edit fs-16 fw-medium me-2" (click)="editExam()">
+          <i class="fa-regular fa-pen-to-square me-1"></i> Edit
+        </button>
+      </ng-container>
+      <div class="dropdown" *ngIf="!examData.isImported">
         <button class="btn btn-import fs-16 fw-medium dropdown-toggle me-2" type="button" data-bs-toggle="dropdown"
           aria-expanded="false">
           <i class="fa-solid fa-ellipsis-vertical me-1"></i> More
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-          <li>
+          <li *appHasPermission="['exam:duplicate', 'exam:create']">
             <a class="dropdown-item" (click)="promptDuplicateExam()">
               <i class="fa-regular fa-copy me-2 text-primary"></i>Duplicate Exam
             </a>
           </li>
-          <li *ngIf="canRearrange">
-            <a class="dropdown-item" (click)="rearrangeQuestions()">
-              <i class="fa-solid fa-reorder me-2 text-secondary"></i>Rearrange Questions
-            </a>
-          </li>
-          <li>
+          <ng-container *ngIf="canRearrange">
+            <li *appHasPermission="'exam:rearrangeQuestions'">
+              <a class="dropdown-item" (click)="rearrangeQuestions()">
+                <i class="fa-solid fa-reorder me-2 text-secondary"></i>Rearrange Questions
+              </a>
+            </li>
+          </ng-container>
+          <li *appHasPermission="'exam:importAnswers'">
             <a class="dropdown-item" (click)="importAnswers()">
               <i class="fa-solid fa-cloud-arrow-up me-2 text-success"></i>Import Answers
             </a>
           </li>
-          <li *ngIf="canAddOfflineMarks">
-            <a class="dropdown-item" (click)="openOfflineMarks()">
-              <i class="fa-solid fa-file-pen me-2 text-warning"></i>Add Offline Marks
-            </a>
-          </li>
-          <li *ngIf="canAssignBatch">
-            <a class="dropdown-item" (click)="openBatchModal()">
-              <i class="fa-solid fa-users me-2 text-info"></i>Assign Batch
-            </a>
-          </li>
-          <li *ngIf="canPublishResult">
-            <a class="dropdown-item" (click)="openPublishResultModal()">
-              <i class="fa-solid fa-bullhorn me-2 text-success"></i>Publish Result
-            </a>
-          </li>
-          <li *ngIf="examData?.status === 'result_published'">
-            <a class="dropdown-item" (click)="reevaluateResults()">
-              <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Reevaluate Result
-            </a>
-          </li>
-          <li *ngIf="canShowGrace">
-            <a class="dropdown-item" (click)="openGraceModal()">
-              <i class="fa-solid fa-gift me-2 text-warning"></i>Grace Marks
-            </a>
-          </li>
+          <ng-container *ngIf="canAddOfflineMarks">
+            <li *appHasPermission="'exam:offlineMarksEntry'">
+              <a class="dropdown-item" (click)="openOfflineMarks()">
+                <i class="fa-solid fa-file-pen me-2 text-warning"></i>Add Offline Marks
+              </a>
+            </li>
+          </ng-container>
+          <ng-container *ngIf="canAssignBatch">
+            <li *appHasPermission="'exam:assignBatch'">
+              <a class="dropdown-item" (click)="openBatchModal()">
+                <i class="fa-solid fa-users me-2 text-info"></i>Assign Batch
+              </a>
+            </li>
+          </ng-container>
+          <ng-container *ngIf="canPublishResult">
+            <li *appHasPermission="'exam:publishResult'">
+              <a class="dropdown-item" (click)="openPublishResultModal()">
+                <i class="fa-solid fa-bullhorn me-2 text-success"></i>Publish Result
+              </a>
+            </li>
+          </ng-container>
+          <ng-container *ngIf="examData?.status === 'result_published'">
+            <li *appHasPermission="'exam:reevaluate'">
+              <a class="dropdown-item" (click)="reevaluateResults()">
+                <i class="fa-solid fa-arrows-rotate me-2 text-primary"></i>Reevaluate Result
+              </a>
+            </li>
+          </ng-container>
+          <ng-container *ngIf="canShowGrace">
+            <li *appHasPermission="'exam:graceMarks'">
+              <a class="dropdown-item" (click)="openGraceModal()">
+                <i class="fa-solid fa-gift me-2 text-warning"></i>Grace Marks
+              </a>
+            </li>
+          </ng-container>
         </ul>
       </div>
 
@@ -731,15 +747,17 @@
               <td *ngIf="!examData.isImported">{{ isOfflineParticipant(p) ? '--' : (p.timeTakenMins + 'm') }}</td>
               <td *ngIf="!examData.isImported">
                 <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
+                  <button *appHasPermission="'exam:view'" class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
                     (click)="viewStudentResult(p)" title="View Result">
                     <i class="fa-regular fa-eye"></i>
                   </button>
-                  <button *ngIf="canAddOfflineMarks" class="btn btn-sm btn-outline-warning rounded-circle"
-                    style="width:32px;height:32px;padding:0;" (click)="openOfflineMarks(p.admissionNo)"
-                    title="Correct this student's result">
-                    <i class="fa-solid fa-pen"></i>
-                  </button>
+                  <ng-container *ngIf="canAddOfflineMarks">
+                    <button *appHasPermission="'exam:offlineMarksEntry'" class="btn btn-sm btn-outline-warning rounded-circle"
+                      style="width:32px;height:32px;padding:0;" (click)="openOfflineMarks(p.admissionNo)"
+                      title="Correct this student's result">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                  </ng-container>
                 </div>
               </td>
             </tr>
@@ -817,7 +835,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
           (click)="closeBatchModal()">Cancel</button>
-        <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="batchAssigning"
+        <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:assignBatch'" [disabled]="batchAssigning"
           (click)="saveBatchChanges()">
           <span *ngIf="batchAssigning">
             <span class="spinner-border spinner-border-sm me-1"></span> Saving...
@@ -858,7 +876,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancelPublishResult()"
           [disabled]="publishingResult">Cancel</button>
-        <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmPublishResult()"
+        <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:publishResult'" (click)="confirmPublishResult()"
           [disabled]="publishingResult">
           <span *ngIf="publishingResult" class="spinner-border spinner-border-sm me-2"></span>
           <i class="fa-solid fa-bullhorn me-1" *ngIf="!publishingResult"></i>
@@ -895,7 +913,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancelReevaluate()"
           [disabled]="reevaluating">Cancel</button>
-        <button type="button" class="btn btn-create fs-16 fw-medium" (click)="confirmReevaluate()"
+        <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:reevaluate'" (click)="confirmReevaluate()"
           [disabled]="reevaluating || !reevaluateNote.trim()">
           <span *ngIf="reevaluating" class="spinner-border spinner-border-sm me-2"></span>
           <i class="fa-solid fa-arrows-rotate me-1" *ngIf="!reevaluating"></i>
@@ -946,7 +964,7 @@
                       <p class="mb-0 text-muted fs-12 fst-italic" *ngIf="g.note">"{{ g.note }}"</p>
                       <small class="text-muted fs-11 mt-1 d-block">Applied on: {{ g.appliedAt | date:'short' }}</small>
                     </div>
-                    <button class="btn btn-sm btn-link text-danger p-0" (click)="removeGrace(g.graceId)"
+                    <button class="btn btn-sm btn-link text-danger p-0" *appHasPermission="'exam:graceMarks'" (click)="removeGrace(g.graceId)"
                       [disabled]="graceRemovingGraceId === g.graceId">
                       <i class="fa-solid fa-trash-can" *ngIf="graceRemovingGraceId !== g.graceId"></i>
                       <span class="spinner-border spinner-border-sm" *ngIf="graceRemovingGraceId === g.graceId"></span>
@@ -1019,7 +1037,7 @@
               </div>
 
               <div class="col-12 mt-3 text-end">
-                <button type="submit" class="btn btn-primary btn-sm w-100" [disabled]="graceApplying">
+                <button type="submit" class="btn btn-primary btn-sm w-100" *appHasPermission="'exam:graceMarks'" [disabled]="graceApplying">
                   <span class="spinner-border spinner-border-sm me-1" *ngIf="graceApplying"></span>
                   {{ graceApplying ? 'Applying...' : 'Apply Grace' }}
                 </button>
@@ -1086,9 +1104,9 @@
         <p class="mb-4">Do you want to duplicate this exam <strong>with questions</strong> or <strong>without
             questions</strong>?</p>
         <div class="d-flex justify-content-center gap-3">
-          <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="duplicateExam(false)">Without
+          <button class="btn btn-close-custom fs-16 fw-medium me-2" *appHasPermission="'exam:create'" (click)="duplicateExam(false)">Without
             Questions</button>
-          <button class="btn btn-create fs-16 fw-medium" (click)="duplicateExam(true)">With Questions</button>
+          <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'exam:duplicate'" (click)="duplicateExam(true)">With Questions</button>
         </div>
       </div>
     </div>

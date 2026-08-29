@@ -223,7 +223,9 @@
     <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="goBack()">
       Cancel
     </button>
-    <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="examForm.invalid" (click)="submitExam()">
+    <button type="button" class="btn btn-create fs-16 fw-medium"
+      *appHasPermission="isEditMode ? 'exam:edit' : (isDuplicateMode ? 'exam:duplicate' : 'exam:create')"
+      [disabled]="examForm.invalid" (click)="submitExam()">
       {{ isEditMode ? 'Update Exam' : 'Create Exam' }}
     </button>
   </div>

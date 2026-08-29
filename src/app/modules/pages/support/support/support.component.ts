@@ -334,6 +334,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-support',
@@ -396,6 +397,7 @@ export class SupportComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('support:view'),
       callback: (row: any) => this.onView(row),
     },
     {
@@ -409,8 +411,9 @@ export class SupportComponent implements OnInit {
         if (row.status === 'CLOSED') return;
         this.openAssignModal(row);
       },
-      hidden: (row: any) =>
-        ['RESOLVED', 'CLOSED'].includes(row.status?.toUpperCase()),
+      show: (row: any) =>
+        ['RESOLVED', 'CLOSED'].includes(row.status?.toUpperCase()) ||
+        !this.permissionService.hasPermission('support:assignStaff'),
     },
     {
       type: 'icon',
@@ -423,8 +426,9 @@ export class SupportComponent implements OnInit {
         if (row.status === 'CLOSED') return;
         this.openPriorityModal(row);
       },
-      hidden: (row: any) =>
-        ['RESOLVED', 'CLOSED'].includes(row.status?.toUpperCase()),
+      show: (row: any) =>
+        ['RESOLVED', 'CLOSED'].includes(row.status?.toUpperCase()) ||
+        !this.permissionService.hasPermission('support:updatePriority'),
     },
     {
       type: 'icon',
@@ -437,7 +441,9 @@ export class SupportComponent implements OnInit {
         if (row.status === 'CLOSED') return;
         this.openStatusModal(row);
       },
-      hidden: (row: any) => row.status?.toUpperCase() === 'CLOSED',
+      show: (row: any) =>
+        row.status?.toUpperCase() === 'CLOSED' ||
+        !this.permissionService.hasPermission('support:updateStatus'),
     },
   ];
 
@@ -467,6 +473,7 @@ export class SupportComponent implements OnInit {
     private fb: FormBuilder,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Support Tickets' }]);
@@ -540,6 +547,7 @@ export class SupportComponent implements OnInit {
   // VIEW — fetch full ticket with populate before showing
   // ====================================================
   onView(row: any): void {
+    if (!this.permissionService.hasPermission('support:view')) return;
     // Fetch full ticket details (populated staffId, reopenHistory)
     this.commonApi
       .fetchData(
@@ -785,6 +793,8 @@ export class SupportComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('support:view')) return;
     this.commonApi
       .fetchData(
         { tenantId: this.tenantId, ticketId: row.ticketId },

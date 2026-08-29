@@ -4,8 +4,14 @@ import { RouterModule, Routes } from '@angular/router';
 import { InvigilationComponent } from './invigilation/invigilation.component';
 import { InvigilationviewComponent } from './invigilationview/invigilationview.component';
 import { InvigilationcreateComponent } from './invigilationcreate/invigilationcreate.component';
+import { PermissionGuard } from '../../../shared/permission.guard';
 
-const routes: Routes = [{ path: '', component: InvigilationComponent }, { path: 'create', component: InvigilationcreateComponent }, { path: 'edit/:id', component: InvigilationcreateComponent }, { path: 'view/:id', component: InvigilationviewComponent }];
+const routes: Routes = [
+  { path: '', component: InvigilationComponent, canActivate: [PermissionGuard], data: { permission: ['invigilation:list', 'invigilation:view'] } },
+  { path: 'create', component: InvigilationcreateComponent, canActivate: [PermissionGuard], data: { permission: 'invigilation:create' } },
+  { path: 'edit/:id', component: InvigilationcreateComponent, canActivate: [PermissionGuard], data: { permission: 'invigilation:edit' } },
+  { path: 'view/:id', component: InvigilationviewComponent, canActivate: [PermissionGuard], data: { permission: 'invigilation:view' } },
+];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],

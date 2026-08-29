@@ -6,10 +6,10 @@
                 <p class="mb-0 text-muted small">Manage staff, roles, faculty mapping, department and weekoff.</p>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openImport()">
+                <button class="btn btn-import fs-16 fw-medium me-2" *appHasPermission="'orgStaff:create'" (click)="openImport()">
                     <i class="fa-solid fa-file-import btn-icon"></i><span>Import Staff</span>
                 </button>
-                <button *appHasRole="['L6','L1']" class="btn btn-create fs-16 fw-medium"
+                <button *appHasPermission="'orgStaff:create'" class="btn btn-create fs-16 fw-medium"
                     (click)="add()">
                     <i class="fa-solid fa-plus btn-icon"></i><span>Add Staff</span>
                 </button>
@@ -203,7 +203,9 @@
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()">Cancel</button>
-                        <button type="submit" class="btn btn-create fs-16 fw-medium" [disabled]="staffForm.invalid">
+                        <button type="submit" class="btn btn-create fs-16 fw-medium"
+                            *appHasPermission="formMode === 'create' ? 'orgStaff:create' : 'orgStaff:edit'"
+                            [disabled]="staffForm.invalid">
                             {{ formMode === "create" ? "Save Staff" : "Update Staff" }}
                         </button>
                     </div>
@@ -264,7 +266,7 @@
                         <button type="button" class="btn btn-outline-secondary" (click)="resetImport()"
                             [disabled]="!importPreviewRows.length">Reset</button>
                         <!-- FIX #16: importing state on button -->
-                        <button type="button" class="btn btn-primary" (click)="confirmImport()"
+                        <button type="button" class="btn btn-primary" *appHasPermission="'orgStaff:create'" (click)="confirmImport()"
                             [disabled]="!importPreviewRows.length || importHasInvalidRows || importing">
                             <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!importing"></i>
                             <i class="fa-solid fa-spinner fa-spin me-1" *ngIf="importing"></i>
@@ -514,10 +516,10 @@
                                 [ngModelOptions]="{ standalone: true }" />
                         </div>
                         <div class="col-md-8 d-flex gap-2 justify-content-end">
-                            <button type="button" class="btn btn-edit fs-16 fw-medium me-2" (click)="updateRelievingDate()">
+                            <button type="button" class="btn btn-edit fs-16 fw-medium me-2" *appHasPermission="'orgStaff:edit'" (click)="updateRelievingDate()">
                                 Update Relieving Date
                             </button>
-                            <button type="button" class="btn btn-shuffle fs-16 fw-medium me-2" (click)="openRetire()"
+                            <button type="button" class="btn btn-shuffle fs-16 fw-medium me-2" *appHasPermission="'orgStaff:edit'" (click)="openRetire()"
                                 [disabled]="viewRec.status === 'Inactive'">Retire Employee</button>
 
                             <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeView()">Close</button>

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-knowledge-list',
@@ -52,6 +53,7 @@ export class KnowledgeListComponent implements OnInit {
       tooltip: 'View',
        color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('knowledge:view'),
       callback: (row: any) => this.view(row)
     },
     {
@@ -59,13 +61,15 @@ export class KnowledgeListComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('knowledge:edit'),
       callback: (row: any) => this.edit(row)
     },
     {
       type: 'icon', icon: 'fa-regular fa-trash-can',
-      tooltip: 'Delete', 
+      tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#ee384a',
+      show: () => !this.permissionService.hasPermission('knowledge:delete'),
       callback: (row: any) => this.openDelete(row)
     }
   ];
@@ -75,7 +79,8 @@ export class KnowledgeListComponent implements OnInit {
     private router: Router,
     private commonApi: CommonapiService,
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Library' }]);

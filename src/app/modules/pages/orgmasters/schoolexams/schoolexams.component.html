@@ -309,7 +309,7 @@
                 </h1>
                 <p class="mb-0 text-muted small">Upload and manage term exam marks for all batches</p>
             </div>
-            <button class="btn btn-import fs-16 fw-medium" (click)="openUpload()">
+            <button class="btn btn-import fs-16 fw-medium" *appHasPermission="'orgSchoolExam:create'" (click)="openUpload()">
                 <i class="fa-solid fa-cloud-arrow-up me-2"></i>Import Marks
             </button>
         </div>
@@ -362,7 +362,7 @@
         <div class="empty-icon"><i class="fa-solid fa-folder-open"></i></div>
         <div class="empty-title">No Exams Found</div>
         <div class="empty-sub">No exam records match your filters. Try importing marks first.</div>
-        <button class="btn btn-import fs-16 fw-medium" (click)="openUpload()">
+        <button class="btn btn-import fs-16 fw-medium" *appHasPermission="'orgSchoolExam:create'" (click)="openUpload()">
             <i class="fa-solid fa-cloud-arrow-up btn-icon"></i>Import Marks
         </button>
     </div>
@@ -426,12 +426,12 @@
                         <button class="btn btn-create fs-16 fw-medium me-2" (click)="openView(exam)">
                             <i class="fa-regular fa-eye btn-icon"></i>View Results
                         </button>
-                        <button *appHasRole="['L1']" class="btn btn-export fs-16 fw-medium"
+                        <button *appHasPermission="'orgSchoolExam:list'" class="btn btn-export fs-16 fw-medium"
                              (click)="exportExam(exam)"
                             title="Export to Excel">
                             <i class="fa-solid fa-file-excel me-1"></i>Export
                         </button>
-                        <button class="btn-card-delete" (click)="openDelete(exam)" title="Delete exam">
+                        <button *appHasPermission="'orgSchoolExam:delete'" class="btn-card-delete" (click)="openDelete(exam)" title="Delete exam">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -613,7 +613,7 @@
             </div>
             <div class="d-flex gap-2 ms-auto">
                 <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeUpload()" [disabled]="uploading">Cancel</button>
-                <button class="btn btn-create fs-16 fw-medium" (click)="submitUpload()"
+                <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgSchoolExam:create'" (click)="submitUpload()"
                     [disabled]="!canSubmit || uploading || parsing">
                     <span *ngIf="uploading" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-cloud-arrow-up me-1" *ngIf="!uploading"></i>
@@ -721,7 +721,7 @@
             <!-- <button class="btn btn-outline-secondary ms-auto" (click)="closeView()">Close</button> -->
             <ng-container *ngIf="viewExam">
                 <button class="btn btn-export fs-16 fw-medium" (click)="exportExam(viewExam)"
-                    [disabled]="viewLoading" *appHasRole="['L3','L1']">
+                    [disabled]="viewLoading" *appHasPermission="'orgSchoolExam:list'">
 
                     <i class="fa-solid fa-file-excel me-1"></i>
                     Export Excel
@@ -751,7 +751,7 @@
             </div>
             <div class="d-flex justify-content-end gap-2 mt-3">
                 <button class="btn btn-close-custom fs-16 fw-medium me-2" (click)="closeDelete()" [disabled]="deleting">Cancel</button>
-                <button class="btn btn-create fs-16 fw-medium" (click)="confirmDelete()" [disabled]="deleting">
+                <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgSchoolExam:delete'" (click)="confirmDelete()" [disabled]="deleting">
                     <span *ngIf="deleting" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-trash me-1" *ngIf="!deleting"></i>
                     {{ deleting ? 'Deleting…' : 'Yes, Delete' }}

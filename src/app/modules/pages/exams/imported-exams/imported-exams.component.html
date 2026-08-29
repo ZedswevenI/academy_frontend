@@ -11,7 +11,7 @@
               <i class="fa-solid fa-filter"></i>
               {{ showFilters ? 'Hide Filters' : 'Filters' }}
             </button>
-            <button *ngIf="!authService.assignmentRole()" class="btn btn-import fs-16 fw-medium" type="button"
+            <button *appHasPermission="'exam:marksImport'" class="btn btn-import fs-16 fw-medium" type="button"
               (click)="importMarks()">
               <i class="fas fa-file-import me-2"></i>Import Marks
             </button>
@@ -61,7 +61,7 @@
         <button class="btn btn-sm btn-outline-secondary" (click)="closeDeleteConfirm()" [disabled]="deleteLoading">
           Cancel
         </button>
-        <button class="btn btn-sm btn-danger" (click)="confirmDeleteImportedExam()" [disabled]="deleteLoading">
+        <button class="btn btn-sm btn-danger" *appHasPermission="'examImport:delete'" (click)="confirmDeleteImportedExam()" [disabled]="deleteLoading">
           <span *ngIf="deleteLoading" class="spinner-border spinner-border-sm me-1"></span>Delete
         </button>
       </div>

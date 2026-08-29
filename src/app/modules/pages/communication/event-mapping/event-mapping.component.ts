@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -62,7 +63,8 @@ export class EventMappingComponent implements OnInit {
     private fb: FormBuilder,
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
-    private commonApi: CommonapiService
+    private commonApi: CommonapiService,
+    private permissionService: PermissionService
   ) {
     this.entiId = localStorage.getItem('tenantId');
 
@@ -155,6 +157,9 @@ export class EventMappingComponent implements OnInit {
   }
 
   editMapping(row: any): void {
+    // event-row div's (click) opens this same form and bypasses the pencil
+    // icon's *appHasPermission gate — check here too.
+    if (!this.permissionService.hasPermission('communicationEvent:edit')) return;
     this.mode = 'edit';
     this.activeConfigId = safeTrim(row?.configId || row?._id);
 

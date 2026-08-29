@@ -55,8 +55,10 @@
                         </description>
                     </div>
 
-                    <!-- File Upload -->
-                    <div class="col-md-6">
+                    <!-- File Upload — the upload endpoint (ims/package/upload)
+                         is gated by package:create server-side regardless of
+                         create/edit mode. -->
+                    <div class="col-md-6" *appHasPermission="'package:create'">
                         <importfiles label="Attachment" [required]="true" [multiple]="false"
                             accept=".pdf"
                             (filesChanged)="onFileSelected($event)">
@@ -78,7 +80,7 @@
                     <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="cancel()">
                         Back
                     </button>
-                    <button type="button" class="btn btn-create fs-16 fw-medium"
+                    <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="isEditMode ? 'package:edit' : 'package:create'"
                         [disabled]="packageForm.invalid || loading || uploading"
                         (click)="submit()">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>

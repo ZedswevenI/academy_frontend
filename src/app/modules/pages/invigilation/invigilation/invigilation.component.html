@@ -9,7 +9,7 @@
             <button class="btn btn-outline-success btn-sm" (click)="downloadSample()">
                 <i class="fa-solid fa-download me-1"></i> Sample Excel
             </button>
-            <button class="btn btn-create fs-16 fw-medium" (click)="create()">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'invigilation:create'" (click)="create()">
                 <i class="fa-solid fa-plus me-1"></i> Add Invigilation
             </button>
         </div>

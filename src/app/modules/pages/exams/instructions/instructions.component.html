@@ -15,7 +15,7 @@
                 <i class="fa-solid fa-filter"></i>
                 {{ showFilters ? 'Hide Filters' : 'Filters' }}
               </button>
-              <button class="btn btn-create fs-16 fw-medium" type="button"
+              <button class="btn btn-create fs-16 fw-medium" type="button" *appHasPermission="'examContent:create'"
                 (click)="openCreateForm()">
                 <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
                 Add Instruction
@@ -106,6 +106,7 @@
             Cancel
           </button>
           <button type="button" class="btn btn-create fs-16 fw-medium"
+            *appHasPermission="isEditMode ? 'examContent:edit' : 'examContent:create'"
             [disabled]="instructionForm.invalid"
             (click)="submitInstruction()">
             {{ isEditMode ? 'Update' : 'Create' }}

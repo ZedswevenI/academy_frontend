@@ -11,6 +11,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { DashboardService } from '../dashboard.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 interface KpiCard {
   label: string;
@@ -24,6 +25,7 @@ interface KpiCard {
   scrollTo?: string;
   byBatch?: { batchCode: string; count: number }[];
   showBatchHover?: boolean;
+  permissionKey: string;
 }
 
 interface ActivityItem {
@@ -163,6 +165,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       sub: 'Loading...',
       trend: [],
       route: '/app/batch',
+      permissionKey: 'dashboard:viewActiveBatches',
     },
     {
       label: 'Total Students',
@@ -174,6 +177,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       trend: [],
       byBatch: [],
       showBatchHover: false,
+      permissionKey: 'dashboard:viewTotalStudents',
     },
     {
       label: 'Total Staff',
@@ -184,6 +188,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       sub: 'Loading...',
       trend: [],
       scrollTo: 'staffDeptSection',
+      permissionKey: 'dashboard:viewTotalStaff',
     },
     {
       label: 'System Users',
@@ -194,6 +199,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       sub: 'Loading...',
       trend: [],
       route: '/app/org-master/users',
+      permissionKey: 'dashboard:viewSystemUsers',
     },
     {
       label: 'Today Absentees',
@@ -203,6 +209,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       tone: 'red',
       sub: 'Loading...',
       trend: [],
+      permissionKey: 'dashboard:viewTodayAbsentees',
     },
     {
       label: 'Total Questions',
@@ -212,8 +219,13 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       tone: 'teal',
       sub: 'Loading...',
       trend: [],
+      permissionKey: 'dashboard:viewTotalQuestions',
     },
   ];
+
+  get visibleKpis(): KpiCard[] {
+    return this.kpis.filter((k) => this.permissionService.hasPermission(k.permissionKey));
+  }
 
   performers: Performer[] = [];
   staffDepts: StaffDept[] = [];
@@ -350,6 +362,7 @@ remarksError: string | null = null;
     private breadcrump: BredcrumpService,
     private dashboardService: DashboardService,
     private el: ElementRef,
+    private permissionService: PermissionService,
   ) {
     this.breadcrump.set([{ label: 'Dashboard' }]);
     this.username = localStorage.getItem('name');

@@ -18,11 +18,15 @@ import { SubtopicComponent } from './subtopic/subtopic.component';
 import { TopicComponent } from './topic/topic.component';
 import { SchoolexamsComponent } from './schoolexams/schoolexams.component';
 import { UsersComponent } from './users/users.component';
+import { UserFormComponent } from './users/user-form/user-form.component';
+import { UserViewComponent } from './users/user-view/user-view.component';
+import { UserAccessComponent } from './users/user-access/user-access.component';
 import { HelpCenterComponent } from './helpcenter/help-center.component';
+import { PermissionReferenceComponent } from './permission-reference/permission-reference.component';
 
 
 @NgModule({
-  declarations: [InstituteComponent, CenterComponent, StaffComponent, ProgramComponent, DepartmentComponent, SubjectComponent, BankaccountsComponent, TopicComponent, SubtopicComponent, ExamcategoryComponent, ExamsubcategoryComponent, CenterviewComponent, SchoolexamsComponent, UsersComponent, HelpCenterComponent],
+  declarations: [InstituteComponent, CenterComponent, StaffComponent, ProgramComponent, DepartmentComponent, SubjectComponent, BankaccountsComponent, TopicComponent, SubtopicComponent, ExamcategoryComponent, ExamsubcategoryComponent, CenterviewComponent, SchoolexamsComponent, UsersComponent, UserFormComponent, UserViewComponent, UserAccessComponent, HelpCenterComponent, PermissionReferenceComponent],
   imports: [CommonModule, OrgmastersRoutingModule, FormsModule, ReactiveFormsModule, UiElementsModule, DragDropModule]
 })
 export class OrgmastersModule {}

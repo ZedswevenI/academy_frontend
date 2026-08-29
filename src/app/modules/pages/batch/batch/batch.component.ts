@@ -4,7 +4,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -172,7 +172,7 @@ export class BatchComponent implements OnInit {
     private alert: AlertService,
     private commonApi: CommonapiService,
     private router: Router,
-    private auth: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -181,6 +181,10 @@ export class BatchComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Migrated off role-based `hasRole()` checks onto permission keys —
+    // custom-table's `action.show(row)` is a HIDE predicate (true = hidden,
+    // see custom-table.component.html), so each check here is inverted:
+    // "hide when the user does NOT have the permission".
     this.actions = [
       {
         type: 'icon',
@@ -188,6 +192,7 @@ export class BatchComponent implements OnInit {
         tooltip: 'View',
         color: '#6B7280',
         hoverColor: '#0066FF',
+        show: () => !this.permissionService.hasPermission('batch:view'),
         callback: (row: any) => this.openView(row),
       },
       {
@@ -199,37 +204,37 @@ export class BatchComponent implements OnInit {
           {
             text: 'Edit Batch',
             icon: 'fa-regular fa-pen-to-square',
-            show: () => !this.hasRole(['L1']),
+            show: () => !this.permissionService.hasPermission('batch:edit'),
             callback: (row: any) => this.openEdit(row),
           },
           {
             text: 'Assign Students',
             icon: 'fa-solid fa-user-plus',
-            show: () => !this.hasRole(['L1']),
+            show: () => !this.permissionService.hasPermission('batch:assignStudents'),
             callback: (row: any) => this.openAssignStudents(row),
           },
           {
             text: 'Assign Staff',
             icon: 'fa-solid fa-users-gear',
-            show: () => !this.hasRole(['L1']),
+            show: () => !this.permissionService.hasPermission('batch:assignFaculty'),
             callback: (row: any) => this.openStaffMap(row),
           },
           {
             text: 'Promote Batch',
             icon: 'fa-solid fa-arrow-up-right-dots',
-            show: () => !this.hasRole(['L1']),
+            show: () => !this.permissionService.hasPermission('batch:promote'),
             callback: (row: any) => this.openPromote(row),
           },
           {
             text: 'Log Late Entry',
             icon: 'fa-solid fa-clock-rotate-left',
-            show: () => !this.hasRole(['L1', 'L2', 'L3']),
+            show: () => !this.permissionService.hasPermission('batch:logLateEntry'),
             callback: (row: any) => this.openLateEntry(row),
           },
           {
             text: 'Add Special Class',
             icon: 'fa-solid fa-calendar-plus',
-            show: () => !this.hasRole(['L1', 'L2', 'L3']),
+            show: () => !this.permissionService.hasPermission('batch:addSpecialClass'),
             callback: (row: any) => this.openSpecialClass(row),
           },
         ],
@@ -1436,13 +1441,13 @@ export class BatchComponent implements OnInit {
     this.router.navigate(['/app/batch/view', b?.batchId]);
   }
 
-  hasRole(roles: string[]): boolean {
-    return roles.includes(this.auth.getRole());
-  }
-
-  
   onRowSelected(row: any) {
-    // this.router.navigate(['/app/assetMaster/asset/view', row._id]);
+    // Row click bypasses the "View" icon's *appHasPermission gate — the
+    // destination route is still guarded server-side by PermissionGuard, but
+    // without this check a user lacking batch:view would click through and
+    // hit the guard's redirect-to-login flow, which reads as a confusing
+    // forced logout rather than "you can't do that".
+    if (!this.permissionService.hasPermission('batch:view')) return;
     const b = row?._raw || row;
     this.router.navigate(['/app/batch/view', b?.batchId]);
   }

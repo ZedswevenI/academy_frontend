@@ -101,7 +101,9 @@
     <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="addAss()">
       Cancel
     </button>
-    <button type="button" class="btn btn-create fs-16 fw-medium" [disabled]="testForm.invalid" (click)="submitTest()">
+    <button type="button" class="btn btn-create fs-16 fw-medium"
+      *appHasPermission="isEditMode ? 'test:edit' : 'test:create'"
+      [disabled]="testForm.invalid" (click)="submitTest()">
       {{ isEditMode ? "Update Test" : "Create Test" }}
     </button>
   </div>

@@ -26,7 +26,11 @@
                         [control]="taskForm.get('dueDate')" [min]="minDateTime" [required]="true">
                     </formfield>
                 </div>
-                <div class="col-md-6">
+                <!-- The upload endpoint (teacher/task/upload) is gated by
+                     task:create server-side regardless of create/edit mode —
+                     hiding the control for edit-only users avoids offering
+                     an action that would 403. -->
+                <div class="col-md-6" *appHasPermission="'task:create'">
                     <importfiles label="Upload File" [multiple]="false" formControlName="file"
                         [existingFiles]="isEditMode ? uploadedAttachments : []"
                         (filesChanged)="onFilesSelected($event)">
@@ -47,16 +51,18 @@
                 <button type="button" class="btn btn-back fs-16 fw-medium" routerLink="/app/task">
                     Back
                 </button>
-                <button *ngIf="editData?.status !== 'Completed'" type="button" class="btn btn-create fs-16 fw-medium"
-                    [disabled]="taskForm.invalid || isUploading" (click)="submitTask()">
-                    <span *ngIf="isUploading">
-                        <span class="spinner-border spinner-border-sm me-1"></span>
-                        Uploading...
-                    </span>
-                    <span *ngIf="!isUploading">
-                        {{ isEditMode ? 'Update Task' : 'Submit' }}
-                    </span>
-                </button>
+                <ng-container *appHasPermission="isEditMode ? 'task:edit' : 'task:create'">
+                    <button *ngIf="editData?.status !== 'Completed'" type="button" class="btn btn-create fs-16 fw-medium"
+                        [disabled]="taskForm.invalid || isUploading" (click)="submitTask()">
+                        <span *ngIf="isUploading">
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            Uploading...
+                        </span>
+                        <span *ngIf="!isUploading">
+                            {{ isEditMode ? 'Update Task' : 'Submit' }}
+                        </span>
+                    </button>
+                </ng-container>
             </div>
         </form>
     </div>
