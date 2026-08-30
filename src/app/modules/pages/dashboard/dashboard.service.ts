@@ -78,4 +78,8 @@ export class DashboardService {
   updatePeriodAttendanceRemarks(entiId: string, attendanceId: string, studentId: string, remarks: string): Observable<any> {
     return this.api.fetchData({ entiId, attendanceId, studentId, remarks }, 'attendance', 'remarks/period');
   }
+
+  getAbsenteeRangeReport(entiId: string, fromDate: number, toDate: number): Observable<any> {
+    return this.api.fetchData({ entiId, fromDate, toDate }, 'batch', 'school-attendance/range-report');
+  }
 }

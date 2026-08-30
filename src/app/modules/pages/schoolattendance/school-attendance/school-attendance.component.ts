@@ -54,6 +54,9 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
   showPrintModal = false;
   printBatch: any = null;
   printMonth = '';
+  printMode: 'month' | 'range' = 'month';
+  printFromDate = '';
+  printToDate = '';
   printLoading = false;
   monthOptions: { label: string; value: string }[] = [];
   finalisedSet = new Set<string>();
@@ -450,6 +453,9 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
 
   openPrintModal(batch: any): void {
     this.printBatch = batch;
+    this.printMode = 'month';
+    this.printFromDate = '';
+    this.printToDate = '';
     this.showPrintModal = true;
   }
 
@@ -459,6 +465,10 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
   }
 
   downloadPdf(): void {
+    if (this.printMode === 'range') {
+      this.downloadRangePdf();
+      return;
+    }
     if (!this.printBatch || !this.printMonth || this.printLoading) return;
     const [year, month] = this.printMonth.split('-').map(Number);
     const tenantId = localStorage.getItem('tenantId');
@@ -473,7 +483,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res: any) => {
           this.printLoading = false;
-          this.generatePdf(res?.data, year, month);
+          this.generatePdf(res?.data, { monthLabel: this.monthLabelFor(year, month) });
         },
         error: (err: any) => {
           this.printLoading = false;
@@ -482,35 +492,88 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       });
   }
 
-  private generatePdf(data: any, year: number, month: number): void {
-    if (!data) return;
+  private downloadRangePdf(): void {
+    if (!this.printBatch || !this.printFromDate || !this.printToDate || this.printLoading) return;
+    const tenantId = localStorage.getItem('tenantId');
+    const [fy, fm, fd] = this.printFromDate.split('-').map(Number);
+    const [ty, tm, td] = this.printToDate.split('-').map(Number);
+    const fromDate = Date.UTC(fy, fm - 1, fd);
+    const toDate = Date.UTC(ty, tm - 1, td);
+    this.printLoading = true;
+    this.commonApi
+      .fetchData(
+        { entiId: tenantId, batchCode: this.printBatch.batchCode, fromDate, toDate },
+        'batch',
+        'school-attendance/range-report',
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.printLoading = false;
+          const rangeLabel = `${this.formatShortDate(fromDate)} – ${this.formatShortDate(toDate)}`;
+          this.generatePdf(res?.data, {
+            monthLabel: rangeLabel,
+            fileSuffix: `${this.printFromDate}_to_${this.printToDate}`,
+          });
+        },
+        error: (err: any) => {
+          this.printLoading = false;
+          this.alert.error(err?.error?.message || 'Failed to generate range report');
+        },
+      });
+  }
+
+  private monthLabelFor(year: number, month: number): string {
     const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
     ];
-    const monthLabel = `${monthNames[month - 1]} ${year}`;
-    const lastDay = data.lastDay || 31;
+    return `${monthNames[month - 1]} ${year}`;
+  }
+
+  private formatShortDate(ms: number): string {
+    return new Date(ms).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  private generatePdf(data: any, period: { monthLabel: string; fileSuffix?: string }): void {
+    if (!data) return;
+    const monthLabel = period.monthLabel;
     const rows: any[] = data.rows || [];
     const batch = this.printBatch;
     const workingDays = data.workingDays || 0;
     const holidays: any[] = data.holidays || [];
-    const holidayDaySet = new Set<number>();
-    const holidayNameMap = new Map<number, string>();
-    holidays.forEach((h: any) => {
-      const dayNum = new Date(h.date).getUTCDate();
-      holidayDaySet.add(dayNum);
-      holidayNameMap.set(dayNum, h.name);
-    });
+
+    // Month mode: `data.lastDay` (1..N) is the day-of-month column count,
+    // holidays matched by day-of-month. Range mode: `data.dates[]` (epoch ms,
+    // one per column, positionally aligned with each row's `attendance[]`)
+    // — the range can cross a month boundary, so columns are labelled and
+    // holidays matched by exact date instead of a bare day number.
+    const isRangeMode = !data.lastDay && Array.isArray(data.dates);
+    let dayMeta: { label: string; isHoliday: boolean }[];
+    if (isRangeMode) {
+      const holidayDateSet = new Set<number>((holidays || []).map((h: any) => h.date));
+      let lastMonth = -1;
+      dayMeta = (data.dates || []).map((ms: number) => {
+        const d = new Date(ms);
+        const dayNum = d.getUTCDate();
+        const monthNum = d.getUTCMonth();
+        const crossedMonth = lastMonth !== -1 && monthNum !== lastMonth;
+        lastMonth = monthNum;
+        return {
+          label: crossedMonth ? `${dayNum}/${monthNum + 1}` : String(dayNum),
+          isHoliday: holidayDateSet.has(ms),
+        };
+      });
+    } else {
+      const lastDay = data.lastDay || 31;
+      const holidayDaySet = new Set<number>();
+      holidays.forEach((h: any) => holidayDaySet.add(new Date(h.date).getUTCDate()));
+      dayMeta = Array.from({ length: lastDay }, (_, i) => ({
+        label: String(i + 1),
+        isHoliday: holidayDaySet.has(i + 1),
+      }));
+    }
+    const lastDay = dayMeta.length;
     const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
@@ -537,7 +600,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     if (batch.classNo)
       doc.text(`Class   : ${batch.classNo}`, ml, batch.section ? 29 : 24);
     bold(10);
-    doc.text(`Month : ${monthLabel}`, pageW / 2, 19, { align: 'center' });
+    doc.text(`${isRangeMode ? 'Period' : 'Month'} : ${monthLabel}`, pageW / 2, 19, { align: 'center' });
     normal(9);
     doc.text(`No. of Working Days : ${workingDays}`, pageW - mr, 19, {
       align: 'right',
@@ -576,10 +639,10 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
         styles: { halign: 'left', fontStyle: 'bold', cellWidth: nameW },
       },
     );
-    for (let d = 1; d <= lastDay; d++) {
-      const isHol = holidayDaySet.has(d);
+    for (let d = 0; d < lastDay; d++) {
+      const isHol = dayMeta[d].isHoliday;
       head[0].push({
-        content: String(d),
+        content: dayMeta[d].label,
         styles: {
           halign: 'center',
           fontStyle: 'bold',
@@ -696,7 +759,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       },
     ];
     for (let d = 0; d < lastDay; d++) {
-      const isHol = holidayDaySet.has(d + 1);
+      const isHol = dayMeta[d].isHoliday;
       if (isHol) {
         dayTotalsRow.push({
           content: 'H',
@@ -780,7 +843,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       },
     ];
     for (let d = 0; d < lastDay; d++) {
-      const isHol = holidayDaySet.has(d + 1);
+      const isHol = dayMeta[d].isHoliday;
       if (isHol) {
         dayPctRow.push({
           content: 'H',
@@ -926,7 +989,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       { align: 'center' },
     );
     doc.save(
-      `Attendance_${batch.batchCode}_${monthLabel.replace(' ', '_')}.pdf`,
+      `Attendance_${batch.batchCode}_${period.fileSuffix || monthLabel.replace(/ /g, '_')}.pdf`,
     );
   }
 

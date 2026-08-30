@@ -17,14 +17,20 @@
                 </app-student-multiselect>
             </div>
 
-            <!-- Date range — optional -->
+            <!-- Date range — optional; "All Time" omits both fields entirely -->
             <div class="col-md-2">
                 <label class="form-label fw-medium">From Date</label>
-                <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate">
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate" [disabled]="allTime">
             </div>
             <div class="col-md-2">
                 <label class="form-label fw-medium">To Date</label>
-                <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate">
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate" [disabled]="allTime">
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-4 pt-1">
+                    <input type="checkbox" class="form-check-input" id="allTimeToggle" [(ngModel)]="allTime">
+                    <label class="form-check-label small" for="allTimeToggle">All Time (full history)</label>
+                </div>
             </div>
 
             <!-- Actions -->
@@ -53,6 +59,12 @@
     <div *ngIf="loading" class="text-center py-5">
         <div class="spinner-border text-primary"></div>
         <p class="text-muted mt-2">Generating report...</p>
+    </div>
+
+    <div *ngIf="dataLoaded && !loading" class="mb-2">
+        <small class="text-muted">
+            <i class="fa-solid fa-calendar-days me-1"></i>Showing: <strong>{{ effectiveRangeLabel }}</strong>
+        </small>
     </div>
 
     <div *ngIf="summaryItems.length && !loading" class="row g-3 mb-4">

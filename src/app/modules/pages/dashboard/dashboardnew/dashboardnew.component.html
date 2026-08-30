@@ -222,6 +222,61 @@
     </div>
     </ng-container>
 
+    <!-- Absentee Remarks Report (custom date range) -->
+    <div class="card absent-card" *appHasPermission="'schoolAttendance:export'">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">
+                    <i class="fa-solid fa-file-export" style="color:#dc2626"></i> Generate Absentee Remarks Report
+                </h3>
+                <p class="card-sub">Day-wise absentees with remarks across all batches, for any date range</p>
+            </div>
+            <button class="btn btn-create btn-sm" *ngIf="!absenteeReportOpen" (click)="absenteeReportOpen = true">
+                <i class="fa-solid fa-file-export me-1"></i> Generate Report
+            </button>
+        </div>
+        <ng-container *ngIf="absenteeReportOpen">
+        <div class="d-flex flex-wrap gap-2 align-items-end mb-3" style="padding: 0 4px;">
+            <div>
+                <label class="form-label fw-medium small mb-1">From Date</label>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="absenteeReportFromDate">
+            </div>
+            <div>
+                <label class="form-label fw-medium small mb-1">To Date</label>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="absenteeReportToDate">
+            </div>
+            <button class="btn btn-create btn-sm" [disabled]="absenteeReportLoading"
+                (click)="generateAbsenteeReport()">
+                <span *ngIf="!absenteeReportLoading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                <span *ngIf="absenteeReportLoading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+            </button>
+            <button class="btn-export" *ngIf="absenteeReportRows.length" (click)="exportAbsenteeReportExcel()"
+                title="Export Excel">
+                <i class="fa-solid fa-download"></i>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="absenteeReportOpen = false">
+                <i class="fa-solid fa-xmark me-1"></i> Close
+            </button>
+        </div>
+        <div class="alert alert-danger py-2 px-3 small mb-2" *ngIf="absenteeReportError">{{ absenteeReportError }}</div>
+        <div class="absent-table" *ngIf="absenteeReportRows.length">
+            <div class="absent-row absent-head">
+                <span>Date</span><span>Student</span><span>Admission No</span><span>Batch</span><span>Remarks</span>
+            </div>
+            <div class="absent-row" *ngFor="let r of absenteeReportRows">
+                <span class="ptm-sub">{{ r.dateFormatted }}</span>
+                <span class="ptm-name">{{ r.name }}</span>
+                <span class="ptm-name">{{ r.admissionNo }}</span>
+                <span>
+                    <div class="ptm-name">{{ r.batchCode }}</div>
+                    <div class="ptm-sub">{{ r.batchName }}</div>
+                </span>
+                <span class="absent-remark" [class.none]="!r.remarks">{{ r.remarks || '—' }}</span>
+            </div>
+        </div>
+        </ng-container>
+    </div>
+
     <!-- Attendance + Program -->
     <div class="charts-row">
         <div class="card chart-card wide" *appHasPermission="'dashboard:viewAttendanceOverview'">

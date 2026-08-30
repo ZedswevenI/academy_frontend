@@ -246,6 +246,21 @@ remarksModalText = '';
 remarksSaving = false;
 remarksError: string | null = null;
 
+absenteeReportOpen = false;
+absenteeReportFromDate = '';
+absenteeReportToDate = '';
+absenteeReportLoading = false;
+absenteeReportError: string | null = null;
+absenteeReportRows: {
+  date: number;
+  dateFormatted: string;
+  batchCode: string;
+  batchName: string;
+  admissionNo: string;
+  name: string;
+  remarks: string;
+}[] = [];
+
   attendanceLineData: ChartData<'line'> = { labels: [], datasets: [] };
   attendanceLineOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
@@ -710,6 +725,85 @@ this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
     const workbook: XLSX.WorkBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     XLSX.writeFile(workbook, fileName);
+  }
+
+  private dateInputToEpoch(dateStr: string): number {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  }
+
+  generateAbsenteeReport(): void {
+    if (!this.absenteeReportFromDate || !this.absenteeReportToDate) {
+      this.absenteeReportError = 'Please select both From and To dates.';
+      return;
+    }
+    const fromDate = this.dateInputToEpoch(this.absenteeReportFromDate);
+    const toDate = this.dateInputToEpoch(this.absenteeReportToDate);
+    if (fromDate > toDate) {
+      this.absenteeReportError = 'From date must be before To date.';
+      return;
+    }
+    this.absenteeReportLoading = true;
+    this.absenteeReportError = null;
+    this.absenteeReportRows = [];
+    this.dashboardService
+      .getAbsenteeRangeReport(this.entiId, fromDate, toDate)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.absenteeReportLoading = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          const batches: any[] = Array.isArray(res) ? res : res?.data || [];
+          const rows: typeof this.absenteeReportRows = [];
+          for (const batch of batches) {
+            const dates: number[] = batch.dates || [];
+            for (const student of batch.rows || []) {
+              dates.forEach((date: number, i: number) => {
+                if (student.attendance?.[i] === 'A') {
+                  rows.push({
+                    date,
+                    dateFormatted: this.fmtAbsentDate(date),
+                    batchCode: batch.batchCode,
+                    batchName: batch.batchName,
+                    admissionNo: student.admissionNo,
+                    name: student.name,
+                    remarks: student.remarks?.[i] || '',
+                  });
+                }
+              });
+            }
+          }
+          rows.sort((a, b) => a.date - b.date || a.batchCode.localeCompare(b.batchCode));
+          this.absenteeReportRows = rows;
+          if (!rows.length) {
+            this.absenteeReportError = 'No absentees found for the selected period.';
+          }
+        },
+        error: (err: any) => {
+          this.absenteeReportError = err?.error?.message || 'Failed to generate report';
+        },
+      });
+  }
+
+  exportAbsenteeReportExcel(): void {
+    if (!this.absenteeReportRows.length) return;
+    const rows = this.absenteeReportRows.map((r) => ({
+      Date: r.dateFormatted,
+      Student: r.name,
+      'Admission No': r.admissionNo,
+      'Batch Code': r.batchCode,
+      'Batch Name': r.batchName,
+      Remarks: r.remarks,
+    }));
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 20 }));
+    const workbook: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Absentee Report');
+    XLSX.writeFile(
+      workbook,
+      `Absentee_Report_${this.absenteeReportFromDate}_to_${this.absenteeReportToDate}.xlsx`,
+    );
   }
 
   getAbsentPhones(s: AbsentStudent | PeriodAbsentStudent): string[] {

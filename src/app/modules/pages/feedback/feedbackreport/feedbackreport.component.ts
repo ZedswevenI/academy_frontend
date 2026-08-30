@@ -257,6 +257,10 @@ export class FeedbackreportComponent implements OnInit {
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
           },
           {
+            content: 'PHASE',
+            styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+          },
+          {
             content: 'STRENGTH',
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
           },
@@ -334,6 +338,7 @@ export class FeedbackreportComponent implements OnInit {
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 },
           },
           { content: r.batchCode, styles: { halign: 'center', fontSize: 6.5 } },
+          { content: r.phase || '—', styles: { halign: 'center', fontSize: 6.5 } },
           { content: r.strength, styles: { halign: 'center', fontSize: 6.5 } },
           {
             content: r.responseCount,
@@ -394,7 +399,7 @@ export class FeedbackreportComponent implements OnInit {
       body.push([
         {
           content: 'OVERALL AVERAGE',
-          colSpan: 4,
+          colSpan: 5,
           styles: {
             halign: 'right',
             fontStyle: 'bold',
@@ -454,8 +459,9 @@ export class FeedbackreportComponent implements OnInit {
         columnStyles: {
           0: { cellWidth: 14 },
           1: { cellWidth: 22 },
-          2: { cellWidth: 14 },
-          3: { cellWidth: 16 },
+          2: { cellWidth: 16 },
+          3: { cellWidth: 14 },
+          4: { cellWidth: 16 },
         },
       });
       const finalY = (doc as any).lastAutoTable?.finalY || 180;
