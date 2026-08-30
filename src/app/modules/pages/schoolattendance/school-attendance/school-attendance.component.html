@@ -305,7 +305,7 @@
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-0">
                 <h6 class="modal-title fw-semibold">
-                    <i class="fa-solid fa-file-pdf me-1 text-danger"></i>Download Monthly
+                    <i class="fa-solid fa-file-pdf me-1 text-danger"></i>Download Attendance
                     Report
                 </h6>
                 <button class="btn-close" (click)="closePrintModal()"></button>
@@ -321,19 +321,52 @@
                         <strong class="ms-1">{{ printBatch?.section }}</strong>
                     </div>
                 </div>
-                <label class="form-label small fw-medium">Select Month <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" [(ngModel)]="printMonth">
-                    <option *ngFor="let m of monthOptions" [value]="m.value">
-                        {{ m.label }}
-                    </option>
-                </select>
+
+                <!-- Date-range downloads need schoolAttendance:export (the key the
+                     backend actually enforces on this endpoint) — hide the toggle
+                     entirely for users who only hold schoolAttendance:print, so
+                     they never see an option that would just 403. -->
+                <div class="btn-group w-100 mb-3" role="group" *appHasPermission="'schoolAttendance:export'">
+                    <button type="button" class="btn btn-sm" [class.btn-danger]="printMode === 'month'"
+                        [class.btn-outline-secondary]="printMode !== 'month'" (click)="printMode = 'month'">
+                        By Month
+                    </button>
+                    <button type="button" class="btn btn-sm" [class.btn-danger]="printMode === 'range'"
+                        [class.btn-outline-secondary]="printMode !== 'range'" (click)="printMode = 'range'">
+                        By Date Range
+                    </button>
+                </div>
+
+                <ng-container *ngIf="printMode === 'month'">
+                    <label class="form-label small fw-medium">Select Month <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" [(ngModel)]="printMonth">
+                        <option *ngFor="let m of monthOptions" [value]="m.value">
+                            {{ m.label }}
+                        </option>
+                    </select>
+                </ng-container>
+
+                <ng-container *ngIf="printMode === 'range'">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-medium">From <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control form-control-sm" [(ngModel)]="printFromDate">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-medium">To <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control form-control-sm" [(ngModel)]="printToDate">
+                        </div>
+                    </div>
+                </ng-container>
             </div>
             <div class="modal-footer border-0">
                 <button class="btn btn-sm btn-outline-secondary" (click)="closePrintModal()">
                     Cancel
                 </button>
-                <button class="btn btn-sm btn-danger" *appHasPermission="'schoolAttendance:print'"
-                    (click)="downloadPdf()" [disabled]="printLoading || !printMonth">
+                <button class="btn btn-sm btn-danger"
+                    *appHasPermission="printMode === 'range' ? 'schoolAttendance:export' : 'schoolAttendance:print'"
+                    (click)="downloadPdf()"
+                    [disabled]="printLoading || (printMode === 'month' ? !printMonth : (!printFromDate || !printToDate))">
                     <span *ngIf="printLoading" class="spinner-border spinner-border-sm me-1"></span>
                     <i class="fa-solid fa-file-pdf me-1" *ngIf="!printLoading"></i>
                     Download PDF

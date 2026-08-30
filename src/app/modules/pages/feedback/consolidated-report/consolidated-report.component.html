@@ -152,6 +152,7 @@
                                 <tr class="text-center">
                                     <th class="table-dark text-start" style="min-width:90px">Staff</th>
                                     <th class="table-dark">Batch</th>
+                                    <th class="table-dark">Phase</th>
                                     <th class="table-dark">Strength</th>
                                     <th class="table-dark">Responses</th>
                                     <ng-container *ngFor="let part of partKeys">
@@ -187,6 +188,7 @@
                                         </div>
                                     </td>
                                     <td class="text-center">{{ r.batchCode }}</td>
+                                    <td class="text-center">{{ r.phase || '—' }}</td>
                                     <td class="text-center">{{ r.strength }}</td>
                                     <td class="text-center">{{ r.responseCount }}</td>
                                     <ng-container *ngFor="let part of partKeys">
@@ -211,7 +213,7 @@
                             <!-- Per-staff average footer -->
                             <tfoot>
                                 <tr class="table-light fw-bold text-center">
-                                    <td colspan="4" class="text-end pe-3">
+                                    <td colspan="5" class="text-end pe-3">
                                         Staff Average
                                     </td>
                                     <ng-container *ngFor="let part of partKeys">

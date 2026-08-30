@@ -35,6 +35,18 @@ const META_COLS = new Set([
 ]);
 const isMetaCol = (col: string) => META_COLS.has(safeTrim(col).toLowerCase());
 
+// "Physics / 100" -> { name: 'Physics', maxMarks: 100 }; "Physics" -> { name: 'Physics', maxMarks: null }
+const parseSubjectHeader = (
+  col: string,
+): { name: string; maxMarks: number | null } => {
+  const raw = safeTrim(col);
+  const slashIdx = raw.indexOf('/');
+  if (slashIdx === -1) return { name: raw, maxMarks: null };
+  const name = safeTrim(raw.slice(0, slashIdx));
+  const n = Number(raw.slice(slashIdx + 1).trim());
+  return { name, maxMarks: Number.isFinite(n) ? n : null };
+};
+
 const parseMarks = (val: any): { marks: number | null; isAbsent: boolean } => {
   if (val === null || val === undefined || val === '')
     return { marks: null, isAbsent: false };
@@ -101,6 +113,7 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
   parsing = false;
   parsedRows: any[] = [];
   parsedSubjects: string[] = [];
+  subjectMaxMarksMap: Record<string, number | null> = {};
   parsedStats = { total: 0, matched: 0, absent: 0 };
   previewTruncated = false;
   private readonly PREVIEW_LIMIT = 20;
@@ -317,6 +330,7 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
     this.uploadExamDateStr = '';
     this.parsedRows = [];
     this.parsedSubjects = [];
+    this.subjectMaxMarksMap = {};
     this.parsedPayload = [];
     this.parsedGroups = [];
     this.parsedStats = { total: 0, matched: 0, absent: 0 };
@@ -409,22 +423,31 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
       this.parseError = 'No subject columns found. Check column headers.';
       return;
     }
+    const colSubjectMap = new Map<string, { name: string; maxMarks: number | null }>();
     const validSubjects: string[] = [];
     const invalidSubjects: string[] = [];
     for (const col of subjectCols) {
-      const colUpper = safeTrim(col).toUpperCase();
+      const { name, maxMarks } = parseSubjectHeader(col);
+      const nameUpper = name.toUpperCase();
       const match = this.subjectsFull.find(
-        (s) => safeTrim(s.subjectName).toUpperCase() === colUpper,
+        (s) => safeTrim(s.subjectName).toUpperCase() === nameUpper,
       );
-      if (match) validSubjects.push(col);
-      else invalidSubjects.push(col);
+      if (match) {
+        validSubjects.push(col);
+        colSubjectMap.set(col, { name, maxMarks });
+      } else invalidSubjects.push(col);
     }
 
     if (invalidSubjects.length) {
       this.parseError = `These columns don't match any subject in the system: ${invalidSubjects.join(', ')}. Please check subject names and re-upload.`;
       return;
     }
-    this.parsedSubjects = validSubjects.map((c) => safeTrim(c));
+    this.parsedSubjects = validSubjects.map((c) => colSubjectMap.get(c)!.name);
+    this.subjectMaxMarksMap = {};
+    for (const col of validSubjects) {
+      const { name, maxMarks } = colSubjectMap.get(col)!;
+      if (maxMarks !== null) this.subjectMaxMarksMap[name] = maxMarks;
+    }
     if (colExamName) this.uploadExamName = safeTrim(rawRows[0][colExamName]);
     if (colExamDate) {
       const ms = parseExcelDate(rawRows[0][colExamDate]);
@@ -439,10 +462,10 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
       const studentName = colStudentName ? safeTrim(row[colStudentName]) : '';
       const classNo = colClass ? Number(row[colClass]) || null : null;
       const excelTotal = colTotal ? Number(row[colTotal]) || null : null;
-      const subjects = subjectCols.map((col) => {
+      const subjects = validSubjects.map((col) => {
         const { marks, isAbsent } = parseMarks(row[col]);
         if (isAbsent) absentCount++;
-        return { subjectName: safeTrim(col), marks, isAbsent };
+        return { subjectName: colSubjectMap.get(col)!.name, marks, isAbsent };
       });
       const autoTotal = subjects.reduce((s, x) => s + (x.marks ?? 0), 0);
       const totalMarks = excelTotal !== null ? excelTotal : autoTotal;
@@ -505,13 +528,17 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
         failedGroups.push(`Row with missing exam name or date skipped`);
         continue;
       }
-      const payload = {
+      const subjectMaxMarks = this.parsedSubjects
+        .filter((s) => this.subjectMaxMarksMap[s] != null)
+        .map((s) => ({ subjectName: s, maxMarks: this.subjectMaxMarksMap[s] }));
+      const payload: any = {
         tenantId: this.tenantId,
         examName: group.examName,
         examDate: group.examDate,
         data: group.rows,
         userId: localStorage.getItem('userId'),
       };
+      if (subjectMaxMarks.length) payload.subjectMaxMarks = subjectMaxMarks;
       try {
         const r: any = await this.commonApi
           .fetchData(payload, this.moduleName, 'exam/import')
@@ -574,6 +601,13 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
     return Math.round((exam.matchedCount / exam.totalStudents) * 100);
   }
 
+  getSubjectMaxMarks(subjectName: string): number | null {
+    const m = (this.viewExam?.subjectMaxMarks || []).find(
+      (x: any) => x.subjectName === subjectName,
+    );
+    return m?.maxMarks ?? null;
+  }
+
   getSubjectMark(result: any, subjectName: string): string {
     const s = (result.subjects || []).find(
       (x: any) => x.subjectName === subjectName,
@@ -609,9 +643,9 @@ export class SchoolexamsComponent implements OnInit, OnDestroy {
       'Student Id',
       'Student Name',
       'Class',
-      'Maths',
-      'Physics',
-      'Chemistry',
+      'Maths / 100',
+      'Physics / 100',
+      'Chemistry / 100',
       'Total marks',
     ];
     const rows = [

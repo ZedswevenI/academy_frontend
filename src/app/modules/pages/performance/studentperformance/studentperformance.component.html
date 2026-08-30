@@ -20,6 +20,10 @@
                                 ({{ studentProfile?.basic?.batchCode }})
                             </span>
                             &nbsp;·&nbsp;
+                            Program: {{ studentProfile?.program?.programName || '—' }}
+                            &nbsp;·&nbsp;
+                            Class: {{ studentProfile?.basic?.classNo || '—' }}
+                            &nbsp;·&nbsp;
                             Center: {{ studentProfile?.program?.centerName || '—' }}
                             &nbsp;·&nbsp;
                             Academic Year: {{ academicYear }}

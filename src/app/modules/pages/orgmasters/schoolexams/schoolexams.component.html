@@ -521,7 +521,9 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <div class="small text-muted fw-semibold">
                     <i class="fa-solid fa-circle-info me-1 text-primary"></i>
-                    Replace <strong>Maths, Physics, Chemistry</strong> columns with your actual subject names
+                    Replace <strong>Maths, Physics, Chemistry</strong> columns with your actual subject names.
+                    Add <strong>"/ total marks"</strong> to a header (e.g. <code>Maths / 100</code>) to set that
+                    subject's max marks for this exam.
                 </div>
                 <button class="btn btn-sm btn-link text-decoration-none p-0" (click)="downloadSample()">
                     <i class="fa-solid fa-download me-1"></i>Download Sample
@@ -550,10 +552,15 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <div class="text-muted small mb-1 fw-semibold">Detected Subjects:</div>
+                    <div class="text-muted small mb-1 fw-semibold">Subject Max Marks:</div>
                     <div class="d-flex flex-wrap gap-2">
-                        <span *ngFor="let s of parsedSubjects" class="badge bg-primary-subtle text-primary border">{{ s
-                            }}</span>
+                        <div *ngFor="let s of parsedSubjects"
+                            class="d-flex align-items-center gap-1 badge bg-primary-subtle text-primary border py-2">
+                            <span>{{ s }} /</span>
+                            <input type="number" min="0" class="form-control form-control-sm"
+                                style="width:64px;height:22px;padding:0 4px" placeholder="Max"
+                                [(ngModel)]="subjectMaxMarksMap[s]">
+                        </div>
                     </div>
                 </div>
                 <div class="border rounded-3 overflow-hidden">
@@ -680,7 +687,12 @@
                                     <th style="min-width:140px">Name</th>
                                     <th style="min-width:60px">Class</th>
                                     <th *ngFor="let s of viewExam.subjectNames" class="view-subject-header text-center"
-                                        style="min-width:80px">{{ s }}</th>
+                                        style="min-width:80px">
+                                        {{ s }}
+                                        <div class="text-muted fw-normal" style="font-size:0.68rem">
+                                            / {{ getSubjectMaxMarks(s) ?? '—' }}
+                                        </div>
+                                    </th>
                                     <th class="text-center fw-bold"
                                         style="min-width:70px;background:#1e293b;color:#fff">Total</th>
                                     <th class="text-center" style="min-width:70px">Matched</th>
@@ -814,15 +826,20 @@
                     <!-- Per-exam breakdown -->
                     <div class="border rounded-3 overflow-hidden mb-3" *ngIf="importResult.data.exams?.length">
                         <div class="px-3 py-2 bg-light border-bottom fw-semibold small">Per Exam Summary</div>
-                        <div *ngFor="let e of importResult.data.exams"
-                            class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center small">
-                            <div class="fw-semibold">{{ e.examName }}</div>
-                            <div class="d-flex gap-2">
-                                <span class="badge bg-primary-subtle text-primary">{{ e.totalStudents }} students</span>
-                                <span class="badge bg-success-subtle text-success">{{ e.matchedCount }} matched</span>
-                                <span class="badge bg-warning-subtle text-warning" *ngIf="e.unmatchedCount > 0">
-                                    {{ e.unmatchedCount }} unmatched
-                                </span>
+                        <div *ngFor="let e of importResult.data.exams" class="px-3 py-2 border-bottom small">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="fw-semibold">{{ e.examName }}</div>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-primary-subtle text-primary">{{ e.totalStudents }} students</span>
+                                    <span class="badge bg-success-subtle text-success">{{ e.matchedCount }} matched</span>
+                                    <span class="badge bg-warning-subtle text-warning" *ngIf="e.unmatchedCount > 0">
+                                        {{ e.unmatchedCount }} unmatched
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 mt-1" *ngIf="e.subjectMaxMarks?.length">
+                                <span *ngFor="let m of e.subjectMaxMarks"
+                                    class="badge bg-light text-dark border">{{ m.subjectName }} / {{ m.maxMarks }}</span>
                             </div>
                         </div>
                     </div>
@@ -854,6 +871,12 @@
                             <div class="num" style="color:#d97706">{{ importResult.data.unmatchedCount }}</div>
                             <div class="lbl" style="color:#d97706">Unmatched</div>
                         </div>
+                    </div>
+                    <div class="col-12 d-flex flex-wrap gap-1 mt-1"
+                        *ngIf="importResult.data.exams?.[0]?.subjectMaxMarks?.length">
+                        <span class="text-muted small fw-semibold me-1">Max Marks:</span>
+                        <span *ngFor="let m of importResult.data.exams[0].subjectMaxMarks"
+                            class="badge bg-light text-dark border">{{ m.subjectName }} / {{ m.maxMarks }}</span>
                     </div>
                 </ng-container>
             </div>
