@@ -122,7 +122,7 @@
           </div>
 
           <!-- Passage -->
-          <div *ngIf="viewData?.enablePassage && viewData?.passageHtml" class="mb-3 p-3 border rounded bg-light">
+          <div *ngIf="viewData?.enablePassage && viewPassageHtml" class="mb-3 p-3 border rounded bg-light">
             <h6 class="fw-bold text-primary mb-2"><i class="fas fa-book me-1"></i>Passage</h6>
             <div [innerHTML]="viewPassageHtml"></div>
           </div>
@@ -154,27 +154,68 @@
                 <div class="fw-bold text-primary small mb-2">Column I</div>
                 <div *ngFor="let l of viewData.leftColumn" class="d-flex gap-2 mb-2 p-2 border rounded">
                   <span class="badge bg-primary">{{ l.key }}</span>
-                  <div [innerHTML]="l.textHtml"></div>
+                  <div [innerHTML]="l.safeHtml || l.text"></div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="fw-bold text-success small mb-2">Column II</div>
                 <div *ngFor="let r of viewData.rightColumn" class="d-flex gap-2 mb-2 p-2 border rounded">
                   <span class="badge bg-success">{{ r.key }}</span>
-                  <div [innerHTML]="r.textHtml"></div>
+                  <div [innerHTML]="r.safeHtml || r.text"></div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Correct Answer -->
-          <div class="mb-3" *ngIf="viewData?.correctAnswer">
+          <div class="mb-3" *ngIf="viewData?.questionTypeRaw === 'matrix'">
+            <h6 class="fw-bold">Correct Matches</h6>
+            <div *ngIf="viewData?.matrixMatches?.length; else noMatrixMatches" class="table-responsive">
+              <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Left</th>
+                    <th>Matches</th>
+                    <th>+Marks</th>
+                    <th>−Neg</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of viewData.matrixMatches">
+                    <td class="fw-bold">{{ m.key }}</td>
+                    <td>
+                      <span *ngFor="let rk of m.matches" class="badge bg-success me-1">{{ rk }}</span>
+                      <span *ngIf="!m.matches.length" class="text-muted small">—</span>
+                    </td>
+                    <td>+{{ m.marks }}</td>
+                    <td>{{ m.negMark ? '−' + m.negMark : '0' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noMatrixMatches>
+              <span class="text-muted small">No correct answer set</span>
+            </ng-template>
+          </div>
+
+          <div class="mb-3" *ngIf="viewData?.questionTypeRaw === 'subjective'">
             <h6 class="fw-bold">Correct Answer</h6>
-            <span *ngIf="viewData?.questionTypeRaw !== 'matrix'" class="badge bg-primary fs-6">
-              {{ viewData.correctAnswer }}
+            <div *ngIf="viewCorrectAnswerHtml" [innerHTML]="viewCorrectAnswerHtml" class="border rounded p-2 bg-light"></div>
+            <span *ngIf="!viewData?.correctAnswer" class="text-muted small">Manually evaluated</span>
+          </div>
+
+          <div class="mb-3" *ngIf="viewData?.questionTypeRaw === 'true_false'">
+            <h6 class="fw-bold">Correct Answer</h6>
+            <span class="badge fs-6"
+              [ngClass]="(viewData?.correctAnswer === true || (viewData?.correctAnswer + '').toLowerCase() === 'true') ? 'bg-success' : 'bg-danger'">
+              {{ (viewData?.correctAnswer === true || (viewData?.correctAnswer + '').toLowerCase() === 'true') ? 'True' : 'False' }}
             </span>
-            <span *ngIf="viewData?.questionTypeRaw === 'matrix'" class="text-muted small">See matrix matches
-              above</span>
+          </div>
+
+          <div class="mb-3"
+            *ngIf="viewData?.questionTypeRaw !== 'matrix' && viewData?.questionTypeRaw !== 'subjective' && viewData?.questionTypeRaw !== 'true_false' && viewData?.correctAnswer != null && viewData?.correctAnswer !== ''">
+            <h6 class="fw-bold">Correct Answer</h6>
+            <span class="badge bg-primary fs-6">{{ viewData.correctAnswer }}</span>
           </div>
 
           <!-- Numeric Range -->

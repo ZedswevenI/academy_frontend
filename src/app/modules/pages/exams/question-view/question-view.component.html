@@ -44,10 +44,18 @@
             Question limit reached
           </span>
         </ng-container>
-        <button *appHasPermission="'exam:importAnswers'" class="btn btn-import fs-16 fw-medium me-2"
-          (click)="importAnswers()">
-          <i class="fa-solid fa-cloud-arrow-up me-1"></i> Import Answers
-        </button>
+        <ng-container *ngIf="canImportQuestions">
+          <button *appHasPermission="'exam:importQuestions'" class="btn btn-import fs-16 fw-medium me-2"
+            (click)="importQuestions()">
+            <i class="fa-solid fa-file-import me-1"></i> Import Questions
+          </button>
+        </ng-container>
+        <ng-container *ngIf="allQuestionsImported">
+          <button *appHasPermission="'exam:importAnswers'" class="btn btn-import fs-16 fw-medium me-2"
+            (click)="importAnswers()">
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Import Answers
+          </button>
+        </ng-container>
         <div class="btn-group me-2">
           <button type="button" class="btn btn-create fs-16 fw-medium btn-sm dropdown-toggle py-2"
             data-bs-toggle="dropdown" aria-expanded="false">

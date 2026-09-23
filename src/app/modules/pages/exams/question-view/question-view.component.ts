@@ -14,6 +14,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { sortQuestionsForPrint } from '../exam-print-order.util';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -202,6 +203,27 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           sections: this.questionData.sections || [],
           classNo: this.questionData.classNo || null,
         },
+      },
+    });
+  }
+
+  get allQuestionsImported(): boolean {
+    const limit = this.questionData?.totalQuestions || 0;
+    return limit > 0 && this.actualQuestionCount >= limit;
+  }
+
+  get canImportQuestions(): boolean {
+    return (
+      this.questionData?.status === 'draft' &&
+      !this.questionData?.isImported &&
+      !this.allQuestionsImported
+    );
+  }
+
+  importQuestions(): void {
+    this.router.navigate(['/app/exams/exams/question-import'], {
+      state: {
+        questions: { ...this.questionData, examId: this.testId },
       },
     });
   }
@@ -1115,12 +1137,28 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   //     }, 500);
   //   }
 
+  private subjectNameForQuestion(q: any): string {
+    const section = (this.questionData?.sections || []).find(
+      (s: any) => s.sectionId === q.sectionId,
+    );
+    return section?.sectionName || '';
+  }
+
   printQuestions(withAnswer: boolean): void {
     const questionsToPrint = this.filteredQuestions;
     if (!questionsToPrint.length) {
       this.alert.error('No questions to print');
       return;
     }
+    // Print order: subject priority, then question-type priority within
+    // that subject, then the question's own sortOrder. The DOM index (idx)
+    // is kept separately since rendered elements (questionElements,
+    // optionElements) are queried in the original on-screen order.
+    const domIndexByQuestion = new Map<any, number>();
+    questionsToPrint.forEach((q: any, idx: number) => domIndexByQuestion.set(q, idx));
+    const printOrder = sortQuestionsForPrint(questionsToPrint, (q: any) =>
+      this.subjectNameForQuestion(q),
+    );
     const safeHtml = (val: any): string => (typeof val === 'string' ? val : '');
     const formatAnswer = (q: any): string => {
       switch (q.questionType) {
@@ -1155,13 +1193,14 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
           return `<span class="ans-badge">${q.correctAnswer ?? ''}</span>`;
       }
     };
-    const questionsHtml = questionsToPrint
-      .map((q: any, i: number) => {
-        const qEl = this.questionElements.toArray()[i];
+    const questionsHtml = printOrder
+      .map((q: any, printPos: number) => {
+        const idx = domIndexByQuestion.get(q)!;
+        const qEl = this.questionElements.toArray()[idx];
         const questionHtml = qEl
           ? qEl.nativeElement.innerHTML
           : safeHtml(q.questionHtml);
-        const passageEl = document.getElementById(`passage-content-${i}`);
+        const passageEl = document.getElementById(`passage-content-${idx}`);
         const passageHtml = passageEl
           ? passageEl.innerHTML
           : safeHtml(q.passageHtml);
@@ -1178,7 +1217,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         const opts: any[] = q.questionOptions || [];
         if (opts.length) {
           const optOffset = questionsToPrint
-            .slice(0, i)
+            .slice(0, idx)
             .reduce(
               (acc: number, pq: any) => acc + (pq.questionOptions?.length || 0),
               0,
@@ -1278,7 +1317,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         return `
     <div class="q-card">
       <div class="q-header">
-        <span class="q-num">Q${i + 1}.</span>
+        <span class="q-num">Q${printPos + 1}.</span>
         <span class="q-meta">${this.formatQuestionType(q.questionType)} &nbsp; ${marks}</span>
         ${q.questionNo ? `<span class="q-no">${q.questionNo}</span>` : ''}
       </div>
@@ -1445,11 +1484,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     .opt-body { font-size: 11.5pt; }
     .opt-tick { color: #1a7a1a; font-size: 10pt; margin-left: 4px; }
     .matrix-wrap  { margin: 0 16px 10px 16px; }
-    .matrix-cols  { width: 100%; border-collapse: collapse; }
+    .matrix-cols  { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .matrix-head  { font-size: 10.5pt; font-weight: bold; padding: 4px 8px; border-bottom: 1px solid #333; }
-    .matrix-side  { width: 50%; vertical-align: top; padding: 4px 8px; }
-    .matrix-key   { font-weight: bold; padding: 3px 8px 3px 0; white-space: nowrap; }
-    .matrix-cell  { padding: 3px 4px; line-height: 1.6; }
+    .matrix-side  { width: 50%; vertical-align: top; padding: 4px 8px; border-right: 1px solid #ccc; }
+    .matrix-side:last-child { border-right: none; }
+    .matrix-side table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .matrix-key   { font-weight: bold; padding: 3px 8px 3px 0; white-space: nowrap; vertical-align: top; width: 22px; }
+    .matrix-cell  { padding: 3px 4px; line-height: 1.6; vertical-align: top; }
     .matrix-matches { margin-top: 10px; }
     .match-table { width: auto; border-collapse: collapse; font-size: 10.5pt; margin-top: 4px; }
     .match-table th { padding: 3px 12px; border: 1px solid #aaa; background: #eee; font-size: 10pt; }
