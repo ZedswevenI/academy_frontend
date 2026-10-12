@@ -15,6 +15,7 @@
         <div class="card-body pt-0">
             <custom-table [autoFitChars]="true" [columns]="columns" [data]="centerData" [actions]="actions"
                 [loading]="loading" [totalRecords]="totalRecords" [pageSizeOptions]="[10,20,50]"
+                [initialPage]="restoredPage"
                 (requestData)="fetchTableData($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>

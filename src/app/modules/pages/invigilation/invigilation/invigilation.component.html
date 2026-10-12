@@ -61,7 +61,7 @@
     <div class="card shadow-sm">
         <div class="mt-4">
             <custom-table [columns]="columnsArray" [data]="records" [actions]="actions" success="PUBLISHED"
-                [totalRecords]="total" [searchPlaceholder]="'Search exam name, session...'"
+                [totalRecords]="total" [searchPlaceholder]="'Search exam name, session...'" [initialPage]="restoredPage"
                 (requestData)="loadTableData($event)" (rowClick)="view($event)">
             </custom-table>
         </div>

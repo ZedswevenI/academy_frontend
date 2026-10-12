@@ -48,7 +48,7 @@
 
         <!-- TABLE — passes currentPage/currentPageSize so table restores position -->
         <custom-table [columns]="columnsArray" [data]="dataArray" [actions]="actions" [totalRecords]="totalRecords"
-            [loading]="loading" (requestData)="fetchTableData($event)" (rowClick)="onRowSelected($event)">
+            [loading]="loading" [initialPage]="restoredPage" (requestData)="fetchTableData($event)" (rowClick)="onRowSelected($event)">
         </custom-table>
 
     </div>

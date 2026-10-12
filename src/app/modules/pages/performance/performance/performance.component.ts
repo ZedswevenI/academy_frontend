@@ -14,6 +14,9 @@ import {
   exportToPdf,
 } from '../print.helper';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const PERFORMANCE_LIST_STATE_KEY = 'performance-list';
 
 @Component({
   selector: 'app-performance',
@@ -23,6 +26,8 @@ import { PermissionService } from '../../../../shared/permission.service';
 })
 export class PerformanceComponent implements OnInit {
   tenantId = localStorage.getItem('tenantId') || '';
+  currentPage = 1;
+  restoredPage = 1;
   roleLevel = '';
   canSync = false;
   canOverride = false;
@@ -66,7 +71,12 @@ export class PerformanceComponent implements OnInit {
     private breadcrump: BredcrumpService,
     private auth: AuthService,
     private permissionService: PermissionService,
-  ) {}
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(
+      PERFORMANCE_LIST_STATE_KEY,
+    );
+  }
 
   ngOnInit(): void {
     this.roleLevel = this.auth.getRole();
@@ -157,6 +167,7 @@ export class PerformanceComponent implements OnInit {
     pageSize: number;
     search?: string;
   }): void {
+    this.currentPage = req.page;
     if (!this.selectedBatchId || !this.selectedYear) return;
     this.loading = true;
     this.commonApi
@@ -209,6 +220,7 @@ export class PerformanceComponent implements OnInit {
 
   viewStudent(row: any): void {
     if (!this.permissionService.hasPermission('performance:view')) return;
+    this.listStateService.savePage(PERFORMANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/performance/student', row.studentId], {
       state: { batchId: this.selectedBatchId, academicYear: this.selectedYear },
     });
@@ -281,6 +293,7 @@ export class PerformanceComponent implements OnInit {
   }
 
   goToReport(): void {
+    this.listStateService.savePage(PERFORMANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/performance/batch-report'], {
       state: {
         batchId: this.selectedBatchId,
@@ -389,6 +402,7 @@ export class PerformanceComponent implements OnInit {
   onRowSelected(row: any) {
     // custom-table's (rowClick) bypasses the View Detail icon's `show` gate — guard here too.
     if (!this.permissionService.hasPermission('performance:view')) return;
+    this.listStateService.savePage(PERFORMANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/performance/student', row.studentId], {
       state: { batchId: this.selectedBatchId, academicYear: this.selectedYear },
     });

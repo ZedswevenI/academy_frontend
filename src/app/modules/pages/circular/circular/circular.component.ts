@@ -5,6 +5,9 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const CIRCULAR_LIST_STATE_KEY = 'circular-list';
 
 @Component({
   selector: 'app-circular',
@@ -19,6 +22,8 @@ export class CircularComponent implements OnInit {
   filterForm!: FormGroup;
   dataArray: any[] = [];
   totalRecords = 0;
+  currentPage = 1;
+  restoredPage = 1;
   private lastFilter: {
     filterType: string;
     filterValue: string;
@@ -62,10 +67,12 @@ export class CircularComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#0066FF',
       show: () => !this.permissionService.hasPermission('circular:view'),
-      callback: (row: any) =>
+      callback: (row: any) => {
+        this.listStateService.savePage(CIRCULAR_LIST_STATE_KEY, this.currentPage);
         this.router.navigate(['/app/circular/view'], {
           state: { circular: row },
-        }),
+        });
+      },
     },
     {
       type: 'icon',
@@ -74,6 +81,7 @@ export class CircularComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#16A34A',
       callback: (row: any) => {
+        this.listStateService.savePage(CIRCULAR_LIST_STATE_KEY, this.currentPage);
         this.router.navigate(['/app/circular/create'], {
           state: { circular: row },
         });
@@ -112,9 +120,11 @@ export class CircularComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Circulars' }]);
+    this.restoredPage = this.listStateService.consumePage(CIRCULAR_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -219,6 +229,7 @@ export class CircularComponent implements OnInit {
     pageSize: number;
     search?: string;
   }): void {
+    this.currentPage = req.page;
     this.lastFilter.page = req.page;
     this.lastFilter.pageSize = req.pageSize;
     this.fetchList(req.page, req.pageSize, req.search);
@@ -340,6 +351,7 @@ export class CircularComponent implements OnInit {
     // Row click bypasses the View icon's `show` gate — same navigation as
     // that action, so it needs the same check independently.
     if (!this.permissionService.hasPermission('circular:view')) return;
+    this.listStateService.savePage(CIRCULAR_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/circular/view'], { state: { circular: row } });
   }
 }

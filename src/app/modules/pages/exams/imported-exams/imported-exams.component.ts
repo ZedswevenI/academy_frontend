@@ -6,6 +6,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const IMPORTED_EXAMS_LIST_STATE_KEY = 'imported-exams-list';
 
 @Component({
   selector: 'app-imported-exams',
@@ -17,6 +20,8 @@ export class ImportedExamsComponent implements OnInit {
   loading = false;
   totalRecords = 0;
   dataArray: any[] = [];
+  currentPage = 1;
+  restoredPage = 1;
   lastTableParams: any = null;
   showFilters = false;
   filterForm!: FormGroup;
@@ -64,8 +69,11 @@ export class ImportedExamsComponent implements OnInit {
     private router: Router,
     private breadcrumb: BredcrumpService,
     public authService: AuthService,
-    private permissionService: PermissionService
-  ) { }
+    private permissionService: PermissionService,
+    private listStateService: ListStateService
+  ) {
+    this.restoredPage = this.listStateService.consumePage(IMPORTED_EXAMS_LIST_STATE_KEY);
+  }
 
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Imported Exams' }]);
@@ -88,6 +96,7 @@ export class ImportedExamsComponent implements OnInit {
 
   fetchTableData(params: any) {
     this.lastTableParams = { ...params };
+    this.currentPage = params.page;
     this.loading = true;
     const query: any = { page: params.page, limit: params.pageSize, isImported: true };
     if (params.sortKey) {
@@ -127,10 +136,12 @@ export class ImportedExamsComponent implements OnInit {
   }
 
   importMarks() {
+    this.listStateService.savePage(IMPORTED_EXAMS_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/exams/exams/marks-import']);
   }
 
   viewExam(row: any) {
+    this.listStateService.savePage(IMPORTED_EXAMS_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
 
@@ -173,6 +184,7 @@ export class ImportedExamsComponent implements OnInit {
 
   onRowSelected(row: any) {
     if (!this.permissionService.hasPermission('examImport:view')) return;
+    this.listStateService.savePage(IMPORTED_EXAMS_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
 }

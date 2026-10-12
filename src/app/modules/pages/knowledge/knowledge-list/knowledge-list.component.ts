@@ -5,6 +5,9 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const KNOWLEDGE_LIST_STATE_KEY = 'knowledge-list';
 
 @Component({
   selector: 'app-knowledge-list',
@@ -35,6 +38,7 @@ export class KnowledgeListComponent implements OnInit {
   // Track current pagination so delete reloads the same page
   currentPage = 1;
   currentPageSize = 10;
+  restoredPage = 1;
 
   // Last used filter + pagination — in-memory only, survives modal actions
   private lastRequest: { page: number; pageSize: number; search?: string } = { page: 1, pageSize: 10 };
@@ -81,9 +85,11 @@ export class KnowledgeListComponent implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Library' }]);
+    this.restoredPage = this.listStateService.consumePage(KNOWLEDGE_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -230,14 +236,17 @@ export class KnowledgeListComponent implements OnInit {
   // ── Actions ────────────────────────────────────────────────────────────────
 
   view(row: any): void {
+    this.listStateService.savePage(KNOWLEDGE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/knowledge/view'], { state: { material: row } });
   }
 
   edit(row: any): void {
+    this.listStateService.savePage(KNOWLEDGE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/knowledge/create'], { state: { material: row } });
   }
-  
+
   onRowSelected(row: any) {
+    this.listStateService.savePage(KNOWLEDGE_LIST_STATE_KEY, this.currentPage);
    this.router.navigate(['/app/knowledge/view'], { state: { material: row } });
   }
 

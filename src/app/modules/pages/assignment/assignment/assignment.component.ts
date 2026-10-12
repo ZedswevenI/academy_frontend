@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { Router } from '@angular/router';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const ASSIGNMENT_DEMO_LIST_STATE_KEY = 'assignment-demo-list';
 
 @Component({
   selector: 'app-assignment',
@@ -18,6 +21,9 @@ export class AssignmentComponent {
   dataArray: any[] = [];
   originalData: any[] = [];
   totalRecords = 0;
+  currentPage = 1;
+  restoredPage = 1;
+  private hasAppliedRestoredPage = false;
 
   actions = [
       {
@@ -30,8 +36,13 @@ export class AssignmentComponent {
     },
   ]
 
-  constructor(private breadcrump: BredcrumpService, private router: Router) {
+  constructor(
+    private breadcrump: BredcrumpService,
+    private router: Router,
+    private listStateService: ListStateService,
+  ) {
     this.breadcrump.set([{ label: 'Assignment' }])
+    this.restoredPage = this.listStateService.consumePage(ASSIGNMENT_DEMO_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -48,7 +59,12 @@ export class AssignmentComponent {
       { assignment: 'Computer Science – JavaScript Basics', due: '05-02-2026', count: '17 / 40' }
     ]
 
-    this.loadTableData({ page: 1, pageSize: 5 });
+    const page =
+      !this.hasAppliedRestoredPage && this.restoredPage > 1
+        ? this.restoredPage
+        : 1;
+    this.hasAppliedRestoredPage = true;
+    this.loadTableData({ page, pageSize: 5 });
   }
 
   loadTableData(req: {
@@ -58,6 +74,7 @@ export class AssignmentComponent {
     sortKey?: string;
     sortDirection?: 'asc' | 'desc';
   }) {
+    this.currentPage = req.page;
     let filtered = [...this.originalData];
 
     // SEARCH
@@ -89,6 +106,7 @@ export class AssignmentComponent {
   }
 
   viewAss(row:any){
+    this.listStateService.savePage(ASSIGNMENT_DEMO_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/assignment/view'])
   }
 }

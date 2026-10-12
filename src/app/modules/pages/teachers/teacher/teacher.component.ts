@@ -5,6 +5,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const TEACHER_LIST_STATE_KEY = 'teacher-list';
 
 @Component({
   selector: 'app-teacher',
@@ -19,6 +22,8 @@ export class TeacherComponent implements OnInit {
   loading = false;
   totalRecords = 0;
   dataArray: any[] = [];
+  currentPage = 1;
+  restoredPage = 1;
 
   columns = [
     { key: 'staffCode', label: 'Staff Code', sortable: false },
@@ -47,13 +52,15 @@ export class TeacherComponent implements OnInit {
     private commonApi: CommonapiService,
     private router: Router,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Teachers' }]);
+    this.restoredPage = this.listStateService.consumePage(TEACHER_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
-    this.fetchTableData({ page: 1, pageSize: 10 });
+    this.fetchTableData({ page: this.restoredPage, pageSize: 10 });
   }
 
   fetchTableData(event?: {
@@ -64,6 +71,7 @@ export class TeacherComponent implements OnInit {
     sortDirection?: 'asc' | 'desc';
   }) {
     const page = event?.page || 1;
+    this.currentPage = page;
     const limit = event?.pageSize || 10;
     const search = (event?.search || '').toString().trim();
     const payload: any = {
@@ -101,6 +109,7 @@ export class TeacherComponent implements OnInit {
   }
 
   viewTeacher(row: any) {
+    this.listStateService.savePage(TEACHER_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/teacher/view'], {
       queryParams: { staffId: row.staffId },
     });
@@ -109,6 +118,7 @@ export class TeacherComponent implements OnInit {
   onRowSelected(row: any) {
     // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
     if (!this.permissionService.hasPermission('teacher:view')) return;
+    this.listStateService.savePage(TEACHER_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/teacher/view'], {
       queryParams: { staffId: row.staffId },
     });

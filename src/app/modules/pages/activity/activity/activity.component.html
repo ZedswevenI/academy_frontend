@@ -70,7 +70,7 @@
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
                 success="COMPLETED" primary="PLANNED" warn="IN_PROGRESS" danger="CANCELLED"
                 [totalRecords]="totalRecords" [searchPlaceholder]="'Search Activity...'"
-                (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)">
+                [initialPage]="restoredPage" (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>
     </div>
@@ -212,7 +212,7 @@
                 <ng-container *appHasPermission="'activity:edit'">
                     <button *ngIf="selectedActivity.status !== 'COMPLETED'" type="button"
                         class="btn btn-edit fs-16 fw-medium" data-bs-dismiss="modal"
-                        (click)="router.navigate(['/app/activity/create'], { state: { activity: selectedActivity } })">
+                        (click)="goToEdit(selectedActivity)">
                         <i class="fa-solid fa-pen-to-square me-2"></i>Edit
                     </button>
                 </ng-container>

@@ -5,6 +5,9 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const FEEDBACK_LIST_STATE_KEY = 'feedback-list';
 
 @Component({
   selector: 'app-feedback',
@@ -47,8 +50,10 @@ export class FeedbackComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#0066FF',
       show: () => !this.permissionService.hasPermission('feedback:viewResults'),
-      callback: (row: any) =>
-        this.router.navigate(['/app/feedback/results', row._id]),
+      callback: (row: any) => {
+        this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
+        this.router.navigate(['/app/feedback/results', row._id]);
+      },
     },
     {
       type: 'icon',
@@ -57,8 +62,10 @@ export class FeedbackComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#DC2626',
       show: () => !this.permissionService.hasPermission('feedback:consolidatedReport'),
-      callback: (row: any) =>
-        this.router.navigate(['/app/feedback/report', row._id]),
+      callback: (row: any) => {
+        this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
+        this.router.navigate(['/app/feedback/report', row._id]);
+      },
     },
     {
       type: 'dropdown',
@@ -70,8 +77,10 @@ export class FeedbackComponent implements OnInit {
           text: 'Edit',
           icon: 'fa-regular fa-pen-to-square',
           show: () => !this.permissionService.hasPermission('feedback:edit'),
-          callback: (row: any) =>
-            this.router.navigate(['/app/feedback/edit', row._id]),
+          callback: (row: any) => {
+            this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
+            this.router.navigate(['/app/feedback/edit', row._id]);
+          },
         },
         {
           text: 'Change Status',
@@ -88,6 +97,8 @@ export class FeedbackComponent implements OnInit {
       ],
     },
   ];
+  currentPage = 1;
+  restoredPage = 1;
   selectedForm: any = null;
   newStatus = '';
   statusSaving = false;
@@ -106,14 +117,16 @@ export class FeedbackComponent implements OnInit {
     private alert: AlertService,
     private breadcrump: BredcrumpService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Feedback' }]);
+    this.restoredPage = this.listStateService.consumePage(FEEDBACK_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
     this.filterForm = this.fb.group({ status: [''], category: [''] });
-    this.fetchForms(1, 10);
+    this.fetchForms(this.restoredPage, 10);
   }
 
   showCreate(): boolean {
@@ -148,6 +161,7 @@ export class FeedbackComponent implements OnInit {
   }
 
   loadTableData(req: { page: number; pageSize: number }): void {
+    this.currentPage = req.page;
     this.fetchForms(req.page, req.pageSize);
   }
 
@@ -239,6 +253,7 @@ export class FeedbackComponent implements OnInit {
     // Row click bypasses the View Results icon's `show` gate — same
     // navigation as that action, so it needs the same check independently.
     if (!this.permissionService.hasPermission('feedback:viewResults')) return;
+    this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/feedback/results', row._id]);
   }
 }

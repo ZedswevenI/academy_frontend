@@ -4,7 +4,10 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { InvigilationPrintService } from '../invigilationPrint.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const INVIGILATION_LIST_STATE_KEY = 'invigilation-list';
 
 @Component({
   selector: 'app-invigilation',
@@ -22,6 +25,7 @@ export class InvigilationComponent implements OnInit {
   total = 0;
   page = 1;
   limit = 20;
+  restoredPage = 1;
   loading = false;
   deleteTarget: any = null;
   deleteLoading = false;
@@ -80,7 +84,10 @@ export class InvigilationComponent implements OnInit {
     private printSvc: InvigilationPrintService,
     private router: Router,
     private permissionService: PermissionService,
-  ) {}
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(INVIGILATION_LIST_STATE_KEY);
+  }
 
   ngOnInit(): void {}
 
@@ -137,10 +144,12 @@ export class InvigilationComponent implements OnInit {
   }
 
   create(): void {
+    this.listStateService.savePage(INVIGILATION_LIST_STATE_KEY, this.page);
     this.router.navigate(['/app/invigilation/create']);
   }
 
   edit(r: any): void {
+    this.listStateService.savePage(INVIGILATION_LIST_STATE_KEY, this.page);
     this.router.navigate(['/app/invigilation/edit', r._id]);
   }
 
@@ -149,6 +158,7 @@ export class InvigilationComponent implements OnInit {
     // and directly by custom-table's (rowClick), which bypasses that gate —
     // check here too so row-click can't be used to route around it.
     if (!this.permissionService.hasPermission('invigilation:view')) return;
+    this.listStateService.savePage(INVIGILATION_LIST_STATE_KEY, this.page);
     this.router.navigate(['/app/invigilation/view', r._id]);
   }
 

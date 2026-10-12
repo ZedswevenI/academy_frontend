@@ -6,7 +6,10 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const ACTIVITY_LIST_STATE_KEY = 'activity-list';
 
 @Component({
   selector: 'app-activity',
@@ -22,6 +25,7 @@ export class ActivityComponent implements OnInit {
   totalRecords = 0;
   private lastPage = 1;
   private lastLimit = 10;
+  restoredPage = 1;
   private lastSearch?: string;
   batch_options: any[] = [];
   center_options: any[] = [];
@@ -59,10 +63,7 @@ export class ActivityComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) =>
-        this.router.navigate(['/app/activity/create'], {
-          state: { activity: row },
-        }),
+      callback: (row: any) => this.goToEdit(row),
       show: (row: any) => row.status.toUpperCase() === 'COMPLETED' || !this.permissionService.hasPermission('activity:edit'),
     },
     {
@@ -119,9 +120,18 @@ export class ActivityComponent implements OnInit {
     private alert: AlertService,
     private authService: AuthService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Activity' }]);
+    this.restoredPage = this.listStateService.consumePage(ACTIVITY_LIST_STATE_KEY);
+  }
+
+  goToEdit(row: any): void {
+    this.listStateService.savePage(ACTIVITY_LIST_STATE_KEY, this.lastPage);
+    this.router.navigate(['/app/activity/create'], {
+      state: { activity: row },
+    });
   }
 
   ngOnInit(): void {

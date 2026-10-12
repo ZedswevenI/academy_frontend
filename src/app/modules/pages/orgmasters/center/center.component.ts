@@ -7,6 +7,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const CENTER_LIST_STATE_KEY = 'center-list';
 
 @Component({
   selector: 'app-center',
@@ -26,6 +29,8 @@ export class CenterComponent implements OnInit {
   totalRecords = 0;
   centerData: any[] = [];
   entiId: any;
+  currentPage = 1;
+  restoredPage = 1;
   columns = [
     { key: 'centerName', label: 'Center Name', sortable: false },
     { key: 'centerCode', label: 'Code', sortable: false },
@@ -72,13 +77,15 @@ export class CenterComponent implements OnInit {
     private centerService: CenterService,
     private api: CommonapiService,
     private router: Router,
-    private permissionService: PermissionService
+    private permissionService: PermissionService,
+    private listStateService: ListStateService
   ) {
     this.entiId = localStorage.getItem('tenantId')
     this.breadcrumb.set([
       { label: 'Org-Masters' },
       { label: 'Center' }
     ]);
+    this.restoredPage = this.listStateService.consumePage(CENTER_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -114,6 +121,7 @@ export class CenterComponent implements OnInit {
     sortDirection?: string;
   }) {
     this.loading = true;
+    this.currentPage = params.page;
 
     // Pagination & Sort
     let sortParam = '';
@@ -265,6 +273,7 @@ export class CenterComponent implements OnInit {
     if (!this.permissionService.hasPermission('orgCenter:view')) return;
     const id = row?._id || row?.recId;
     if (!id) return;
+    this.listStateService.savePage(CENTER_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/org-master/center/view', id]);
   }
 
@@ -273,6 +282,7 @@ export class CenterComponent implements OnInit {
     if (!this.permissionService.hasPermission('orgCenter:view')) return;
     const id = row?._id || row?.recId;
     if (!id) return;
+    this.listStateService.savePage(CENTER_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/org-master/center/view', id]);
   }
 }
