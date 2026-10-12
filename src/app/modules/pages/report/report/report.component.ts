@@ -625,14 +625,17 @@ export class ReportComponent implements OnInit {
       case 'batch-staff':
         this.reportColumns = [
           { key: 'slNo', label: '#' },
-          ...(!this.selectedBatchIds.length || this.allBatchesSelected ? [{ key: 'batchCode', label: 'Batch' }] : []),
+          ...(!this.selectedBatchIds.length || this.allBatchesSelected ? [{ key: 'batchLabel', label: 'Batch' }] : []),
           { key: 'staffName', label: 'Name' },
           { key: 'staffCode', label: 'Code' }, { key: 'subjectName', label: 'Subject' },
           { key: 'facultyType', label: 'Type' }, { key: 'phone', label: 'Phone' },
           { key: 'email', label: 'Email' }, { key: 'role', label: 'Role' },
           { key: 'status', label: 'Status' }
         ];
-        this.reportTableData = res.currentStaff || [];
+        this.reportTableData = (res.currentStaff || []).map((r: any) => ({
+          ...r,
+          batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || '')
+        }));
         break;
 
       case 'batch-timetable':

@@ -25,7 +25,7 @@ export class SlashReportComponent  extends BaseReportComponent {
   summaryItems: { label: string; value: any }[] = [];
 
   readonly columns = [
-    { key: 'batchCode',   label: 'Batch' },
+    { key: 'batchLabel',  label: 'Batch' },
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student Name' },
     { key: 'subjectName', label: 'Subject' },
@@ -50,7 +50,10 @@ export class SlashReportComponent  extends BaseReportComponent {
     this.reportService.generate('reports/batch', 'slash-detail', payload).subscribe({
       next: (res: any) => {
         this.onSuccess(res);
-        this.rows = res.data || [];
+        this.rows = (res.data || []).map((r: any) => ({
+          ...r,
+          batchLabel: r.batchName ? (r.batchCode ? `${r.batchName} (${r.batchCode})` : r.batchName) : (r.batchCode || '')
+        }));
         this.summaryItems = this.reportService.buildSummaryItems(res.summary);
       },
       error: (err: any) => this.onError(err)

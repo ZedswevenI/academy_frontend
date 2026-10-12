@@ -1426,7 +1426,7 @@ export class ViewBatchComponent implements OnInit {
       );
     }
 
-    XLSX.writeFile(wb, `Batch_${b.batchCode || b.batchName}.xlsx`);
+    XLSX.writeFile(wb, `Batch_${[b.batchCode, b.batchName].filter(Boolean).join('_').replace(/\s+/g, '_')}.xlsx`);
   }
 
   openCloseBatch() {
