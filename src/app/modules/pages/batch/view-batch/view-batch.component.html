@@ -323,7 +323,7 @@
                         <i class="fa-solid fa-clock me-2 text-primary"></i>Subject Hours Allotted
                     </h6>
                     <span class="badge bg-primary-subtle text-primary">
-                        Total: {{ subjectHoursTotal }}h
+                        Total: {{ formatHours(subjectHoursTotal) }}
                     </span>
                 </div>
                 <div class="row g-3">
@@ -338,7 +338,7 @@
                                 </div>
                                 <span class="badge rounded-pill"
                                     style="background:#eff6ff;color:#3b82f6;font-size:0.75rem;font-weight:700">
-                                    {{ s.allottedHours }}h
+                                    {{ formatHours(s.allottedHours) }}
                                 </span>
                             </div>
                             <div class="text-muted" style="font-size:0.72rem">
@@ -368,7 +368,7 @@
                     <div class="col-4">
                         <div class="rounded-3 p-3 text-center border" style="background:#f0fdf4">
                             <div class="fw-bold" style="font-size:1.4rem;color:#16a34a">
-                                {{ phaseReport.summary?.totalEstHours ?? '-' }}h
+                                {{ phaseReport.summary?.totalEstHours != null ? formatHours(phaseReport.summary.totalEstHours) : '-' }}
                             </div>
                             <div class="small text-muted fw-semibold mt-1">Total Estimated</div>
                         </div>
@@ -376,7 +376,7 @@
                     <div class="col-4">
                         <div class="rounded-3 p-3 text-center border" style="background:#eff6ff">
                             <div class="fw-bold" style="font-size:1.4rem;color:#3b82f6">
-                                {{ phaseReport.summary?.totalAllottedHours ?? 0 }}h
+                                {{ formatHours(phaseReport.summary?.totalAllottedHours ?? 0) }}
                             </div>
                             <div class="small text-muted fw-semibold mt-1">Total Allotted</div>
                         </div>
@@ -386,7 +386,7 @@
                             [style.background]="(phaseReport.summary?.totalRemainingHours ?? 0) < 0 ? '#fef2f2' : '#fefce8'">
                             <div class="fw-bold" style="font-size:1.4rem"
                                 [style.color]="(phaseReport.summary?.totalRemainingHours ?? 0) < 0 ? '#ef4444' : '#d97706'">
-                                {{ phaseReport.summary?.totalRemainingHours ?? '-' }}h
+                                {{ phaseReport.summary?.totalRemainingHours != null ? formatHours(phaseReport.summary.totalRemainingHours) : '-' }}
                             </div>
                             <div class="small text-muted fw-semibold mt-1">Remaining</div>
                         </div>
@@ -412,16 +412,16 @@
                         <!-- Hours chips -->
                         <div class="d-flex gap-2 align-items-center flex-shrink-0">
                             <span class="badge bg-success-subtle text-success" style="font-size:0.72rem">
-                                Est: {{ ph.estHours ?? '-' }}h
+                                Est: {{ ph.estHours != null ? formatHours(ph.estHours) : '-' }}
                             </span>
                             <span class="badge bg-primary-subtle text-primary" style="font-size:0.72rem">
-                                Done: {{ ph.allottedHours ?? 0 }}h
+                                Done: {{ formatHours(ph.allottedHours ?? 0) }}
                             </span>
                             <span class="badge"
                                 [style.background]="(ph.remainingHours ?? 0) < 0 ? '#fef2f2' : '#fefce8'"
                                 [style.color]="(ph.remainingHours ?? 0) < 0 ? '#ef4444' : '#d97706'"
                                 style="font-size:0.72rem">
-                                Left: {{ ph.remainingHours ?? '-' }}h
+                                Left: {{ ph.remainingHours != null ? formatHours(ph.remainingHours) : '-' }}
                             </span>
                         </div>
                         <!-- Progress bar -->
@@ -476,7 +476,7 @@
                     <i class="fa-solid fa-circle-question text-warning"></i>
                     <div class="flex-grow-1 small fw-semibold text-warning">Unassigned Hours</div>
                     <span class="badge bg-warning-subtle text-warning">
-                        {{ phaseReport.unassigned.allottedHours }}h allotted without a phase
+                        {{ formatHours(phaseReport.unassigned.allottedHours) }} allotted without a phase
                     </span>
                 </div>
             </div>

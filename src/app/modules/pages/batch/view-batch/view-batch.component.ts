@@ -1464,6 +1464,23 @@ export class ViewBatchComponent implements OnInit {
       });
   }
 
+  // Phase/subject allotment hours come from the API as a plain decimal
+  // (e.g. 6.5) — show it as "6 hrs 30 min" instead of a fractional hour.
+  // "Remaining" hours can go negative (over-allotted), so the sign is
+  // pulled off before splitting into hrs/min and reapplied to the output.
+  formatHours(decimalHours: any): string {
+    if (decimalHours === null || decimalHours === undefined || decimalHours === '') return '-';
+    const totalMinutesSigned = Math.round(Number(decimalHours) * 60);
+    if (!Number.isFinite(totalMinutesSigned)) return '-';
+    const sign = totalMinutesSigned < 0 ? '-' : '';
+    const totalMinutes = Math.abs(totalMinutesSigned);
+    const hrs = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    if (hrs === 0) return `${sign}${mins} min`;
+    if (mins === 0) return `${sign}${hrs} hrs`;
+    return `${sign}${hrs} hrs ${mins} min`;
+  }
+
   onReportSubjectChanged(subjectId: string) {
     this.reportSubjectId = safeTrim(subjectId);
     this.reportSubjectName = safeTrim(
