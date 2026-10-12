@@ -13,7 +13,10 @@ import { CenterService } from '../../../../service/admin/orgmaster/center.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const USERS_LIST_STATE_KEY = 'users-list';
 
 type RoleKey = 'L1' | 'L2' | 'L3' | 'L4' | 'L5' | 'L6' | 'L7';
 type ImportMode = 'insert' | 'upsert';
@@ -43,6 +46,7 @@ export class UsersComponent implements OnInit {
   loading = false;
   syncing = false;
   private lastTableParams: any = { page: 1, pageSize: 10 };
+  restoredPage = 1;
 
   deleteModalVisible = false;
   deleteTarget: any | null = null;
@@ -88,7 +92,7 @@ export class UsersComponent implements OnInit {
       // View is keyed by the app-level userId (POST /ims/user/view-by-userid),
       // unlike Edit/Access below which use the Mongo _id (recId).
       show: () => !this.permissionService.hasPermission('orgUser:view'),
-      callback: (row: any) => this.router.navigate(['/app/org-master/users/view', row.userId]),
+      callback: (row: any) => this.goToRoute(['/app/org-master/users/view', row.userId]),
     },
     {
       // Only ever shown to isAdmin viewers, and never for an admin-flagged
@@ -100,7 +104,7 @@ export class UsersComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#0066FF',
       show: (row: any) => !this.canManageAccess(row) || !this.permissionService.hasPermission('orgUser:assignAccess'),
-      callback: (row: any) => this.router.navigate(['/app/org-master/users/access', row._id]),
+      callback: (row: any) => this.goToRoute(['/app/org-master/users/access', row._id]),
     },
     {
       type: 'icon',
@@ -109,7 +113,7 @@ export class UsersComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#0066FF',
       show: () => !this.permissionService.hasPermission('orgUser:edit'),
-      callback: (row: any) => this.router.navigate(['/app/org-master/users/edit', row._id]),
+      callback: (row: any) => this.goToRoute(['/app/org-master/users/edit', row._id]),
     },
     {
       type: 'icon',
@@ -232,9 +236,12 @@ export class UsersComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     public authService: AuthService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Org-Master' }, { label: 'Users' }]);
+    this.restoredPage = this.listStateService.consumePage(USERS_LIST_STATE_KEY);
+    this.lastTableParams = { page: this.restoredPage, pageSize: 10 };
   }
 
   ngOnInit(): void {
@@ -245,8 +252,13 @@ export class UsersComponent implements OnInit {
     return this.authService.getIsAdmin() && !row?.isAdmin;
   }
 
+  private goToRoute(commands: any[]): void {
+    this.listStateService.savePage(USERS_LIST_STATE_KEY, this.lastTableParams?.page || 1);
+    this.router.navigate(commands);
+  }
+
   addUser(): void {
-    this.router.navigate(['/app/org-master/users/create']);
+    this.goToRoute(['/app/org-master/users/create']);
   }
 
   get currentRoleMeta(): RoleMeta | null {
