@@ -15,6 +15,9 @@ export class CustomTableComponent implements OnDestroy {
   @Input() showfilter: boolean = false;
   @Input() pageSizeOptions = [5, 10, 20, 50];
   @Input() storageKey: string = '';
+  /** Page to start on (e.g. restoring where the user left off before
+   * navigating to a detail screen). Only read once, on init. */
+  @Input() initialPage = 1;
   @Output() rowClick = new EventEmitter<any>();
 
   private get _storageKey(): string {
@@ -47,7 +50,7 @@ export class CustomTableComponent implements OnDestroy {
 
   // pagination options
   currentPage = 1;
-  pageSize = 5;
+  pageSize = 10;
   sortKey: string = '';
   sortDirection: 'asc' | 'desc' = 'asc';
   searchText = '';
@@ -157,9 +160,13 @@ export class CustomTableComponent implements OnDestroy {
   ngOnInit(): void {
     const saved = localStorage.getItem(this._storageKey);
     const savedSize = saved ? +saved : null;
+    const defaultSize = this.pageSizeOptions.includes(10)
+      ? 10
+      : this.pageSizeOptions[0];
     this.pageSize = (savedSize && this.pageSizeOptions.includes(savedSize))
       ? savedSize
-      : this.pageSizeOptions[0];
+      : defaultSize;
+    this.currentPage = this.initialPage > 0 ? this.initialPage : 1;
     if (this.columns) {
       this.columns = this.columns.map((col) => ({
         ...col,
@@ -211,7 +218,7 @@ export class CustomTableComponent implements OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['totalRecords'] || changes['pageSize'] || changes['currentPage']) {
+    if (changes['totalRecords']) {
       this.updatePagination();
     }
   }

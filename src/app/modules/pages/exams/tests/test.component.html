@@ -72,6 +72,7 @@
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
             [success]="'Published'" [primary]="'Result Published'" [warn]="'Draft'" [danger]="'Disabled'"
             [totalRecords]="totalRecords" [loading]="loading" (requestData)="fetchTableData($event)"
+            [initialPage]="restoredPage"
             [searchPlaceholder]="'Search Exam Name, Code...'" (rowClick)="onRowSelected($event)">
         </custom-table>
 

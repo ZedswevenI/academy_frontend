@@ -10,6 +10,9 @@ import { DomSanitizer } from '@angular/platform-browser';
 import katex from 'katex';
 import { PermissionService } from '../../../../shared/permission.service';
 import { sortQuestionsForPrint } from '../exam-print-order.util';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const EXAMS_LIST_STATE_KEY = 'exams-list';
 
 @Component({
   selector: 'app-exam-list',
@@ -28,6 +31,7 @@ export class TestComponent implements OnInit, OnDestroy {
     sortKey?: string;
     sortDirection?: string;
   } | null = null;
+  restoredPage = 1;
   showBatchModal = false;
   batchAssignRow: any = null;
   allBatches: any[] = [];
@@ -276,7 +280,20 @@ export class TestComponent implements OnInit, OnDestroy {
     public authService: AuthService,
     private sanitizer: DomSanitizer,
     private permissionService: PermissionService,
-  ) {}
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(EXAMS_LIST_STATE_KEY);
+  }
+
+  /** Remembers the current page so coming back from a detail/sub-screen
+   * restores it; a fresh visit from the menu never calls this, so it
+   * correctly starts at page 1. */
+  private captureListPosition(): void {
+    this.listStateService.savePage(
+      EXAMS_LIST_STATE_KEY,
+      this.lastTableParams?.page || 1,
+    );
+  }
 
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Exams' }]);
@@ -517,19 +534,23 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   viewExam(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
   viewQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-view'], {
       state: { questions: row },
     });
   }
   rearrange(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-rearrange'], {
       state: { questions: row },
     });
   }
   editExam(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/create'], { state: { test: row } });
   }
   showDuplicateModal = false;
@@ -631,28 +652,33 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   importQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-import'], {
       state: { questions: row },
     });
   }
 
   importAnswers(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/answer-import'], {
       state: { exam: row },
     });
   }
 
   importMarks() {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/marks-import']);
   }
 
   addQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: { question: row },
     });
   }
 
   viewResult(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/result-batch'], {
       state: { exam: row },
     });
@@ -1547,6 +1573,7 @@ export class TestComponent implements OnInit, OnDestroy {
   onRowSelected(row: any) {
     // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
     if (!this.permissionService.hasPermission('exam:view')) return;
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
 

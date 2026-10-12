@@ -8,6 +8,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import katex from 'katex';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const QUESTION_BANK_LIST_STATE_KEY = 'question-bank-list';
 
 @Component({
   selector: 'app-exam-questions',
@@ -28,6 +31,7 @@ export class ExamQuestionsComponent implements OnInit {
     sortKey?: string;
     sortDirection?: string;
   } | null = null;
+  restoredPage = 1;
 
   /* ================= TABLE COLUMNS ================= */
   columnsArray = [
@@ -132,7 +136,22 @@ viewCorrectAnswerHtml: SafeHtml = '';
     private sanitizer: DomSanitizer,
     private router: Router,
     private permissionService: PermissionService,
-  ) {}
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(
+      QUESTION_BANK_LIST_STATE_KEY,
+    );
+  }
+
+  /** Remembers the current page so coming back from a detail/sub-screen
+   * restores it; a fresh visit from the menu never calls this, so it
+   * correctly starts at page 1. */
+  private captureListPosition(): void {
+    this.listStateService.savePage(
+      QUESTION_BANK_LIST_STATE_KEY,
+      this.lastTableParams?.page || 1,
+    );
+  }
 
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Exams' }, { label: 'Questions' }]);
@@ -404,6 +423,7 @@ viewCorrectAnswerHtml: SafeHtml = '';
   /* ================= NAVIGATION ================= */
 
   editQuestion(row: any): void {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: {
         bank: true,
@@ -413,12 +433,14 @@ viewCorrectAnswerHtml: SafeHtml = '';
   }
 
   goToCreate(): void {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: { bank: true },
     });
   }
 
   goToImport(): void {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-import'], {
       state: { bank: true },
     });

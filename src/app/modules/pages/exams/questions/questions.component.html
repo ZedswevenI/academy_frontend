@@ -74,8 +74,8 @@
 
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
       [success]="'active'" [primary]="'inactive'" [totalRecords]="totalRecords" [loading]="loading"
-      (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search questions...'"
-      (rowClick)="onRowSelected($event)">
+      (requestData)="fetchTableData($event)" [initialPage]="restoredPage"
+      [searchPlaceholder]="'Search questions...'" (rowClick)="onRowSelected($event)">
     </custom-table>
 
   </div>
