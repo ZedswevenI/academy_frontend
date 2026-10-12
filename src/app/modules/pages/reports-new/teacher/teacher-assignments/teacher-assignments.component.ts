@@ -20,7 +20,7 @@ export class TeacherAssignmentsComponent extends BaseReportComponent {
 
   readonly columns = [
     { key: 'slNo', label: '#' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'subjectName', label: 'Subject' },
     { key: 'enabledAtFormatted', label: 'Enabled On' },
     { key: 'totalStudents', label: 'Students' },
@@ -43,7 +43,13 @@ export class TeacherAssignmentsComponent extends BaseReportComponent {
     this.reportService.generate('reports/teacher', 'assignments', payload).subscribe({
       next: (res: any) => {
         this.onSuccess(res);
-        this.rows = (res.data || []).map((r: any, i: number) => ({ slNo: i + 1, ...r }));
+        this.rows = (res.data || []).map((r: any, i: number) => ({
+          slNo: i + 1,
+          ...r,
+          batchLabel: r.batchName && r.batchCode
+            ? `${r.batchName} (${r.batchCode})`
+            : (r.batchName || r.batchCode || ''),
+        }));
         this.summaryItems = this.reportService.buildSummaryItems(res.summary);
       },
       error: (err: any) => this.onError(err)

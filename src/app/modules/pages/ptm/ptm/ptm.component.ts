@@ -509,7 +509,7 @@ export class PtmComponent implements OnInit {
 
   // ── Session-level columns ────────────────────────────
   columnsArray = [
-    { key: 'batchCode', label: 'Batch', sortable: false },
+    { key: 'batchLabel', label: 'Batch', sortable: false },
     { key: 'ptmDateFormatted', label: 'PTM Date', sortable: true },
     { key: 'startFormatted', label: 'Start Time', sortable: false },
     { key: 'endFormatted', label: 'End Time', sortable: false },
@@ -676,6 +676,7 @@ export class PtmComponent implements OnInit {
           ptmDateFormatted: this.formatDate(s.ptmDate),
           startFormatted: this.formatTime(s.startTime),
           endFormatted: this.formatTime(s.endTime),
+          batchLabel: s.batchName && s.batchCode ? `${s.batchName} (${s.batchCode})` : (s.batchName || s.batchCode || ''),
           // Pre-feedback progress label
           prePtmSubmittedCount: `${s.prePtmSubmittedCount} / ${s.totalStudents}`,
           postPtmSubmittedCount: `${s.postPtmSubmittedCount} / ${s.totalStudents}`,
@@ -702,6 +703,7 @@ export class PtmComponent implements OnInit {
   onViewSession(row: any): void {
     const sessionKey = btoa(JSON.stringify({
       batchCode: row.batchCode,
+      batchName: row.batchName,
       centerCode: row.centerCode,
       ptmDate: row.ptmDate,
       startTime: row.startTime,
@@ -955,6 +957,7 @@ export class PtmComponent implements OnInit {
   onRowSelected(row: any) {
     const sessionKey = btoa(JSON.stringify({
       batchCode: row.batchCode,
+      batchName: row.batchName,
       centerCode: row.centerCode,
       ptmDate: row.ptmDate,
       startTime: row.startTime,

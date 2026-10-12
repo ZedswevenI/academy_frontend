@@ -240,6 +240,7 @@ export class ActivityComponent implements OnInit {
           actualStartFormatted: a.actualStartDate
             ? this.formatDate(a.actualStartDate)
             : '-',
+          batchLabel: a.batchName && a.batchCode ? `${a.batchName} (${a.batchCode})` : (a.batchName || a.batchCode || ''),
         }));
         this.totalRecords = res?.count || this.dataArray.length;
         this.loading = false;

@@ -788,29 +788,38 @@ export class ReportComponent implements OnInit {
       case 'teacher-late-entries':
         this.reportColumns = [
           { key: 'slNo', label: '#' }, { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' }, { key: 'periodNo', label: 'Period' },
+          { key: 'batchLabel', label: 'Batch' }, { key: 'periodNo', label: 'Period' },
           { key: 'delayMinutes', label: 'Delay (min)' }, { key: 'reason', label: 'Reason' }
         ];
-        this.reportTableData = data;
+        this.reportTableData = data.map((r: any) => ({
+          ...r,
+          batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || '')
+        }));
         break;
 
       case 'teacher-early-leaving':
         this.reportColumns = [
           { key: 'slNo', label: '#' }, { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' }, { key: 'periodNo', label: 'Period' },
+          { key: 'batchLabel', label: 'Batch' }, { key: 'periodNo', label: 'Period' },
           { key: 'earlyByMinutes', label: 'Early (min)' }, { key: 'reason', label: 'Reason' }
         ];
-        this.reportTableData = data;
+        this.reportTableData = data.map((r: any) => ({
+          ...r,
+          batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || '')
+        }));
         break;
 
       case 'teacher-assignments':
         this.reportColumns = [
-          { key: 'slNo', label: '#' }, { key: 'batchCode', label: 'Batch' },
+          { key: 'slNo', label: '#' }, { key: 'batchLabel', label: 'Batch' },
           { key: 'subjectName', label: 'Subject' }, { key: 'enabledAtFormatted', label: 'Enabled' },
           { key: 'totalStudents', label: 'Students' }, { key: 'completed', label: 'Completed' },
           { key: 'completionPct', label: 'Completion %' }
         ];
-        this.reportTableData = data;
+        this.reportTableData = data.map((r: any) => ({
+          ...r,
+          batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || '')
+        }));
         break;
 
       case 'teacher-attendance':
@@ -825,12 +834,13 @@ export class ReportComponent implements OnInit {
       case 'teacher-feedback':
         this.reportColumns = [
           { key: 'admissionNo', label: 'Admission No' }, { key: 'studentName', label: 'Student' },
-          { key: 'batchCode', label: 'Batch' }, { key: 'ptmDateFormatted', label: 'PTM Date' },
+          { key: 'batchLabel', label: 'Batch' }, { key: 'ptmDateFormatted', label: 'PTM Date' },
           { key: 'ptmStatus', label: 'Status' }
         ];
         this.reportTableData = data.map((r: any) => ({
           ...r,
-          ptmDateFormatted: this.formatEpoch(r.ptmDate)
+          ptmDateFormatted: this.formatEpoch(r.ptmDate),
+          batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || '')
         }));
         break;
 

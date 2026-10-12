@@ -328,6 +328,20 @@ export class CircularComponent implements OnInit {
     return map[scope] || 'bg-secondary';
   }
 
+  // `batchCode` on a circular can be a comma-separated list when it is
+  // scoped to multiple batches (e.g. "COIFR259O01,COIFR259P01"). `batchName`
+  // now mirrors that shape position-for-position. Zip them by index so each
+  // pair renders as "Name (Code)" instead of concatenating the two raw
+  // comma strings side by side.
+  combineBatchLabels(codesStr: string, namesStr: string): string {
+    if (!codesStr) return '-';
+    const codes = codesStr.split(',').map((c: string) => c.trim()).filter(Boolean);
+    const names = (namesStr || '').split(',').map((n: string) => n.trim()).filter(Boolean);
+    return codes
+      .map((code, i) => (names[i] ? `${names[i]} (${code})` : code))
+      .join(', ');
+  }
+
   private formatDate(ts: number): string {
     if (!ts) return '-';
     return new Date(ts).toLocaleDateString('en-IN', {

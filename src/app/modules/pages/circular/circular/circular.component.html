@@ -92,7 +92,7 @@
           </div>
           <div class="col-6" *ngIf="selectedCircular.batchCode">
             <div class="text-muted small">Batch Code</div>
-            <div class="fw-semibold">{{ selectedCircular.batchCode }}</div>
+            <div class="fw-semibold">{{ combineBatchLabels(selectedCircular.batchCode, selectedCircular.batchName) }}</div>
           </div>
           <div class="col-6">
             <div class="text-muted small">Status</div>

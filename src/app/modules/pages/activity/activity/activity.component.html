@@ -177,7 +177,7 @@
                     </div>
                     <div class="col-6">
                         <div class="text-muted small">Batch Code</div>
-                        <div class="fw-semibold">{{ selectedActivity.batchCode }}</div>
+                        <div class="fw-semibold">{{ selectedActivity.batchName && selectedActivity.batchCode ? (selectedActivity.batchName + ' (' + selectedActivity.batchCode + ')') : (selectedActivity.batchName || selectedActivity.batchCode) }}</div>
                     </div>
                     <div class="col-6">
                         <div class="text-muted small">Center Code</div>

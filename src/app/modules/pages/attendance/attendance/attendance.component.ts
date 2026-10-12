@@ -35,7 +35,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }[] = [];
   currentWeekMonday = 0;
   columnsArray = [
-    { key: 'batchCode', label: 'Batch', sortable: false },
+    { key: 'batchLabel', label: 'Batch', sortable: false },
     { key: 'timeLabel', label: 'Timing', sortable: false },
     { key: 'subjectName', label: 'Subject', sortable: false },
     { key: 'phaseName', label: 'Phase', sortable: false },
@@ -232,6 +232,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
       timeLabel: this.formatTimeLabel(r),
       subjectName: r.subjectName || r.subjectId || '—',
       facultyName: r.facultyName || r.facultyId || '—',
+      batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || ''),
       statusBadge: isMarked ? 'Marked' : 'Pending',
       attendanceSummary: isMarked
         ? `${r.attendance.presentCount}P / ${r.attendance.absentCount}A / ${r.attendance.lateCount}L`
@@ -365,7 +366,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     }
     if (dataToExport.length === 0) return;
     const worksheetData = dataToExport.map((row) => ({
-      Batch: row.batchCode,
+      Batch: row.batchLabel,
       Timing: row.timeLabel,
       Subject: row.subjectName,
       Phase: row.phaseName,
@@ -483,7 +484,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   ): void {
     const worksheetData = rows.map((row) => ({
       Date: row.dateLabel,
-      Batch: row.batchCode,
+      Batch: row.batchLabel,
       Timing: row.timeLabel,
       Subject: row.subjectName,
       Phase: row.phaseName,

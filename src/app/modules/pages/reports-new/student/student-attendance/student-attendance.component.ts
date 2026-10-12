@@ -28,7 +28,7 @@ export class StudentAttendanceComponent extends BaseReportComponent {
   readonly summaryColumns = [
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'totalPeriods', label: 'Total Periods' },
     { key: 'present', label: 'Present' },
     { key: 'absent', label: 'Absent' },
@@ -48,7 +48,7 @@ export class StudentAttendanceComponent extends BaseReportComponent {
   readonly detailColumns = [
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'dateFormatted', label: 'Date' },
     { key: 'periodNo', label: 'Period' },
     { key: 'subjectName', label: 'Subject' },
@@ -79,6 +79,11 @@ export class StudentAttendanceComponent extends BaseReportComponent {
     return this.selectedAdmissionNos.length > 0;
   }
 
+  private buildBatchLabel(r: any): string {
+    if (r?.batchName && r?.batchCode) return `${r.batchName} (${r.batchCode})`;
+    return r?.batchName || r?.batchCode || '';
+  }
+
   generate(): void {
     this.isBulk = this.selectedAdmissionNos.length !== 1;
     const payload: any = {};
@@ -97,8 +102,8 @@ export class StudentAttendanceComponent extends BaseReportComponent {
           this.effectiveFromDate = res?.fromDate || 0;
           this.effectiveToDate = res?.toDate || 0;
           if (this.isBulk) {
-            this.rows = res.data || [];
-            this.detailRows = res.detail || [];
+            this.rows = (res.data || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }));
+            this.detailRows = (res.detail || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }));
             this.summaryItems = this.reportService.buildSummaryItems(
               res.summary,
             );
