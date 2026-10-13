@@ -12,7 +12,7 @@
                     {{ formatDate(formData.startDate) }} → {{ formatDate(formData.endDate) }}
                 </div>
             </div>
-            <button class="btn btn-import fs-16 fw-medium" (click)="exportPdf()"
+            <button class="btn btn-import fs-16 fw-medium" *appHasPermission="'feedback:consolidatedReport'" (click)="exportPdf()"
                 [disabled]="exporting || !reportRows.length">
                 <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2"></span>
                 <i class="fa-solid fa-file-pdf btn-icon" *ngIf="!exporting"></i>
@@ -104,6 +104,7 @@
                     <tr class="table-dark text-center">
                         <th class="text-start">Staff</th>
                         <th>Batch</th>
+                        <th>Phase</th>
                         <th>Strength</th>
                         <th>Feedbacks</th>
                         <!-- Part A headers -->
@@ -130,6 +131,7 @@
                                 style="font-size:9px">{{ r.subjectName }}</div>
                         </td>
                         <td class="text-center">{{ r.batchCode }}</td>
+                        <td class="text-center">{{ r.phase || '—' }}</td>
                         <td class="text-center">{{ r.strength }}</td>
                         <td class="text-center">{{ r.responseCount }}</td>
                         <!-- Part A scores -->
@@ -161,7 +163,7 @@
                 <!-- Overall average footer -->
                 <tfoot>
                     <tr class="table-light fw-bold">
-                        <td colspan="4" class="text-end pe-3">Overall Average</td>
+                        <td colspan="5" class="text-end pe-3">Overall Average</td>
                         <td *ngFor="let h of partAHeaders" style="background:#eff6ff"></td>
                         <td *ngFor="let h of partBHeaders" style="background:#fffbeb"></td>
                         <td class="text-center text-success" style="background:#f0fdf4">

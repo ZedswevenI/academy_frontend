@@ -3,7 +3,11 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { InvigilationPrintService } from '../invigilationPrint.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const INVIGILATION_LIST_STATE_KEY = 'invigilation-list';
 
 @Component({
   selector: 'app-invigilation',
@@ -21,6 +25,7 @@ export class InvigilationComponent implements OnInit {
   total = 0;
   page = 1;
   limit = 20;
+  restoredPage = 1;
   loading = false;
   deleteTarget: any = null;
   deleteLoading = false;
@@ -41,6 +46,7 @@ export class InvigilationComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('invigilation:view'),
       callback: (row: any) => this.view(row)
     },
     {
@@ -49,6 +55,7 @@ export class InvigilationComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#16A34A',
+      show: () => !this.permissionService.hasPermission('invigilation:edit'),
       callback: (row: any) => this.edit(row)
     },
     {
@@ -57,6 +64,7 @@ export class InvigilationComponent implements OnInit {
       tooltip: 'Print',
       color: '#6B7280',
       hoverColor: '#0891B2',
+      show: () => !this.permissionService.hasPermission('invigilation:print'),
       callback: (row: any) => this.print(row)
     },
     {
@@ -65,11 +73,21 @@ export class InvigilationComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('invigilation:delete'),
       callback: (row: any) => this.confirmDelete(row)
     }
   ];
 
-  constructor(private commonApi: CommonapiService, private alert: AlertService, private printSvc: InvigilationPrintService, private router: Router) {}
+  constructor(
+    private commonApi: CommonapiService,
+    private alert: AlertService,
+    private printSvc: InvigilationPrintService,
+    private router: Router,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(INVIGILATION_LIST_STATE_KEY);
+  }
 
   ngOnInit(): void {}
 
@@ -126,14 +144,21 @@ export class InvigilationComponent implements OnInit {
   }
 
   create(): void {
+    this.listStateService.savePage(INVIGILATION_LIST_STATE_KEY, this.page);
     this.router.navigate(['/app/invigilation/create']);
   }
 
   edit(r: any): void {
+    this.listStateService.savePage(INVIGILATION_LIST_STATE_KEY, this.page);
     this.router.navigate(['/app/invigilation/edit', r._id]);
   }
 
   view(r: any): void {
+    // Called both by the View icon's callback (already gated via its `show`)
+    // and directly by custom-table's (rowClick), which bypasses that gate —
+    // check here too so row-click can't be used to route around it.
+    if (!this.permissionService.hasPermission('invigilation:view')) return;
+    this.listStateService.savePage(INVIGILATION_LIST_STATE_KEY, this.page);
     this.router.navigate(['/app/invigilation/view', r._id]);
   }
 

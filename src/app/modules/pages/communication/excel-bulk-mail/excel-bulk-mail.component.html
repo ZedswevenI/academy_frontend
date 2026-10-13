@@ -182,7 +182,8 @@
                     Upload Excel, create template using column variables and prepare bulk email
                 </p>
             </div>
-            <button class="btn btn-back fs-16 fw-medium" type="button" (click)="resetAll()">
+            <button class="btn btn-back fs-16 fw-medium" type="button" *appHasPermission="'communicationBulkMail:reset'"
+                (click)="resetAll()">
                 <i class="fa-solid fa-rotate-left btn-icon"></i>Reset
             </button>
         </div>
@@ -283,6 +284,7 @@
                                                 accept="image/png,image/jpeg,image/jpg,image/webp"
                                                 (change)="onEmailImageSelected($event)" />
                                             <button type="button" class="btn btn-shuffle fs-16 fw-medium"
+                                                *appHasPermission="'communication:create'"
                                                 [disabled]="imageUploading" (click)="emailImageInput.click()">
                                                 <i class="fa-regular fa-image me-1"></i>
                                                 {{ imageUploading ? 'Uploading...' : 'Insert Image' }}
@@ -375,8 +377,8 @@
                             <span class="fw-semibold">Action</span>
                         </div>
                         <div class="bulk-card-body">
-                            <button type="button" class="btn btn-create fs-16 fw-medium w-100" [disabled]="loading"
-                                (click)="sendBulkMail()">
+                            <button type="button" class="btn btn-create fs-16 fw-medium w-100" *appHasPermission="'communicationBulkMail:send'"
+                                [disabled]="loading" (click)="sendBulkMail()">
                                 <i class="fa-solid fa-envelope-circle-check btn-icon"></i>
                                 {{ loading ? 'Sending...' : 'Send Bulk Mail' }}
                             </button>

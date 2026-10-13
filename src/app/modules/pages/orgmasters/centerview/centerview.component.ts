@@ -5,6 +5,8 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-centerview',
@@ -35,6 +37,7 @@ export class CenterviewComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgCenter:view'),
       callback: (row: any) => this.openViewVenue(row),
     },
     {
@@ -43,6 +46,7 @@ export class CenterviewComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgCenter:edit'),
       callback: (row: any) => this.editVenue(row),
     },
     {
@@ -51,6 +55,7 @@ export class CenterviewComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#D42B2B',
+      show: () => !this.permissionService.hasPermission('orgCenter:delete'),
       callback: (row: any) => this.openDeleteVenue(row),
     },
   ];
@@ -70,6 +75,8 @@ export class CenterviewComponent implements OnInit {
     private api: CommonapiService,
     private alert: AlertService,
     private breadcrumb: BredcrumpService,
+    private backNav: BackNavigationService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -100,7 +107,7 @@ export class CenterviewComponent implements OnInit {
   }
 
   back() {
-    this.router.navigate(['/app/org-master/center']);
+    this.backNav.goBack({ route: '/app/org-master/center' });
   }
 
   loadCenter() {
@@ -276,6 +283,8 @@ export class CenterviewComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('orgCenter:view')) return;
     this.viewVenueRec = row;
     this.showViewVenue = true;
   }

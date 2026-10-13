@@ -254,6 +254,11 @@ export class ReportService {
     return String(val);
   }
 
+  formatBatchLabel(batchName: string | null | undefined, batchCode: string | null | undefined): string {
+    if (batchName && batchCode) return `${batchName} (${batchCode})`;
+    return batchName || batchCode || '-';
+  }
+
   buildSummaryItems(summary: any): { label: string; value: any }[] {
     if (!summary || typeof summary !== 'object') return [];
     return Object.keys(summary)

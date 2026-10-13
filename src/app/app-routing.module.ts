@@ -21,6 +21,16 @@ const routes: Routes = [
         (m) => m.ApplayoutModule
       ),
   },
+  {
+    // Public, unauthenticated Help Center — deliberately a sibling of
+    // 'auth'/'app' rather than nested under pages.routing.module.ts, so it
+    // never picks up RoleGuard. Reachable at app.com/help with no login.
+    path: 'help',
+    loadChildren: () =>
+      import('../app/modules/help-public/help-public.module').then(
+        (m) => m.HelpPublicModule
+      ),
+  },
 ];
 
 @NgModule({

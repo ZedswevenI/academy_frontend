@@ -13,6 +13,10 @@ import {
   wrapAllPages,
   exportToPdf,
 } from '../print.helper';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const PERFORMANCE_LIST_STATE_KEY = 'performance-list';
 
 @Component({
   selector: 'app-performance',
@@ -22,6 +26,8 @@ import {
 })
 export class PerformanceComponent implements OnInit {
   tenantId = localStorage.getItem('tenantId') || '';
+  currentPage = 1;
+  restoredPage = 1;
   roleLevel = '';
   canSync = false;
   canOverride = false;
@@ -64,12 +70,18 @@ export class PerformanceComponent implements OnInit {
     private alert: AlertService,
     private breadcrump: BredcrumpService,
     private auth: AuthService,
-  ) {}
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(
+      PERFORMANCE_LIST_STATE_KEY,
+    );
+  }
 
   ngOnInit(): void {
     this.roleLevel = this.auth.getRole();
-    this.canSync = ['L1', 'L3', 'L4'].includes(this.roleLevel);
-    this.canOverride = ['L1', 'L3'].includes(this.roleLevel);
+    this.canSync = this.permissionService.hasPermission('performance:sync');
+    this.canOverride = this.permissionService.hasPermission('performance:override');
     this.breadcrump.set([{ label: 'Performance' }]);
     this.buildActions();
     this.loadBatches();
@@ -83,6 +95,7 @@ export class PerformanceComponent implements OnInit {
         tooltip: 'View Detail',
         color: '#6B7280',
         hoverColor: '#0066FF',
+        show: () => !this.permissionService.hasPermission('performance:view'),
         callback: (row: any) => this.viewStudent(row),
       },
     ];
@@ -154,6 +167,7 @@ export class PerformanceComponent implements OnInit {
     pageSize: number;
     search?: string;
   }): void {
+    this.currentPage = req.page;
     if (!this.selectedBatchId || !this.selectedYear) return;
     this.loading = true;
     this.commonApi
@@ -205,12 +219,15 @@ export class PerformanceComponent implements OnInit {
   }
 
   viewStudent(row: any): void {
+    if (!this.permissionService.hasPermission('performance:view')) return;
+    this.listStateService.savePage(PERFORMANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/performance/student', row.studentId], {
       state: { batchId: this.selectedBatchId, academicYear: this.selectedYear },
     });
   }
 
   syncStudent(row: any): void {
+    if (!this.permissionService.hasPermission('performance:sync')) return;
     this.syncingStudentId = row.studentId;
     this.commonApi
       .fetchData(
@@ -240,6 +257,7 @@ export class PerformanceComponent implements OnInit {
   }
 
   syncBatch(): void {
+    if (!this.permissionService.hasPermission('performance:sync')) return;
     if (!this.selectedBatchId || !this.selectedYear) {
       this.alert.error('Select batch and year first');
       return;
@@ -275,6 +293,7 @@ export class PerformanceComponent implements OnInit {
   }
 
   goToReport(): void {
+    this.listStateService.savePage(PERFORMANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/performance/batch-report'], {
       state: {
         batchId: this.selectedBatchId,
@@ -285,6 +304,7 @@ export class PerformanceComponent implements OnInit {
   }
 
   openOverride(row: any): void {
+    if (!this.permissionService.hasPermission('performance:override')) return;
     this.commonApi
       .fetchData(
         {
@@ -330,6 +350,7 @@ export class PerformanceComponent implements OnInit {
   }
 
   saveOverride(): void {
+    if (!this.permissionService.hasPermission('performance:override')) return;
     if (!this.overrideForm.subjectId) {
       this.alert.error('Select a subject');
       return;
@@ -379,12 +400,16 @@ export class PerformanceComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View Detail icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('performance:view')) return;
+    this.listStateService.savePage(PERFORMANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/performance/student', row.studentId], {
       state: { batchId: this.selectedBatchId, academicYear: this.selectedYear },
     });
   }
 
   async printAllCPT(): Promise<void> {
+    if (!this.permissionService.hasPermission('performance:view')) return;
     if (!this.selectedBatchId || !this.selectedYear) {
       this.alert.error('Select batch and year first');
       return;
@@ -450,6 +475,7 @@ export class PerformanceComponent implements OnInit {
   }
 
   async printAllSchool(): Promise<void> {
+    if (!this.permissionService.hasPermission('performance:view')) return;
     if (!this.selectedBatchId || !this.selectedYear) {
       this.alert.error('Select batch and year first');
       return;

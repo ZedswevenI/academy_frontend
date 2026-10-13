@@ -1,3 +1,27 @@
+<!-- Mandatory center selection overlay -->
+<div class="center-gate-overlay" *ngIf="needsCenterSelection || noCentersAvailable">
+  <div class="center-gate-box">
+    <ng-container *ngIf="needsCenterSelection">
+      <h5 class="fw-bold mb-2"><i class="fa-solid fa-location-dot me-2 text-primary"></i>Select Your Center</h5>
+      <p class="text-muted small mb-3">You have access to multiple centers. Please select one to continue.</p>
+      <select class="form-select mb-3" [(ngModel)]="pickedCenterId">
+        <option value="" disabled selected>Choose a center...</option>
+        <option *ngFor="let c of uiCenterOptions" [value]="c.centerId">{{ c.centerName }}</option>
+      </select>
+      <button class="btn btn-primary w-100" [disabled]="!pickedCenterId" (click)="confirmCenterSelection()">
+        Continue
+      </button>
+    </ng-container>
+    <ng-container *ngIf="noCentersAvailable">
+      <h5 class="fw-bold mb-2 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>No Center Assigned</h5>
+      <p class="text-muted small mb-3">
+        Your account has no center access configured. Please contact your administrator.
+      </p>
+      <button class="btn btn-outline-secondary w-100" (click)="logoutBlocked()">Log Out</button>
+    </ng-container>
+  </div>
+</div>
+
 <div class="app-shell">
 
   <!-- HEADER -->

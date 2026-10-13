@@ -7,7 +7,7 @@
                     Manage centers under each institute with location and status.
                 </p>
             </div>
-            <button class="btn btn-create fs-16 fw-medium" (click)="add()">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgCenter:create'" (click)="add()">
                 <i class="fa-solid fa-plus btn-icon"></i>
                 <span>Add Center</span>
             </button>
@@ -15,6 +15,7 @@
         <div class="card-body pt-0">
             <custom-table [autoFitChars]="true" [columns]="columns" [data]="centerData" [actions]="actions"
                 [loading]="loading" [totalRecords]="totalRecords" [pageSizeOptions]="[10,20,50]"
+                [initialPage]="restoredPage"
                 (requestData)="fetchTableData($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>

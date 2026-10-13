@@ -3,6 +3,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-task-view',
@@ -32,11 +33,16 @@ export class TaskViewComponent implements OnInit {
     private route: ActivatedRoute,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private backNav: BackNavigationService,
   ) {
     this.breadcrump.set([
       { label: 'Task', link: '/app/task' },
       { label: 'View' },
     ]);
+  }
+
+  goBack(): void {
+    this.backNav.goBack({ route: '/app/task' });
   }
 
   ngOnInit(): void {

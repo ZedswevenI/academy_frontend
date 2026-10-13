@@ -5,6 +5,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
+import { PermissionService } from '../../../../shared/permission.service';
 
 declare var bootstrap: any;
 
@@ -60,6 +61,7 @@ export class AssignmentEnableComponent implements OnInit {
     private commonApi: CommonapiService,
     private breadcrump: BredcrumpService,
     private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.userId =
@@ -312,6 +314,7 @@ export class AssignmentEnableComponent implements OnInit {
   }
 
   enableTopic(topic: any) {
+    if (!this.permissionService.hasPermission('assignmentBatch:assign')) return;
     if (!topic || topic.enabling) return;
     if (this.filterForm.invalid) {
       this.alert.error('Select class, subject and batch');
@@ -385,6 +388,7 @@ export class AssignmentEnableComponent implements OnInit {
   }
 
   openTestsModal(topic: any) {
+    if (!this.permissionService.hasPermission('enableAssignment:viewTests')) return;
     if (!topic) return;
     const classNo = toNum(this.filterForm.get('classNo')?.value);
     const subjectId = safeTrim(this.filterForm.get('subjectId')?.value);
@@ -433,6 +437,7 @@ export class AssignmentEnableComponent implements OnInit {
   }
 
   openDisableModal(topic: any) {
+    if (!this.permissionService.hasPermission('assignmentBatch:unassign')) return;
     if (!topic) return;
     const batchId = safeTrim(this.filterForm.get('batchId')?.value);
     if (!batchId) {
@@ -450,6 +455,7 @@ export class AssignmentEnableComponent implements OnInit {
   }
 
   confirmDisable() {
+    if (!this.permissionService.hasPermission('assignmentBatch:unassign')) return;
     const txt = safeTrim(this.disableConfirmText).toLowerCase();
     if (txt !== 'disable') {
       this.alert.error('Type disable to confirm');

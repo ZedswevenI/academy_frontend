@@ -4,7 +4,7 @@
             <div>
                 <div class="fw-semibold">Assignment Enablement</div>
             </div>
-            <button class="btn btn-edit fs-16 fw-medium" type="button" (click)="resetAll()">
+            <button class="btn btn-edit fs-16 fw-medium" type="button" *appHasPermission="'enableAssignment:resetAll'" (click)="resetAll()">
                 <i class="fa-solid fa-rotate-left btn-icon"></i> Reset
             </button>
         </div>
@@ -65,7 +65,7 @@
                             <th>Topic</th>
                             <th style="width: 180px;">Topic Code</th>
                             <th style="width: 140px;" class="text-center">Status</th>
-                            <th *appHasRole="['L4','L1','L3']" style="width: 260px;" class="text-end pe-3">Action</th>
+                            <th *appHasPermission="['assignmentBatch:assign', 'assignmentBatch:unassign', 'enableAssignment:viewTests']" style="width: 260px;" class="text-end pe-3">Action</th>
                         </tr>
                     </thead>
 
@@ -79,18 +79,20 @@
                                     {{ t?.enabled ? 'ENABLED' : 'NOT ENABLED' }}
                                 </span>
                             </td>
-                            <td *appHasRole="['L4','L1','L3']" class="text-end pe-3">
-                                <button class="btn btn-sm btn-success" *ngIf="!t?.enabled" (click)="enableTopic(t)"
-                                    [disabled]="loading || t?.enabling">
-                                    {{ t?.enabling ? 'Enabling...' : 'Enable' }}
-                                </button>
+                            <td *appHasPermission="['assignmentBatch:assign', 'assignmentBatch:unassign', 'enableAssignment:viewTests']" class="text-end pe-3">
+                                <ng-container *ngIf="!t?.enabled">
+                                    <button *appHasPermission="'assignmentBatch:assign'" class="btn btn-sm btn-success" (click)="enableTopic(t)"
+                                        [disabled]="loading || t?.enabling">
+                                        {{ t?.enabling ? 'Enabling...' : 'Enable' }}
+                                    </button>
+                                </ng-container>
                                 <ng-container *ngIf="t?.enabled">
-                                    <button class="btn btn-sm btn-outline-secondary me-2" style="border: none;"
+                                    <button *appHasPermission="'enableAssignment:viewTests'" class="btn btn-sm btn-outline-secondary me-2" style="border: none;"
                                         (click)="openTestsModal(t)" [disabled]="loading || modalLoading">
                                         <i class="fa-regular fa-eye"
                                             style="font-size: 18px;font-weight: 500;color: #000;"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-danger" (click)="openDisableModal(t)"
+                                    <button *appHasPermission="'assignmentBatch:unassign'" class="btn btn-sm btn-danger" (click)="openDisableModal(t)"
                                         [disabled]="loading || t?.disabling">
                                         {{ t?.disabling ? 'Disabling...' : 'Disable' }}
                                     </button>
@@ -204,7 +206,7 @@
                 <button class="btn btn-close-custom fs-16 fw-medium me-2" data-bs-dismiss="modal">
                     Cancel
                 </button>
-                <button class="btn btn-create fs-16 fw-medium" (click)="confirmDisable()"
+                <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'assignmentBatch:unassign'" (click)="confirmDisable()"
                     [disabled]="loading || disableConfirmText.toLowerCase() !== 'disable'">
                     Disable Now
                 </button>

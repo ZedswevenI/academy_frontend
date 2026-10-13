@@ -24,7 +24,7 @@ export class TeacherAttendanceComponent extends BaseReportComponent {
 
   readonly periodColumns = [
     { key: 'dateFormatted', label: 'Date' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'periodNo', label: 'Period' },
     { key: 'subjectName', label: 'Subject' },
     { key: 'startTime', label: 'Start' },
@@ -54,6 +54,7 @@ export class TeacherAttendanceComponent extends BaseReportComponent {
             dateFormatted: d.dateFormatted,
             day: d.day,
             batchCode: p.batchCode,
+            batchLabel: this.reportService.formatBatchLabel(p.batchName, p.batchCode),
             periodNo: p.periodNo,
             subjectName: p.subjectName,
             startTime: p.startTime,

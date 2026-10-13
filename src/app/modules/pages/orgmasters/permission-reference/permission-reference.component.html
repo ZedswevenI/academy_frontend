@@ -1,0 +1,61 @@
+<div class="perm-ref-page">
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-1 fw-semibold">Permission Reference</h5>
+                <p class="mb-0 text-muted small">
+                    Every permission key in the live catalog, grouped by module, with what each one gates.
+                    Admin-only.
+                </p>
+            </div>
+            <div class="text-muted small" *ngIf="!loading">
+                {{ totalKeys }} keys · {{ groups.length }} modules
+            </div>
+        </div>
+        <div class="card-body pt-0">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-medium mb-1">Search</label>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="search"
+                        placeholder="Search a key, module, or description...">
+                </div>
+            </div>
+
+            <div *ngIf="loading" class="text-center py-5">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+                <p class="text-muted small mt-2 mb-0">Loading permission catalog...</p>
+            </div>
+
+            <div *ngIf="!loading && !filteredGroups.length" class="text-muted small text-center py-5">
+                No permission keys match your search.
+            </div>
+
+            <div *ngIf="!loading" class="perm-ref-groups">
+                <div class="perm-ref-group" *ngFor="let group of filteredGroups">
+                    <div class="perm-ref-group-head">
+                        <span class="fw-semibold">{{ group.moduleLabel }}</span>
+                        <span class="prefix-chip">{{ group.module }}</span>
+                        <span class="text-muted small ms-auto">{{ group.permissions.length }} key{{
+                            group.permissions.length > 1 ? 's' : '' }}</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 30%;">Key</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let p of group.permissions">
+                                    <td><code class="perm-key">{{ p.permissionKey }}</code></td>
+                                    <td class="text-muted">{{ p.label || p.action }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

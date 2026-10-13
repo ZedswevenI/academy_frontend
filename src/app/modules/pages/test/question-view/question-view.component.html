@@ -4,9 +4,26 @@
     <div class="card-body d-flex justify-content-between align-items-center">
       <div>
         <h5 class="mb-0">Questions List</h5>
-        <small class="text-muted">
-          Total Questions: {{ questions.length }}
-        </small>
+        <div class="text-muted small d-flex flex-wrap gap-3 mt-1">
+          <span *ngIf="questionData?.testCode || questionData?.testNo">
+            <strong>Test No:</strong> {{ questionData?.testCode || questionData?.testNo }}
+          </span>
+          <span *ngIf="questionData?.subject || questionData?.subjectName">
+            <strong>Subject:</strong> {{ questionData?.subject || questionData?.subjectName }}
+          </span>
+          <span *ngIf="questionData?.classNo">
+            <strong>Class:</strong> {{ questionData?.classNo }}
+          </span>
+          <span *ngIf="questionData?.topicName">
+            <strong>Topic:</strong> {{ questionData?.topicName }}
+          </span>
+          <span *ngIf="questionData?.subTopicName">
+            <strong>Sub Topic:</strong> {{ questionData?.subTopicName }}
+          </span>
+          <span>
+            <strong>Total Questions:</strong> {{ questions.length }}
+          </span>
+        </div>
       </div>
 
 
@@ -29,7 +46,7 @@
             </li>
           </ul>
         </div>
-        <button  *ngIf="!authService.assignmentRole()" class="btn btn-create fs-16 fw-medium me-2" (click)="addNewQuestion()">
+        <button  *appHasPermission="'test:addQuestion'" class="btn btn-create fs-16 fw-medium me-2" (click)="addNewQuestion()">
           + Add Question
         </button>
         <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/assignment">Back</button>
@@ -72,11 +89,11 @@
       </div>
 
       <div>
-        <button class="btn btn-edit fs-16 fw-medium me-2" (click)="editQuestion(q)">
+        <button *appHasPermission="'test:addQuestion'" class="btn btn-edit fs-16 fw-medium me-2" (click)="editQuestion(q)">
           Edit
         </button>
 
-        <button class="btn btn-close-custom fs-16 fw-medium" (click)="deleteQuestion(q)">
+        <button *appHasPermission="'test:delete'" class="btn btn-close-custom fs-16 fw-medium" (click)="deleteQuestion(q)">
           Delete
         </button>
       </div>

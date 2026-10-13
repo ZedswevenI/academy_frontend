@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-subtopic',
@@ -60,6 +61,7 @@ export class SubtopicComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgSubTopic:edit'),
       callback: (r: any) => this.edit(r),
     },
     {
@@ -68,6 +70,7 @@ export class SubtopicComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('orgSubTopic:delete'),
       callback: (r: any) => this.openDelete(r),
     },
   ];
@@ -76,7 +79,8 @@ export class SubtopicComponent implements OnInit {
     private fb: FormBuilder,
     private alert: AlertService,
     private api: CommonapiService,
-    private breadcrumb: BredcrumpService
+    private breadcrumb: BredcrumpService,
+    private permissionService: PermissionService
   ) {
     this.breadcrumb.set([
       { label: 'Org-Masters' },

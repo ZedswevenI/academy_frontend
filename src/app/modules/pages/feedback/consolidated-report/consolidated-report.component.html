@@ -69,9 +69,11 @@
                 </div>
                 <!-- Generate button -->
                 <div class="col-md-1 d-flex align-items-end">
-                    <button class="btn btn-create fs-16 fw-medium" (click)="fetchReport()" [disabled]="loading">
-                        <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
-                        <span *ngIf="!loading">
+                    <button class="btn btn-create fs-16 fw-medium"
+                        (click)="activeTab === 'remarks' ? fetchRemarks() : fetchReport()"
+                        [disabled]="activeTab === 'remarks' ? remarksLoading : loading">
+                        <span *ngIf="(activeTab === 'remarks' ? remarksLoading : loading)" class="spinner-border spinner-border-sm"></span>
+                        <span *ngIf="!(activeTab === 'remarks' ? remarksLoading : loading)">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
                     </button>
@@ -150,20 +152,21 @@
                                 <tr class="text-center">
                                     <th class="table-dark text-start" style="min-width:90px">Staff</th>
                                     <th class="table-dark">Batch</th>
+                                    <th class="table-dark">Phase</th>
                                     <th class="table-dark">Strength</th>
                                     <th class="table-dark">Responses</th>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <th [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)"
+                                            style="font-weight:600;min-width:52px">
+                                            {{ partPctLabel(part) }}
+                                        </th>
+                                    </ng-container>
                                     <ng-container *ngFor="let part of partKeys">
                                         <th *ngFor="let h of partHeaders[part]" [title]="h.fieldText"
                                             [style.background]="partHeaderBg(part)"
                                             [style.color]="partHeaderColor(part)"
                                             style="font-size:11px;min-width:36px;font-weight:600">
                                             {{ h.label }}
-                                        </th>
-                                    </ng-container>
-                                    <ng-container *ngFor="let part of partKeys">
-                                        <th [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)"
-                                            style="font-weight:600;min-width:52px">
-                                            {{ partPctLabel(part) }}
                                         </th>
                                     </ng-container>
                                 </tr>
@@ -185,16 +188,9 @@
                                         </div>
                                     </td>
                                     <td class="text-center">{{ r.batchCode }}</td>
+                                    <td class="text-center">{{ r.phase || '—' }}</td>
                                     <td class="text-center">{{ r.strength }}</td>
                                     <td class="text-center">{{ r.responseCount }}</td>
-                                    <ng-container *ngFor="let part of partKeys">
-                                        <td *ngFor="let v of getPartScores(r, part)" class="text-center"
-                                            [style.background]="partCellBg(part)">
-                                            <span [class]="scoreClass(v)">
-                                                {{ v != null ? v.toFixed(2) : '—' }}
-                                            </span>
-                                        </td>
-                                    </ng-container>
                                     <ng-container *ngFor="let part of partKeys">
                                         <td class="text-center" [style.background]="partPctBg(part)">
                                             <span [class]="pctClass(getPartPct(r, part))">
@@ -204,21 +200,29 @@
                                             </span>
                                         </td>
                                     </ng-container>
+                                    <ng-container *ngFor="let part of partKeys">
+                                        <td *ngFor="let v of getPartScores(r, part)" class="text-center"
+                                            [style.background]="partCellBg(part)">
+                                            <span [class]="scoreClass(v)">
+                                                {{ v != null ? v.toFixed(2) : '—' }}
+                                            </span>
+                                        </td>
+                                    </ng-container>
                                 </tr>
                             </tbody>
                             <!-- Per-staff average footer -->
                             <tfoot>
                                 <tr class="table-light fw-bold text-center">
-                                    <td colspan="4" class="text-end pe-3">
+                                    <td colspan="5" class="text-end pe-3">
                                         Staff Average
                                     </td>
                                     <ng-container *ngFor="let part of partKeys">
-                                        <td *ngFor="let h of partHeaders[part]" [style.background]="partCellBg(part)">
+                                        <td [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)">
+                                            {{ g.avgPcts[part] || '—' }}
                                         </td>
                                     </ng-container>
                                     <ng-container *ngFor="let part of partKeys">
-                                        <td [style.background]="partPctBg(part)" [style.color]="partHeaderColor(part)">
-                                            {{ g.avgPcts[part] || '—' }}
+                                        <td *ngFor="let h of partHeaders[part]" [style.background]="partCellBg(part)">
                                         </td>
                                     </ng-container>
                                 </tr>

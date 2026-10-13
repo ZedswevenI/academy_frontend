@@ -9,15 +9,16 @@ import { TemplatesComponent } from './templates/templates.component';
 import { SentLogsComponent } from './sent-logs/sent-logs.component';
 import { EventMappingComponent } from './event-mapping/event-mapping.component';
 import { ExcelBulkMailComponent } from './excel-bulk-mail/excel-bulk-mail.component';
+import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
   { path: '', redirectTo: 'send', pathMatch: 'full' },
-  { path: 'send', component: CommunicationComponent, title: 'Communication - Send' },
-  { path: 'templates', component: TemplatesComponent, title: 'Communication - Templates' },
-  { path: 'sent-logs', component: SentLogsComponent, title: 'Communication - Sent Logs' },
-  { path: 'event-mapping', component: EventMappingComponent, title: 'Communication - Event Mapping' },
-  { path: 'send-bulk', component: ExcelBulkMailComponent, title: 'Communication - Sent Logs' },
-  { path: 'create', component: CommunicationComponent, title: 'Communication' },
+  { path: 'send', component: CommunicationComponent, title: 'Communication - Send', canActivate: [PermissionGuard], data: { permission: 'communication:create' } },
+  { path: 'templates', component: TemplatesComponent, title: 'Communication - Templates', canActivate: [PermissionGuard], data: { permission: 'communicationTemplate:list' } },
+  { path: 'sent-logs', component: SentLogsComponent, title: 'Communication - Sent Logs', canActivate: [PermissionGuard], data: { permission: 'communicationLog:list' } },
+  { path: 'event-mapping', component: EventMappingComponent, title: 'Communication - Event Mapping', canActivate: [PermissionGuard], data: { permission: 'communicationEvent:list' } },
+  { path: 'send-bulk', component: ExcelBulkMailComponent, title: 'Communication - Sent Logs', canActivate: [PermissionGuard], data: { permission: 'communicationBulkMail:send' } },
+  { path: 'create', component: CommunicationComponent, title: 'Communication', canActivate: [PermissionGuard], data: { permission: 'communication:create' } },
   { path: 'whatsApp', component: WhatsappComponent, title: 'Communication - WhatsAPP' },
   { path: 'email', component: MailComponent, title: 'Communication - EMail' },
   { path: 'message', component: MsgComponent, title: 'Communication - MESSAGE' }

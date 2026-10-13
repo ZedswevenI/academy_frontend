@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-ass-create',
@@ -76,10 +77,15 @@ export class AssCreateComponent {
     private router: Router,
     private authService: AuthService,
     private commonApi: CommonapiService,
-    private alert: AlertService
+    private alert: AlertService,
+    private backNav: BackNavigationService
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Assignment', link: '/app/assignment' }, { label: 'Create' }])
+  }
+
+  goBack(): void {
+    this.backNav.goBack({ route: '/app/assignment' });
   }
 
   ngOnInit(): void {

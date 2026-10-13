@@ -20,7 +20,7 @@
 
     <!-- KPI Cards -->
     <div class="kpi-grid">
-        <div class="kpi-card" *ngFor="let k of kpis; let i = index" [class]="'tone-' + k.tone"
+        <div class="kpi-card" *ngFor="let k of visibleKpis" [class]="'tone-' + k.tone"
             [routerLink]="k.route ? k.route : null" [style.cursor]="k.route || k.scrollTo ? 'pointer' : 'default'"
             (click)="onKpiClick(k)" (mouseenter)="k.showBatchHover = true" (mouseleave)="k.showBatchHover = false">
             <div class="kpi-top">
@@ -54,7 +54,7 @@
 
     <!-- Row: Upcoming PTMs + Upcoming Activities -->
     <div class="bottom-row">
-        <div class="card list-card">
+        <div class="card list-card" *appHasPermission="'dashboard:viewUpcomingPtms'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Upcoming PTMs</h3>
@@ -90,7 +90,7 @@
             </div>
         </div>
 
-        <div class="card list-card">
+        <div class="card list-card" *appHasPermission="'dashboard:viewUpcomingActivities'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Upcoming Activities</h3>
@@ -110,6 +110,9 @@
                                 <span *ngIf="a.endDate && a.endDate !== a.startDate"> → {{ formatActivityDate(a.endDate)
                                     }}</span>
                             </div>
+                            <div class="act-remarks" *ngIf="a.remarks">
+                                <i class="fa-solid fa-comment-dots fa-xs"></i> {{ a.remarks }}
+                            </div>
                         </div>
                         <span class="chip" [class.blue]="a.status === 'PLANNED'"
                             [class.green]="a.status === 'IN_PROGRESS'" [class.amber]="a.status === 'COMPLETED'">
@@ -125,9 +128,158 @@
         </div>
     </div>
 
+    <!-- Today's Absent List -->
+    <ng-container *appHasPermission="'dashboard:viewTodayAbsentees'">
+    <div class="card absent-card" *ngIf="todayAbsentCount > 0">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">
+                    <i class="fa-solid fa-user-slash" style="color:#dc2626"></i> Today's Absent Students
+                </h3>
+                <p class="card-sub">{{ todayAbsentCount }} student(s) absent today</p>
+            </div>
+            <div class="absent-tabs">
+                <button class="absent-tab" [class.active]="activeAbsentTab === 'school'"
+                    (click)="activeAbsentTab = 'school'">
+                    <i class="fa-solid fa-school fa-xs"></i> Day-wise
+                    <span class="absent-tab-count">{{ todayAbsentList.length }}</span>
+                </button>
+                <button class="absent-tab" [class.active]="activeAbsentTab === 'period'"
+                    (click)="activeAbsentTab = 'period'">
+                    <i class="fa-solid fa-clock fa-xs"></i> Period-wise
+                    <span class="absent-tab-count">{{ todayPeriodAbsentList.length }}</span>
+                </button>
+                <button class="btn-export" (click)="exportAbsentExcel()" title="Export Excel">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Day-wise -->
+        <ng-container *ngIf="activeAbsentTab === 'school'">
+            <div class="absent-table" *ngIf="todayAbsentList.length; else emptyDayAbsent">
+                <div class="absent-row absent-head">
+                    <span>Student</span> <span>Admission No</span><span>Batch</span><span>Phone</span><span>Remarks</span><span>Action</span>
+                </div>
+                <div class="absent-row" *ngFor="let s of todayAbsentList">
+                    <span class="ptm-name">{{ s.studentName }}</span>
+                    <span class="ptm-name">{{ s.admissionNo }}</span>
+                    <span>
+                        <div class="ptm-name">{{ s.batchCode }}</div>
+                        <div class="ptm-sub">{{ s.batchName }}</div>
+                    </span>
+                    <span class="absent-phones">
+                        <a class="phone-chip" *ngFor="let p of getAbsentPhones(s)" [href]="'tel:' + p">
+                            <i class="fa-solid fa-phone fa-xs"></i>{{ p }}
+                        </a>
+                        <span class="absent-remark none" *ngIf="!getAbsentPhones(s).length">—</span>
+                    </span>
+                    <span class="absent-remark" [class.none]="!s.remarks">{{ s.remarks || '—' }}</span>
+                    <span class="absent-action-cell">
+                        <button class="remark-edit-btn" title="Add / edit remarks"
+                            (click)="openRemarksModal(s, 'school')">
+                            <i class="fa-solid fa-pen fa-xs"></i>
+                        </button>
+                    </span>
+                </div>
+            </div>
+            <ng-template #emptyDayAbsent>
+                <div class="empty-state">No day-wise absences recorded</div>
+            </ng-template>
+        </ng-container>
+
+        <!-- Period-wise -->
+        <ng-container *ngIf="activeAbsentTab === 'period'">
+            <div class="absent-table" *ngIf="todayPeriodAbsentList.length; else emptyPeriodAbsent">
+                <div class="absent-row absent-head period-row">
+                    <span>Student</span><span>Admission
+                        No</span><span>Batch</span><span>Period</span><span>Phone</span><span>Remarks</span><span>Action</span>
+                </div>
+                <div class="absent-row period-row" *ngFor="let s of todayPeriodAbsentList">
+                    <span class="ptm-name">{{ s.studentName }}</span>
+                    <span class="ptm-name">{{ s.admissionNo }}</span>
+                    <span class="ptm-sub">{{ s.batchCode }}</span>
+                    <span><span class="period-badge">P{{ s.periodNo }}</span></span>
+                    <span class="absent-phones">
+                        <a class="phone-chip" *ngFor="let p of getAbsentPhones(s)" [href]="'tel:' + p">
+                            <i class="fa-solid fa-phone fa-xs"></i>{{ p }}
+                        </a>
+                        <span class="absent-remark none" *ngIf="!getAbsentPhones(s).length">—</span>
+                    </span>
+                    <span class="absent-remark" [class.none]="!s.remarks">{{ s.remarks || '—' }}</span>
+                    <span class="absent-action-cell">
+                        <button class="remark-edit-btn" title="Add / edit remarks"
+                            (click)="openRemarksModal(s, 'period')">
+                            <i class="fa-solid fa-pen fa-xs"></i>
+                        </button>
+                    </span>
+                </div>
+            </div>
+            <ng-template #emptyPeriodAbsent>
+                <div class="empty-state">No period-wise absences recorded</div>
+            </ng-template>
+        </ng-container>
+    </div>
+    </ng-container>
+
+    <!-- Absentee Remarks Report (custom date range) -->
+    <div class="card absent-card" *appHasPermission="'schoolAttendance:export'">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">
+                    <i class="fa-solid fa-file-export" style="color:#dc2626"></i> Generate Absentee Remarks Report
+                </h3>
+                <p class="card-sub">Day-wise absentees with remarks across all batches, for any date range</p>
+            </div>
+            <button class="btn btn-create btn-sm" *ngIf="!absenteeReportOpen" (click)="absenteeReportOpen = true">
+                <i class="fa-solid fa-file-export me-1"></i> Generate Report
+            </button>
+        </div>
+        <ng-container *ngIf="absenteeReportOpen">
+        <div class="d-flex flex-wrap gap-2 align-items-end mb-3" style="padding: 0 4px;">
+            <div>
+                <label class="form-label fw-medium small mb-1">From Date</label>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="absenteeReportFromDate">
+            </div>
+            <div>
+                <label class="form-label fw-medium small mb-1">To Date</label>
+                <input type="date" class="form-control form-control-sm" [(ngModel)]="absenteeReportToDate">
+            </div>
+            <button class="btn btn-create btn-sm" [disabled]="absenteeReportLoading"
+                (click)="generateAbsenteeReport()">
+                <span *ngIf="!absenteeReportLoading"><i class="fa-solid fa-play me-1"></i> Generate</span>
+                <span *ngIf="absenteeReportLoading"><span class="spinner-border spinner-border-sm me-1"></span> Loading...</span>
+            </button>
+            <button class="btn-export" *ngIf="absenteeReportRows.length" (click)="exportAbsenteeReportExcel()"
+                title="Export Excel">
+                <i class="fa-solid fa-download"></i>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="absenteeReportOpen = false">
+                <i class="fa-solid fa-xmark me-1"></i> Close
+            </button>
+        </div>
+        <div class="alert alert-danger py-2 px-3 small mb-2" *ngIf="absenteeReportError">{{ absenteeReportError }}</div>
+        <div class="absent-table" *ngIf="absenteeReportRows.length">
+            <div class="absent-row absent-head">
+                <span>Date</span><span>Student</span><span>Admission No</span><span>Batch</span><span>Remarks</span>
+            </div>
+            <div class="absent-row" *ngFor="let r of absenteeReportRows">
+                <span class="ptm-sub">{{ r.dateFormatted }}</span>
+                <span class="ptm-name">{{ r.name }}</span>
+                <span class="ptm-name">{{ r.admissionNo }}</span>
+                <span>
+                    <div class="ptm-name">{{ r.batchCode }}</div>
+                    <div class="ptm-sub">{{ r.batchName }}</div>
+                </span>
+                <span class="absent-remark" [class.none]="!r.remarks">{{ r.remarks || '—' }}</span>
+            </div>
+        </div>
+        </ng-container>
+    </div>
+
     <!-- Attendance + Program -->
     <div class="charts-row">
-        <div class="card chart-card wide">
+        <div class="card chart-card wide" *appHasPermission="'dashboard:viewAttendanceOverview'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Attendance Overview</h3>
@@ -160,7 +312,7 @@
             </div>
         </div>
 
-        <div class="card chart-card">
+        <div class="card chart-card" *appHasPermission="'dashboard:viewStudentsByProgram'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Students by Program</h3>
@@ -176,7 +328,7 @@
     <!-- Batch Performance — 2 cards -->
     <div class="charts-row">
         <!-- Exam Performance -->
-        <div class="card chart-card">
+        <div class="card chart-card" *appHasPermission="'dashboard:viewExamPerformance'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Exam Performance</h3>
@@ -211,7 +363,7 @@
         </div>
 
         <!-- Assignment Performance -->
-        <div class="card chart-card">
+        <div class="card chart-card" *appHasPermission="'dashboard:viewAssignmentPerformance'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Assignment Performance</h3>
@@ -242,7 +394,7 @@
     <!-- Staff + Users + Inactive — single row -->
     <div class="three-col-row" id="staffDeptSection" #staffDeptSection>
         <!-- Staff by Department -->
-        <div class="card">
+        <div class="card" *appHasPermission="'dashboard:viewStaffByDepartment'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Staff by Department</h3>
@@ -267,7 +419,7 @@
         </div>
 
         <!-- Recent Users -->
-        <div class="card list-card">
+        <div class="card list-card" *appHasPermission="'dashboard:viewRecentUsers'">
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Recent Users</h3>
@@ -293,6 +445,7 @@
         </div>
 
         <!-- Inactive Users -->
+        <ng-container *appHasPermission="'dashboard:viewInactiveUsers'">
         <div class="card list-card" *ngIf="inactiveUsers.length">
             <div class="card-header">
                 <div>
@@ -320,6 +473,42 @@
                     </div>
                 </li>
             </ul>
+        </div>
+        </ng-container>
+    </div>
+
+    <!-- Remarks Modal -->
+    <div class="remarks-modal-backdrop" *ngIf="remarksModalOpen">
+        <div class="remarks-modal">
+            <div class="remarks-modal-header">
+                <h4>Add / Edit Remarks</h4>
+                <button class="remarks-modal-close" (click)="closeRemarksModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="remarks-modal-body" *ngIf="remarksModalStudent as s">
+                <div class="remarks-context-badge" [class.period]="remarksModalTab === 'period'">
+                    <i class="fa-solid" [class.fa-school]="remarksModalTab === 'school'"
+                        [class.fa-clock]="remarksModalTab === 'period'"></i>
+                    {{ remarksModalTab === 'school' ? 'School (day-wise) attendance' : 'Period attendance · P' +
+                    asPeriodAbsent(s)?.periodNo }}
+                </div>
+                <div class="remarks-student-name">{{ s.studentName }}</div>
+                <div class="remarks-student-sub">{{ s.admissionNo }} · {{ s.batchCode }}</div>
+                <textarea class="remarks-textarea" rows="3" placeholder="Enter remarks (e.g. Parent informed via call)"
+                    [(ngModel)]="remarksModalText"></textarea>
+                <div class="remarks-modal-error" *ngIf="remarksError">
+                    <i class="fa-solid fa-circle-exclamation"></i> {{ remarksError }}
+                </div>
+            </div>
+            <div class="remarks-modal-footer">
+                <button class="btn-ghost" (click)="closeRemarksModal()" [disabled]="remarksSaving">Cancel</button>
+                <button class="btn-primary" (click)="saveRemarksModal()"
+                    [disabled]="remarksSaving || !remarksModalText.trim()">
+                    <i class="fa-solid fa-spinner fa-spin" *ngIf="remarksSaving"></i>
+                    {{ remarksSaving ? 'Saving...' : 'Save' }}
+                </button>
+            </div>
         </div>
     </div>
 </div>

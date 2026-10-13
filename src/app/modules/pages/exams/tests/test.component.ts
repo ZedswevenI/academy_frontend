@@ -8,6 +8,11 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import katex from 'katex';
+import { PermissionService } from '../../../../shared/permission.service';
+import { sortQuestionsForPrint } from '../exam-print-order.util';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const EXAMS_LIST_STATE_KEY = 'exams-list';
 
 @Component({
   selector: 'app-exam-list',
@@ -26,6 +31,7 @@ export class TestComponent implements OnInit, OnDestroy {
     sortKey?: string;
     sortDirection?: string;
   } | null = null;
+  restoredPage = 1;
   showBatchModal = false;
   batchAssignRow: any = null;
   allBatches: any[] = [];
@@ -58,6 +64,7 @@ export class TestComponent implements OnInit, OnDestroy {
     { label: 'Published', value: 'published' },
     { label: 'Result Published', value: 'result_published' },
     { label: 'Completed', value: 'completed' },
+    { label: 'Disable for Student', value: 'disabled' },
   ];
   mediumOptions = [
     { label: 'English', value: 'en' },
@@ -94,6 +101,7 @@ export class TestComponent implements OnInit, OnDestroy {
       tooltip: 'View Exam',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('exam:view'),
       callback: (row: any) => this.viewExam(row),
     },
     {
@@ -106,7 +114,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'View Questions',
           icon: 'fa-solid fa-list-ol',
-          show: (row: any) => !!row.isImported,
+          show: (row: any) => !!row.isImported || !this.permissionService.hasPermission('exam:view'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.viewQuestions(row);
@@ -118,7 +126,8 @@ export class TestComponent implements OnInit, OnDestroy {
           show: (row: any) =>
             row.status === 'result_published' ||
             row.status === 'completed' ||
-            !!row.isImported,
+            !!row.isImported ||
+            !this.permissionService.hasPermission('exam:edit'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.editExam(row);
@@ -127,6 +136,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Duplicate Exam',
           icon: 'fa-regular fa-copy',
+          show: () => !this.permissionService.hasAny(['exam:duplicate', 'exam:create']),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.promptDuplicateExam(row);
@@ -135,7 +145,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Add Question',
           icon: 'fa-solid fa-plus',
-          show: (row: any) => row.status !== 'draft' || !!row.isImported,
+          show: (row: any) => (row.status !== 'draft' || !!row.isImported) || !this.permissionService.hasPermission('exam:addQuestion'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.addQuestions(row);
@@ -144,7 +154,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Import Questions',
           icon: 'fa-solid fa-file-import',
-          show: (row: any) => row.status !== 'draft' || !!row.isImported,
+          show: (row: any) => (row.status !== 'draft' || !!row.isImported) || !this.permissionService.hasPermission('exam:importQuestions'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.importQuestions(row);
@@ -153,7 +163,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Import Answers',
           icon: 'fa-solid fa-clipboard-check',
-          show: (row: any) => !!row.isImported,
+          show: (row: any) => !!row.isImported || !this.permissionService.hasPermission('exam:importAnswers'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.importAnswers(row);
@@ -165,7 +175,8 @@ export class TestComponent implements OnInit, OnDestroy {
           show: (row: any) =>
             row.status === 'result_published' ||
             row.status === 'completed' ||
-            !!row.isImported,
+            !!row.isImported ||
+            !this.permissionService.hasPermission('exam:rearrangeQuestions'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.rearrange(row);
@@ -174,7 +185,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Publish Exam',
           icon: 'fa-solid fa-paper-plane',
-          show: (row: any) => row.status !== 'draft' || !!row.isImported,
+          show: (row: any) => (row.status !== 'draft' || !!row.isImported) || !this.permissionService.hasPermission('exam:publish'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.publishExam(row);
@@ -183,7 +194,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Assign Batch',
           icon: 'fa-solid fa-users',
-          show: (row: any) => row.status === 'result_published',
+          show: (row: any) => row.status === 'result_published' || !this.permissionService.hasPermission('exam:assignBatch'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.openBatchModal(row);
@@ -193,8 +204,9 @@ export class TestComponent implements OnInit, OnDestroy {
           text: 'Publish Result',
           icon: 'fa-solid fa-bullhorn',
           show: (row: any) =>
-            row.status !== 'published' &&
-            !(row.graces && row.graces.length > 0),
+            (row.status !== 'published' &&
+            !(row.graces && row.graces.length > 0)) ||
+            !this.permissionService.hasPermission('exam:publishResult'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.publishResult(row);
@@ -203,7 +215,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Result',
           icon: 'fa-solid fa-chart-bar',
-          show: (row: any) => row.status !== 'result_published',
+          show: (row: any) => row.status !== 'result_published' || !this.permissionService.hasPermission('exam:view'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.viewResult(row);
@@ -212,7 +224,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Reevaluate',
           icon: 'fa-solid fa-arrows-rotate',
-          show: (row: any) => row.status !== 'result_published',
+          show: (row: any) => row.status !== 'result_published' || !this.permissionService.hasPermission('exam:reevaluate'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.reevaluateResults(row);
@@ -221,7 +233,7 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Grace Marks',
           icon: 'fa-solid fa-gift',
-          show: (row: any) => row.status === 'draft',
+          show: (row: any) => row.status === 'draft' || !this.permissionService.hasPermission('exam:graceMarks'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.openGraceModal(row);
@@ -230,15 +242,34 @@ export class TestComponent implements OnInit, OnDestroy {
         {
           text: 'Delete',
           icon: 'fa-regular fa-trash-can',
-          show: (row: any) => row.status === 'result_published',
+          show: (row: any) => row.status === 'result_published' || !this.permissionService.hasPermission('exam:delete'),
           callback: (row: any) => {
             this.forceCloseDropdowns();
             this.deleteExam(row);
           },
         },
+        {
+          text: 'Disable Exam',
+          icon: 'fa-solid fa-ban',
+          show: (row: any) => row.status !== 'result_published' || !this.permissionService.hasPermission('exam:disable'),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.disableExam(row);
+          },
+        },
+        {
+          text: 'Enable Exam',
+          icon: 'fa-solid fa-circle-check',
+          show: (row: any) => row.status !== 'disabled' || !this.permissionService.hasPermission('exam:enable'),
+          callback: (row: any) => {
+            this.forceCloseDropdowns();
+            this.enableExam(row);
+          },
+        },
       ],
     },
   ];
+  showGraceQuestionSelector = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -248,10 +279,20 @@ export class TestComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     public authService: AuthService,
     private sanitizer: DomSanitizer,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
-    if (this.authService.assignmentRole()) {
-      this.actions.pop();
-    }
+    this.restoredPage = this.listStateService.consumePage(EXAMS_LIST_STATE_KEY);
+  }
+
+  /** Remembers the current page so coming back from a detail/sub-screen
+   * restores it; a fresh visit from the menu never calls this, so it
+   * correctly starts at page 1. */
+  private captureListPosition(): void {
+    this.listStateService.savePage(
+      EXAMS_LIST_STATE_KEY,
+      this.lastTableParams?.page || 1,
+    );
   }
 
   ngOnInit(): void {
@@ -485,25 +526,31 @@ export class TestComponent implements OnInit, OnDestroy {
         return 'Result Published';
       case 'completed':
         return 'Completed';
+      case 'disabled':
+        return 'Disabled';
       default:
         return status;
     }
   }
 
   viewExam(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
   viewQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-view'], {
       state: { questions: row },
     });
   }
   rearrange(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-rearrange'], {
       state: { questions: row },
     });
   }
   editExam(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/create'], { state: { test: row } });
   }
   showDuplicateModal = false;
@@ -520,7 +567,6 @@ export class TestComponent implements OnInit, OnDestroy {
     const suffix = ' - Copy';
     const basePayload: any = {
       entiId: localStorage.getItem('tenantId'),
-      examCode: `${d.examCode}${suffix}`,
       examName: `${d.examName}${suffix}`,
       password: d.password || '123456',
       description: d.description,
@@ -606,28 +652,33 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   importQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-import'], {
       state: { questions: row },
     });
   }
 
   importAnswers(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/answer-import'], {
       state: { exam: row },
     });
   }
 
   importMarks() {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/marks-import']);
   }
 
   addQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: { question: row },
     });
   }
 
   viewResult(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/result-batch'], {
       state: { exam: row },
     });
@@ -839,15 +890,38 @@ export class TestComponent implements OnInit, OnDestroy {
                   textHtml: await this.replaceDownloadUrls(opt.textHtml || ''),
                 })),
               );
+              const leftColumn = q.leftColumn?.length
+                ? await Promise.all(
+                    q.leftColumn.map(async (item: any) => ({
+                      ...item,
+                      text: await this.replaceDownloadUrls(item?.text || ''),
+                    })),
+                  )
+                : q.leftColumn;
+              const rightColumn = q.rightColumn?.length
+                ? await Promise.all(
+                    q.rightColumn.map(async (item: any) => ({
+                      ...item,
+                      text: await this.replaceDownloadUrls(item?.text || ''),
+                    })),
+                  )
+                : q.rightColumn;
               return {
                 ...q,
                 questionHtml,
                 solutionHtml,
                 questionOptions: options,
+                leftColumn,
+                rightColumn,
               };
             }),
           );
-          return { examId, meta, questions: processed };
+          const sectionNameFor = (q: any): string =>
+            (meta.sections || []).find(
+              (s: any) => s.sectionId === q.sectionId,
+            )?.sectionName || '';
+          const ordered = sortQuestionsForPrint(processed, sectionNameFor);
+          return { examId, meta, questions: ordered };
         }),
       );
       const validTests = allTestsData.filter((t) => t.questions.length > 0);
@@ -925,7 +999,7 @@ export class TestComponent implements OnInit, OnDestroy {
     switch (type) {
       case 'mcq_single':
         return 'MCQ (Single)';
-      case 'mcq_multiple':
+      case 'mcq_multi':
         return 'MCQ (Multiple)';
       case 'true_false':
         return 'True / False';
@@ -933,10 +1007,51 @@ export class TestComponent implements OnInit, OnDestroy {
         return 'Subjective';
       case 'integer':
         return 'Integer';
+      case 'numeric':
+        return 'Numerical';
+      case 'passage_qns':
+        return 'Comprehension';
+      case 'matrix':
+        return 'Matrix Match';
       case 'short_answer':
         return 'Short Answer';
       default:
         return type;
+    }
+  }
+
+  private formatPrintAnswer(q: any): string {
+    switch (q.questionType) {
+      case 'mcq_single':
+      case 'passage_qns':
+        return (q.correctAnswer || '').toUpperCase();
+      case 'mcq_multi':
+        return (q.correctAnswer || '')
+          .toUpperCase()
+          .split(';')
+          .map((k: string) => k.trim())
+          .filter((k: string) => !!k)
+          .join(', ');
+      case 'true_false': {
+        const tf = (q.correctAnswer || '').toLowerCase();
+        return tf === 'true' ? 'True' : tf === 'false' ? 'False' : '';
+      }
+      case 'integer':
+        return q.correctAnswer ?? '';
+      case 'numeric': {
+        const range =
+          q.numericMin != null && q.numericMax != null
+            ? ` (Range: ${q.numericMin} – ${q.numericMax})`
+            : '';
+        return `${q.correctAnswer ?? ''}${range}`;
+      }
+      case 'subjective':
+      case 'short_answer':
+        return q.correctAnswer || 'Manually evaluated';
+      case 'matrix':
+        return 'See matrix matches below';
+      default:
+        return q.correctAnswer ?? '';
     }
   }
 
@@ -975,9 +1090,43 @@ export class TestComponent implements OnInit, OnDestroy {
               optionsHtml = `<table class="options-table">${rows.join('')}</table>`;
             }
 
+            let matrixHtml = '';
+            if (q.questionType === 'matrix' && q.leftColumn?.length) {
+              const leftRows = (q.leftColumn as any[])
+                .map(
+                  (l: any) =>
+                    `<tr><td class="matrix-key">${l.key}.</td><td class="matrix-cell">${l.text || ''}</td></tr>`,
+                )
+                .join('');
+              const rightRows = (q.rightColumn as any[])
+                .map(
+                  (r: any) =>
+                    `<tr><td class="matrix-key">${r.key}.</td><td class="matrix-cell">${r.text || ''}</td></tr>`,
+                )
+                .join('');
+              const matchesHtml =
+                withAnswer && q.matrixMatches?.length
+                  ? `<div class="matrix-matches">${(q.matrixMatches as any[])
+                      .map(
+                        (m: any) =>
+                          `<span class="opt-label">${m.key} &rarr; ${(m.matches || []).join(', ')}</span>`,
+                      )
+                      .join('&nbsp;&nbsp;')}</div>`
+                  : '';
+              matrixHtml = `
+            <table class="matrix-cols">
+              <thead><tr><th class="matrix-head">Column I</th><th class="matrix-head">Column II</th></tr></thead>
+              <tbody><tr>
+                <td class="matrix-side"><table><tbody>${leftRows}</tbody></table></td>
+                <td class="matrix-side"><table><tbody>${rightRows}</tbody></table></td>
+              </tr></tbody>
+            </table>
+            ${matchesHtml}`;
+            }
+
             const answerRow = withAnswer
               ? `<div class="answer-box">
-             <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
+             <strong>Answer:</strong>&nbsp;${this.formatPrintAnswer(q)}
            </div>`
               : `<div class="answer-box"></div>`;
 
@@ -992,6 +1141,7 @@ export class TestComponent implements OnInit, OnDestroy {
             </div>
             <div class="question-body">${q.questionHtml}</div>
             ${optionsHtml}
+            ${matrixHtml}
             ${answerRow}
           </div>`;
           })
@@ -1063,6 +1213,14 @@ export class TestComponent implements OnInit, OnDestroy {
           .opt-text { font-size: 11.5pt; line-height: 1.6; }
           .correct-opt .opt-text { font-weight: bold; text-decoration: underline; }
           .answer-box { margin: 6px 18px 0 18px; font-size: 11pt; padding-top: 4px; border-top: 1px solid #ccc; }
+          .matrix-cols { width: calc(100% - 36px); margin: 0 18px 6px 18px; border-collapse: collapse; table-layout: fixed; }
+          .matrix-head { font-size: 10.5pt; font-weight: bold; padding: 4px 8px; border-bottom: 1px solid #333; }
+          .matrix-side { width: 50%; vertical-align: top; padding: 4px 8px; border-right: 1px solid #ccc; }
+          .matrix-side:last-child { border-right: none; }
+          .matrix-side table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+          .matrix-key { font-weight: bold; padding: 3px 8px 3px 0; white-space: nowrap; vertical-align: top; width: 22px; }
+          .matrix-cell { padding: 3px 4px; vertical-align: top; line-height: 1.6; }
+          .matrix-matches { margin: 4px 18px 0 18px; font-size: 10.5pt; }
           .katex { font-size: 1em; }
           img { max-width: 100%; height: auto; display: block; margin: 4px 0; }
           @media print {
@@ -1315,9 +1473,6 @@ export class TestComponent implements OnInit, OnDestroy {
     return this.graceRow?.sections || [];
   }
 
-  /* ================= GRACE QUESTION SELECTOR ================= */
-  showGraceQuestionSelector = false;
-
   openGraceQuestionSelector() {
     this.showGraceQuestionSelector = true;
   }
@@ -1400,18 +1555,6 @@ export class TestComponent implements OnInit, OnDestroy {
     this.fetchTableData({ page: 1, pageSize: 10 });
   }
 
-  // private forceCloseDropdowns(): void {
-  //   document
-  //     .querySelectorAll('.dropdown-menu.show')
-  //     .forEach((menu) => menu.classList.remove('show'));
-  //   document
-  //     .querySelectorAll('body > .dropdown-menu')
-  //     .forEach((menu) => menu.remove());
-  //   document
-  //     .querySelectorAll('.dropdown-toggle[aria-expanded="true"]')
-  //     .forEach((toggle) => toggle.setAttribute('aria-expanded', 'false'));
-  // }
-
   forceCloseDropdowns(): void {
     document
       .querySelectorAll('.dropdown-menu.show')
@@ -1428,6 +1571,57 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('exam:view')) return;
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
+  }
+
+  disableExam(row: any): void {
+    if (
+      !confirm(`Disable "${row.examName}"? Students won't be able to see it.`)
+    )
+      return;
+    this.commonApi
+      .fetchData(
+        { entiId: localStorage.getItem('tenantId'), examId: row.examId },
+        'exam',
+        'disable',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success('Exam disabled successfully');
+            if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+          } else {
+            this.alert.error(res?.message || 'Failed to disable exam');
+          }
+        },
+        error: () => this.alert.error('Error disabling exam'),
+      });
+  }
+
+  enableExam(row: any): void {
+    if (!confirm(`Enable "${row.examName}"?`)) return;
+    this.commonApi
+      .fetchData(
+        {
+          entiId: localStorage.getItem('tenantId'),
+          examId: row.examId,
+        },
+        'exam',
+        'enable',
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (res?.status) {
+            this.alert.success(`Exam enabled as ${res.data?.status}`);
+            if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
+          } else {
+            this.alert.error(res?.message || 'Failed to enable exam');
+          }
+        },
+        error: () => this.alert.error('Error enabling exam'),
+      });
   }
 }

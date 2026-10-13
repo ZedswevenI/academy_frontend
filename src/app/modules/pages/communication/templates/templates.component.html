@@ -6,7 +6,8 @@
       <h1 class="fw-bold mb-0" style="font-size: 28px;">
         <i class="fa-solid fa-file-lines me-2 text-primary"></i>Templates
       </h1>
-      <button class="btn btn-create fs-16 fw-medium" type="button" (click)="newTemplate()">
+      <button class="btn btn-create fs-16 fw-medium" type="button" *appHasPermission="'communicationTemplate:create'"
+        (click)="newTemplate()">
         <i class="fa-solid fa-plus me-2"></i>New Template
       </button>
     </div>
@@ -33,7 +34,8 @@
                     <small class="text-muted">{{ formatDate(t.updatedAt) }}</small>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-link text-danger p-0" (click)="deleteTemplate(t, $event)">
+                <button class="btn btn-sm btn-link text-danger p-0" *appHasPermission="'communicationTemplate:delete'"
+                  (click)="deleteTemplate(t, $event)">
                   <i class="fa-regular fa-trash-can"></i>
                 </button>
               </div>
@@ -52,7 +54,8 @@
             <i class="fa-solid fa-envelope-open-text"></i>
             <p class="fw-medium mt-3">Select a template to edit</p>
             <p class="text-muted small">or create a new one to get started</p>
-            <button class="btn btn-outline-primary rounded-pill" (click)="newTemplate()">
+            <button class="btn btn-outline-primary rounded-pill" *appHasPermission="'communicationTemplate:create'"
+              (click)="newTemplate()">
               <i class="fa-solid fa-plus me-1"></i> New Template
             </button>
           </div>
@@ -67,7 +70,9 @@
               <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="cancelEdit()">
                 Cancel
               </button>
-              <button type="button" class="btn btn-create fs-16 fw-medium" (click)="saveTemplate()">
+              <button type="button" class="btn btn-create fs-16 fw-medium"
+                *appHasPermission="mode === 'create' ? 'communicationTemplate:create' : 'communicationTemplate:edit'"
+                (click)="saveTemplate()">
                 <i class="fa-solid fa-floppy-disk me-1"></i>Save
               </button>
             </div>
@@ -113,8 +118,8 @@
                 <div class="d-flex gap-2">
                   <input type="file" #emailImageInput hidden accept="image/png,image/jpeg,image/jpg,image/webp"
                     (change)="onEmailImageSelected($event)" />
-                  <button type="button" class="btn btn-shuffle fs-16 fw-medium" [disabled]="imageUploading"
-                    (click)="emailImageInput.click()">
+                  <button type="button" class="btn btn-shuffle fs-16 fw-medium" *appHasPermission="'communication:create'"
+                    [disabled]="imageUploading" (click)="emailImageInput.click()">
                     <i class="fa-regular fa-image me-1"></i>
                     {{ imageUploading ? 'Uploading...' : 'Insert Image' }}
                   </button>

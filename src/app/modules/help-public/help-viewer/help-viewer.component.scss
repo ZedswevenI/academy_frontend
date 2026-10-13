@@ -1,0 +1,416 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #F6F7FB;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.help-page {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+}
+
+@media (max-width: 560px) {
+  .help-page {
+    padding: 1.25rem 0.85rem 2.5rem;
+  }
+}
+
+.help-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #0F172A;
+
+    i {
+      color: #2563EB;
+    }
+  }
+
+  .tagline {
+    color: #64748B;
+    font-size: 0.9rem;
+    margin: 0.3rem 0 1.1rem;
+  }
+}
+
+.search-bar {
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fff;
+  border: 1px solid #E4E7EF;
+  border-radius: 99px;
+  padding: 0.65rem 1.1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  i {
+    color: #94A3B8;
+  }
+
+  input {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 0.9rem;
+    background: transparent;
+  }
+}
+
+.help-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .help-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------- SIDEBAR (module accordion) ---------------- */
+
+.help-nav {
+  background: #fff;
+  border: 1px solid #E4E7EF;
+  border-radius: 12px;
+  padding: 0.75rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.nav-group {
+  margin-bottom: 0.1rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #334155;
+
+  &:hover {
+    background: #F3F5FA;
+  }
+
+  &.active {
+    background: #EFF6FF;
+    color: #1848A6;
+    font-weight: 650;
+  }
+
+  i {
+    color: #94A3B8;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  &.active i {
+    color: #2563EB;
+  }
+}
+
+.chevron-btn {
+  border: none;
+  background: transparent;
+  padding: 0.2rem;
+  width: 18px;
+  flex-shrink: 0;
+  color: #94A3B8;
+  font-size: 0.68rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: #2563EB;
+  }
+}
+
+.nav-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: #E4E7EF;
+  color: #64748B;
+  padding: 0.1rem 0.45rem;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.nav-item.active .nav-count {
+  background: #2563EB;
+  color: #fff;
+}
+
+.nav-subtopics {
+  padding-left: 2.1rem;
+  margin: 0.1rem 0 0.4rem;
+  border-left: 1px dashed #E4E7EF;
+  margin-left: 0.9rem;
+}
+
+.nav-subtopic {
+  font-size: 0.78rem;
+  color: #64748B;
+  padding: 0.3rem 0.4rem;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    background: #F3F5FA;
+    color: #1848A6;
+  }
+}
+
+/* ---------------- MAIN: TOPIC ACCORDION ---------------- */
+
+.help-content {
+  min-height: 300px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3.5rem 0;
+  color: #94A3B8;
+
+  i {
+    font-size: 2rem;
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+}
+
+.topic-accordion {
+  background: #fff;
+  border: 1px solid #E4E7EF;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.topic-item {
+  border-bottom: 1px solid #F1F5F9;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.open {
+    background: #FAFBFF;
+  }
+}
+
+.topic-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  cursor: pointer;
+
+  &:hover {
+    background: #F3F5FA;
+  }
+}
+
+.header-chevron {
+  color: #94A3B8;
+  font-size: 0.75rem;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.topic-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563EB, #1848A6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.topic-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.v-module {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #2563EB;
+  margin-bottom: 0.1rem;
+}
+
+.v-title {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: #0F172A;
+}
+
+.topic-panel {
+  padding: 0 1.1rem 1.2rem;
+}
+
+.player-frame {
+  max-width: 920px;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.85rem;
+  position: relative;
+}
+
+.player-host-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+
+  // Fallback for browsers/webviews without `aspect-ratio` support (some
+  // Android in-app browsers still lack it). Without this, the wrapper
+  // collapses to 0 height, and since the YouTube iframe below is
+  // absolutely positioned at height:100% of THIS element, it collapses
+  // to 0 too — the video is in the DOM but has no visible area. This is
+  // the classic "video not visible on mobile" bug: it shows up on mobile
+  // specifically because desktop browsers are far more likely to support
+  // aspect-ratio. The percentage-padding trick works everywhere.
+  @supports not (aspect-ratio: 16 / 9) {
+    height: 0;
+    padding-top: 56.25%; // 9 / 16
+  }
+
+  // YT.Player REPLACES the #playerHost div with a bare <iframe> — it's
+  // inserted by YouTube's own script, not Angular's template compiler, so
+  // it never receives the _ngcontent scoping attribute and a plain scoped
+  // rule would silently never match it. ::ng-deep is required to reach it
+  // (same root cause as pasted third-party HTML elsewhere in this app).
+  ::ng-deep iframe {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    border: none;
+    display: block;
+  }
+}
+
+.player-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: #16181D;
+}
+
+:fullscreen .player-frame,
+.player-frame:fullscreen {
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .player-host-wrap {
+    flex: 1;
+    aspect-ratio: auto;
+  }
+}
+
+.ctrl-btn {
+  border: none;
+  background: transparent;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.ctrl-time {
+  font-size: 0.72rem;
+  color: #CBD5E1;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 34px;
+}
+
+.ctrl-seek {
+  flex: 1;
+  accent-color: #2563EB;
+  cursor: pointer;
+}
+
+.ctrl-volume {
+  width: 80px;
+  accent-color: #2563EB;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .player-controls {
+    padding: 0.5rem 0.5rem;
+    gap: 0.4rem;
+  }
+
+  // Volume slider is the first thing to go on a narrow phone — mute
+  // toggle button stays, seek bar and play/pause keep priority.
+  .ctrl-volume {
+    display: none;
+  }
+}
+
+.v-desc {
+  font-size: 0.85rem;
+  color: #475569;
+  max-width: 920px;
+  margin: 0;
+  line-height: 1.6;
+}

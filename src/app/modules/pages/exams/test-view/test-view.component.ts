@@ -4,11 +4,14 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import katex from 'katex';
 import { DomSanitizer } from '@angular/platform-browser';
+import * as XLSX from 'xlsx';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-ass-view',
@@ -187,7 +190,10 @@ export class TestViewComponent implements OnInit {
   graceQuestions: any[] = [];
   graceQuestionsLoading = false;
   actualTotalMarks = 0;
+  actualQuestionCount = 0;
   marksMismatch = false;
+  exportingReport = false;
+  exportingAbsenteesReport = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -197,6 +203,7 @@ export class TestViewComponent implements OnInit {
     private fb: FormBuilder,
     public authService: AuthService,
     private sanitizer: DomSanitizer,
+    private backNav: BackNavigationService,
   ) {
     const state: any = history.state;
     if (state?.exam) {
@@ -251,6 +258,50 @@ export class TestViewComponent implements OnInit {
   }
   get canShowGrace(): boolean {
     return this.examData?.status !== 'draft';
+  }
+  get canAddOfflineMarks(): boolean {
+    return !this.examData?.isImported && this.examData?.status !== 'draft';
+  }
+  get allQuestionsImported(): boolean {
+    const limit = this.examData?.totalQuestions || 0;
+    return limit > 0 && this.actualQuestionCount >= limit;
+  }
+
+  get canShowAbsenteesReport(): boolean {
+    const endTime = this.examData?.endTime;
+    const windowClosed = !!endTime && Date.now() >= endTime;
+    return windowClosed || this.examData?.status === 'result_published';
+  }
+
+  get canImportQuestions(): boolean {
+    return (
+      this.examData?.status === 'draft' &&
+      !this.examData?.isImported &&
+      !this.allQuestionsImported
+    );
+  }
+
+  importQuestions(): void {
+    this.router.navigate(['/app/exams/exams/question-import'], {
+      state: { questions: this.examData },
+    });
+  }
+
+  /** The participants report has no explicit "offline" flag — but a
+   * result submitted via the offline endpoints never has a real logged-in
+   * session, so `studentId` is never populated for those rows (confirmed
+   * against real data: every offline row has studentId: null, a
+   * startedAt pinned to the exam's scheduled start time, and a huge/bogus
+   * timeTakenMins as a result — this is the reliable signal to key off). */
+  isOfflineParticipant(p: any): boolean {
+    return !p?.studentId;
+  }
+
+  /* ================= OFFLINE MARKS ================= */
+  openOfflineMarks(prefillAdmissionNo: string | null = null): void {
+    this.router.navigate(['/app/exams/exams/offline-marks', this.examData.examId], {
+      state: { exam: this.examData, prefillAdmissionNo },
+    });
   }
 
   /* ================= NAV ACTIONS ================= */
@@ -316,6 +367,12 @@ export class TestViewComponent implements OnInit {
   closeDuplicateModal() {
     this.showDuplicateModal = false;
   }
+  goBack() {
+    const route = this.examData?.isImported
+      ? '/app/exams/imported-exams'
+      : '/app/exams/exams';
+    this.backNav.goBack({ route });
+  }
   rearrangeQuestions() {
     this.router.navigate(['/app/exams/exams/question-rearrange'], {
       state: { questions: this.examData },
@@ -323,7 +380,7 @@ export class TestViewComponent implements OnInit {
   }
   importAnswers() {
     this.router.navigate(['/app/exams/exams/answer-import'], {
-      state: { exam: this.examData },
+      state: { exam: this.examData, source: 'exam-view' },
     });
   }
 
@@ -601,6 +658,7 @@ export class TestViewComponent implements OnInit {
         next: (res: any) => {
           if (res?.status) {
             const questions: any[] = res.data?.questions || [];
+            this.actualQuestionCount = questions.length;
             const map: Record<string, Record<string, number>> = {};
             questions.forEach((q: any) => {
               const rawSubject = q.subjectId;
@@ -1425,6 +1483,12 @@ export class TestViewComponent implements OnInit {
     }
   }
 
+  formatClass(classNo: number): string {
+    if (!classNo) return '-';
+    if (classNo === 13) return '12th Pass';
+    return `Class ${classNo}`;
+  }
+
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
@@ -1512,5 +1576,277 @@ export class TestViewComponent implements OnInit {
     return (this.graceRow?.graces || []).some(
       (g: any) => g.questionId === questionId && g.isActive !== false,
     );
+  }
+
+  async exportParticipantReport(): Promise<void> {
+    this.exportingReport = true;
+    try {
+      const res: any = await firstValueFrom(
+        this.commonApi.fetchData(
+          { entiId: this.tenantId, examId: this.examData.examId },
+          'exam/result',
+          'participant-report',
+        ),
+      );
+      if (!res?.status) {
+        this.alert.error(res?.message || 'Failed to fetch report');
+        return;
+      }
+      const sections: string[] = res.sections || [];
+      const rows: any[] = res.data || [];
+      if (!rows.length) {
+        this.alert.error('No participant data found');
+        return;
+      }
+
+      // Per-section max marks (constant across students — take the max seen
+      // so a missing/zero value on one row doesn't shrink the column header).
+      const sectionMax: Record<string, number> = {};
+      for (const sec of sections) {
+        sectionMax[sec] = Math.max(
+          0,
+          ...rows.map((r) => Number(r.sections?.[sec]?.totalMarks) || 0),
+        );
+      }
+      const totalMax =
+        Number(this.examData?.totalMarks) ||
+        Object.values(sectionMax).reduce((s, m) => s + m, 0);
+
+      // Group by batch (Class column) once backend supplies batchCode/batchName
+      // on each row; falls back to a single ungrouped block until then.
+      const groupKey = (r: any) => r.batchCode || r.batchName || '';
+      const groupLabel = (r: any) => r.batchName || r.batchCode || '—';
+      const batchOrder = Array.from(new Set(rows.map(groupKey))).sort((a, b) =>
+        groupLabel(rows.find((r) => groupKey(r) === a)).localeCompare(
+          groupLabel(rows.find((r) => groupKey(r) === b)),
+        ),
+      );
+      const sortedRows = [...rows].sort((a, b) => {
+        const g = batchOrder.indexOf(groupKey(a)) - batchOrder.indexOf(groupKey(b));
+        if (g !== 0) return g;
+        return (a.studentName || '').localeCompare(b.studentName || '');
+      });
+
+      const headers = [
+        'S No',
+        'Class',
+        'Adm.No',
+        'Enrl. No',
+        'Name',
+        ...sections.map((sec) => `${sec.toUpperCase()} (${sectionMax[sec]})`),
+        `Total Marks (${totalMax})`,
+        'Rank',
+      ];
+
+      const sheetData: any[][] = [
+        [`${this.examData?.examName || 'Exam'} - ${this.formatDate(this.examData?.startTime)}`],
+        headers,
+      ];
+
+      const rowIsFullyAbsent = (r: any) =>
+        sections.length > 0 && sections.every((sec) => r.sections?.[sec]?.isAbsent);
+
+      sortedRows.forEach((r, i) => {
+        const row: any[] = [
+          i + 1,
+          groupLabel(r),
+          r.admissionNo,
+          r.admissionNo,
+          r.studentName,
+        ];
+        sections.forEach((sec) => {
+          const sd = r.sections?.[sec];
+          row.push(sd?.isAbsent ? 'AB' : (sd?.obtainedMarks ?? 0));
+        });
+        row.push(rowIsFullyAbsent(r) ? 'AB' : (r.obtainedMarks ?? 0));
+        row.push(r.rank ?? '—');
+        sheetData.push(row);
+      });
+
+      // Highest / Average summary rows — excludes absentees from each column.
+      const numericValues = (
+        rows: any[],
+        getter: (r: any) => number | 'AB',
+      ): number[] => rows.map(getter).filter((v): v is number => typeof v === 'number');
+      const highestRow: any[] = ['', '', '', '', 'Highest'];
+      const averageRow: any[] = ['', '', '', '', 'Average'];
+      sections.forEach((sec) => {
+        const vals = numericValues(sortedRows, (r) =>
+          r.sections?.[sec]?.isAbsent ? 'AB' : Number(r.sections?.[sec]?.obtainedMarks) || 0,
+        );
+        highestRow.push(vals.length ? Math.max(...vals) : '—');
+        averageRow.push(
+          vals.length
+            ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2)
+            : '—',
+        );
+      });
+      const totalVals = numericValues(sortedRows, (r) =>
+        rowIsFullyAbsent(r) ? 'AB' : Number(r.obtainedMarks) || 0,
+      );
+      highestRow.push(totalVals.length ? Math.max(...totalVals) : '—');
+      averageRow.push(
+        totalVals.length
+          ? (totalVals.reduce((s, v) => s + v, 0) / totalVals.length).toFixed(2)
+          : '—',
+      );
+      highestRow.push('');
+      averageRow.push('');
+      sheetData.push(highestRow, averageRow);
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      const colCount = headers.length;
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
+      ];
+      ws['!cols'] = headers.map((h, i) => ({
+        wch:
+          Math.max(
+            h.length,
+            ...sheetData.slice(2, -2).map((r) => String(r[i] ?? '').length),
+          ) + 2,
+      }));
+      const titleRef = XLSX.utils.encode_cell({ r: 0, c: 0 });
+      if (ws[titleRef])
+        ws[titleRef].s = {
+          font: { bold: true, sz: 14 },
+          alignment: { horizontal: 'center' },
+        };
+      for (let c = 0; c < colCount; c++) {
+        const hRef = XLSX.utils.encode_cell({ r: 1, c });
+        if (ws[hRef]) ws[hRef].s = { font: { bold: true } };
+        const hiRef = XLSX.utils.encode_cell({ r: sheetData.length - 2, c });
+        const avgRef = XLSX.utils.encode_cell({ r: sheetData.length - 1, c });
+        const summaryStyle = { font: { bold: true }, fill: { fgColor: { rgb: 'FFFF00' } } };
+        if (ws[hiRef]) ws[hiRef].s = summaryStyle;
+        if (ws[avgRef]) ws[avgRef].s = summaryStyle;
+      }
+      XLSX.utils.book_append_sheet(wb, ws, 'Participant Report');
+      XLSX.writeFile(
+        wb,
+        `${this.examData?.examCode || 'exam'}_participant_report.xlsx`,
+      );
+      this.alert.success('Report exported successfully');
+    } catch (err) {
+      this.alert.error('Failed to export report');
+    } finally {
+      this.exportingReport = false;
+    }
+  }
+
+  async exportAbsenteesReport(): Promise<void> {
+    if (!this.canShowAbsenteesReport) {
+      this.alert.error(
+        'Absentees report is available only after the exam window has closed or results are published',
+      );
+      return;
+    }
+    this.exportingAbsenteesReport = true;
+    try {
+      const res: any = await firstValueFrom(
+        this.commonApi.fetchData(
+          { tenantId: this.tenantId, examId: this.examData.examId },
+          'exam/result',
+          'absentees-report',
+        ),
+      );
+      if (!res?.status) {
+        this.alert.error(res?.message || 'Failed to fetch absentees report');
+        return;
+      }
+      const data = res.data || {};
+      const batches: any[] = data.batches || [];
+      if (!batches.length) {
+        this.alert.error('No batches are enabled for this exam');
+        return;
+      }
+
+      const summaryHeaders = [
+        'Batch Code',
+        'Batch Name',
+        'Total Assigned',
+        'Absent Count',
+        'Attendance %',
+      ];
+      const summaryRows: any[][] = batches.map((b: any) => {
+        const pct = b.totalAssigned
+          ? (((b.totalAssigned - b.absentCount) / b.totalAssigned) * 100).toFixed(2)
+          : '0.00';
+        return [
+          b.batchCode,
+          b.batchName,
+          b.totalAssigned,
+          b.absentCount,
+          pct + '%',
+        ];
+      });
+      summaryRows.push([
+        'TOTAL',
+        '',
+        data.summary?.totalAssigned ?? 0,
+        data.summary?.absentCount ?? 0,
+        (data.summary?.attendancePct ?? 0) + '%',
+      ]);
+      const summarySheetData = [summaryHeaders, ...summaryRows];
+
+      const absenteeHeaders = [
+        'Batch Code',
+        'Batch Name',
+        'Admission No',
+        'Student Name',
+        'Phone',
+        'Assigned At',
+        'Status',
+      ];
+      const absenteeRows: any[][] = [];
+      batches.forEach((b: any) => {
+        (b.absentees || []).forEach((s: any) => {
+          absenteeRows.push([
+            b.batchCode,
+            b.batchName,
+            s.admissionNo,
+            s.studentName || '—',
+            s.studentPhone || '—',
+            s.assignedAt ? new Date(s.assignedAt).toLocaleDateString('en-IN') : '—',
+            s.assignStatus || '—',
+          ]);
+        });
+      });
+      const absenteeSheetData = [absenteeHeaders, ...absenteeRows];
+
+      const wb = XLSX.utils.book_new();
+      const summaryWs = XLSX.utils.aoa_to_sheet(summarySheetData);
+      summaryWs['!cols'] = summaryHeaders.map((h, i) => ({
+        wch:
+          Math.max(
+            h.length,
+            ...summaryRows.map((r) => String(r[i] ?? '').length),
+          ) + 2,
+      }));
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+      const absenteeWs = XLSX.utils.aoa_to_sheet(absenteeSheetData);
+      absenteeWs['!cols'] = absenteeHeaders.map((h, i) => ({
+        wch:
+          Math.max(
+            h.length,
+            ...absenteeRows.map((r) => String(r[i] ?? '').length),
+          ) + 2,
+      }));
+      XLSX.utils.book_append_sheet(wb, absenteeWs, 'Absentees');
+
+      XLSX.writeFile(
+        wb,
+        `${this.examData?.examCode || 'exam'}_absentees_report.xlsx`,
+      );
+      this.alert.success('Absentees report exported successfully');
+    } catch (err: any) {
+      this.alert.error(
+        err?.error?.message || 'Failed to export absentees report',
+      );
+    } finally {
+      this.exportingAbsenteesReport = false;
+    }
   }
 }

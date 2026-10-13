@@ -72,7 +72,6 @@ export class LoginComponent {
             err?.error?.error ||
             err?.message ||
             'Login Failed. Please enter correct Email/Password';
-
           this.serverError = msg;
           this.alert.error(msg);
         }

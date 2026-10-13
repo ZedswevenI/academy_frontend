@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-subject',
@@ -63,14 +64,16 @@ export class SubjectComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgSubject:edit'),
       callback: (row: any) => this.edit(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
-      color: '#6B7280', 
+      color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('orgSubject:delete'),
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -79,7 +82,8 @@ export class SubjectComponent implements OnInit {
     private fb: FormBuilder,
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
-    private commonApi: CommonapiService
+    private commonApi: CommonapiService,
+    private permissionService: PermissionService
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([

@@ -4,7 +4,10 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const FEEDBACK_LIST_STATE_KEY = 'feedback-list';
 
 @Component({
   selector: 'app-feedback',
@@ -46,8 +49,11 @@ export class FeedbackComponent implements OnInit {
       tooltip: 'View Results',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) =>
-        this.router.navigate(['/app/feedback/results', row._id]),
+      show: () => !this.permissionService.hasPermission('feedback:viewResults'),
+      callback: (row: any) => {
+        this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
+        this.router.navigate(['/app/feedback/results', row._id]);
+      },
     },
     {
       type: 'icon',
@@ -55,8 +61,11 @@ export class FeedbackComponent implements OnInit {
       tooltip: 'Consolidated Report',
       color: '#6B7280',
       hoverColor: '#DC2626',
-      callback: (row: any) =>
-        this.router.navigate(['/app/feedback/report', row._id]),
+      show: () => !this.permissionService.hasPermission('feedback:consolidatedReport'),
+      callback: (row: any) => {
+        this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
+        this.router.navigate(['/app/feedback/report', row._id]);
+      },
     },
     {
       type: 'dropdown',
@@ -67,22 +76,29 @@ export class FeedbackComponent implements OnInit {
         {
           text: 'Edit',
           icon: 'fa-regular fa-pen-to-square',
-          callback: (row: any) =>
-            this.router.navigate(['/app/feedback/edit', row._id]),
+          show: () => !this.permissionService.hasPermission('feedback:edit'),
+          callback: (row: any) => {
+            this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
+            this.router.navigate(['/app/feedback/edit', row._id]);
+          },
         },
         {
           text: 'Change Status',
           icon: 'fa-solid fa-arrows-rotate',
+          show: () => !this.permissionService.hasPermission('feedback:changeStatus'),
           callback: (row: any) => this.openStatusModal(row),
         },
         {
           text: 'Delete',
           icon: 'fa-regular fa-trash-can',
+          show: () => !this.permissionService.hasPermission('feedback:delete'),
           callback: (row: any) => this.openDeleteModal(row),
         },
       ],
     },
   ];
+  currentPage = 1;
+  restoredPage = 1;
   selectedForm: any = null;
   newStatus = '';
   statusSaving = false;
@@ -100,20 +116,21 @@ export class FeedbackComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrump: BredcrumpService,
-    private authService: AuthService,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Feedback' }]);
+    this.restoredPage = this.listStateService.consumePage(FEEDBACK_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
     this.filterForm = this.fb.group({ status: [''], category: [''] });
-    this.fetchForms(1, 10);
+    this.fetchForms(this.restoredPage, 10);
   }
 
   showCreate(): boolean {
-    const role = this.authService.getRole();
-    return role === 'L1' || role === 'L3';
+    return this.permissionService.hasPermission('feedback:create');
   }
 
   fetchForms(page: number, limit: number): void {
@@ -144,6 +161,7 @@ export class FeedbackComponent implements OnInit {
   }
 
   loadTableData(req: { page: number; pageSize: number }): void {
+    this.currentPage = req.page;
     this.fetchForms(req.page, req.pageSize);
   }
 
@@ -232,6 +250,10 @@ export class FeedbackComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // Row click bypasses the View Results icon's `show` gate — same
+    // navigation as that action, so it needs the same check independently.
+    if (!this.permissionService.hasPermission('feedback:viewResults')) return;
+    this.listStateService.savePage(FEEDBACK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/feedback/results', row._id]);
   }
 }

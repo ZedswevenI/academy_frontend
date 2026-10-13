@@ -10,9 +10,8 @@ import { Router } from '@angular/router';
   styleUrl: './list.component.scss'
 })
 export class ListComponent {
- students: any[] = [];
+  students: any[] = [];
   selectAll: boolean = false;
-
   presentCount = 0;
   absentCount = 0;
   absentStudents: string[] = [];
@@ -20,7 +19,7 @@ export class ListComponent {
   showSummary = false;
 
   constructor(private breadcrump: BredcrumpService, private router: Router) {
-    this.breadcrump.set([{ label: 'Time Table', link: '/app/timetable' }, { label: 'Student List' }])
+    this.breadcrump.set([{ label: 'Time Table', link: '/app/timetable' }, { label: 'Student List' }]);
   }
   ngOnInit(): void {
     this.students = [
@@ -43,9 +42,8 @@ export class ListComponent {
       { id: 17, name: 'Quentin Walker', rollNo: 'ST-117', present: null },
       { id: 18, name: 'Rachel Hall', rollNo: 'ST-118', present: null },
       { id: 19, name: 'Samuel Young', rollNo: 'ST-119', present: null },
-      { id: 20, name: 'Tina King', rollNo: 'ST-120', present: null },
+      { id: 20, name: 'Tina King', rollNo: 'ST-120', present: null }
     ];
-
   }
 
   toggleAttendance(student: any) {
@@ -55,11 +53,8 @@ export class ListComponent {
       student.present = !student.present;
     }
 
-    this.selectAll =
-      this.students.length > 0 &&
-      this.students.every(s => s.present === true);
+    this.selectAll = this.students.length > 0 && this.students.every(s => s.present === true);
   }
-
 
   submitAttendance() {
     this.students.forEach(student => {
@@ -88,6 +83,6 @@ export class ListComponent {
   onConfirm() {
     console.log('Present Students:', this.presentStudents);
     console.log('Absent Students:', this.absentStudents);
-    this.router.navigate(['/app/timetable'])
+    this.router.navigate(['/app/timetable']);
   }
 }

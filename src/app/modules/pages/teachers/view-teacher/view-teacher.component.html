@@ -24,11 +24,11 @@
                     <!-- Badges + timestamps -->
                     <div>
                         <div class="mb-2">
-                            <button *appHasRole="['L1']" class="btn btn-export fs-16 fw-medium me-2"
+                            <button *appHasPermission="'teacher:view'" class="btn btn-export fs-16 fw-medium me-2"
                                 (click)="exportToExcel()">
                                 <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
                             </button>
-                            <button class="btn btn-back fs-16 fw-medium me-2" routerLink="/app/teacher">
+                            <button class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">
                                 <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Teacher
                             </button>
                         </div>
@@ -238,7 +238,7 @@
     <div *ngIf="!loading && !basicInfo" class="card shadow-sm border-0 p-5 text-center text-muted">
         <i class="fa-solid fa-user-slash fa-3x mb-3 d-block"></i>
         <p>Staff not found or no staffId provided.</p>
-        <button class="btn btn-sm btn-outline-primary rounded-pill" routerLink="/app/teacher">
+        <button class="btn btn-sm btn-outline-primary rounded-pill" (click)="goBack()">
             Back to Teachers
         </button>
     </div>
@@ -263,13 +263,13 @@
                     [disabled]="saving">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-edit fs-16 fw-medium" (click)="retireEmployee()"
+                <button type="button" class="btn btn-edit fs-16 fw-medium" *appHasPermission="'teacher:edit'" (click)="retireEmployee()"
                     [disabled]="saving">
                     <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
                         aria-hidden="true"></span>
                     Retire Employee
                 </button>
-                <button type="button" class="btn btn-create fs-16 fw-medium" (click)="updateRelievingDate()"
+                <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'teacher:edit'" (click)="updateRelievingDate()"
                     [disabled]="!newRelievingDate || saving">
                     <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"
                         aria-hidden="true"></span>

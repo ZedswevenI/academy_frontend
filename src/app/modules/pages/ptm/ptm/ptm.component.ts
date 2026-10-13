@@ -477,7 +477,11 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const PTM_LIST_STATE_KEY = 'ptm-list';
 
 @Component({
   selector: 'app-ptm',
@@ -489,6 +493,8 @@ export class PtmComponent implements OnInit {
   ptmForm!: FormGroup;
   loading = false;
   tenantId: any;
+  currentPage = 1;
+  restoredPage = 1;
 
   dataArray: any[] = [];
   totalRecords = 0;
@@ -503,7 +509,7 @@ export class PtmComponent implements OnInit {
 
   // ── Session-level columns ────────────────────────────
   columnsArray = [
-    { key: 'batchCode', label: 'Batch', sortable: false },
+    { key: 'batchLabel', label: 'Batch', sortable: false },
     { key: 'ptmDateFormatted', label: 'PTM Date', sortable: true },
     { key: 'startFormatted', label: 'Start Time', sortable: false },
     { key: 'endFormatted', label: 'End Time', sortable: false },
@@ -515,6 +521,10 @@ export class PtmComponent implements OnInit {
     { key: 'completedCount', label: 'Completed', sortable: false },
   ];
 
+  // FIX: was `hidden:` — custom-table's template only ever reads
+  // `action.show` (a HIDE predicate), so this was a silent no-op and the
+  // Delete icon showed on completed sessions too. Renamed with inverted
+  // logic and combined with the ptm:delete permission check.
   actions = [
     {
       type: 'icon',
@@ -531,7 +541,7 @@ export class PtmComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#DC2626',
       callback: (row: any) => this.openDeleteModal(row),
-      hidden: (row: any) => row.status === 'COMPLETED',
+      show: (row: any) => row.status === 'COMPLETED' || !this.permissionService.hasPermission('ptm:delete'),
     },
   ];
 
@@ -583,9 +593,12 @@ export class PtmComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private authService: AuthService,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'PTM' }]);
+    this.restoredPage = this.listStateService.consumePage(PTM_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -595,12 +608,12 @@ export class PtmComponent implements OnInit {
     });
     this.loadBatches();
     // Auto-load sessions on init
-    this.fetchSessions(1, 10);
+    this.fetchSessions(this.restoredPage, 10);
   }
 
   showimport(): boolean {
-    const role = this.authService.getRole();
-    return role === 'L1' || role === 'L3';
+    // Schedule import shares ptm:create per the catalog.
+    return this.permissionService.hasPermission('ptm:create');
   }
 
   // ====================================================
@@ -663,6 +676,7 @@ export class PtmComponent implements OnInit {
           ptmDateFormatted: this.formatDate(s.ptmDate),
           startFormatted: this.formatTime(s.startTime),
           endFormatted: this.formatTime(s.endTime),
+          batchLabel: s.batchName && s.batchCode ? `${s.batchName} (${s.batchCode})` : (s.batchName || s.batchCode || ''),
           // Pre-feedback progress label
           prePtmSubmittedCount: `${s.prePtmSubmittedCount} / ${s.totalStudents}`,
           postPtmSubmittedCount: `${s.postPtmSubmittedCount} / ${s.totalStudents}`,
@@ -682,12 +696,14 @@ export class PtmComponent implements OnInit {
     pageSize: number;
     search?: string;
   }): void {
+    this.currentPage = req.page;
     this.fetchSessions(req.page, req.pageSize);
   }
 
   onViewSession(row: any): void {
     const sessionKey = btoa(JSON.stringify({
       batchCode: row.batchCode,
+      batchName: row.batchName,
       centerCode: row.centerCode,
       ptmDate: row.ptmDate,
       startTime: row.startTime,
@@ -704,6 +720,7 @@ export class PtmComponent implements OnInit {
       status: row.status,
     }))
     console.log('sessionKey ', sessionKey);
+    this.listStateService.savePage(PTM_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/ptm/view', sessionKey]);
   }
 
@@ -717,11 +734,13 @@ export class PtmComponent implements OnInit {
     if (!this.ptmToDelete) return;
     const body = {
       tenantId: this.tenantId,
+      userId: localStorage.getItem('userId'),
       batchCode: this.ptmToDelete.batchCode,
       ptmDate: this.ptmToDelete.ptmDate,
       startTime: this.ptmToDelete.startTime,
+      endTime: this.ptmToDelete.endTime,
     };
-    this.commonApi.fetchData(body, 'ims/ptm', 'removesession').subscribe({
+    this.commonApi.fetchData(body, 'ims/ptm', 'session/remove').subscribe({
       next: (res: any) => {
         if (res?.status) {
           this.alert.success('PTM session deleted successfully');
@@ -763,7 +782,12 @@ export class PtmComponent implements OnInit {
     reader.onload = (e: any) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        // cellDates: true — without it, Excel cells that are formatted as a
+        // Date/Time (which Windows Excel auto-applies far more readily than
+        // Mac Excel when a cell looks like a date) come back as a raw serial
+        // number (e.g. 45129) instead of a string, which then gets sent to
+        // the backend verbatim and misparsed as a bare year.
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
         if (!rows.length) {
@@ -779,7 +803,7 @@ export class PtmComponent implements OnInit {
           this.fileName = '';
           return;
         }
-        this.parsedRows = rows;
+        this.parsedRows = rows.map((row) => this.normalizeDateColumns(row));
         this.validateRows();
       } catch (err: any) {
         this.alert.error('Parse error: ' + (err?.message ?? 'Unknown'));
@@ -787,6 +811,53 @@ export class PtmComponent implements OnInit {
       }
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  // Normalizes the three date/time columns coming from Excel into the
+  // fixed string format the backend/template expects (YYYY-MM-DD /
+  // HH:mm:ss), regardless of whether the source cell was typed as a
+  // Date/Time by Excel (comes through as a JS Date thanks to cellDates:
+  // true, or occasionally as a raw serial number) or as plain text (left
+  // untouched either way).
+  private normalizeDateColumns(row: any): any {
+    return {
+      ...row,
+      'PTM Date': this.toDateString(row['PTM Date']),
+      'PTM Start Time': this.toTimeString(row['PTM Start Time']),
+      'PTM End Time': this.toTimeString(row['PTM End Time']),
+    };
+  }
+
+  private excelSerialToDate(serial: number): Date {
+    const parsed = (XLSX as any).SSF.parse_date_code(serial);
+    return new Date(
+      Date.UTC(
+        parsed.y,
+        parsed.m - 1,
+        parsed.d,
+        parsed.H,
+        parsed.M,
+        Math.round(parsed.S),
+      ),
+    );
+  }
+
+  private toDateString(value: any): any {
+    let d: Date | null = null;
+    if (value instanceof Date) d = value;
+    else if (typeof value === 'number') d = this.excelSerialToDate(value);
+    if (!d) return typeof value === 'string' ? value.trim() : value;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  }
+
+  private toTimeString(value: any): any {
+    let d: Date | null = null;
+    if (value instanceof Date) d = value;
+    else if (typeof value === 'number') d = this.excelSerialToDate(value);
+    if (!d) return typeof value === 'string' ? value.trim() : value;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
   }
 
   private validateRows(): void {
@@ -886,6 +957,7 @@ export class PtmComponent implements OnInit {
   onRowSelected(row: any) {
     const sessionKey = btoa(JSON.stringify({
       batchCode: row.batchCode,
+      batchName: row.batchName,
       centerCode: row.centerCode,
       ptmDate: row.ptmDate,
       startTime: row.startTime,
@@ -902,6 +974,7 @@ export class PtmComponent implements OnInit {
       status: row.status,
     }))
     console.log('sessionKey ', sessionKey);
+    this.listStateService.savePage(PTM_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/ptm/view', sessionKey]);
   }
 }

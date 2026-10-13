@@ -49,7 +49,7 @@
                 [totalRecords]="totalRecords" (requestData)="loadTableData($event)"
                 [searchPlaceholder]="'Search Class, Batch, Topic...'"></custom-table>
             <div class="d-flex justify-content-end mt-5">
-                <button type="button" class="btn closebutton px-4" routerLink="/app/assignment">Back</button>
+                <button type="button" class="btn closebutton px-4" (click)="goBack()">Back</button>
                 <button type="button" class="btn submitbutton px-4">Submit</button>
             </div>
         </div>

@@ -7,6 +7,10 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import katex from 'katex';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const QUESTION_BANK_LIST_STATE_KEY = 'question-bank-list';
 
 @Component({
   selector: 'app-exam-questions',
@@ -15,7 +19,6 @@ import katex from 'katex';
   styleUrl: './questions.component.scss',
 })
 export class ExamQuestionsComponent implements OnInit {
-
   loading = false;
   totalRecords = 0;
   filterForm!: FormGroup;
@@ -28,6 +31,7 @@ export class ExamQuestionsComponent implements OnInit {
     sortKey?: string;
     sortDirection?: string;
   } | null = null;
+  restoredPage = 1;
 
   /* ================= TABLE COLUMNS ================= */
   columnsArray = [
@@ -47,29 +51,32 @@ export class ExamQuestionsComponent implements OnInit {
   /* ================= FILTER OPTIONS ================= */
   statusOptions = [
     { label: 'Active', value: 'active' },
-    { label: 'Inactive', value: 'inactive' }
+    { label: 'Inactive', value: 'inactive' },
   ];
 
   classOptions = [
-    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
-    { label: '12th Pass', value: 13 }
+    ...Array.from({ length: 7 }, (_, i) => ({
+      label: `Class ${i + 6}`,
+      value: i + 6,
+    })),
+    { label: '12th Pass', value: 13 },
   ];
 
   questionTypeOptions = [
     { label: 'MCQ (Single)', value: 'mcq_single' },
-    { label: 'MCQ (Multiple)', value: 'mcq_multiple' },
+    { label: 'MCQ (Multiple)', value: 'mcq_multi' },
     { label: 'Integer', value: 'integer' },
     { label: 'Numerical', value: 'numeric' },
     { label: 'Subjective', value: 'subjective' },
     { label: 'True/False', value: 'true_false' },
     { label: 'Text Based', value: 'passage_qns' },
-    { label: 'Matrix', value: 'matrix' }
+    { label: 'Matrix', value: 'matrix' },
   ];
 
   difficultyOptions = [
     { label: 'Easy', value: 'easy' },
     { label: 'Medium', value: 'medium' },
-    { label: 'Hard', value: 'hard' }
+    { label: 'Hard', value: 'hard' },
   ];
 
   /* ================= SUBJECT / TOPIC / SUBTOPIC ================= */
@@ -86,6 +93,9 @@ export class ExamQuestionsComponent implements OnInit {
   viewData: any = null;
   viewQuestionHtml: SafeHtml = '';
   viewSolutionHtml: SafeHtml = '';
+    viewPassageHtml: SafeHtml = '';
+viewInstructionHtml: SafeHtml = '';
+viewCorrectAnswerHtml: SafeHtml = '';
 
   /* ================= ACTIONS ================= */
   actions = [
@@ -95,7 +105,8 @@ export class ExamQuestionsComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#10b981',
-      callback: (row: any) => this.viewQuestion(row)
+      show: () => !this.permissionService.hasPermission('exam:view'),
+      callback: (row: any) => this.viewQuestion(row),
     },
     {
       type: 'icon',
@@ -103,7 +114,8 @@ export class ExamQuestionsComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      callback: (row: any) => this.editQuestion(row)
+      show: () => !this.permissionService.hasPermission('exam:addQuestion'),
+      callback: (row: any) => this.editQuestion(row),
     },
     {
       type: 'icon',
@@ -111,8 +123,9 @@ export class ExamQuestionsComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#dc2626',
-      callback: (row: any) => this.deleteQuestion(row)
-    }
+      show: () => !this.permissionService.hasPermission('exam:addQuestion'),
+      callback: (row: any) => this.deleteQuestion(row),
+    },
   ];
 
   constructor(
@@ -122,13 +135,26 @@ export class ExamQuestionsComponent implements OnInit {
     private fb: FormBuilder,
     private sanitizer: DomSanitizer,
     private router: Router,
-  ) { }
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(
+      QUESTION_BANK_LIST_STATE_KEY,
+    );
+  }
+
+  /** Remembers the current page so coming back from a detail/sub-screen
+   * restores it; a fresh visit from the menu never calls this, so it
+   * correctly starts at page 1. */
+  private captureListPosition(): void {
+    this.listStateService.savePage(
+      QUESTION_BANK_LIST_STATE_KEY,
+      this.lastTableParams?.page || 1,
+    );
+  }
 
   ngOnInit(): void {
-    this.breadcrumb.set([
-      { label: 'Exams' },
-      { label: 'Questions' },
-    ]);
+    this.breadcrumb.set([{ label: 'Exams' }, { label: 'Questions' }]);
     this.initForms();
     this.loadMasters();
   }
@@ -141,14 +167,22 @@ export class ExamQuestionsComponent implements OnInit {
       questionType: [''],
       difficulty: [''],
       subjectId: [''],
-      classNo: [null]
+      classNo: [null],
     });
   }
 
-  toggleFilters() { this.showFilters = !this.showFilters; }
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
 
   clearFilters() {
-    this.filterForm.reset();
+    this.filterForm.patchValue({
+      status: '',
+      questionType: '',
+      difficulty: '',
+      subjectId: '',
+      classNo: null,
+    });
     this.topicOptions = [];
     this.subTopicOptions = [];
     if (this.lastTableParams) this.fetchTableData(this.lastTableParams);
@@ -164,17 +198,21 @@ export class ExamQuestionsComponent implements OnInit {
         this.subjects = res?.data || [];
         this.subjectOptions = this.subjects.map((s: any) => ({
           label: s.subjectName,
-          value: s._id
+          value: s._id,
         }));
-      }
+      },
     });
 
     this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
-      next: (res: any) => { this.allTopics = res?.data || []; }
+      next: (res: any) => {
+        this.allTopics = res?.data || [];
+      },
     });
 
     this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
-      next: (res: any) => { this.allSubTopics = res?.data || []; }
+      next: (res: any) => {
+        this.allSubTopics = res?.data || [];
+      },
     });
   }
 
@@ -183,13 +221,11 @@ export class ExamQuestionsComponent implements OnInit {
   fetchTableData(params: any) {
     this.lastTableParams = { ...params };
     this.loading = true;
-
     const query: any = { page: params.page, limit: params.pageSize };
-
     if (params.sortKey) {
-      query.sort = params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
+      query.sort =
+        params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
     }
-
     const filters = this.filterForm.value;
     if (params.search) query.search = params.search;
     if (filters.status) query.status = filters.status;
@@ -197,23 +233,43 @@ export class ExamQuestionsComponent implements OnInit {
     if (filters.difficulty) query.difficulty = filters.difficulty;
     if (filters.subjectId) query.subjectId = filters.subjectId;
     if (filters.classNo) query.classNo = filters.classNo;
-
     const queryString = Object.keys(query)
-      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`)
+      .map(
+        (key) => `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`,
+      )
       .join('&');
-
-    this.commonApi.fetchData({ entiId: localStorage.getItem('tenantId') }, 'exam/questions/bank', `list?${queryString}`)
+    this.commonApi
+      .fetchData(
+        { entiId: localStorage.getItem('tenantId') },
+        'exam/questions/bank',
+        `list?${queryString}`,
+      )
       .subscribe({
         next: (res: any) => {
           if (res?.status) {
-            this.dataArray = res.data.map((item: any) => ({
-              ...item,
-              id: item._id,
-              questionPreview: this.stripHtml(item.questionHtml).substring(0, 80) + (this.stripHtml(item.questionHtml).length > 80 ? '...' : ''),
-              questionType: this.formatQuestionType(item.questionType),
-              classLabel: this.formatClassNo(item.classNo),
-              createdAt: new Date(item.createdAt).toLocaleDateString()
-            }));
+            // this.dataArray = res.data.map((item: any) => ({
+            //   ...item,
+            //   id: item._id,
+            //   questionPreview: this.stripHtml(item.questionHtml).substring(0, 80) + (this.stripHtml(item.questionHtml).length > 80 ? '...' : ''),
+            //   questionType: this.formatQuestionType(item.questionType),
+            //   classLabel: this.formatClassNo(item.classNo),
+            //   createdAt: new Date(item.createdAt).toLocaleDateString()
+            // }));
+            this.dataArray = res.data.map((item: any) => {
+              const stripped = this.stripHtml(item.questionHtml || '');
+              return {
+                ...item, // raw fields preserved
+                id: item._id,
+                questionPreview:
+                  stripped.length > 80
+                    ? stripped.substring(0, 80) + '...'
+                    : stripped,
+                questionTypeRaw: item.questionType, // keep raw for logic
+                questionType: this.formatQuestionType(item.questionType), // display only
+                classLabel: this.formatClassNo(item.classNo),
+                createdAt: new Date(item.createdAt).toLocaleDateString(),
+              };
+            });
             this.totalRecords = res.count || 0;
           }
           this.loading = false;
@@ -221,7 +277,7 @@ export class ExamQuestionsComponent implements OnInit {
         error: () => {
           this.loading = false;
           this.alert.error('Error loading questions');
-        }
+        },
       });
   }
 
@@ -242,13 +298,13 @@ export class ExamQuestionsComponent implements OnInit {
   private formatQuestionType(type: string): string {
     const map: { [key: string]: string } = {
       mcq_single: 'MCQ (Single)',
-      mcq_multiple: 'MCQ (Multiple)',
+      mcq_multi: 'MCQ (Multiple)',
       integer: 'Integer',
       numeric: 'Numerical',
       subjective: 'Subjective',
       true_false: 'True/False',
       passage_qns: 'Text Based',
-      matrix: 'Matrix'
+      matrix: 'Matrix',
     };
     return map[type] || type;
   }
@@ -269,8 +325,8 @@ export class ExamQuestionsComponent implements OnInit {
           this.commonApi.fetchData(
             { url: originalUrl },
             'exam/questions/image',
-            'download'
-          )
+            'download',
+          ),
         );
         if (downloadRes?.status) {
           updatedHtml = updatedHtml.replace(originalUrl, downloadRes.url);
@@ -293,52 +349,46 @@ export class ExamQuestionsComponent implements OnInit {
   private renderLatexInHtml(html: string): string {
     if (!html) return html;
     let result = html.replace(/\\\[([\s\S]+?)\\\]/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: true,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     result = result.replace(/\$\$([\s\S]+?)\$\$/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: true }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: true,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     result = result.replace(/\\\(([\s\S]+?)\\\)/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: false,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     result = result.replace(/\$([^$]+?)\$/g, (match, tex) => {
-      try { return katex.renderToString(this.decodeHtmlEntities(tex.trim()), { throwOnError: false, displayMode: false }); } catch (e) { return match; }
+      try {
+        return katex.renderToString(this.decodeHtmlEntities(tex.trim()), {
+          throwOnError: false,
+          displayMode: false,
+        });
+      } catch (e) {
+        return match;
+      }
     });
     return result;
-  }
-
-  /* ================= VIEW ================= */
-
-  async viewQuestion(row: any): Promise<void> {
-    this.viewData = JSON.parse(JSON.stringify(row));
-    this.showViewModal = true;
-
-    let questionHtml = await this.replaceDownloadUrls(this.viewData.questionHtml || '');
-    questionHtml = this.renderLatexInHtml(questionHtml);
-    this.viewQuestionHtml = this.sanitizer.bypassSecurityTrustHtml(questionHtml);
-
-    if (this.viewData.solutionHtml) {
-      let solutionHtml = await this.replaceDownloadUrls(this.viewData.solutionHtml);
-      solutionHtml = this.renderLatexInHtml(solutionHtml);
-      this.viewSolutionHtml = this.sanitizer.bypassSecurityTrustHtml(solutionHtml);
-    } else {
-      this.viewSolutionHtml = '';
-    }
-
-    if (this.viewData.questionOptions && this.viewData.questionOptions.length > 0) {
-      for (let i = 0; i < this.viewData.questionOptions.length; i++) {
-        let optHtml = await this.replaceDownloadUrls(this.viewData.questionOptions[i].textHtml || '');
-        optHtml = this.renderLatexInHtml(optHtml);
-        this.viewData.questionOptions[i].safeHtml = this.sanitizer.bypassSecurityTrustHtml(optHtml);
-      }
-    }
-  }
-
-  closeViewModal(): void {
-    this.showViewModal = false;
-    this.viewData = null;
-    this.viewQuestionHtml = '';
-    this.viewSolutionHtml = '';
   }
 
   /* ================= DELETE ================= */
@@ -348,7 +398,7 @@ export class ExamQuestionsComponent implements OnInit {
 
     const payload = {
       recId: row._id,
-      entiId: localStorage.getItem('tenantId')
+      entiId: localStorage.getItem('tenantId'),
     };
 
     this.commonApi.fetchData(payload, 'exam/questions', 'delete').subscribe({
@@ -358,7 +408,7 @@ export class ExamQuestionsComponent implements OnInit {
           this.refresh();
         }
       },
-      error: () => this.alert.error('Error deleting question')
+      error: () => this.alert.error('Error deleting question'),
     });
   }
 
@@ -373,44 +423,178 @@ export class ExamQuestionsComponent implements OnInit {
   /* ================= NAVIGATION ================= */
 
   editQuestion(row: any): void {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: {
         bank: true,
-        question: { recId: row._id }
-      }
+        question: { recId: row._id },
+      },
     });
   }
 
   goToCreate(): void {
-    this.router.navigate(['/app/exams/exams/question-create'], { state: { bank: true } });
+    this.captureListPosition();
+    this.router.navigate(['/app/exams/exams/question-create'], {
+      state: { bank: true },
+    });
   }
 
   goToImport(): void {
-    this.router.navigate(['/app/exams/exams/question-import'], { state: { bank: true } });
+    this.captureListPosition();
+    this.router.navigate(['/app/exams/exams/question-import'], {
+      state: { bank: true },
+    });
   }
 
-  async onRowSelected(row: any) {
-    this.viewData = JSON.parse(JSON.stringify(row));
-    this.showViewModal = true;
+  // async onRowSelected(row: any) {
+  //   this.viewData = JSON.parse(JSON.stringify(row));
+  //   this.showViewModal = true;
 
-    let questionHtml = await this.replaceDownloadUrls(this.viewData.questionHtml || '');
-    questionHtml = this.renderLatexInHtml(questionHtml);
-    this.viewQuestionHtml = this.sanitizer.bypassSecurityTrustHtml(questionHtml);
+  //   let questionHtml = await this.replaceDownloadUrls(
+  //     this.viewData.questionHtml || '',
+  //   );
+  //   questionHtml = this.renderLatexInHtml(questionHtml);
+  //   this.viewQuestionHtml =
+  //     this.sanitizer.bypassSecurityTrustHtml(questionHtml);
 
-    if (this.viewData.solutionHtml) {
-      let solutionHtml = await this.replaceDownloadUrls(this.viewData.solutionHtml);
-      solutionHtml = this.renderLatexInHtml(solutionHtml);
-      this.viewSolutionHtml = this.sanitizer.bypassSecurityTrustHtml(solutionHtml);
-    } else {
-      this.viewSolutionHtml = '';
+  //   if (this.viewData.solutionHtml) {
+  //     let solutionHtml = await this.replaceDownloadUrls(
+  //       this.viewData.solutionHtml,
+  //     );
+  //     solutionHtml = this.renderLatexInHtml(solutionHtml);
+  //     this.viewSolutionHtml =
+  //       this.sanitizer.bypassSecurityTrustHtml(solutionHtml);
+  //   } else {
+  //     this.viewSolutionHtml = '';
+  //   }
+
+  //   if (
+  //     this.viewData.questionOptions &&
+  //     this.viewData.questionOptions.length > 0
+  //   ) {
+  //     for (let i = 0; i < this.viewData.questionOptions.length; i++) {
+  //       let optHtml = await this.replaceDownloadUrls(
+  //         this.viewData.questionOptions[i].textHtml || '',
+  //       );
+  //       optHtml = this.renderLatexInHtml(optHtml);
+  //       this.viewData.questionOptions[i].safeHtml =
+  //         this.sanitizer.bypassSecurityTrustHtml(optHtml);
+  //     }
+  //   }
+  // }
+
+
+private parseMatrixCorrectAnswer(
+  correctAnswer: string,
+): Record<string, { matches: string[]; marks: number; negMark: number }> {
+  const map: Record<
+    string,
+    { matches: string[]; marks: number; negMark: number }
+  > = {};
+  if (!correctAnswer) return map;
+  correctAnswer.split(';').forEach((pStr: string) => {
+    const colonIdx = pStr.indexOf(':');
+    if (colonIdx === -1) return;
+    const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
+    let rPart = pStr.substring(colonIdx + 1).trim();
+    let marks = 0;
+    let negMark = 0;
+    const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
+    if (marksMatch) {
+      marks = parseFloat(marksMatch[1]) || 0;
+      negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
     }
-
-    if (this.viewData.questionOptions && this.viewData.questionOptions.length > 0) {
-      for (let i = 0; i < this.viewData.questionOptions.length; i++) {
-        let optHtml = await this.replaceDownloadUrls(this.viewData.questionOptions[i].textHtml || '');
-        optHtml = this.renderLatexInHtml(optHtml);
-        this.viewData.questionOptions[i].safeHtml = this.sanitizer.bypassSecurityTrustHtml(optHtml);
-      }
+    rPart = rPart.replace(/\([^)]*\)/g, '').trim();
+    if (!lKey || !rPart) return;
+    if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
+    const parts = rPart.toUpperCase().split(',').filter(Boolean);
+    for (const rk of parts) {
+      if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
     }
+  });
+  return map;
+}
+
+async viewQuestion(row: any): Promise<void> {
+  if (!this.permissionService.hasPermission('exam:view')) return;
+  this.viewData = JSON.parse(JSON.stringify(row));
+  this.showViewModal = true;
+
+  // question
+  let qHtml = await this.replaceDownloadUrls(this.viewData.questionHtml || '');
+  this.viewQuestionHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(qHtml));
+
+  // passage
+  const passageHtml = this.viewData.passageData?.passageHtml || this.viewData.passageHtml;
+  if (this.viewData.enablePassage && passageHtml) {
+    let pH = await this.replaceDownloadUrls(passageHtml);
+    this.viewPassageHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(pH));
+  } else { this.viewPassageHtml = ''; }
+
+  // instruction
+  if (this.viewData.enableInstruction && this.viewData.instructionHtml) {
+    let iH = await this.replaceDownloadUrls(this.viewData.instructionHtml);
+    this.viewInstructionHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(iH));
+  } else { this.viewInstructionHtml = ''; }
+
+  // solution
+  if (this.viewData.solutionHtml) {
+    let sH = await this.replaceDownloadUrls(this.viewData.solutionHtml);
+    this.viewSolutionHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(sH));
+  } else { this.viewSolutionHtml = ''; }
+
+  // options
+  for (let i = 0; i < (this.viewData.questionOptions || []).length; i++) {
+    let oH = await this.replaceDownloadUrls(this.viewData.questionOptions[i].textHtml || '');
+    this.viewData.questionOptions[i].safeHtml =
+      this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(oH));
   }
+
+  // matrix columns
+  for (let i = 0; i < (this.viewData.leftColumn || []).length; i++) {
+    let lH = await this.replaceDownloadUrls(this.viewData.leftColumn[i].text || '');
+    this.viewData.leftColumn[i].safeHtml =
+      this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(lH));
+  }
+  for (let i = 0; i < (this.viewData.rightColumn || []).length; i++) {
+    let rH = await this.replaceDownloadUrls(this.viewData.rightColumn[i].text || '');
+    this.viewData.rightColumn[i].safeHtml =
+      this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(rH));
+  }
+
+  // matrix correct matches (derived from the "A:P,Q(2,0);B:R(2,0)" correctAnswer string)
+  if (this.viewData.questionTypeRaw === 'matrix') {
+    const matchMap = this.parseMatrixCorrectAnswer(this.viewData.correctAnswer);
+    this.viewData.matrixMatches = (this.viewData.leftColumn || []).map((l: any) => ({
+      key: l.key,
+      matches: matchMap[l.key]?.matches || [],
+      marks: matchMap[l.key]?.marks || 0,
+      negMark: matchMap[l.key]?.negMark || 0,
+    }));
+  }
+
+  // subjective correct answer (may contain rich HTML)
+  if (this.viewData.questionTypeRaw === 'subjective' && this.viewData.correctAnswer) {
+    let aH = await this.replaceDownloadUrls(this.viewData.correctAnswer);
+    this.viewCorrectAnswerHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(aH));
+  } else {
+    this.viewCorrectAnswerHtml = '';
+  }
+}
+
+// onRowSelected just delegates:
+async onRowSelected(row: any): Promise<void> {
+  await this.viewQuestion(row);
+}
+
+// closeViewModal — clear new fields too:
+closeViewModal(): void {
+  this.showViewModal = false;
+  this.viewData = null;
+  this.viewQuestionHtml = '';
+  this.viewSolutionHtml = '';
+  this.viewPassageHtml = '';
+  this.viewInstructionHtml = '';
+  this.viewCorrectAnswerHtml = '';
+}
 }

@@ -1,0 +1,214 @@
+<div class="help-center-page">
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-1 fw-semibold">Help Center</h5>
+                <p class="mb-0 text-muted small">
+                    Manage the help videos shown to users on the public help page.
+                </p>
+            </div>
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgHelpCenter:create'" (click)="add()" [disabled]="saving">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add Topic</span>
+            </button>
+        </div>
+
+        <div class="card-body pt-0">
+            <div class="row g-0 help-panes">
+                <!-- ================= MODULES ================= -->
+                <div class="col-md-4 col-lg-3 pane-left">
+                    <div class="pane-label">Modules</div>
+                    <div *ngIf="loadingModules" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary"></div>
+                    </div>
+                    <div *ngIf="!loadingModules && !modules.length" class="text-muted small text-center py-4">
+                        No modules yet — add your first topic to create one.
+                    </div>
+                    <div cdkDropList (cdkDropListDropped)="dropModule($event)" class="mod-list">
+                        <div class="mod-row" *ngFor="let m of modules" cdkDrag [cdkDragDisabled]="!canEditHelpCenter"
+                            [class.active]="m.moduleName === selectedModuleName">
+                            <span class="drag-handle" *appHasPermission="'orgHelpCenter:edit'" cdkDragHandle><i class="fa-solid fa-grip-vertical"></i></span>
+                            <span class="mod-name" (click)="selectModule(m.moduleName)">{{ m.moduleName }}</span>
+                            <span class="count-pill">{{ m.topicCount }}</span>
+                            <button type="button" class="icon-btn" *appHasPermission="'orgHelpCenter:edit'" title="Rename module"
+                                (click)="openRenameModule(m.moduleName)">
+                                <i class="fa-regular fa-pen-to-square"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TOPICS ================= -->
+                <div class="col-md-8 col-lg-9 pane-right">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                        <div class="pane-label mb-0">
+                            Topics <span *ngIf="selectedModuleName">in "{{ selectedModuleName }}"</span>
+                        </div>
+                        <input type="text" class="form-control form-control-sm" style="max-width: 240px;"
+                            placeholder="Search topics..." [(ngModel)]="topicSearch"
+                            [disabled]="!selectedModuleName" />
+                    </div>
+
+                    <div *ngIf="!selectedModuleName" class="text-muted small text-center py-5">
+                        Select a module on the left to see its topics.
+                    </div>
+
+                    <div *ngIf="selectedModuleName && loadingTopics" class="text-center py-5">
+                        <div class="spinner-border spinner-border-sm text-primary"></div>
+                    </div>
+
+                    <div *ngIf="selectedModuleName && !loadingTopics && !filteredTopics.length"
+                        class="text-muted small text-center py-5">
+                        No topics found.
+                    </div>
+
+                    <div *ngIf="selectedModuleName && !loadingTopics && filteredTopics.length" cdkDropList
+                        (cdkDropListDropped)="dropTopic($event)">
+                        <div class="topic-row" *ngFor="let t of filteredTopics" cdkDrag [cdkDragDisabled]="!canEditHelpCenter">
+                            <span class="drag-handle" *appHasPermission="'orgHelpCenter:edit'" cdkDragHandle><i class="fa-solid fa-grip-vertical"></i></span>
+                            <div class="topic-thumb"><i class="fa-solid fa-play"></i></div>
+                            <div class="topic-main">
+                                <div class="topic-title">{{ t.topic }}</div>
+                                <div class="topic-desc" *ngIf="t.description">{{ t.description }}</div>
+                            </div>
+                            <span class="status-pill" [class.status-active]="t.status === 'active'"
+                                [class.status-inactive]="t.status !== 'active'">
+                                {{ t.status === 'active' ? 'Active' : 'Inactive' }}
+                            </span>
+                            <button type="button" class="icon-btn" *appHasPermission="'orgHelpCenter:edit'" title="Edit" (click)="edit(t)">
+                                <i class="fa-regular fa-pen-to-square"></i>
+                            </button>
+                            <button type="button" class="icon-btn" *appHasPermission="'orgHelpCenter:delete'" title="Delete" (click)="openDelete(t)">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: CREATE / EDIT TOPIC ================= -->
+    <div class="app-modal-backdrop" *ngIf="showForm">
+        <div class="app-modal" style="max-width: 640px">
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-semibold">
+                        {{ formMode === 'create' ? 'Add Help Topic' : 'Edit Help Topic' }}
+                    </h6>
+                </div>
+                <button type="button" class="btn-close" (click)="cancel()" [disabled]="saving"></button>
+            </div>
+
+            <div class="app-modal-body">
+                <form [formGroup]="form" (ngSubmit)="save()">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Module <span class="text-danger">*</span></label>
+                            <select class="form-select" formControlName="moduleSelect">
+                                <option value="" disabled>— Select module —</option>
+                                <option *ngFor="let m of modules" [value]="m.moduleName">{{ m.moduleName }}</option>
+                                <option [value]="newModuleSentinel">+ Add new module…</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" *ngIf="isNewModuleSelected">
+                            <formfield label="New Module Name" [required]="true"
+                                [control]="form.get('newModuleName')" formControlName="newModuleName"
+                                placeholder="e.g. Fees">
+                            </formfield>
+                        </div>
+
+                        <div class="col-12">
+                            <formfield label="Topic" [required]="true" [control]="form.get('topic')"
+                                formControlName="topic" placeholder="How to mark bulk attendance">
+                            </formfield>
+                        </div>
+
+                        <div class="col-12">
+                            <description label="Description" [control]="form.get('description')"
+                                formControlName="description"
+                                placeholder="Step-by-step guide to marking attendance for an entire batch in one go.">
+                            </description>
+                        </div>
+
+                        <div class="col-md-8">
+                            <formfield label="Video Link (YouTube)" [required]="true"
+                                [control]="form.get('videoLink')" formControlName="videoLink"
+                                placeholder="https://www.youtube.com/watch?v=...">
+                            </formfield>
+                            <div class="thumb-preview mt-1" *ngIf="videoPreviewId">
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Video ID detected: {{ videoPreviewId }}
+                                </span>
+                            </div>
+                            <div class="thumb-preview mt-1" *ngIf="form.get('videoLink')?.value && !videoPreviewId">
+                                <span class="badge bg-warning-subtle text-warning">
+                                    Not a recognized YouTube URL — will show as an "Open Video" link instead of an embedded player.
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <formfield label="Sort Order" [required]="false" [control]="form.get('sortOrder')"
+                                formControlName="sortOrder" placeholder="1">
+                            </formfield>
+                        </div>
+
+                        <div class="col-md-4" *ngIf="formMode === 'edit'">
+                            <label class="form-label fw-semibold small">Status</label>
+                            <select class="form-select" formControlName="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancel()"
+                            [disabled]="saving">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-create fs-16 fw-medium"
+                            *appHasPermission="formMode === 'create' ? 'orgHelpCenter:create' : 'orgHelpCenter:edit'"
+                            [disabled]="form.invalid || saving">
+                            <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            {{ formMode === 'create' ? 'Save' : 'Update' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: RENAME MODULE ================= -->
+    <div class="app-modal-backdrop" *ngIf="showRenameModal">
+        <div class="app-modal" style="max-width: 420px">
+            <div class="app-modal-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold">Rename Module</h6>
+                <button type="button" class="btn-close" (click)="cancelRename()" [disabled]="renaming"></button>
+            </div>
+            <div class="app-modal-body">
+                <p class="text-muted small">
+                    Renaming "{{ renameTarget }}" updates every topic in this module — not a single atomic
+                    operation, so avoid closing the tab mid-rename.
+                </p>
+                <label class="form-label fw-semibold small">New Module Name</label>
+                <input type="text" class="form-control" [(ngModel)]="renameValue" [disabled]="renaming" />
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2" (click)="cancelRename()"
+                        [disabled]="renaming">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="'orgHelpCenter:edit'" (click)="confirmRename()"
+                        [disabled]="renaming || !renameValue.trim()">
+                        <span *ngIf="renaming" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Rename
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <delete [title]="'Delete Help Topic'" [message]="deleteMessage" [(visible)]="deleteModalVisible"
+        (closed)="onDeleteModalClosed($event)">
+    </delete>
+</div>

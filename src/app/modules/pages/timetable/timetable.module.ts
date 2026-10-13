@@ -6,20 +6,12 @@ import { ListComponent } from './list/list.component';
 import { UiElementsModule } from '../../ui-elements/ui-elements.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ViewTableComponent } from './view-table/view-table.component';
+import { TimetableviewnewComponent } from './timetableviewnew/timetableviewnew.component';
+import { TimetablenewComponent } from './timetablenew/timetablenew.component';
 
 @NgModule({
-    declarations: [
-        TimetableComponent,
-        ListComponent,
-        ViewTableComponent
-    ],
-    imports: [
-        CommonModule,
-        TimetableRoutingModule,
-        UiElementsModule,
-        ReactiveFormsModule,
-        FormsModule
-    ],
-    exports: []
+  declarations: [TimetableComponent, ListComponent, ViewTableComponent, TimetableviewnewComponent, TimetablenewComponent],
+  imports: [CommonModule, TimetableRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
+  exports: []
 })
-export class TimetableModule { }
+export class TimetableModule {}

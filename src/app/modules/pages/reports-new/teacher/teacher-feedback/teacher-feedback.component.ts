@@ -19,7 +19,7 @@ export class TeacherFeedbackComponent extends BaseReportComponent {
   remarksRows: any[] = [];
   showRemarks = false;
 
-  readonly columns = [{ key: 'admissionNo', label: 'Enrollment No' }, { key: 'studentName', label: 'Student' }, { key: 'batchCode', label: 'Batch' }, { key: 'ptmDateFormatted', label: 'PTM Date' }, { key: 'ptmStatus', label: 'Status' }, { key: 'remarksCount', label: 'Remarks' }];
+  readonly columns = [{ key: 'admissionNo', label: 'Enrollment No' }, { key: 'studentName', label: 'Student' }, { key: 'batchLabel', label: 'Batch' }, { key: 'ptmDateFormatted', label: 'PTM Date' }, { key: 'ptmStatus', label: 'Status' }, { key: 'remarksCount', label: 'Remarks' }];
 
   readonly remarksColumns = [{ key: 'admissionNo', label: 'Enrollment No' }, { key: 'studentName', label: 'Student' }, { key: 'subjectName', label: 'Subject' }, { key: 'remarks', label: 'Remarks' }, { key: 'submittedAt', label: 'Submitted At' }];
 
@@ -41,7 +41,8 @@ export class TeacherFeedbackComponent extends BaseReportComponent {
         this.rows = (res.data || []).map((r: any) => ({
           ...r,
           ptmDateFormatted: r.ptmDateFormatted || this.reportService.formatEpoch(r.ptmDate),
-          remarksCount: (r.myRemarks || []).length
+          remarksCount: (r.myRemarks || []).length,
+          batchLabel: this.reportService.formatBatchLabel(r.batchName, r.batchCode)
         }));
         this.remarksRows = (res.data || []).flatMap((r: any) =>
           (r.myRemarks || []).map((rm: any) => ({

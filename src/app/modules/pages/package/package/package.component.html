@@ -6,7 +6,7 @@
             <h1 class="fw-bold mb-0" style="font-size: 30px;">
                 <i class="fa-solid fa-box-open me-2"></i>Study Materials
             </h1>
-            <button class="btn btn-create fs-16 fw-medium" type="button" routerLink="/app/package/create">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'package:create'" type="button" routerLink="/app/package/create">
                 <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
                 Add Study Material
             </button>
@@ -14,7 +14,7 @@
 
         <!-- Table -->
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
-            success="ACTIVE" danger="INACTIVE" [totalRecords]="totalRecords"
+            success="ACTIVE" danger="INACTIVE" [totalRecords]="totalRecords" [initialPage]="restoredPage"
             [searchPlaceholder]="'Search Study Material Code, Title...'" (requestData)="loadTableData($event)"
             (rowClick)="onRowSelected($event)">
         </custom-table>
@@ -107,12 +107,14 @@
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                     data-bs-dismiss="modal">Close</button>
-                <button *appHasRole="['L1']" type="button" class="btn btn-export fs-16 fw-medium me-2"
+                <!-- No dedicated report/export key exists for package — maps
+                     to package:list per the catalog note. -->
+                <button *appHasPermission="'package:list'" type="button" class="btn btn-export fs-16 fw-medium me-2"
                     (click)="exportPackage()">
                     <i class="fa-solid fa-file-export me-2"></i>Export
                 </button>
-                <button type="button" class="btn btn-edit fs-16 fw-medium" data-bs-dismiss="modal"
-                    (click)="router.navigate(['/app/package/create'], { state: { package: selectedPackage } })">
+                <button type="button" class="btn btn-edit fs-16 fw-medium" *appHasPermission="'package:edit'" data-bs-dismiss="modal"
+                    (click)="goToEdit(selectedPackage)">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Edit
                 </button>
             </div>
@@ -144,7 +146,7 @@
                 <div class="mb-4">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <h6 class="fw-bold mb-0">Active Enablements</h6>
-                        <button class="btn fs-16 fw-medium" [class.btn-create]="!showAddNew"
+                        <button class="btn fs-16 fw-medium" *appHasPermission="'package:enable'" [class.btn-create]="!showAddNew"
                             [class.btn-close-custom]="showAddNew" (click)="toggleAddNew()">
                             <i class="fa-solid me-1" [class.fa-plus]="!showAddNew" [class.fa-times]="showAddNew"></i>
                             {{ showAddNew ? 'Cancel' : 'Add New' }}
@@ -200,6 +202,7 @@
                             </div>
 
                             <!-- Disable button -->
+                            <ng-container *appHasPermission="'package:disable'">
                             <button *ngIf="e.status === 'ACTIVE'"
                                 class="btn btn-close-custom fs-16 fw-medium"
                                 [disabled]="e._disabling" (click)="disableEnablement(e)">
@@ -207,6 +210,7 @@
                                 <i *ngIf="!e._disabling" class="fa-solid fa-toggle-off me-1"></i>
                                 Disable
                             </button>
+                            </ng-container>
                         </div>
                     </div>
                 </div>

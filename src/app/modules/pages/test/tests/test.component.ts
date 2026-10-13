@@ -6,6 +6,10 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const ASSIGNMENT_LIST_STATE_KEY = 'assignment-list';
 
 @Component({
   selector: 'app-tests',
@@ -17,6 +21,8 @@ export class TestComponent implements OnInit, OnDestroy {
 
   loading = false;
   totalRecords = 0;
+  currentPage = 1;
+  restoredPage = 1;
 
   private routerSub!: Subscription;
 
@@ -77,6 +83,7 @@ export class TestComponent implements OnInit, OnDestroy {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('test:view'),
       callback: (row: any) => this.viewQuestions(row)
     },
     {
@@ -85,13 +92,13 @@ export class TestComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-ellipsis-vertical',
       color: 'secondary',
       dropdown: [
-        { text: 'Edit Assignment', icon: 'fa-regular fa-pen-to-square', callback: (row: any) => this.editTest(row) },
-        { text: 'Add Question', icon: 'fa-solid fa-plus', callback: (row: any) => this.addQuestions(row) },
-        { text: 'Import Questions', icon: 'fa-solid fa-file-import', callback: (row: any) => this.importQuestions(row) },
-        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', callback: (row: any) => this.rearrange(row) },
-        { text: 'Report', icon: 'fa-solid fa-chart-line', callback: (row: any) => this.report(row) },
+        { text: 'Edit Assignment', icon: 'fa-regular fa-pen-to-square', show: () => !this.permissionService.hasPermission('test:edit'), callback: (row: any) => this.editTest(row) },
+        { text: 'Add Question', icon: 'fa-solid fa-plus', show: () => !this.permissionService.hasPermission('test:addQuestion'), callback: (row: any) => this.addQuestions(row) },
+        { text: 'Import Questions', icon: 'fa-solid fa-file-import', show: () => !this.permissionService.hasPermission('test:importQuestions'), callback: (row: any) => this.importQuestions(row) },
+        { text: 'Rearrange Questions', icon: 'fa-solid fa-reorder', show: () => !this.permissionService.hasPermission('test:rearrangeQuestions'), callback: (row: any) => this.rearrange(row) },
+        { text: 'Report', icon: 'fa-solid fa-chart-line', show: () => !this.permissionService.hasPermission('test:report'), callback: (row: any) => this.report(row) },
         // { text: 'Update Ans/Solutions', icon: 'fa-solid fa-pen', callback: (row: any) => this.updateAnswers(row) },
-        { text: 'Delete', icon: 'fa-regular fa-trash-can', callback: (row: any) => this.deleteTest(row) }
+        { text: 'Delete', icon: 'fa-regular fa-trash-can', show: () => !this.permissionService.hasPermission('test:delete'), callback: (row: any) => this.deleteTest(row) }
       ]
     }
   ];
@@ -102,12 +109,11 @@ export class TestComponent implements OnInit, OnDestroy {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private fb: FormBuilder,
-    public authService: AuthService
+    public authService: AuthService,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
-
-    if (this.authService.assignmentRole()) {
-      this.actions.pop();
-    }
+    this.restoredPage = this.listStateService.consumePage(ASSIGNMENT_LIST_STATE_KEY);
   }
 
   /* ================= INIT ================= */
@@ -226,6 +232,7 @@ export class TestComponent implements OnInit, OnDestroy {
 
   fetchTableData(params: any) {
     this.lastTableParams = { ...params };
+    this.currentPage = params.page;
     this.loading = true;
 
     let sortParam = '';
@@ -288,11 +295,11 @@ export class TestComponent implements OnInit, OnDestroy {
       });
   }
 
-  viewQuestions(row: any) { this.router.navigate(['/app/assignment/question-view'], { state: { questions: row } }); }
-  rearrange(row: any) { this.router.navigate(['/app/assignment/question-rearrange'], { state: { questions: row } }); }
-  editTest(row: any) { this.router.navigate(['/app/assignment/create'], { state: { test: row } }); }
-  importQuestions(row: any) { this.router.navigate(['/app/assignment/question-import'], { state: { questions: row } }); }
-  addQuestions(row: any) { this.router.navigate(['/app/assignment/question-create'], { state: { question: row } }); }
+  viewQuestions(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-view'], { state: { questions: row } }); }
+  rearrange(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-rearrange'], { state: { questions: row } }); }
+  editTest(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/create'], { state: { test: row } }); }
+  importQuestions(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-import'], { state: { questions: row } }); }
+  addQuestions(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-create'], { state: { question: row } }); }
   studentFeedbacks(row: any) { }
   report(row: any) { }
   updateAnswers(row: any) { }
@@ -671,7 +678,10 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   onRowSelected(row: any) {
-    this.router.navigate(['/app/assignment/question-view'], 
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('test:view')) return;
+    this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage);
+    this.router.navigate(['/app/assignment/question-view'],
       { state: { questions: row } });
   }
 

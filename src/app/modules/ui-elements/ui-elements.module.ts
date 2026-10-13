@@ -25,6 +25,8 @@ import { FilterComponent } from './elements/filter/filter.component';
 import { RichTextEditorComponent } from './elements/rich-text-editor/rich-text-editor.component';
 import { SelectOrInputComponent } from './elements/select-or-input/select-or-input.component';
 import { HasRoleDirective } from '../../shared/directives/has-role.directive';
+import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
+import { HasPortalDirective } from '../../shared/directives/has-portal.directive';
 
 @NgModule({
   declarations: [
@@ -56,7 +58,9 @@ import { HasRoleDirective } from '../../shared/directives/has-role.directive';
     ReactiveFormsModule,
     FormsModule,
     QuillModule.forRoot(),
-    HasRoleDirective
+    HasRoleDirective,
+    HasPermissionDirective,
+    HasPortalDirective
   ],
   exports: [
     FormfieldComponent,
@@ -80,7 +84,9 @@ import { HasRoleDirective } from '../../shared/directives/has-role.directive';
     FilterComponent,
     RichTextEditorComponent,
     SelectOrInputComponent,
-    HasRoleDirective
+    HasRoleDirective,
+    HasPermissionDirective,
+    HasPortalDirective
   ]
 })
 export class UiElementsModule { }

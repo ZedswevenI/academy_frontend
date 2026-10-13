@@ -1294,8 +1294,8 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil, catchError, of, finalize } from 'rxjs';
 import * as XLSX from 'xlsx';
-import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
+import { PermissionService } from '../../../../shared/permission.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const safeTrim = (v: any): string =>
@@ -1411,7 +1411,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
   validateOk = false;
   validateConflicts: any[] = [];
   columns = [
-    { key: 'batchCode', label: 'Batch', sortable: true },
+    { key: 'batchLabel', label: 'Batch', sortable: true },
     { key: 'centerCode', label: 'Center', sortable: true },
     {
       key: 'latestStatus',
@@ -1426,6 +1426,9 @@ export class TimetableComponent implements OnInit, OnDestroy {
     },
     { key: 'lastUpdatedLabel', label: 'Last Updated', sortable: false },
   ];
+  // custom-table's `show` is a HIDE predicate (true = hidden). Each check
+  // below combines the existing row-status business logic with a permission
+  // check — OR'd together, since either reason is sufficient to hide.
   actions = [
     {
       type: 'icon',
@@ -1433,6 +1436,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
       tooltip: 'View Timetable',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('timetable:view'),
       callback: (row: any) => this.openView(row),
     },
     {
@@ -1441,20 +1445,31 @@ export class TimetableComponent implements OnInit, OnDestroy {
       tooltip: 'Publish Timetable',
       color: '#6B7280',
       hoverColor: '#0066FF',
-      show: (row: any) => (row?.status).toUpperCase() !== 'DRAFT',
+      show: (row: any) => (row?.status).toUpperCase() !== 'DRAFT' || !this.permissionService.hasPermission('timetable:publish'),
       callback: (row: any) => this.openPublishConfirmRow(row),
+    },
+    {
+      type: 'icon',
+      icon: 'fa-solid fa-rotate-left',
+      tooltip: 'Revert to Draft',
+      color: '#6B7280',
+      hoverColor: '#DC2626',
+      show: (row: any) => (row?.status).toUpperCase() !== 'ACTIVE' || !this.permissionService.hasPermission('timetable:revertDraft'),
+      callback: (row: any) => this.openRevertConfirmRow(row),
     },
   ];
   showPublishConfirmRow = false;
   publishTargetRow: any = null;
   saveError = false;
+  showRevertConfirmRow = false;
+  revertTargetRow: any = null;
 
   constructor(
     private alert: AlertService,
     private breadcrumb: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
-    private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId =
       localStorage.getItem('tenantId') || localStorage.getItem('entiId');
@@ -1483,9 +1498,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
   }
 
   showimport() {
-    return (
-      this.authService.getRole() === 'L1' || this.authService.getRole() === 'L3'
-    );
+    return this.permissionService.hasPermission('timetable:create');
   }
 
   fetchTableData(params: {
@@ -1525,13 +1538,14 @@ export class TimetableComponent implements OnInit, OnDestroy {
           this.timetables = Array.from(batchMap.values()).map((tt: any) => ({
             ...tt,
             _raw: tt,
+            batchLabel: tt.batchName && tt.batchCode ? `${tt.batchName} (${tt.batchCode})` : (tt.batchName || tt.batchCode || ''),
             latestStatus: tt.status,
             lastUpdatedLabel: tt.updatedAt
               ? new Date(tt.updatedAt).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              })
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
               : '-',
           }));
           this.totalRecords = this.timetables.length;
@@ -1576,7 +1590,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
     this.totalRecords = 0;
   }
 
-  onBatchChange() { }
+  onBatchChange() {}
 
   loadAllLookupsAndInit() {
     const tenantId = this.tenantId;
@@ -2116,9 +2130,9 @@ export class TimetableComponent implements OnInit, OnDestroy {
       }
       const dayName =
         daysOrder[
-        new Date(epoch).getUTCDay() === 0
-          ? 6
-          : new Date(epoch).getUTCDay() - 1
+          new Date(epoch).getUTCDay() === 0
+            ? 6
+            : new Date(epoch).getUTCDay() - 1
         ];
       const startMin = timeToMin(row['TimeStart']);
       const endMin = timeToMin(row['TimeEnd']);
@@ -2251,11 +2265,11 @@ export class TimetableComponent implements OnInit, OnDestroy {
             ? errBody.conflicts
             : errBody?.message
               ? [
-                {
-                  batchCode: safeTrim(this.parsedPayload?.batchCode) || '-',
-                  message: errBody.message,
-                },
-              ]
+                  {
+                    batchCode: safeTrim(this.parsedPayload?.batchCode) || '-',
+                    message: errBody.message,
+                  },
+                ]
               : [];
           if (conflicts.length) {
             this.validateConflicts = conflicts;
@@ -2588,5 +2602,51 @@ export class TimetableComponent implements OnInit, OnDestroy {
   onRowSelected(row: any) {
     const item = row?._raw || row;
     this.router.navigate(['/app/timetable/view', item.batchCode]);
+  }
+
+  openRevertConfirmRow(row: any) {
+    const item = row?._raw || row;
+    if ((item?.status || '').toUpperCase() !== 'ACTIVE') {
+      this.alert.warning('Only published timetables can be reverted.');
+      return;
+    }
+    this.revertTargetRow = item;
+    this.showRevertConfirmRow = true;
+  }
+
+  closeRevertConfirmRow() {
+    this.showRevertConfirmRow = false;
+    this.revertTargetRow = null;
+  }
+
+  submitRevertRow() {
+    if (!this.revertTargetRow?._id) return;
+    this.loading = true;
+    this.commonApi
+      .fetchData(
+        {
+          tenantId: this.tenantId,
+          timetableId: this.revertTargetRow._id,
+          userId: localStorage.getItem('userId'),
+        },
+        this.moduleName,
+        'unpublish',
+      )
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.loading = false;
+          this.closeRevertConfirmRow();
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.alert.success('Timetable reverted to Draft');
+          this.applyFilters();
+        },
+        error: (err: any) => {
+          this.alert.error(err?.error?.message || 'Revert failed');
+        },
+      });
   }
 }

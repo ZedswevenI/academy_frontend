@@ -306,8 +306,12 @@
           font-size: 1rem;
           line-height: 1.6;
 
-          // Support for KaTeX/MathJax
-          :deep() {
+          // Support for KaTeX/MathJax — ::ng-deep required since this
+          // content is injected via [innerHTML], not rendered by this
+          // component's own template, so scoped styles never reach it
+          // otherwise (":deep()" is Vue syntax and is invalid CSS here —
+          // it silently never applied and also triggered a build warning).
+          ::ng-deep {
             .katex-display {
               margin: 1rem 0;
             }

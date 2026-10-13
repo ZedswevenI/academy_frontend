@@ -61,7 +61,7 @@
                     <button *ngFor="let b of batchResults" class="btn btn-sm rounded-pill"
                         [class.btn-primary]="activeBatch === b.batchCode"
                         [class.btn-outline-secondary]="activeBatch !== b.batchCode" (click)="activeBatch = b.batchCode">
-                        {{ b.batchName || b.batchCode }}
+                        {{ b.batchName && b.batchCode ? b.batchName + ' (' + b.batchCode + ')' : (b.batchName || b.batchCode) }}
                         <span class="badge ms-1 rounded-pill" [class.bg-white]="activeBatch === b.batchCode"
                             [class.text-primary]="activeBatch === b.batchCode"
                             [class.bg-secondary]="activeBatch !== b.batchCode">
@@ -215,7 +215,7 @@
                             [class.btn-primary]="activeBatch === b.batchCode"
                             [class.btn-outline-secondary]="activeBatch !== b.batchCode"
                             (click)="activeBatch = b.batchCode; activeStaff = b.staffResults?.[0]?.staffId || ''">
-                            {{ b.batchCode }}
+                            {{ b.batchName && b.batchCode ? b.batchName + ' (' + b.batchCode + ')' : (b.batchName || b.batchCode) }}
                             <span class="badge ms-1 rounded-pill" [class.bg-white]="activeBatch === b.batchCode"
                                 [class.text-primary]="activeBatch === b.batchCode"
                                 [class.bg-secondary]="activeBatch !== b.batchCode">
@@ -390,7 +390,7 @@
         <ng-container *ngIf="!reportLoading && reportRows.length">
             <!-- Export button -->
             <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-export fs-16 fw-medium" (click)="downloadReport()" [disabled]="reportLoading">
+                <button class="btn btn-export fs-16 fw-medium" *appHasPermission="'feedback:consolidatedReport'" (click)="downloadReport()" [disabled]="reportLoading">
                     <i class="fa-solid fa-file-pdf btn-icon"></i>Export PDF
                 </button>
             </div>

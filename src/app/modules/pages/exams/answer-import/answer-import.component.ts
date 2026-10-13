@@ -6,7 +6,7 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { Location } from '@angular/common';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-answer-import',
@@ -54,7 +54,7 @@ export class AnswerImportComponent implements OnInit {
     private alert: AlertService,
     private router: Router,
     private breadcrumb: BredcrumpService,
-    private location: Location,
+    private backNav: BackNavigationService,
   ) {
     const state: any = history.state;
     if (state?.exam) this.examData = state.exam;
@@ -744,7 +744,15 @@ export class AnswerImportComponent implements OnInit {
   }
 
   goBack() {
-    this.location.back();
+    this.backNav.goBack(
+      { route: '/app/exams/exams' },
+      {
+        'exam-view': {
+          route: '/app/exams/exams/view',
+          state: { exam: this.examData },
+        },
+      },
+    );
   }
 
   // ── Download sample DOCX ──────────────────────────────────────────────────

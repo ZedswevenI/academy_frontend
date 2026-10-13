@@ -159,7 +159,7 @@
                 <span class="badge bg-secondary ms-2">{{ totalRecords }}</span>
             </h5>
 
-            <button *appHasRole="['L1']" class="btn btn-export fs-16 fw-medium"
+            <button *appHasPermission="'circular:list'" class="btn btn-export fs-16 fw-medium"
                 (click)="exportToExcel()"
                 [disabled]="exportLoading || totalRecords === 0">
                 <span *ngIf="exportLoading" class="spinner-border spinner-border-sm me-2"></span>

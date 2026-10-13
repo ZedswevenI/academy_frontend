@@ -39,6 +39,7 @@
         <!-- Table -->
         <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="true"
             [primary]="'ACTIVE'" [success]="'CLOSED'" primary="DRAFT" [totalRecords]="totalRecords"
+            [initialPage]="restoredPage"
             (requestData)="loadTableData($event)" [actions]="actions" [searchPlaceholder]="'Search title, category...'"
            (rowClick)="onRowSelected($event)" >
         </custom-table>

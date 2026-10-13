@@ -6,10 +6,12 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ChartConfiguration, ChartData } from 'chart.js';
+import * as XLSX from 'xlsx';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { DashboardService } from '../dashboard.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 interface KpiCard {
   label: string;
@@ -23,6 +25,7 @@ interface KpiCard {
   scrollTo?: string;
   byBatch?: { batchCode: string; count: number }[];
   showBatchHover?: boolean;
+  permissionKey: string;
 }
 
 interface ActivityItem {
@@ -32,6 +35,8 @@ interface ActivityItem {
   startDate: number;
   endDate: number;
   status: string;
+  remarks: string | null;
+  centerCode: string | null;
 }
 
 interface PtmItem {
@@ -77,6 +82,38 @@ interface InactiveUser {
   neverLoggedIn: boolean;
   daysSinceLogin: number | null;
   avatar: string;
+}
+
+interface AbsentStudent {
+  studentId: string;
+  admissionNo: string;
+  remarks: string | null;
+  studentName: string;
+  batchCode: string;
+  batchName: string;
+  date: number;
+  attendanceId?: string;
+  studentPhone?: string | null;
+  studentPhone1?: string | null;
+  studentPhone2?: string | null;
+  parentPhone?: string | null;
+}
+
+interface PeriodAbsentStudent {
+  studentId: string;
+  admissionNo: string;
+  studentName: string;
+  remarks: string | null;
+  batchCode: string;
+  date: number;
+  periodNo: number;
+  subjectId: string;
+  facultyId: string;
+  attendanceId?: string;
+  studentPhone?: string | null;
+  studentPhone1?: string | null;
+  studentPhone2?: string | null;
+  parentPhone?: string | null;
 }
 
 @Component({
@@ -128,6 +165,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       sub: 'Loading...',
       trend: [],
       route: '/app/batch',
+      permissionKey: 'dashboard:viewActiveBatches',
     },
     {
       label: 'Total Students',
@@ -139,6 +177,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       trend: [],
       byBatch: [],
       showBatchHover: false,
+      permissionKey: 'dashboard:viewTotalStudents',
     },
     {
       label: 'Total Staff',
@@ -149,6 +188,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       sub: 'Loading...',
       trend: [],
       scrollTo: 'staffDeptSection',
+      permissionKey: 'dashboard:viewTotalStaff',
     },
     {
       label: 'System Users',
@@ -159,6 +199,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       sub: 'Loading...',
       trend: [],
       route: '/app/org-master/users',
+      permissionKey: 'dashboard:viewSystemUsers',
     },
     {
       label: 'Today Absentees',
@@ -168,6 +209,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       tone: 'red',
       sub: 'Loading...',
       trend: [],
+      permissionKey: 'dashboard:viewTodayAbsentees',
     },
     {
       label: 'Total Questions',
@@ -177,8 +219,13 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
       tone: 'teal',
       sub: 'Loading...',
       trend: [],
+      permissionKey: 'dashboard:viewTotalQuestions',
     },
   ];
+
+  get visibleKpis(): KpiCard[] {
+    return this.kpis.filter((k) => this.permissionService.hasPermission(k.permissionKey));
+  }
 
   performers: Performer[] = [];
   staffDepts: StaffDept[] = [];
@@ -187,8 +234,33 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
   inactiveUsersCount = 0;
   ptms: PtmItem[] = [];
   upcomingActivities: ActivityItem[] = [];
+todayAbsentList: AbsentStudent[] = [];
+todayPeriodAbsentList: PeriodAbsentStudent[] = [];
+todayAbsentCount = 0;
+activeAbsentTab: 'school' | 'period' = 'school';
 
-  // Charts
+remarksModalOpen = false;
+remarksModalTab: 'school' | 'period' = 'school';
+remarksModalStudent: AbsentStudent | PeriodAbsentStudent | null = null;
+remarksModalText = '';
+remarksSaving = false;
+remarksError: string | null = null;
+
+absenteeReportOpen = false;
+absenteeReportFromDate = '';
+absenteeReportToDate = '';
+absenteeReportLoading = false;
+absenteeReportError: string | null = null;
+absenteeReportRows: {
+  date: number;
+  dateFormatted: string;
+  batchCode: string;
+  batchName: string;
+  admissionNo: string;
+  name: string;
+  remarks: string;
+}[] = [];
+
   attendanceLineData: ChartData<'line'> = { labels: [], datasets: [] };
   attendanceLineOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
@@ -305,6 +377,7 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
     private breadcrump: BredcrumpService,
     private dashboardService: DashboardService,
     private el: ElementRef,
+    private permissionService: PermissionService,
   ) {
     this.breadcrump.set([{ label: 'Dashboard' }]);
     this.username = localStorage.getItem('name');
@@ -427,6 +500,9 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
         if (u.byBatch !== null) this.kpis[i].byBatch = u.byBatch;
       }
     });
+    this.todayAbsentCount = kpis.attendance?.todayAbsent ?? 0;
+this.todayAbsentList = kpis.attendance?.todayAbsentList ?? [];
+this.todayPeriodAbsentList = kpis.attendance?.todayPeriodAbsentList ?? [];
   }
 
   private buildAttendanceChart(trend: any): void {
@@ -598,6 +674,208 @@ export class DashboardnewComponent implements OnInit, OnDestroy {
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
+  }
+
+  private fmtAbsentDate(ms: number): string {
+    if (!ms) return '';
+    return new Date(ms).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  exportAbsentExcel(): void {
+    const today = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    let rows: any[];
+    let sheetName: string;
+    let fileName: string;
+    if (this.activeAbsentTab === 'school') {
+      rows = this.todayAbsentList.map((s) => ({
+        Date: this.fmtAbsentDate(s.date),
+        Student: s.studentName,
+        'Admission No': s.admissionNo,
+        'Batch Code': s.batchCode,
+        'Batch Name': s.batchName,
+        Phone: this.getAbsentPhones(s).join(', '),
+        Remarks: s.remarks || '',
+      }));
+      sheetName = 'Day-wise Absent';
+      fileName = `Absent_Daywise_${today.replace(/ /g, '_')}.xlsx`;
+    } else {
+      rows = this.todayPeriodAbsentList.map((s) => ({
+        Date: this.fmtAbsentDate(s.date),
+        Student: s.studentName,
+        'Admission No': s.admissionNo,
+        Batch: s.batchCode,
+        Period: `P${s.periodNo}`,
+        Phone: this.getAbsentPhones(s).join(', '),
+        Remarks: s.remarks || '',
+      }));
+      sheetName = 'Period-wise Absent';
+      fileName = `Absent_Periodwise_${today.replace(/ /g, '_')}.xlsx`;
+    }
+    if (!rows.length) return;
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 20 }));
+    const workbook: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  private dateInputToEpoch(dateStr: string): number {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  }
+
+  generateAbsenteeReport(): void {
+    if (!this.absenteeReportFromDate || !this.absenteeReportToDate) {
+      this.absenteeReportError = 'Please select both From and To dates.';
+      return;
+    }
+    const fromDate = this.dateInputToEpoch(this.absenteeReportFromDate);
+    const toDate = this.dateInputToEpoch(this.absenteeReportToDate);
+    if (fromDate > toDate) {
+      this.absenteeReportError = 'From date must be before To date.';
+      return;
+    }
+    this.absenteeReportLoading = true;
+    this.absenteeReportError = null;
+    this.absenteeReportRows = [];
+    this.dashboardService
+      .getAbsenteeRangeReport(this.entiId, fromDate, toDate)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.absenteeReportLoading = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          const batches: any[] = Array.isArray(res) ? res : res?.data || [];
+          const rows: typeof this.absenteeReportRows = [];
+          for (const batch of batches) {
+            const dates: number[] = batch.dates || [];
+            for (const student of batch.rows || []) {
+              dates.forEach((date: number, i: number) => {
+                if (student.attendance?.[i] === 'A') {
+                  rows.push({
+                    date,
+                    dateFormatted: this.fmtAbsentDate(date),
+                    batchCode: batch.batchCode,
+                    batchName: batch.batchName,
+                    admissionNo: student.admissionNo,
+                    name: student.name,
+                    remarks: student.remarks?.[i] || '',
+                  });
+                }
+              });
+            }
+          }
+          rows.sort((a, b) => a.date - b.date || a.batchCode.localeCompare(b.batchCode));
+          this.absenteeReportRows = rows;
+          if (!rows.length) {
+            this.absenteeReportError = 'No absentees found for the selected period.';
+          }
+        },
+        error: (err: any) => {
+          this.absenteeReportError = err?.error?.message || 'Failed to generate report';
+        },
+      });
+  }
+
+  exportAbsenteeReportExcel(): void {
+    if (!this.absenteeReportRows.length) return;
+    const rows = this.absenteeReportRows.map((r) => ({
+      Date: r.dateFormatted,
+      Student: r.name,
+      'Admission No': r.admissionNo,
+      'Batch Code': r.batchCode,
+      'Batch Name': r.batchName,
+      Remarks: r.remarks,
+    }));
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 20 }));
+    const workbook: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Absentee Report');
+    XLSX.writeFile(
+      workbook,
+      `Absentee_Report_${this.absenteeReportFromDate}_to_${this.absenteeReportToDate}.xlsx`,
+    );
+  }
+
+  getAbsentPhones(s: AbsentStudent | PeriodAbsentStudent): string[] {
+    const nums = [s.studentPhone, s.studentPhone1, s.studentPhone2, s.parentPhone].filter(
+      (p): p is string => !!p,
+    );
+    return Array.from(new Set(nums)).slice(0, 3);
+  }
+
+  asPeriodAbsent(s: AbsentStudent | PeriodAbsentStudent): PeriodAbsentStudent | null {
+    return this.remarksModalTab === 'period' ? (s as PeriodAbsentStudent) : null;
+  }
+
+  openRemarksModal(s: AbsentStudent | PeriodAbsentStudent, tab: 'school' | 'period'): void {
+    this.remarksModalTab = tab;
+    this.remarksModalStudent = s;
+    this.remarksModalText = s.remarks || '';
+    this.remarksError = null;
+    this.remarksModalOpen = true;
+  }
+
+  closeRemarksModal(): void {
+    this.remarksModalOpen = false;
+    this.remarksModalStudent = null;
+    this.remarksModalText = '';
+    this.remarksError = null;
+  }
+
+  saveRemarksModal(): void {
+    const student = this.remarksModalStudent;
+    if (!student) return;
+    const remarks = this.remarksModalText.trim();
+    if (!remarks) {
+      this.remarksError = 'Please enter remarks before saving.';
+      return;
+    }
+    if (!student.attendanceId) {
+      this.remarksError =
+        'This absentee entry has no attendance record id yet. Please refresh the dashboard or contact support if this persists.';
+      return;
+    }
+    const studentId = student.studentId;
+    const attendanceId = student.attendanceId;
+    const tab = this.remarksModalTab;
+    this.remarksSaving = true;
+    this.remarksError = null;
+    const req$ =
+      tab === 'school'
+        ? this.dashboardService.updateSchoolAttendanceRemarks(this.entiId, attendanceId, studentId, remarks)
+        : this.dashboardService.updatePeriodAttendanceRemarks(this.entiId, attendanceId, studentId, remarks);
+    req$
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.remarksSaving = false)),
+      )
+      .subscribe({
+        next: (res: any) => {
+          if (!res?.status) {
+            this.remarksError = res?.message || 'Failed to update remarks';
+            return;
+          }
+          const list = tab === 'school' ? this.todayAbsentList : this.todayPeriodAbsentList;
+          const target = list.find(
+            (x) => x.studentId === studentId && x.attendanceId === attendanceId,
+          );
+          if (target) target.remarks = remarks || null;
+          this.closeRemarksModal();
+        },
+        error: (err: any) => {
+          this.remarksError = err?.error?.message || 'Failed to update remarks';
+        },
+      });
   }
 
   private buildStaffDepts(data: any): void {

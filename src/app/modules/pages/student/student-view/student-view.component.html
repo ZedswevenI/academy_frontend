@@ -47,13 +47,15 @@
                     <!-- <button class="btn btn-outline-primary btn-sm" *appHasRole="['L1']" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen"></i> Edit Profile
                     </button> -->
-                    <button class="btn btn-export fs-16 fw-medium" *appHasRole="['L1']" (click)="exportToExcel()">
+                    <button class="btn btn-export fs-16 fw-medium" *appHasPermission="'student:export'" (click)="exportToExcel()">
                         <i class="fa-solid fa-file-excel btn-icon"></i> Export Excel
                     </button>
-                    <button class="btn btn-edit fs-16 fw-medium" *appHasRole="['L1']" (click)="openEditProfile()">
+                    <button class="btn btn-edit fs-16 fw-medium" *appHasPermission="'student:edit'" (click)="openEditProfile()">
                         <i class="fa-solid fa-pen btn-icon"></i> Edit Profile
                     </button>
-                    <button *appHasRole="['L1']" class="btn fs-16 fw-medium"
+                    <!-- Tablet lock/unlock has no dedicated catalog key yet — bundled
+                         under student:edit server-side, so gated the same way here. -->
+                    <button *appHasPermission="'student:edit'" class="btn fs-16 fw-medium"
                         [ngClass]="student.basic?.isTabletBlocked ? 'btn-success' : 'btn-danger'"
                         [disabled]="tabletLockLoading" (click)="toggleTabletLock()">
                         <span *ngIf="tabletLockLoading" class="spinner-border spinner-border-sm btn-icon"></span>
@@ -62,7 +64,7 @@
                         </i>
                         {{ student.basic?.isTabletBlocked ? 'Unlock Tablet' : 'Lock Tablet' }}
                     </button>
-                    <button class="btn btn-back fs-16 fw-medium" routerLink="/app/student">
+                    <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
                         <i class="fa-solid fa-arrow-left btn-icon"></i> Back to Students
                     </button>
                 </div>
@@ -204,7 +206,7 @@
                                         }}</span>
                                 </button>
                             </li>
-                            <li class="nav-item">
+                            <li class="nav-item" *appHasPermission="'student:alumniImport'">
                                 <button class="nav-link" [class.active]="activeViewTab==='alumni'"
                                     (click)="activeViewTab='alumni'">
                                     <i class="fa-solid fa-trophy me-1"></i>Alumni Info
@@ -235,6 +237,9 @@
                                         <div class="fw-medium">
                                             <i class="fa-solid fa-layer-group me-1 text-muted"></i>
                                             {{ student.program?.batchName || '—' }}
+                                            <span class="text-muted small" *ngIf="student.program?.batchCode">
+                                                ({{ student.program?.batchCode }})
+                                            </span>
                                         </div>
                                     </div>
                                     <div class="mb-3">
@@ -678,7 +683,7 @@
     <div *ngIf="!loading && !student" class="text-center py-5 text-muted">
         <i class="fa-solid fa-user-slash fa-3x mb-3 d-block"></i>
         <p>Student not found.</p>
-        <button class="btn btn-sm btn-outline-primary rounded-pill" routerLink="/app/student">
+        <button class="btn btn-sm btn-outline-primary rounded-pill" (click)="goBack()">
             Back to Students
         </button>
     </div>

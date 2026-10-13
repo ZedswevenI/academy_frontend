@@ -14,6 +14,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { sortQuestionsForPrint } from '../exam-print-order.util';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -108,6 +109,22 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
   backRoute = '/app/exams/exams';
   backState: any = null;
 
+  // Per-question Edit/Delete — allowed for draft, published and
+  // result_published exams; still hidden once an exam is completed or
+  // disabled. Derived live from questionData.status so it stays correct
+  // through any status change (publish, result publish, etc.) without a
+  // separate flag to keep in sync.
+  private static readonly EDITABLE_QUESTION_STATUSES = [
+    'draft',
+    'published',
+    'result_published',
+  ];
+
+  get canEditQuestions(): boolean {
+    const status = (this.questionData?.status || '').toLowerCase();
+    return QuestionViewComponent.EDITABLE_QUESTION_STATUSES.includes(status);
+  }
+
   ngOnInit(): void {
     const state: any = history.state;
     const ent = localStorage.getItem('tenantId');
@@ -190,6 +207,27 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     });
   }
 
+  get allQuestionsImported(): boolean {
+    const limit = this.questionData?.totalQuestions || 0;
+    return limit > 0 && this.actualQuestionCount >= limit;
+  }
+
+  get canImportQuestions(): boolean {
+    return (
+      this.questionData?.status === 'draft' &&
+      !this.questionData?.isImported &&
+      !this.allQuestionsImported
+    );
+  }
+
+  importQuestions(): void {
+    this.router.navigate(['/app/exams/exams/question-import'], {
+      state: {
+        questions: { ...this.questionData, examId: this.testId },
+      },
+    });
+  }
+
   ngAfterViewInit(): void {
     this.renderMathContent();
   }
@@ -245,6 +283,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
                 return {
                   ...item,
                   key: item?.key || String.fromCharCode(65 + i),
+                  text,
                   textHtml: this.sanitizeHtml(text),
                 };
               }),
@@ -258,6 +297,7 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
                 return {
                   ...item,
                   key: item?.key || String.fromCharCode(80 + i),
+                  text,
                   textHtml: this.sanitizeHtml(text),
                 };
               }),
@@ -282,7 +322,8 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         //   })),
         // };
         // Process passageHtml and instructionHtml
-        let passageHtml = q.passageId?.passageHtml || q.passageHtml || '';
+        let passageHtml =
+          q.passageData?.passageHtml || q.passageId?.passageHtml || q.passageHtml || '';
         let instructionHtml = q.instructionHtml || '';
         passageHtml = await this.replaceDownloadUrls(passageHtml);
         instructionHtml = await this.replaceDownloadUrls(instructionHtml);
@@ -316,75 +357,38 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     );
   }
 
-  // private parseMatrixCorrectAnswer(
-  //   correctAnswer: string,
-  // ): Record<string, { matches: string[]; marks: number; negMark: number }> {
-  //   const map: Record<
-  //     string,
-  //     { matches: string[]; marks: number; negMark: number }
-  //   > = {};
-  //   if (!correctAnswer) return map;
-  //   correctAnswer.split(';').forEach((pStr: string) => {
-  //     const colonIdx = pStr.indexOf(':');
-  //     if (colonIdx === -1) return;
-  //     const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
-  //     let rPart = pStr.substring(colonIdx + 1).trim();
-  //     let marks = 0;
-  //     let negMark = 0;
-  //     const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
-  //     if (marksMatch) {
-  //       marks = parseFloat(marksMatch[1]) || 0;
-  //       negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
-  //     }
-  //     rPart = rPart.replace(/\([^)]*\)/g, '').trim();
-  //     if (!lKey || !rPart) return;
-  //     if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
-  //     rPart
-  //       .toUpperCase()
-  //       .split('')
-  //       .filter(Boolean)
-  //       .forEach((rk) => {
-  //         if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
-  //       });
-  //   });
-  //   return map;
-  // }
-
-  private parseMatrixCorrectAnswer(correctAnswer: string): Record<string, { matches: string[], marks: number, negMark: number }> {
-  const map: Record<string, { matches: string[], marks: number, negMark: number }> = {};
-  if (!correctAnswer) return map;
-  correctAnswer.split(';').forEach((pStr: string) => {
-    const colonIdx = pStr.indexOf(':');
-    if (colonIdx === -1) return;
-    const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
-    let rPart = pStr.substring(colonIdx + 1).trim();
-
-    // Extract marks: (2,1) or (2)
-    let marks = 0;
-    let negMark = 0;
-    const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
-    if (marksMatch) {
-      marks = parseFloat(marksMatch[1]) || 0;
-      negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
-    }
-
-    // Strip marks brackets
-    rPart = rPart.replace(/\([^)]*\)/g, '').trim();
-    if (!lKey || !rPart) return;
-
-    if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
-
-    // Handle "P,T" (new) or "PQ" (legacy concatenated)
-    const parts = rPart.toUpperCase().split(',').filter(Boolean);
-    for (const part of parts) {
-      // Each part: single char "P" or legacy "PQ"
-      for (const rk of part.split('').filter(Boolean)) {
-        if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
+  private parseMatrixCorrectAnswer(
+    correctAnswer: string,
+  ): Record<string, { matches: string[]; marks: number; negMark: number }> {
+    const map: Record<
+      string,
+      { matches: string[]; marks: number; negMark: number }
+    > = {};
+    if (!correctAnswer) return map;
+    correctAnswer.split(';').forEach((pStr: string) => {
+      const colonIdx = pStr.indexOf(':');
+      if (colonIdx === -1) return;
+      const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
+      let rPart = pStr.substring(colonIdx + 1).trim();
+      let marks = 0;
+      let negMark = 0;
+      const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
+      if (marksMatch) {
+        marks = parseFloat(marksMatch[1]) || 0;
+        negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
       }
-    }
-  });
-  return map;
-}
+      rPart = rPart.replace(/\([^)]*\)/g, '').trim();
+      if (!lKey || !rPart) return;
+      if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
+      const parts = rPart.toUpperCase().split(',').filter(Boolean);
+      for (const part of parts) {
+        for (const rk of part.split('').filter(Boolean)) {
+          if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
+        }
+      }
+    });
+    return map;
+  }
 
   private normalizeDelimiters(html: string): string {
     if (!html) return html;
@@ -851,264 +855,791 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     });
   }
 
+  //   printQuestions(withAnswer: boolean): void {
+  //     const questionsToPrint = this.filteredQuestions;
+  //     if (!questionsToPrint.length) {
+  //       this.alert.error('No questions to print');
+  //       return;
+  //     }
+  //     const safeHtml = (val: any): string => (typeof val === 'string' ? val : '');
+  //     const formatAnswer = (q: any): string => {
+  //       switch (q.questionType) {
+  //         case 'mcq_single':
+  //         case 'passage_qns':
+  //           return `<span class="ans-badge">${(q.correctAnswer || '').toUpperCase()}</span>`;
+  //         case 'mcq_multi':
+  //           return (q.correctAnswer || '')
+  //             .toUpperCase()
+  //             .split(';')
+  //             .map((k: string) => `<span class="ans-badge">${k.trim()}</span>`)
+  //             .join(' ');
+  //         case 'true_false':
+  //           const tf = (q.correctAnswer || '').toLowerCase();
+  //           return `<span class="ans-badge ${tf === 'true' ? 'ans-true' : 'ans-false'}">${tf === 'true' ? 'True' : 'False'}</span>`;
+  //         case 'integer':
+  //           return `<span class="ans-badge ans-num">${q.correctAnswer ?? ''}</span>`;
+  //         case 'numeric':
+  //           const range =
+  //             q.numericMin != null && q.numericMax != null
+  //               ? ` <span class="ans-range">(Range: ${q.numericMin} – ${q.numericMax})</span>`
+  //               : '';
+  //           return `<span class="ans-badge ans-num">${q.correctAnswer ?? ''}</span>${range}`;
+  //         case 'subjective':
+  //         case 'short_answer':
+  //           return q.correctAnswer
+  //             ? `<span class="ans-text">${safeHtml(q.correctAnswer)}</span>`
+  //             : `<em>Manually evaluated</em>`;
+  //         case 'matrix':
+  //           return `<em>See matrix matches below</em>`;
+  //         default:
+  //           return `<span class="ans-badge">${q.correctAnswer ?? ''}</span>`;
+  //       }
+  //     };
+  //     const questionsHtml = questionsToPrint
+  //       .map((q: any, i: number) => {
+  //         const qEl = this.questionElements.toArray()[i];
+  //         const questionHtml = qEl
+  //           ? qEl.nativeElement.innerHTML
+  //           : safeHtml(q.questionHtml);
+  //         const passageHtml = safeHtml(q.passageHtml);
+  //         const passageBlock =
+  //           q.enablePassage && passageHtml
+  //             ? `<div class="passage-block"><div class="block-label">📖 Passage</div><div>${passageHtml}</div></div>`
+  //             : '';
+  //         const instructionHtml = safeHtml(q.instructionHtml);
+  //         const instructionBlock =
+  //           q.enableInstruction && instructionHtml
+  //             ? `<div class="instruction-block"><div class="block-label">ℹ Instruction</div><div>${instructionHtml}</div></div>`
+  //             : '';
+  //         let optionsBlock = '';
+  //         const opts: any[] = q.questionOptions || [];
+  //         if (opts.length) {
+  //           const optOffset = questionsToPrint
+  //             .slice(0, i)
+  //             .reduce(
+  //               (acc: number, pq: any) => acc + (pq.questionOptions?.length || 0),
+  //               0,
+  //             );
+
+  //           const optRows: string[] = [];
+  //           for (let k = 0; k < opts.length; k += 2) {
+  //             const cells = [k, k + 1]
+  //               .filter((j) => j < opts.length)
+  //               .map((j) => {
+  //                 const optEl = this.optionElements.toArray()[optOffset + j];
+  //                 const optHtml = optEl
+  //                   ? optEl.nativeElement.innerHTML
+  //                   : safeHtml(opts[j].textHtml);
+  //                 const isCorrect = withAnswer && opts[j].isCorrect;
+  //                 const key = opts[j].key || String.fromCharCode(65 + j);
+  //                 return `<td class="opt-cell ${isCorrect ? 'opt-correct' : ''}">
+  //                       <span class="opt-key">(${key})</span>
+  //                       <span class="opt-body">${optHtml}</span>
+  //                       ${isCorrect ? '<span class="opt-tick">✓</span>' : ''}
+  //                     </td>`;
+  //               });
+  //             optRows.push(
+  //               cells.length === 2
+  //                 ? `<tr>${cells[0]}<td class="opt-gap"></td>${cells[1]}</tr>`
+  //                 : `<tr>${cells[0]}</tr>`,
+  //             );
+  //           }
+  //           optionsBlock = `<table class="opts-table"><tbody>${optRows.join('')}</tbody></table>`;
+  //         }
+  //         let matrixBlock = '';
+  //         if (q.questionType === 'matrix' && q.leftColumn?.length) {
+  //           const leftRows = (q.leftColumn as any[])
+  //             .map(
+  //               (l: any) =>
+  //                 `<tr><td class="matrix-key">${l.key}.</td><td class="matrix-cell">${safeHtml(l.textHtml)}</td></tr>`,
+  //             )
+  //             .join('');
+  //           const rightRows = (q.rightColumn as any[])
+  //             .map(
+  //               (r: any) =>
+  //                 `<tr><td class="matrix-key">${r.key}.</td><td class="matrix-cell">${safeHtml(r.textHtml)}</td></tr>`,
+  //             )
+  //             .join('');
+  //           const matchesTable =
+  //             withAnswer && q.matrixMatches?.length
+  //               ? `<div class="matrix-matches">
+  //              <div class="block-label">✓ Correct Matches</div>
+  //              <table class="match-table">
+  //                <thead><tr><th>Left</th><th>Matches</th><th>+Marks</th><th>−Neg</th></tr></thead>
+  //                <tbody>
+  //                  ${(q.matrixMatches as any[])
+  //                    .map(
+  //                      (m: any) =>
+  //                        `<tr>
+  //                       <td class="match-key">${m.key}</td>
+  //                       <td>${(m.matches || []).map((rk: string) => `<span class="match-badge">${rk}</span>`).join(' ')}</td>
+  //                       <td class="match-marks">+${m.marks ?? 0}</td>
+  //                       <td class="match-neg">${m.negMark ? '−' + m.negMark : '0'}</td>
+  //                     </tr>`,
+  //                    )
+  //                    .join('')}
+  //                </tbody>
+  //              </table>
+  //            </div>`
+  //               : '';
+
+  //           matrixBlock = `
+  //         <div class="matrix-wrap">
+  //           <table class="matrix-cols">
+  //             <thead>
+  //               <tr>
+  //                 <th class="matrix-head">Column I</th>
+  //                 <th class="matrix-head">Column II</th>
+  //               </tr>
+  //             </thead>
+  //             <tbody>
+  //               <tr>
+  //                 <td class="matrix-side"><table><tbody>${leftRows}</tbody></table></td>
+  //                 <td class="matrix-side"><table><tbody>${rightRows}</tbody></table></td>
+  //               </tr>
+  //             </tbody>
+  //           </table>
+  //           ${matchesTable}
+  //         </div>`;
+  //         }
+  //         const answerBlock = withAnswer
+  //           ? `<div class="answer-row"><strong>Answer:</strong>&nbsp;${formatAnswer(q)}</div>`
+  //           : '';
+  //         const solutionHtml = safeHtml(q.solutionHtml);
+  //         const solutionBlock =
+  //           withAnswer && q.enableSolution && solutionHtml
+  //             ? `<div class="solution-block"><div class="block-label">💡 Solution</div><div>${solutionHtml}</div></div>`
+  //             : '';
+
+  //         const marks = `[+${q.positiveMarks}${q.negativeMarks ? ' / −' + q.negativeMarks : ''}]`;
+  //         return `
+  //       <div class="q-card">
+  //         <div class="q-header">
+  //           <span class="q-num">Q${i + 1}.</span>
+  //           <span class="q-meta">${this.formatQuestionType(q.questionType)} &nbsp; ${marks}</span>
+  //           ${q.questionNo ? `<span class="q-no">${q.questionNo}</span>` : ''}
+  //         </div>
+  //         ${instructionBlock}
+  //         ${passageBlock}
+  //         <div class="q-body">${questionHtml}</div>
+  //         ${optionsBlock}
+  //         ${matrixBlock}
+  //         ${answerBlock}
+  //         ${solutionBlock}
+  //       </div>`;
+  //       })
+  //       .join('');
+
+  //     setTimeout(() => {
+  //       const printWindow = window.open('', '_blank', 'width=960,height=750');
+  //       if (!printWindow) {
+  //         this.alert.error('Pop-up blocked — allow pop-ups and try again');
+  //         return;
+  //       }
+  //       const examMeta = this.questionData;
+  //       const docTitle = withAnswer ? 'ANSWER KEY' : 'QUESTION PAPER';
+  //       const sections = (examMeta?.sections || [])
+  //         .map((s: any) => s.sectionName)
+  //         .join(' | ');
+
+  //       printWindow.document.write(`<!DOCTYPE html>
+  // <html lang="en">
+  // <head>
+  //   <meta charset="UTF-8"/>
+  //   <title>${docTitle}</title>
+  //   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous"/>
+  //   <style>
+  //     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  //     body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; background: #fff; padding: 28px 40px; }
+  //     .page-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 16px; }
+  //     .doc-title { text-align: center; font-size: 15pt; font-weight: bold; letter-spacing: 2px; margin-bottom: 8px; }
+  //     .header-table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+  //     .header-table td { padding: 3px 4px; }
+  //     .student-strip { display: ${withAnswer ? 'none' : 'flex'}; gap: 24px; margin-bottom: 12px; font-size: 11pt; border: 1px solid #000; padding: 6px 10px; }
+  //     .student-strip .fill { flex: 1; border-bottom: 1px solid #000; min-width: 120px; }
+  //     .instructions { display: ${withAnswer ? 'none' : 'block'}; font-size: 10pt; border: 1px solid #ccc; padding: 5px 12px; margin-bottom: 14px; line-height: 1.6; }
+  //     .instructions ol { padding-left: 20px; }
+  //     .q-card { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed #888; page-break-inside: avoid; }
+  //     .q-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  //     .q-num  { font-weight: bold; font-size: 12pt; white-space: nowrap; }
+  //     .q-meta { font-size: 9.5pt; font-style: italic; color: #333; flex: 1; }
+  //     .q-no   { font-size: 9pt; color: #555; white-space: nowrap; }
+  //     .q-body { padding: 2px 16px 8px 16px; line-height: 1.8; font-size: 12pt; }
+  //     .passage-block, .instruction-block, .solution-block { margin: 0 16px 10px 16px; padding: 8px 12px; border-radius: 4px; font-size: 11pt; line-height: 1.7; }
+  //     .passage-block     { background: #f5f5f5; border-left: 3px solid #555; }
+  //     .instruction-block { background: #fffbe6; border-left: 3px solid #f0a500; }
+  //     .solution-block    { background: #edf7ff; border-left: 3px solid #1a73e8; }
+  //     .block-label { font-weight: bold; font-size: 10pt; margin-bottom: 4px; }
+  //     .opts-table { width: calc(100% - 32px); margin: 0 16px 10px 16px; border-collapse: collapse; }
+  //     .opts-table tr { vertical-align: top; }
+  //     .opt-cell { width: 48%; padding: 3px 6px; vertical-align: top; line-height: 1.6; }
+  //     .opt-cell.opt-correct { font-weight: bold; text-decoration: underline; }
+  //     .opt-gap  { width: 4%; }
+  //     .opt-key  { font-weight: bold; margin-right: 5px; font-size: 11pt; }
+  //     .opt-body { font-size: 11.5pt; }
+  //     .opt-tick { color: #1a7a1a; font-size: 10pt; margin-left: 4px; }
+  //     .matrix-wrap  { margin: 0 16px 10px 16px; }
+  //     .matrix-cols  { width: 100%; border-collapse: collapse; }
+  //     .matrix-head  { font-size: 10.5pt; font-weight: bold; padding: 4px 8px; border-bottom: 1px solid #333; }
+  //     .matrix-side  { width: 50%; vertical-align: top; padding: 4px 8px; }
+  //     .matrix-key   { font-weight: bold; padding: 3px 8px 3px 0; white-space: nowrap; }
+  //     .matrix-cell  { padding: 3px 4px; line-height: 1.6; }
+  //     .matrix-matches { margin-top: 10px; }
+  //     .match-table { width: auto; border-collapse: collapse; font-size: 10.5pt; margin-top: 4px; }
+  //     .match-table th { padding: 3px 12px; border: 1px solid #aaa; background: #eee; font-size: 10pt; }
+  //     .match-table td { padding: 3px 12px; border: 1px solid #ccc; }
+  //     .match-key   { font-weight: bold; }
+  //     .match-badge { display: inline-block; background: #1a7a1a; color: #fff; padding: 0 5px; border-radius: 3px; margin-right: 2px; font-size: 10pt; }
+  //     .match-marks { color: #1a7a1a; font-weight: bold; }
+  //     .match-neg   { color: #c0392b; }
+  //     .answer-row { margin: 6px 16px 0; padding-top: 5px; border-top: 1px solid #ccc; font-size: 11pt; }
+  //     .ans-badge  { display: inline-block; background: #1a7a1a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: bold; margin-left: 4px; }
+  //     .ans-true   { background: #1a7a1a; }
+  //     .ans-false  { background: #c0392b; }
+  //     .ans-num    { background: #1a4fa8; }
+  //     .ans-range  { font-size: 10pt; color: #555; }
+  //     .ans-text   { font-style: italic; }
+  //     img { max-width: 100%; height: auto; display: inline-block; vertical-align: middle; }
+  //     .katex { font-size: 1em; }
+  //     @media print {
+  //       body { padding: 8px 18px; }
+  //       .q-card { page-break-inside: avoid; }
+  //       @page { margin: 12mm 15mm; size: A4; }
+  //     }
+  //   </style>
+  // </head>
+  // <body>
+  //   <div class="page-header">
+  //     <div class="doc-title">${docTitle}</div>
+  //     <table class="header-table">
+  //       <tr>
+  //         <td style="width:60%;"><strong>Exam:</strong> ${examMeta?.examName || ''}</td>
+  //         <td style="width:40%;text-align:right;"><strong>Code:</strong> ${examMeta?.examCode || ''}</td>
+  //       </tr>
+  //       <tr>
+  //         <td><strong>Sections:</strong> ${sections}</td>
+  //         <td style="text-align:right;"><strong>Duration:</strong> ${examMeta?.duration || '—'} min</td>
+  //       </tr>
+  //       <tr>
+  //         <td><strong>Total Marks:</strong> ${examMeta?.totalMarks || '—'}</td>
+  //         <td style="text-align:right;"><strong>Total Questions:</strong> ${questionsToPrint.length}</td>
+  //       </tr>
+  //       <tr>
+  //         <td><strong>Duration: </strong> ${examMeta?.duration || '—'} minutes</td>
+  //       </tr>
+  //     </table>
+  //   </div>
+  //   ${questionsHtml}
+  //   <script>window.onload = function(){ window.print(); }<\/script>
+  // </body>
+  // </html>`);
+  //       printWindow.document.close();
+  //     }, 500);
+  //   }
+
+  private subjectNameForQuestion(q: any): string {
+    const section = (this.questionData?.sections || []).find(
+      (s: any) => s.sectionId === q.sectionId,
+    );
+    return section?.sectionName || '';
+  }
+
   printQuestions(withAnswer: boolean): void {
+    const questionsToPrint = this.filteredQuestions;
+    if (!questionsToPrint.length) {
+      this.alert.error('No questions to print');
+      return;
+    }
+    // Print order: subject priority, then question-type priority within
+    // that subject, then the question's own sortOrder. The DOM index (idx)
+    // is kept separately since rendered elements (questionElements,
+    // optionElements) are queried in the original on-screen order.
+    const domIndexByQuestion = new Map<any, number>();
+    questionsToPrint.forEach((q: any, idx: number) => domIndexByQuestion.set(q, idx));
+    const printOrder = sortQuestionsForPrint(questionsToPrint, (q: any) =>
+      this.subjectNameForQuestion(q),
+    );
+    const safeHtml = (val: any): string => (typeof val === 'string' ? val : '');
+    const formatAnswer = (q: any): string => {
+      switch (q.questionType) {
+        case 'mcq_single':
+        case 'passage_qns':
+          return `<span class="ans-badge">${(q.correctAnswer || '').toUpperCase()}</span>`;
+        case 'mcq_multi':
+          return (q.correctAnswer || '')
+            .toUpperCase()
+            .split(';')
+            .map((k: string) => `<span class="ans-badge">${k.trim()}</span>`)
+            .join(' ');
+        case 'true_false':
+          const tf = (q.correctAnswer || '').toLowerCase();
+          return `<span class="ans-badge ${tf === 'true' ? 'ans-true' : 'ans-false'}">${tf === 'true' ? 'True' : 'False'}</span>`;
+        case 'integer':
+          return `<span class="ans-badge ans-num">${q.correctAnswer ?? ''}</span>`;
+        case 'numeric':
+          const range =
+            q.numericMin != null && q.numericMax != null
+              ? ` <span class="ans-range">(Range: ${q.numericMin} – ${q.numericMax})</span>`
+              : '';
+          return `<span class="ans-badge ans-num">${q.correctAnswer ?? ''}</span>${range}`;
+        case 'subjective':
+        case 'short_answer':
+          return q.correctAnswer
+            ? `<span class="ans-text">${safeHtml(q.correctAnswer)}</span>`
+            : `<em>Manually evaluated</em>`;
+        case 'matrix':
+          return `<em>See matrix matches below</em>`;
+        default:
+          return `<span class="ans-badge">${q.correctAnswer ?? ''}</span>`;
+      }
+    };
+    const questionsHtml = printOrder
+      .map((q: any, printPos: number) => {
+        const idx = domIndexByQuestion.get(q)!;
+        const qEl = this.questionElements.toArray()[idx];
+        const questionHtml = qEl
+          ? qEl.nativeElement.innerHTML
+          : safeHtml(q.questionHtml);
+        const passageEl = document.getElementById(`passage-content-${idx}`);
+        const passageHtml = passageEl
+          ? passageEl.innerHTML
+          : safeHtml(q.passageHtml);
+        const passageBlock =
+          q.enablePassage && passageHtml
+            ? `<div class="passage-block"><div class="block-label">📖 Passage</div><div>${passageHtml}</div></div>`
+            : '';
+        const instructionHtml = safeHtml(q.instructionHtml);
+        const instructionBlock =
+          q.enableInstruction && instructionHtml
+            ? `<div class="instruction-block"><div class="block-label">ℹ Instruction</div><div>${instructionHtml}</div></div>`
+            : '';
+        let optionsBlock = '';
+        const opts: any[] = q.questionOptions || [];
+        if (opts.length) {
+          const optOffset = questionsToPrint
+            .slice(0, idx)
+            .reduce(
+              (acc: number, pq: any) => acc + (pq.questionOptions?.length || 0),
+              0,
+            );
+          const optRows: string[] = [];
+          for (let k = 0; k < opts.length; k += 2) {
+            const cells = [k, k + 1]
+              .filter((j) => j < opts.length)
+              .map((j) => {
+                const optEl = this.optionElements.toArray()[optOffset + j];
+                const optHtml = optEl
+                  ? optEl.nativeElement.innerHTML
+                  : safeHtml(opts[j].textHtml);
+                const isCorrect = withAnswer && opts[j].isCorrect;
+                const key = opts[j].key || String.fromCharCode(65 + j);
+                return `<td class="opt-cell ${isCorrect ? 'opt-correct' : ''}">
+                    <span class="opt-key">(${key})</span>
+                    <span class="opt-body">${optHtml}</span>
+                    ${isCorrect ? '<span class="opt-tick">✓</span>' : ''}
+                  </td>`;
+              });
+            optRows.push(
+              cells.length === 2
+                ? `<tr>${cells[0]}<td class="opt-gap"></td>${cells[1]}</tr>`
+                : `<tr>${cells[0]}</tr>`,
+            );
+          }
+          optionsBlock = `<table class="opts-table"><tbody>${optRows.join('')}</tbody></table>`;
+        }
+
+        let matrixBlock = '';
+        if (q.questionType === 'matrix' && q.leftColumn?.length) {
+          const leftRows = (q.leftColumn as any[])
+            .map(
+              (l: any) =>
+                `<tr><td class="matrix-key">${l.key}.</td><td class="matrix-cell">${this.renderLatexInHtml(l.text)}</td></tr>`,
+            )
+            .join('');
+          const rightRows = (q.rightColumn as any[])
+            .map(
+              (r: any) =>
+                `<tr><td class="matrix-key">${r.key}.</td><td class="matrix-cell">${this.renderLatexInHtml(r.text)}</td></tr>`,
+            )
+            .join('');
+          const matchesTable =
+            withAnswer && q.matrixMatches?.length
+              ? `<div class="matrix-matches">
+           <div class="block-label">✓ Correct Matches</div>
+           <table class="match-table">
+             <thead><tr><th>Left</th><th>Matches</th><th>+Marks</th><th>−Neg</th></tr></thead>
+             <tbody>
+               ${(q.matrixMatches as any[])
+                 .map(
+                   (m: any) =>
+                     `<tr>
+                    <td class="match-key">${m.key}</td>
+                    <td>${(m.matches || []).map((rk: string) => `<span class="match-badge">${rk}</span>`).join(' ')}</td>
+                    <td class="match-marks">+${m.marks ?? 0}</td>
+                    <td class="match-neg">${m.negMark ? '−' + m.negMark : '0'}</td>
+                  </tr>`,
+                 )
+                 .join('')}
+             </tbody>
+           </table>
+         </div>`
+              : '';
+          matrixBlock = `
+      <div class="matrix-wrap">
+        <table class="matrix-cols">
+          <thead>
+            <tr>
+              <th class="matrix-head">Column I</th>
+              <th class="matrix-head">Column II</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="matrix-side"><table><tbody>${leftRows}</tbody></table></td>
+              <td class="matrix-side"><table><tbody>${rightRows}</tbody></table></td>
+            </tr>
+          </tbody>
+        </table>
+        ${matchesTable}
+      </div>`;
+        }
+
+        const answerBlock = withAnswer
+          ? `<div class="answer-row"><strong>Answer:</strong>&nbsp;${formatAnswer(q)}</div>`
+          : '';
+        const solutionHtml = safeHtml(q.solutionHtml);
+        const solutionBlock =
+          withAnswer && q.enableSolution && solutionHtml
+            ? `<div class="solution-block"><div class="block-label">💡 Solution</div><div>${solutionHtml}</div></div>`
+            : '';
+
+        const marks = `[+${q.positiveMarks}${q.negativeMarks ? ' / −' + q.negativeMarks : ''}]`;
+        return `
+    <div class="q-card">
+      <div class="q-header">
+        <span class="q-num">Q${printPos + 1}.</span>
+        <span class="q-meta">${this.formatQuestionType(q.questionType)} &nbsp; ${marks}</span>
+        ${q.questionNo ? `<span class="q-no">${q.questionNo}</span>` : ''}
+      </div>
+      ${instructionBlock}
+      ${passageBlock}
+      <div class="q-body">${questionHtml}</div>
+      ${optionsBlock}
+      ${matrixBlock}
+      ${answerBlock}
+      ${solutionBlock}
+    </div>`;
+      })
+      .join('');
+
     setTimeout(() => {
-      const printWindow = window.open('', '_blank', 'width=900,height=700');
-      if (!printWindow) return;
-      const questionsHtml = this.questions
-        .map((q, i) => {
-          const qEl = this.questionElements.toArray()[i]?.nativeElement;
-          const questionHtml = qEl ? qEl.innerHTML : '';
-          const opts = q.questionOptions || [];
-          let optionsHtml = '';
-          if (opts.length) {
-            const rows: string[] = [];
-            for (let j = 0; j < opts.length; j += 2) {
-              const cells = [j, j + 1]
-                .filter((k) => k < opts.length)
-                .map((k) => {
-                  const label = String.fromCharCode(65 + k);
-                  const flatIndex =
-                    this.questions
-                      .slice(0, i)
-                      .reduce(
-                        (acc: number, pq: any) =>
-                          acc + (pq.questionOptions?.length || 0),
-                        0,
-                      ) + k;
-                  const optEl = this.optionElements.toArray()[flatIndex];
-                  const optHtml = optEl
-                    ? optEl.nativeElement.innerHTML
-                    : typeof opts[k].textHtml === 'string'
-                      ? opts[k].textHtml
-                      : '';
-                  const isCorrect = withAnswer && opts[k].isCorrect;
-                  return `<td class="opt-cell ${isCorrect ? 'correct-opt' : ''}">
-                        <span class="opt-label">(${label})</span>
-                        <span class="opt-text">${optHtml}</span>
-                      </td>`;
-                })
-                .join('<td class="opt-divider"></td>');
-              rows.push(`<tr>${cells}</tr>`);
-            }
-            optionsHtml = `
-          <table class="options-table">
-            ${rows.join('')}
-          </table>`;
-          }
-          const answerRow = withAnswer
-            ? `<div class="answer-box">
-             <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
-           </div>`
-            : `<div class="answer-box">             
-           </div>`;
-          return `
-        <div class="question-card">
-          <div class="question-number">Q${i + 1}.
-            <span class="meta-right">
-              [${this.formatQuestionType(q.questionType)}] &nbsp;
-            </span>
-          </div>
-          <div class="question-body">${questionHtml}</div>
-          ${optionsHtml}
-          ${answerRow}
-        </div>`;
-        })
-        .join('');
-      const docTitle = withAnswer ? 'ANSWER KEY' : 'EXAM';
-      printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${docTitle}</title>
-        <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
-          crossorigin="anonymous">
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
+      const printWindow = window.open('', '_blank', 'width=960,height=750');
+      if (!printWindow) {
+        this.alert.error('Pop-up blocked — allow pop-ups and try again');
+        return;
+      }
+      const examMeta = this.questionData;
+      const docTitle = withAnswer ? 'ANSWER KEY' : 'QUESTION PAPER';
+      const sections = (examMeta?.sections || [])
+        .map((s: any) => s.sectionName)
+        .join(' | ');
 
-          body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 12pt;
-            color: #000;
-            background: #fff;
-            padding: 30px 40px;
-          }
+      printWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${docTitle}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; background: #fff; padding: 28px 40px; }
 
-          /* ── Page Header ── */
-          .page-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 16px;
-          }
-          .page-header h1 { font-size: 18pt; letter-spacing: 2px; }
-          .page-header .subtitle {
-            font-size: 10pt;
-            margin-top: 3px;
-            font-style: italic;
-          }
-          .page-meta {
-            display: table;
-            width: 100%;
-            margin-top: 8px;
-            font-size: 10.5pt;
-          }
-          .page-meta td { width: 25%; text-align: center; }
+    /* ── Page breaks ── */
+    .instruction-page { page-break-after: always; }
+    .questions-page { page-break-before: auto; }
 
-          /* ── Student Info ── */
-          .student-info {
-            display: ${withAnswer ? 'none' : 'table'};
-            width: 100%;
-            margin-bottom: 14px;
-            font-size: 11pt;
-            border-collapse: collapse;
-          }
-          .student-info td { padding: 0 10px 0 0; white-space: nowrap; }
-          .student-info .fill-line {
-            border-bottom: 1px solid #000;
-            width: 100%;
-            display: inline-block;
-          }
+    /* ── Header ── */
+    .page-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 16px; }
+    .doc-title { text-align: center; font-size: 15pt; font-weight: bold; letter-spacing: 2px; margin-bottom: 8px; }
+    .header-table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+    .header-table td { padding: 3px 4px; }
 
-          /* ── Instructions ── */
-          .instructions {
-            display: ${withAnswer ? 'none' : 'block'};
-            font-size: 10pt;
-            border: 1px solid #000;
-            padding: 6px 12px;
-            margin-bottom: 16px;
-            line-height: 1.6;
-          }
-          .instructions ol { margin-left: 18px; }
-          .instructions li { margin-bottom: 2px; }
+    /* ── Student info strip ── */
+    .student-strip {
+      border: 1px solid #000;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 11pt;
+    }
+    .student-strip-title {
+      font-weight: bold;
+      font-size: 11pt;
+      margin-bottom: 10px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .student-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .student-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 200px;
+    }
+    .student-field label {
+      font-weight: bold;
+      white-space: nowrap;
+      font-size: 11pt;
+    }
+    .student-field .fill-line {
+      flex: 1;
+      border-bottom: 1px solid #000;
+      min-width: 100px;
+      height: 18px;
+    }
 
-          /* ── Question Card ── */
-          .question-card {
-            margin-bottom: 22px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed #555;
-            page-break-inside: avoid;
-          }
-
-          /* ── Question Number Row ── */
-          .question-number {
-            font-weight: bold;
-            font-size: 11.5pt;
-            margin-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-          }
-          .meta-right {
-            font-weight: normal;
-            font-style: italic;
-            font-size: 9.5pt;
-            color: #000;
-          }
-
-          /* ── Question Body ── */
-          .question-body {
-            padding: 4px 18px 10px 18px;
-            line-height: 1.8;
-            font-size: 12pt;
-          }
-
-          /* ── Options Grid (2 per row) ── */
-          .options-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0 18px 10px 18px;
-            width: calc(100% - 36px);
-          }
-          .options-table tr { vertical-align: top; }
-          .opt-cell {
-            width: 48%;
-            padding: 3px 6px;
-            vertical-align: top;
-          }
-          .opt-divider { width: 4%; }
-          .opt-label {
-            font-weight: bold;
-            font-size: 11pt;
-            margin-right: 6px;
-            white-space: nowrap;
-          }
-          .opt-text {
-            font-size: 11.5pt;
-            line-height: 1.6;
-            vertical-align: top;
-          }
-          .correct-opt .opt-text {
-            font-weight: bold;
-            text-decoration: underline;
-          }
-          .page-header .meta {
-            font-size: 11pt;
-            margin-top: 6px;
-            display: flex;
-            justify-content: space-between;
-          }
-      .meta-table {
+    /* ── Instructions page ── */
+    .instructions-page-header {
+      text-align: center;
+      border-bottom: 2px solid #000;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .instructions-page-header h2 {
+      font-size: 14pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .instructions-box {
+      border: 1.5px solid #000;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .instructions-box h3 {
+      font-size: 12pt;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .instructions-general ol,
+    .instructions-section ol {
+      padding-left: 22px;
+      margin-bottom: 0;
+    }
+    .instructions-general li,
+    .instructions-section li {
+      margin-bottom: 6px;
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+    .instructions-section-title {
+      font-weight: bold;
+      font-size: 11pt;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      text-decoration: underline;
+    }
+    .section-marks-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 10.5pt;
-      margin-top: 8px;
+      font-size: 11pt;
+      margin-top: 16px;
+    }
+    .section-marks-table th {
+      border: 1px solid #333;
+      padding: 5px 10px;
+      background: #f0f0f0;
+      text-align: center;
+    }
+    .section-marks-table td {
+      border: 1px solid #333;
+      padding: 5px 10px;
+      text-align: center;
+    }
+    /* ── Question cards ── */
+    .q-card { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed #888; page-break-inside: avoid; }
+    .q-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+    .q-num  { font-weight: bold; font-size: 12pt; white-space: nowrap; }
+    .q-meta { font-size: 9.5pt; font-style: italic; color: #333; flex: 1; }
+    .q-no   { font-size: 9pt; color: #555; white-space: nowrap; }
+    .q-body { padding: 2px 16px 8px 16px; line-height: 1.8; font-size: 12pt; }
+    .passage-block, .instruction-block, .solution-block { margin: 0 16px 10px 16px; padding: 8px 12px; border-radius: 4px; font-size: 11pt; line-height: 1.7; }
+    .passage-block     { background: #f5f5f5; border-left: 3px solid #555; }
+    .instruction-block { background: #fffbe6; border-left: 3px solid #f0a500; }
+    .solution-block    { background: #edf7ff; border-left: 3px solid #1a73e8; }
+    .block-label { font-weight: bold; font-size: 10pt; margin-bottom: 4px; }
+    .opts-table { width: calc(100% - 32px); margin: 0 16px 10px 16px; border-collapse: collapse; }
+    .opts-table tr { vertical-align: top; }
+    .opt-cell { width: 48%; padding: 3px 6px; vertical-align: top; line-height: 1.6; }
+    .opt-cell.opt-correct { font-weight: bold; text-decoration: underline; }
+    .opt-gap  { width: 4%; }
+    .opt-key  { font-weight: bold; margin-right: 5px; font-size: 11pt; }
+    .opt-body { font-size: 11.5pt; }
+    .opt-tick { color: #1a7a1a; font-size: 10pt; margin-left: 4px; }
+    .matrix-wrap  { margin: 0 16px 10px 16px; }
+    .matrix-cols  { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .matrix-head  { font-size: 10.5pt; font-weight: bold; padding: 4px 8px; border-bottom: 1px solid #333; }
+    .matrix-side  { width: 50%; vertical-align: top; padding: 4px 8px; border-right: 1px solid #ccc; }
+    .matrix-side:last-child { border-right: none; }
+    .matrix-side table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .matrix-key   { font-weight: bold; padding: 3px 8px 3px 0; white-space: nowrap; vertical-align: top; width: 22px; }
+    .matrix-cell  { padding: 3px 4px; line-height: 1.6; vertical-align: top; }
+    .matrix-matches { margin-top: 10px; }
+    .match-table { width: auto; border-collapse: collapse; font-size: 10.5pt; margin-top: 4px; }
+    .match-table th { padding: 3px 12px; border: 1px solid #aaa; background: #eee; font-size: 10pt; }
+    .match-table td { padding: 3px 12px; border: 1px solid #ccc; }
+    .match-key   { font-weight: bold; }
+    .match-badge { display: inline-block; background: #1a7a1a; color: #fff; padding: 0 5px; border-radius: 3px; margin-right: 2px; font-size: 10pt; }
+    .match-marks { color: #1a7a1a; font-weight: bold; }
+    .match-neg   { color: #c0392b; }
+    .answer-row { margin: 6px 16px 0; padding-top: 5px; border-top: 1px solid #ccc; font-size: 11pt; }
+    .ans-badge  { display: inline-block; background: #1a7a1a; color: #fff; padding: 1px 8px; border-radius: 3px; font-weight: bold; margin-left: 4px; }
+    .ans-true   { background: #1a7a1a; }
+    .ans-false  { background: #c0392b; }
+    .ans-num    { background: #1a4fa8; }
+    .ans-range  { font-size: 10pt; color: #555; }
+    .ans-text   { font-style: italic; }
+    img { max-width: 100%; height: auto; display: inline-block; vertical-align: middle; }
+    .katex { font-size: 1em; }
+    @media print {
+      body { padding: 8px 18px; }
+      .q-card { page-break-inside: avoid; }
+      .instruction-page { page-break-after: always; }
+      @page { margin: 12mm 15mm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  ${
+    !withAnswer
+      ? `
+  <!-- ══ PAGE 1: INSTRUCTIONS ══════════════════════════════════════════ -->
+  <div class="instruction-page">
+    <div class="instructions-page-header">
+      <h2>${examMeta?.examName || 'EXAMINATION'}</h2>
+      <div style="font-size:11pt; margin-top:6px;">
+        Code: <strong>${examMeta?.examCode || ''}</strong>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        Duration: <strong>${examMeta?.duration || '—'} minutes</strong>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        Total Marks: <strong>${examMeta?.totalMarks || '—'}</strong>
+      </div>
+    </div>
+    <div class="instructions-box">
+      <h3>General Instructions</h3>
+      <div class="instructions-general">
+        <ol>
+          <li>This question paper contains <strong>${questionsToPrint.length}</strong> questions.</li>
+          <li>All questions are compulsory unless otherwise stated.</li>
+          <li>Read each question carefully before answering.</li>
+          <li>Use of calculator, mobile phone or any electronic device is <strong>not permitted</strong> unless specified.</li>
+          <li>Write your Name, Date and Enrollment Number clearly in the space provided.</li>
+          <li>Do not write anything on the question paper other than what is asked.</li>
+          <li>Mark your answers clearly and legibly.</li>
+          <li>Rough work, if any, should be done only in the space provided for rough work.</li>
+        </ol>
+      </div>
+      ${
+        (examMeta?.sections?.length || 0) > 1
+          ? `
+      <div style="margin-top:20px;">
+        <div class="instructions-section-title">Section-wise Instructions</div>
+        <div class="instructions-section">
+          <ol>
+            <li>The paper is divided into <strong>${examMeta.sections.length}</strong> sections.</li>
+            <li>Each section has its own marking scheme — read carefully before attempting.</li>
+            <li>You may attempt sections in any order.</li>
+          </ol>
+        </div>
+        <table class="section-marks-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Section</th>
+              <th>No. of Questions</th>
+              <th>Marks per Question</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(examMeta.sections as any[])
+              .map(
+                (s: any, idx: number) => `
+              <tr>
+                <td>${idx + 1}</td>
+                <td>${s.sectionName}</td>
+                <td>${s.numberOfQuestions || '—'}</td>
+                <td>—</td>
+              </tr>
+            `,
+              )
+              .join('')}
+          </tbody>
+        </table>
+      </div>
+      `
+          : ''
       }
-      .meta-table td {
-      padding: 3px 6px;
-      }
-          /* ── Answer Box ── */
-          .answer-box {
-            margin: 6px 18px 0 18px;
-            font-size: 11pt;
-            padding-top: 4px;
-            border-top: 1px solid #ccc;
-          }
-          .answer-table { width: 100%; border-collapse: collapse; }
-          .answer-table td { padding: 0; }
-          .marks-box { text-align: right; white-space: nowrap; }
-
-          /* ── KaTeX ── */
-          .katex { font-size: 1em; }
-          img { max-width: 100%; height: auto; display: block; margin: 4px 0; }
-
-          /* ── Print ── */
-          @media print {
-            body { padding: 10px 20px; }
-            .question-card { page-break-inside: avoid; }
-            @page { margin: 12mm 15mm; }
-          }
-        </style>
-      </head>
-      <body>
-
-        <!-- Header -->
-        <div class="page-header">
-          <table class="meta-table">
-    <tr>
-      <td style="width:50%;text-align:left"><strong>Exam:</strong> ${this.questionData.examName || ''}</td>
-      <td style="width:50%;text-align:right"><strong>Code:</strong> ${this.questionData.examCode || ''}</td>
-    </tr>
-    <tr>
-      <td style="width:50%;text-align:left"><strong>Sections:</strong> ${(this.questionData.sections || []).map((s: any) => s.sectionName).join(' | ')}</td>
-      <td style="width:50%;text-align:right"><strong>Duration:</strong> ${this.questionData.duration || ''} min</td>
-    </tr>
-    <tr>
-      <td style="width:50%;text-align:left"><strong>Total Marks:</strong> ${this.questionData.totalMarks || ''}</td>
-      <td style="width:50%;text-align:right"><strong>Total Questions:</strong> ${this.questionData.totalQuestions || ''}</td>
-    </tr>
-  </table>
-        </div> 
-
-        <!-- Questions -->
-        ${questionsHtml}
-
-        <script>window.onload = () => window.print();<\/script>
-      </body>
-      </html>
-    `);
-
+    </div>
+  </div>
+  <!-- ══ END PAGE 1 ══════════════════════════════════════════════════ -->
+  `
+      : ''
+  }
+  <!-- ══ QUESTIONS PAGE ════════════════════════════════════════════ -->
+  <div class="questions-page">
+    <div class="page-header">
+      <div class="doc-title">${docTitle}</div>
+      <table class="header-table">
+        <tr>
+          <td style="width:60%;"><strong>Exam:</strong> ${examMeta?.examName || ''}</td>
+          <td style="width:40%;text-align:right;"><strong>Code:</strong> ${examMeta?.examCode || ''}</td>
+        </tr>
+        <tr>
+          <td><strong>Sections:</strong> ${sections}</td>
+          <td style="text-align:right;"><strong>Duration:</strong> ${examMeta?.duration || '—'} min</td>
+        </tr>
+        <tr>
+          <td><strong>Total Marks:</strong> ${examMeta?.totalMarks || '—'}</td>
+          <td style="text-align:right;"><strong>Total Questions:</strong> ${questionsToPrint.length}</td>
+        </tr>
+      </table>
+    </div>
+    ${
+      !withAnswer
+        ? `
+    <div class="student-strip">
+      <div class="student-strip-title">Student Information</div>
+      <div class="student-fields">
+        <div class="student-field">
+          <label>Name:</label>
+          <div class="fill-line"></div>
+        </div>
+        <div class="student-field">
+          <label>Date:</label>
+          <div class="fill-line"></div>
+        </div>
+        <div class="student-field">
+          <label>Enrollment No:</label>
+          <div class="fill-line"></div>
+        </div>
+      </div>
+    </div>
+    `
+        : ''
+    }
+    ${questionsHtml}
+  </div>
+  <!-- ══ END QUESTIONS PAGE ══════════════════════════════════════════ -->
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`);
       printWindow.document.close();
     }, 500);
   }
@@ -1142,12 +1673,6 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         }));
       },
     });
-    // this.commonApi.fetchData(body, 'ims/topic', 'list?list=full').subscribe({
-    //   next: (res: any) => { this.bankAllTopics = res?.data || []; }
-    // });
-    // this.commonApi.fetchData(body, 'ims/subtopic', 'list?list=full').subscribe({
-    //   next: (res: any) => { this.bankAllSubTopics = res?.data || []; }
-    // });
   }
 
   onBankSubjectChange(subjectId: string): void {
@@ -1284,21 +1809,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       sectionId: this.bankSectionId,
     };
     this.commonApi.fetchData(payload, 'exam/questions', 'map').subscribe({
-      // next: (res: any) => {
-      //   this.bankMapping = false;
-      //   if (res?.status) {
-      //     this.alert.success('Question mapped successfully');
-      //     this.bankSelectedIds.delete(recId);
-      //     this.loadQuestions();
-      //   }
-      // },
       next: (res: any) => {
         this.bankMapping = false;
         if (res?.status) {
           this.alert.success('Question mapped successfully');
           this.bankSelectedIds.delete(recId);
           this.loadQuestions();
-          this.loadExamDetails(); // ← refresh totals
+          this.loadExamDetails();
         }
       },
       error: () => {
@@ -1325,24 +1842,13 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
       sectionId: this.bankSectionId,
     };
     this.commonApi.fetchData(payload, 'exam/questions', 'bulk-map').subscribe({
-      // next: (res: any) => {
-      //   this.bankMapping = false;
-      //   if (res?.status) {
-      //     this.alert.success(
-      //       `${this.bankSelectedIds.size} question(s) mapped successfully`,
-      //     );
-      //     this.bankSelectedIds.clear();
-      //     this.loadQuestions();
-      //     this.closeBankModal();
-      //   }
-      // },
       next: (res: any) => {
         this.bankMapping = false;
         if (res?.status) {
           this.alert.success(res.message || `Questions mapped successfully`);
           this.bankSelectedIds.clear();
           this.loadQuestions();
-          this.loadExamDetails(); // ← refresh totals
+          this.loadExamDetails();
           this.closeBankModal();
         }
       },

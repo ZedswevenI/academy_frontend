@@ -6,6 +6,10 @@ import { CenterService } from '../../../../service/admin/orgmaster/center.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const CENTER_LIST_STATE_KEY = 'center-list';
 
 @Component({
   selector: 'app-center',
@@ -25,6 +29,8 @@ export class CenterComponent implements OnInit {
   totalRecords = 0;
   centerData: any[] = [];
   entiId: any;
+  currentPage = 1;
+  restoredPage = 1;
   columns = [
     { key: 'centerName', label: 'Center Name', sortable: false },
     { key: 'centerCode', label: 'Code', sortable: false },
@@ -40,6 +46,7 @@ export class CenterComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgCenter:view'),
       callback: (row: any) => this.view(row)
     },
     {
@@ -48,6 +55,7 @@ export class CenterComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgCenter:edit'),
       callback: (row: any) => this.edit(row)
     },
     {
@@ -56,6 +64,7 @@ export class CenterComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#D42B2B',
+      show: () => !this.permissionService.hasPermission('orgCenter:delete'),
       callback: (row: any) => this.openDelete(row)
     }
   ];
@@ -67,13 +76,16 @@ export class CenterComponent implements OnInit {
     private alertService: AlertService,
     private centerService: CenterService,
     private api: CommonapiService,
-    private router: Router
+    private router: Router,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService
   ) {
     this.entiId = localStorage.getItem('tenantId')
     this.breadcrumb.set([
       { label: 'Org-Masters' },
       { label: 'Center' }
     ]);
+    this.restoredPage = this.listStateService.consumePage(CENTER_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -109,6 +121,7 @@ export class CenterComponent implements OnInit {
     sortDirection?: string;
   }) {
     this.loading = true;
+    this.currentPage = params.page;
 
     // Pagination & Sort
     let sortParam = '';
@@ -257,14 +270,19 @@ export class CenterComponent implements OnInit {
   }
 
   view(row: any) {
+    if (!this.permissionService.hasPermission('orgCenter:view')) return;
     const id = row?._id || row?.recId;
     if (!id) return;
+    this.listStateService.savePage(CENTER_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/org-master/center/view', id]);
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('orgCenter:view')) return;
     const id = row?._id || row?.recId;
     if (!id) return;
+    this.listStateService.savePage(CENTER_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/org-master/center/view', id]);
   }
 }

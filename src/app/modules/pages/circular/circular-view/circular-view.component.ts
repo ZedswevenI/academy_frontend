@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -26,7 +27,7 @@ export class CircularViewComponent implements OnInit {
   columnsArray = [
     { key: 'studentName', label: 'Student Name', sortable: false },
     { key: 'studentNo', label: 'Student No', sortable: false },
-    { key: 'batchCode', label: 'Batch', sortable: false },
+    { key: 'batchLabel', label: 'Batch', sortable: false },
     { key: 'centerCode', label: 'Center', sortable: false },
     { key: 'readAtFormatted', label: 'Read At', sortable: false },
   ];
@@ -35,7 +36,8 @@ export class CircularViewComponent implements OnInit {
     private router: Router,
     private breadcrumb: BredcrumpService,
     private commonApi: CommonapiService,
-    private alert: AlertService
+    private alert: AlertService,
+    private backNav: BackNavigationService
   ) {
     const nav = this.router.getCurrentNavigation();
     const state = nav?.extras?.state?.['circular'];
@@ -79,6 +81,7 @@ export class CircularViewComponent implements OnInit {
         next: (res: any) => {
           this.readList = (res?.data || []).map((r: any) => ({
             ...r,
+            batchLabel: this.combineBatchLabel(r.batchCode, r.batchName),
             readAtFormatted: this.formatTimestamp(r.readAt)
           }));
           this.totalRecords = res?.count || 0;
@@ -115,7 +118,7 @@ export class CircularViewComponent implements OnInit {
             'S.No': i + 1,
             'Student Name': r.studentName || '-',
             'Student No': r.studentNo || '-',
-            'Batch': r.batchCode || '-',
+            'Batch': this.combineBatchLabel(r.batchCode, r.batchName),
             'Center': r.centerCode || '-',
             'Read At': this.formatTimestamp(r.readAt)
           }));
@@ -153,6 +156,13 @@ export class CircularViewComponent implements OnInit {
     if (isNaN(d.getTime())) return '-';
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // `getRead/list` rows are always single-valued per batch (no comma-list
+  // concern here, unlike institue/circular/list).
+  combineBatchLabel(batchCode: string, batchName: string): string {
+    if (!batchCode) return '-';
+    return batchName ? `${batchName} (${batchCode})` : batchCode;
   }
 
   getCenterCodes(): string[] {
@@ -201,7 +211,7 @@ export class CircularViewComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/app/circular']);
+    this.backNav.goBack({ route: '/app/circular' });
   }
 
   downloadFile(url: string): void {

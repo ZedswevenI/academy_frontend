@@ -6,6 +6,8 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
+import { PermissionService } from '../../../../shared/permission.service';
 import * as XLSX from 'xlsx';
 
 const safeTrim = (v: any) =>
@@ -104,11 +106,23 @@ export class StudentViewComponent implements OnInit {
     private alert: AlertService,
     private route: ActivatedRoute,
     private fb: FormBuilder,
+    private backNav: BackNavigationService,
+    private permissionService: PermissionService,
   ) {
     this.breadcrump.set([
       { label: 'Student', link: '/app/student' },
       { label: 'View' },
     ]);
+  }
+
+  goBack(): void {
+    const state: any = history.state || {};
+    this.backNav.goBack(
+      { route: '/app/student' },
+      {
+        batch: { route: ['/app/batch/view', state.batchId] },
+      },
+    );
   }
 
   ngOnInit(): void {
@@ -262,7 +276,14 @@ export class StudentViewComponent implements OnInit {
           if (p.basic?.admissionNo) {
             this.loadRemarks(p.basic.admissionNo);
             this.loadAssignmentResults(p.basic.admissionNo);
-            this.loadAlumniData(p.basic.admissionNo);
+            // Not a click-gated action — the Alumni Info tab has no trigger
+            // button, it auto-fetches on page load. student:alumniImport
+            // "also gates fetching alumni data" per the backend, so skip the
+            // call (and the tab is hidden in the template) for anyone
+            // without it, rather than fetch data nobody's allowed to see.
+            if (this.permissionService.hasPermission('student:alumniImport')) {
+              this.loadAlumniData(p.basic.admissionNo);
+            }
           }
           this.loadLateEntries();
         },
@@ -473,6 +494,7 @@ export class StudentViewComponent implements OnInit {
       { Field: 'DOB', Value: b.dob ? this.fmtEpoch(b.dob) : '—' },
       { Field: 'Program', Value: p.programName || '—' },
       { Field: 'Batch', Value: p.batchName || '—' },
+      { Field: 'Batch Code', Value: p.batchCode || '—' },
       { Field: 'Center', Value: p.centerName || '—' },
     ];
     XLSX.utils.book_append_sheet(

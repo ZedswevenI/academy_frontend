@@ -12,7 +12,7 @@
                     </button>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-end mb-3">
+                    <div class="d-flex justify-content-end gap-2 mb-3">
                         <button class="btn btn-outline-secondary btn-sm" type="button" (click)="downloadSample()">
                             <i class="fas fa-download me-1"></i> Download Sample DOCX
                         </button>
@@ -112,41 +112,42 @@
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td><code>[Q]</code></td>
-                                            <td>Start of a question (text can follow on same line)</td>
+                                            <td><code>[SORT] N</code></td>
+                                            <td>Manual sort order for the question that follows</td>
                                         </tr>
                                         <tr>
-                                            <td><code>[qtype]</code></td>
-                                            <td>mcq_single, mcq_multi, integer, numeric, true_false, subjective,
-                                                short_answer, matrix</td>
+                                            <td><code>&#64;QS ... &#64;QE</code></td>
+                                            <td>Question text (HTML/LaTeX as-is, e.g. <code>$x$</code>,
+                                                <code>&lt;br /&gt;</code>)</td>
                                         </tr>
                                         <tr>
-                                            <td><code>[DIFFICULTY]</code></td>
-                                            <td>easy / medium / hard</td>
+                                            <td><code>&#64;OS ... &#64;OE</code></td>
+                                            <td>Options, one per line as <code>(A) text</code>. For Matrix Match
+                                                (QT:MTM), use <code>(A) L: text</code> for left-column items and
+                                                <code>(P) R: text</code> for right-column items instead.</td>
                                         </tr>
                                         <tr>
-                                            <td><code>[ans]</code></td>
-                                            <td>Answer — A for single, A,B,C for multi, 42 for integer</td>
+                                            <td><code>&#64;TagS ... &#64;TagE</code></td>
+                                            <td>Metadata: <code>QT:</code>, <code>CA:</code>, <code>CM:</code>,
+                                                <code>WM:</code>, <code>PM:</code></td>
                                         </tr>
                                         <tr>
-                                            <td><code>[Marks]</code></td>
-                                            <td>positive,negative e.g. <code>4,1</code></td>
+                                            <td><code>QT:</code></td>
+                                            <td>SCO=Single Correct, MCO=Multi Correct, INT=Integer, NUM=Numerical,
+                                                SUB=Subjective, TF=True/False, COM=Comprehension, MTM=Matrix
+                                                Match</td>
                                         </tr>
                                         <tr>
-                                            <td><code>[numericMin]</code></td>
-                                            <td>Minimum accepted value (numeric type)</td>
+                                            <td><code>CA:</code></td>
+                                            <td>Correct answer — option letter(s), T/F, or a number</td>
                                         </tr>
                                         <tr>
-                                            <td><code>[numericMax]</code></td>
-                                            <td>Maximum accepted value (numeric type)</td>
+                                            <td><code>CM: / WM:</code></td>
+                                            <td>Correct marks (positive) / Wrong marks (negative)</td>
                                         </tr>
                                         <tr>
-                                            <td><code>[soln]</code></td>
-                                            <td>Solution (multi-line supported)</td>
-                                        </tr>
-                                        <tr>
-                                            <td><code>(A) (B)...</code></td>
-                                            <td>MCQ options</td>
+                                            <td><code>PM:</code></td>
+                                            <td>Partial marks per correct match (Matrix / Multi Correct only)</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -154,22 +155,21 @@
                             <div class="col-md-6">
                                 <div class="bg-light border rounded p-2 small"
                                     style="font-family:monospace; font-size:12px; line-height:1.8;">
-                                    [Q] Which is a vector quantity?<br>
-                                    [qtype] mcq_single<br>
-                                    [DIFFICULTY] medium<br>
-                                    (A) Mass<br>
-                                    (B) Velocity<br>
-                                    (C) Temperature<br>
-                                    (D) Energy<br>
-                                    [ans] B<br>
-                                    [Marks] 4,1<br>
-                                    [soln] Velocity has both magnitude and direction.<br>
-                                    It is a vector quantity.<br>
-                                    <br>
-                                    [Q] Integer type example<br>
-                                    [qtype] integer<br>
-                                    [ans] 42<br>
-                                    [Marks] 4,0
+                                    [SORT] 25<br>
+                                    &#64;QS<br>
+                                    Given in the figure are two blocks $A$ and $B$...___&lt;br /&gt;<br>
+                                    &#64;QE<br>
+                                    &#64;OS<br>
+                                    (A) 80 N<br>
+                                    (B) 120 N<br>
+                                    (C) 150 N<br>
+                                    (D) 129 N<br>
+                                    &#64;OE<br>
+                                    &#64;TagS<br>
+                                    QT:SCO<br>
+                                    CA:B<br>
+                                    CM:4, PM:1,WM:1,<br>
+                                    &#64;TagE
                                 </div>
                             </div>
                         </div>

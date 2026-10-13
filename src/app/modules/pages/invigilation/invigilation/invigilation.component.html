@@ -9,7 +9,7 @@
             <button class="btn btn-outline-success btn-sm" (click)="downloadSample()">
                 <i class="fa-solid fa-download me-1"></i> Sample Excel
             </button>
-            <button class="btn btn-create fs-16 fw-medium" (click)="create()">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'invigilation:create'" (click)="create()">
                 <i class="fa-solid fa-plus me-1"></i> Add Invigilation
             </button>
         </div>
@@ -61,7 +61,7 @@
     <div class="card shadow-sm">
         <div class="mt-4">
             <custom-table [columns]="columnsArray" [data]="records" [actions]="actions" success="PUBLISHED"
-                [totalRecords]="total" [searchPlaceholder]="'Search exam name, session...'"
+                [totalRecords]="total" [searchPlaceholder]="'Search exam name, session...'" [initialPage]="restoredPage"
                 (requestData)="loadTableData($event)" (rowClick)="view($event)">
             </custom-table>
         </div>

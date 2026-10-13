@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, NgZone, OnInit } from '@angular/core';
 import katex from 'katex';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -92,6 +92,7 @@ export class QuestionCreateNewComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
+    private zone: NgZone,
     private breadcrump: BredcrumpService,
     private commonApi: CommonapiService,
     private alert: AlertService,
@@ -99,7 +100,6 @@ export class QuestionCreateNewComponent implements OnInit {
     private sanitizer: DomSanitizer,
   ) {
     this.initializeForm();
-
     const state: any = history.state;
     this.entiId = localStorage.getItem('tenantId') || '';
 
@@ -154,7 +154,7 @@ export class QuestionCreateNewComponent implements OnInit {
       enableInstruction: [false],
       enableSolution: [false],
       questionType: ['mcq_single', Validators.required],
-      questionText: ['', Validators.required],
+      questionText: [''],
       positiveMarks: [4, [Validators.required, Validators.min(0)]],
       negativeMarks: [1, [Validators.required, Validators.min(0)]],
       hasPartialMarking: [false],
@@ -356,7 +356,8 @@ export class QuestionCreateNewComponent implements OnInit {
           // passageId: q.passageId || null,
           // passageText: q.passageHtml || '',
           passageId: q.passageId?._id || q.passageId || null,
-          passageText: q.passageId?.passageHtml || q.passageHtml || '',
+          passageText:
+            q.passageData?.passageHtml || q.passageId?.passageHtml || q.passageHtml || '',
           instruction: instructionHtml,
           solution: solutionHtml,
           trueFalseAnswer:
@@ -524,9 +525,7 @@ export class QuestionCreateNewComponent implements OnInit {
   }
 
   addOption(): void {
-    this.options.push(
-      this.fb.group({ text: ['', Validators.required], isCorrect: [false] }),
-    );
+    this.options.push(this.fb.group({ text: [''], isCorrect: [false] }));
   }
 
   removeOption(index: number): void {
@@ -658,7 +657,6 @@ export class QuestionCreateNewComponent implements OnInit {
     return this.questionForm.get('questionType')?.value || 'mcq_single';
   }
 
-
   private validateBeforeSubmit(): boolean {
     const qt = this.getSelectedQuestionType();
     if (qt === 'mcq_single' || qt === 'mcq_multi') {
@@ -727,7 +725,6 @@ export class QuestionCreateNewComponent implements OnInit {
     }
     return true;
   }
-
 
   onSubmit(): void {
     if (!this.questionForm.valid) {
@@ -801,6 +798,19 @@ export class QuestionCreateNewComponent implements OnInit {
   }
 
   private submitBankQuestion(): void {
+    const formValue = this.questionForm.value;
+    if (!formValue.bankSubjectId) {
+      this.alert.error('Please select a subject');
+      return;
+    }
+    if (!formValue.topicId?.trim()) {
+      this.alert.error('Topic is required for bank questions');
+      return;
+    }
+    if (!formValue.classNo) {
+      this.alert.error('Please select a class');
+      return;
+    }
     this.prepareQuestionData().then((payload) => {
       const formValue = this.questionForm.value;
       const finalPayload: any = {
@@ -861,14 +871,17 @@ export class QuestionCreateNewComponent implements OnInit {
 
   onEditorInput(event: Event, controlName: string) {
     const target = event.target as HTMLDivElement;
-    if (!target) return;
-    this.questionForm.patchValue({ [controlName]: target.innerHTML });
+    this.zone.run(() => {
+      this.questionForm.patchValue({ [controlName]: target.innerHTML });
+    });
   }
 
   onOptionEditorInput(index: number, event: Event) {
-    const optionGroup = this.options.at(index) as FormGroup;
     const target = event.target as HTMLDivElement;
-    optionGroup.patchValue({ text: target.innerHTML });
+    this.zone.run(() => {
+      const optionGroup = this.options.at(index) as FormGroup;
+      optionGroup.patchValue({ text: target.innerHTML });
+    });
   }
 
   onMatrixRightEditorInput(index: number, event: Event) {
@@ -1395,19 +1408,80 @@ export class QuestionCreateNewComponent implements OnInit {
       (window as any).MathJax.typesetPromise([editor]);
   }
 
+  // Tags Word/MSO paste sometimes carries that we never want in stored
+  // question content (scripts/styles, or empty structural markers like
+  // <o:p>) — removed entirely rather than unwrapped.
+  private static readonly PASTE_STRIP_TAGS = [
+    'SCRIPT',
+    'STYLE',
+    'LINK',
+    'META',
+    'TITLE',
+    'HEAD',
+    'XML',
+    'O:P',
+  ];
+
+  // Per-tag attribute whitelist for pasted content. Every other attribute
+  // (style, class, lang, dir, and all the mso-* / v:* cruft) is stripped —
+  // that's where Word's negative text-indent / position:absolute hacks
+  // that broke question-view's layout were coming from.
+  private static readonly PASTE_ATTR_WHITELIST: Record<string, string[]> = {
+    IMG: ['src', 'alt'],
+    A: ['href', 'target', 'rel'],
+    TD: ['colspan', 'rowspan'],
+    TH: ['colspan', 'rowspan'],
+    // 'class' is otherwise stripped everywhere — this one exception keeps
+    // the "Clean Formatting" button from erasing the light-blue highlight
+    // badge on an already-inserted `$$...$$` LaTeX block (the math text
+    // itself is unaffected either way, since it's plain text content, not
+    // an attribute — this only preserves the cosmetic editor styling).
+    SPAN: ['class'],
+  };
+
+  private sanitizePastedHtml(html: string): string {
+    if (!html) return '';
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    QuestionCreateNewComponent.PASTE_STRIP_TAGS.forEach((tag) => {
+      doc.querySelectorAll(tag).forEach((el) => el.remove());
+    });
+    const stripAttrs = (node: Element) => {
+      Array.from(node.children).forEach((child) => {
+        const allowed =
+          QuestionCreateNewComponent.PASTE_ATTR_WHITELIST[child.tagName] ||
+          [];
+        Array.from(child.attributes).forEach((attr) => {
+          const name = attr.name.toLowerCase();
+          const keep =
+            allowed.includes(name) &&
+            (name !== 'class' || attr.value.trim() === 'latex-formula');
+          if (!keep) {
+            child.removeAttribute(attr.name);
+          }
+        });
+        stripAttrs(child);
+      });
+    };
+    stripAttrs(doc.body);
+    // Strip any leftover HTML comments (e.g. MSO conditional comments).
+    return doc.body.innerHTML.replace(/<!--[\s\S]*?-->/g, '');
+  }
+
   onPasteImage(event: ClipboardEvent, editorId: string) {
     const clipboardData = event.clipboardData;
     if (!clipboardData) return;
+    event.preventDefault();
+    const editor = document.getElementById(editorId) as HTMLDivElement | null;
+    if (!editor) return;
+
+    // Direct image paste (e.g. a screenshot) — no HTML payload to sanitize.
     for (let i = 0; i < clipboardData.items.length; i++) {
       const item = clipboardData.items[i];
       if (item.type.indexOf('image') !== -1) {
-        event.preventDefault();
         const file = item.getAsFile();
-        if (!file) return;
+        if (!file) continue;
         const reader = new FileReader();
         reader.onload = () => {
-          const editor = document.getElementById(editorId) as HTMLDivElement;
-          if (!editor) return;
           editor.focus();
           document.execCommand(
             'insertHTML',
@@ -1416,8 +1490,40 @@ export class QuestionCreateNewComponent implements OnInit {
           );
         };
         reader.readAsDataURL(file);
+        return;
       }
     }
+
+    // Rich text/Word paste — strip MSO formatting before inserting so the
+    // hanging-indent / absolute-position hacks never reach stored content.
+    editor.focus();
+    const html = clipboardData.getData('text/html');
+    if (html) {
+      document.execCommand('insertHTML', false, this.sanitizePastedHtml(html));
+    } else {
+      const text = clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  }
+
+  // Cleans up a question/option/solution/matrix editor that already has
+  // Word/MSO formatting baked in from before the paste sanitizer existed
+  // (or from any other source of raw HTML). Runs the same sanitizer used
+  // on paste directly against the editor's current content, then fires a
+  // synthetic 'input' event so the existing (input) binding on that
+  // editor — whichever form control it happens to sync to — picks up the
+  // cleaned value exactly as if the user had typed it.
+  cleanEditorFormatting(editorId: string): void {
+    const editor = document.getElementById(editorId) as HTMLDivElement | null;
+    if (!editor) return;
+    const cleaned = this.sanitizePastedHtml(editor.innerHTML);
+    if (cleaned === editor.innerHTML) {
+      this.alert.warning('No formatting artifacts found to clean');
+      return;
+    }
+    editor.innerHTML = cleaned;
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+    this.alert.success('Formatting cleaned');
   }
 
   openPassagePopup(): void {
@@ -1530,10 +1636,87 @@ export class QuestionCreateNewComponent implements OnInit {
     });
   }
 
+  // isFormReadyToSubmit(): boolean {
+  //   if (this.questionForm.invalid) return false;
+  //   const questionText = (this.questionForm.get('questionText')?.value || '').trim();
+  // if (!questionText || questionText === '<br>' || questionText === '<div><br></div>') {
+  //   return false;
+  // }
+  //   if (!this.isBankMode && !this.isEditMode) {
+  //     if (!this.questionForm.get('sectionId')?.value) return false;
+  //     if (!this.selectedSubjectId) return false;
+  //   }
+  //   if (this.isBankMode && !this.isEditMode) {
+  //     if (!this.questionForm.get('bankSubjectId')?.value) return false;
+  //     if (!this.questionForm.get('topicId')?.value?.trim()) return false;
+  //     if (!this.questionForm.get('classNo')?.value) return false;
+  //   }
+  //   const qt = this.getSelectedQuestionType();
+  //   if (qt === 'mcq_single' || qt === 'mcq_multi') {
+  //     const correctCount = this.options.controls.filter(
+  //       (c) => c.get('isCorrect')?.value,
+  //     ).length;
+  //     if (correctCount === 0) return false;
+  //     if (qt === 'mcq_single' && correctCount > 1) return false;
+  //   }
+  //   if (qt === 'integer') {
+  //     const val = this.questionForm.get('integerAnswer')?.value;
+  //     if (val === null || val === undefined || val === '') return false;
+  //     if (!Number.isInteger(Number(val))) return false;
+  //   }
+  //   if (qt === 'numeric') {
+  //     const min = this.questionForm.get('numericMin')?.value;
+  //     const max = this.questionForm.get('numericMax')?.value;
+  //     if (
+  //       min === null ||
+  //       min === undefined ||
+  //       max === null ||
+  //       max === undefined
+  //     )
+  //       return false;
+  //     if (parseFloat(min) > parseFloat(max)) return false;
+  //   }
+  //   if (qt === 'matrix') {
+  //     const anyUnmatched = this.matrixLeft.controls.some(
+  //       (c) => !c.get('selectedMatches')?.value?.length,
+  //     );
+  //     if (anyUnmatched) return false;
+  //     if (this.matrixMarksExceeded()) return false;
+  //   }
+  //   if (this.mcqPartialMarksExceeded()) return false;
+  //   return true;
+  // }
+
+  // isFormReadyToSubmit() — add manual content checks:
+
+  // A question/option counts as "filled" if it has visible text OR an
+  // image — plain tag-stripping alone treats an image-only <img> block as
+  // empty, which was permanently blocking Submit for image-only questions
+  // and options.
+  private hasContent(html: string): boolean {
+    if (!html) return false;
+    if (/<img[\s>]/i.test(html)) return true;
+    return !!html.replace(/<[^>]*>/g, '').trim();
+  }
+
   isFormReadyToSubmit(): boolean {
     if (this.questionForm.invalid) return false;
     const qt = this.getSelectedQuestionType();
-    if (qt === 'mcq_single' || qt === 'mcq_multi') {
+    const questionText = this.questionForm.get('questionText')?.value || '';
+    if (!this.hasContent(questionText)) return false;
+    if (this.isBankMode) {
+      if (!this.questionForm.get('bankSubjectId')?.value) return false;
+      if (!(this.questionForm.get('topicId')?.value || '').trim()) return false;
+      if (!this.questionForm.get('classNo')?.value) return false;
+    }
+    if (!this.isBankMode && !this.isEditMode) {
+      if (!this.questionForm.get('sectionId')?.value) return false;
+    }
+    if (['mcq_single', 'mcq_multi', 'passage_qns'].includes(qt)) {
+      const filledOptions = this.options.controls.filter((c) =>
+        this.hasContent(c.get('text')?.value || ''),
+      );
+      if (filledOptions.length < 2) return false;
       const correctCount = this.options.controls.filter(
         (c) => c.get('isCorrect')?.value,
       ).length;

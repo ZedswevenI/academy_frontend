@@ -4,6 +4,10 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const KNOWLEDGE_LIST_STATE_KEY = 'knowledge-list';
 
 @Component({
   selector: 'app-knowledge-list',
@@ -34,6 +38,7 @@ export class KnowledgeListComponent implements OnInit {
   // Track current pagination so delete reloads the same page
   currentPage = 1;
   currentPageSize = 10;
+  restoredPage = 1;
 
   // Last used filter + pagination — in-memory only, survives modal actions
   private lastRequest: { page: number; pageSize: number; search?: string } = { page: 1, pageSize: 10 };
@@ -52,6 +57,7 @@ export class KnowledgeListComponent implements OnInit {
       tooltip: 'View',
        color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('knowledge:view'),
       callback: (row: any) => this.view(row)
     },
     {
@@ -59,13 +65,15 @@ export class KnowledgeListComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('knowledge:edit'),
       callback: (row: any) => this.edit(row)
     },
     {
       type: 'icon', icon: 'fa-regular fa-trash-can',
-      tooltip: 'Delete', 
+      tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#ee384a',
+      show: () => !this.permissionService.hasPermission('knowledge:delete'),
       callback: (row: any) => this.openDelete(row)
     }
   ];
@@ -75,10 +83,13 @@ export class KnowledgeListComponent implements OnInit {
     private router: Router,
     private commonApi: CommonapiService,
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrumb.set([{ label: 'Library' }]);
+    this.restoredPage = this.listStateService.consumePage(KNOWLEDGE_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -225,14 +236,17 @@ export class KnowledgeListComponent implements OnInit {
   // ── Actions ────────────────────────────────────────────────────────────────
 
   view(row: any): void {
+    this.listStateService.savePage(KNOWLEDGE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/knowledge/view'], { state: { material: row } });
   }
 
   edit(row: any): void {
+    this.listStateService.savePage(KNOWLEDGE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/knowledge/create'], { state: { material: row } });
   }
-  
+
   onRowSelected(row: any) {
+    this.listStateService.savePage(KNOWLEDGE_LIST_STATE_KEY, this.currentPage);
    this.router.navigate(['/app/knowledge/view'], { state: { material: row } });
   }
 

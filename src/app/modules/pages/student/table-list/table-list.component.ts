@@ -3,6 +3,9 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { forkJoin, Observable } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
 
 interface Message {
   text: string;
@@ -22,7 +25,6 @@ interface Chat {
   styleUrl: './table-list.component.scss',
 })
 export class TableListComponent {
-  // In table-list / grid-list:
   @Input() hasSearched = false;
   @Input() filters: any = {};
 
@@ -39,16 +41,20 @@ export class TableListComponent {
   columnsArray = [
     { key: 'student.name', label: 'Student Name', sortable: false },
     { key: 'admissionNo', label: 'Admission No.', sortable: false },
+    { key: 'student.phone', label: 'Mobile', sortable: false },
+    { key: 'batchCode', label: 'Batch Code', sortable: false },
+    { key: 'batchName', label: 'Batch Name', sortable: false },
     { key: 'programName', label: 'Program', sortable: false },
     { key: 'centerName', label: 'Center', sortable: false },
     { key: 'status', label: 'Status', sortable: false },
-    { key: 'student.phone', label: 'Mobile', sortable: false },
   ];
 
   dataArray: any[] = [];
   originalData: any[] = [];
   totalRecords = 0;
   loading = false;
+
+  private batchNameByCode$!: Observable<Map<string, string>>;
 
   actions = [
     {
@@ -57,6 +63,7 @@ export class TableListComponent {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('student:view'),
       callback: (row: any) => this.viewStudent(row),
     },
     // {
@@ -74,21 +81,37 @@ export class TableListComponent {
     private router: Router,
     private commonApi: CommonapiService,
     private alert: AlertService,
+    private permissionService: PermissionService,
   ) {
     this.breadcrump.set([{ label: 'Student' }]);
+    this.batchNameByCode$ = this.commonApi
+      .fetchData(
+        { entiId: localStorage.getItem('tenantId') },
+        'batch',
+        'list?list=full',
+      )
+      .pipe(
+        map((res: any) => {
+          const m = new Map<string, string>();
+          (res?.data || []).forEach((b: any) => {
+            const code = (b?.batchCode || '').toString().trim();
+            if (code) m.set(code, b?.batchName || '');
+          });
+          return m;
+        }),
+        shareReplay(1),
+      );
   }
 
   ngOnInit(): void { }
 
-  fetchTableData(params: {
+  private buildQuery(params: {
     page: number;
     pageSize: number;
     search?: string;
     sortKey?: string;
     sortDirection?: string;
-  }) {
-    this.loading = true;
-
+  }): any {
     const query: any = {
       page: params.page,
       limit: params.pageSize,
@@ -108,17 +131,41 @@ export class TableListComponent {
       query.sort =
         params.sortDirection === 'desc' ? `-${params.sortKey}` : params.sortKey;
     }
+    return query;
+  }
 
-    const queryString = Object.keys(query)
+  private toQueryString(query: any): string {
+    return Object.keys(query)
       .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(query[k])}`)
       .join('&');
+  }
 
+  private withBatchNames(rows: any[], batchMap: Map<string, string>): any[] {
+    return rows.map((s: any) => ({
+      ...s,
+      batchName: batchMap.get((s?.batchCode || '').toString().trim()) || '-',
+    }));
+  }
+
+  fetchTableData(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    sortKey?: string;
+    sortDirection?: string;
+  }) {
+    this.loading = true;
+
+    const queryString = this.toQueryString(this.buildQuery(params));
     const body = { entiId: localStorage.getItem('tenantId') };
 
-    this.commonApi.fetchData(body, 'student', `list?${queryString}`).subscribe({
-      next: (res: any) => {
-        this.dataArray = res.data || [];
-        this.totalRecords = res?.count || 0;
+    forkJoin({
+      students: this.commonApi.fetchData(body, 'student', `list?${queryString}`),
+      batchMap: this.batchNameByCode$,
+    }).subscribe({
+      next: ({ students, batchMap }: any) => {
+        this.dataArray = this.withBatchNames(students.data || [], batchMap);
+        this.totalRecords = students?.count || 0;
         this.loading = false;
       },
       error: () => {

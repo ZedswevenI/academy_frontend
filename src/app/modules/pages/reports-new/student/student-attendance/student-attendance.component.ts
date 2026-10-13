@@ -16,6 +16,9 @@ export class StudentAttendanceComponent extends BaseReportComponent {
   selectedAdmissionNos: string[] = [];
   fromDate = '';
   toDate = '';
+  allTime = false;
+  effectiveFromDate = 0;
+  effectiveToDate = 0;
   rows: any[] = [];
   detailRows: any[] = [];
   summaryItems: { label: string; value: any }[] = [];
@@ -25,7 +28,7 @@ export class StudentAttendanceComponent extends BaseReportComponent {
   readonly summaryColumns = [
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'totalPeriods', label: 'Total Periods' },
     { key: 'present', label: 'Present' },
     { key: 'absent', label: 'Absent' },
@@ -45,7 +48,7 @@ export class StudentAttendanceComponent extends BaseReportComponent {
   readonly detailColumns = [
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'dateFormatted', label: 'Date' },
     { key: 'periodNo', label: 'Period' },
     { key: 'subjectName', label: 'Subject' },
@@ -56,6 +59,12 @@ export class StudentAttendanceComponent extends BaseReportComponent {
 
   get activeColumns() {
     return this.isBulk ? this.summaryColumns : this.singleColumns;
+  }
+
+  get effectiveRangeLabel(): string {
+    if (!this.effectiveFromDate || !this.effectiveToDate) return 'All time';
+    const fmt = (ms: number) => new Date(ms).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return `${fmt(this.effectiveFromDate)} – ${fmt(this.effectiveToDate)}`;
   }
 
   constructor(
@@ -70,11 +79,18 @@ export class StudentAttendanceComponent extends BaseReportComponent {
     return this.selectedAdmissionNos.length > 0;
   }
 
+  private buildBatchLabel(r: any): string {
+    if (r?.batchName && r?.batchCode) return `${r.batchName} (${r.batchCode})`;
+    return r?.batchName || r?.batchCode || '';
+  }
+
   generate(): void {
     this.isBulk = this.selectedAdmissionNos.length !== 1;
     const payload: any = {};
-    if (this.fromDate) payload.fromDate = this.toEpoch(this.fromDate);
-    if (this.toDate) payload.toDate = this.toEpoch(this.toDate);
+    if (!this.allTime) {
+      if (this.fromDate) payload.fromDate = this.toEpoch(this.fromDate);
+      if (this.toDate) payload.toDate = this.toEpoch(this.toDate);
+    }
     const endpoint = this.isBulk ? 'attendance-bulk' : 'attendance';
     if (this.isBulk) payload.admissionNos = this.selectedAdmissionNos;
     else payload.admissionNo = this.selectedAdmissionNos[0];
@@ -83,9 +99,11 @@ export class StudentAttendanceComponent extends BaseReportComponent {
       .subscribe({
         next: (res: any) => {
           this.onSuccess(res);
+          this.effectiveFromDate = res?.fromDate || 0;
+          this.effectiveToDate = res?.toDate || 0;
           if (this.isBulk) {
-            this.rows = res.data || [];
-            this.detailRows = res.detail || [];
+            this.rows = (res.data || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }));
+            this.detailRows = (res.detail || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }));
             this.summaryItems = this.reportService.buildSummaryItems(
               res.summary,
             );
@@ -133,6 +151,9 @@ export class StudentAttendanceComponent extends BaseReportComponent {
     this.selectedAdmissionNos = [];
     this.fromDate = '';
     this.toDate = '';
+    this.allTime = false;
+    this.effectiveFromDate = 0;
+    this.effectiveToDate = 0;
     this.rows = [];
     this.detailRows = [];
     this.summaryItems = [];

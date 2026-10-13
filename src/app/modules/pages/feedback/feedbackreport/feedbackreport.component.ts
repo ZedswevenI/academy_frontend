@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -35,6 +36,7 @@ export class FeedbackreportComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private breadcrump: BredcrumpService,
+    private backNav: BackNavigationService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
   }
@@ -255,12 +257,36 @@ export class FeedbackreportComponent implements OnInit {
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
           },
           {
+            content: 'PHASE',
+            styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+          },
+          {
             content: 'STRENGTH',
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
           },
           {
             content: 'RESPONSES',
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 6.5 },
+          },
+          {
+            content: 'TEA%',
+            styles: {
+              halign: 'center',
+              fontStyle: 'bold',
+              fontSize: 6.5,
+              fillColor: [220, 252, 231],
+              textColor: [22, 101, 52],
+            },
+          },
+          {
+            content: 'REA%',
+            styles: {
+              halign: 'center',
+              fontStyle: 'bold',
+              fontSize: 6.5,
+              fillColor: [254, 243, 199],
+              textColor: [146, 64, 14],
+            },
           },
           ...aHdrs.map((h: any) => ({
             content: h.label,
@@ -282,26 +308,6 @@ export class FeedbackreportComponent implements OnInit {
               textColor: [146, 64, 14],
             },
           })),
-          {
-            content: 'TEA%',
-            styles: {
-              halign: 'center',
-              fontStyle: 'bold',
-              fontSize: 6.5,
-              fillColor: [220, 252, 231],
-              textColor: [22, 101, 52],
-            },
-          },
-          {
-            content: 'REA%',
-            styles: {
-              halign: 'center',
-              fontStyle: 'bold',
-              fontSize: 6.5,
-              fillColor: [254, 243, 199],
-              textColor: [146, 64, 14],
-            },
-          },
         ],
       ];
       const body: any[][] = this.reportRows.map((r: any) => {
@@ -332,27 +338,12 @@ export class FeedbackreportComponent implements OnInit {
             styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 },
           },
           { content: r.batchCode, styles: { halign: 'center', fontSize: 6.5 } },
+          { content: r.phase || '—', styles: { halign: 'center', fontSize: 6.5 } },
           { content: r.strength, styles: { halign: 'center', fontSize: 6.5 } },
           {
             content: r.responseCount,
             styles: { halign: 'center', fontSize: 6.5 },
           },
-          ...(r.partAScores || []).map((v: any) => ({
-            content: v != null ? v.toFixed(2) : '—',
-            styles: {
-              halign: 'center',
-              fontSize: 6,
-              fillColor: [239, 246, 255],
-            },
-          })),
-          ...(r.partBScores || []).map((v: any) => ({
-            content: v != null ? v.toFixed(2) : '—',
-            styles: {
-              halign: 'center',
-              fontSize: 6,
-              fillColor: [255, 251, 235],
-            },
-          })),
           {
             content: r.teaPct != null ? r.teaPct.toFixed(1) + '%' : '—',
             styles: {
@@ -373,6 +364,22 @@ export class FeedbackreportComponent implements OnInit {
               fillColor: [255, 251, 235],
             },
           },
+          ...(r.partAScores || []).map((v: any) => ({
+            content: v != null ? v.toFixed(2) : '—',
+            styles: {
+              halign: 'center',
+              fontSize: 6,
+              fillColor: [239, 246, 255],
+            },
+          })),
+          ...(r.partBScores || []).map((v: any) => ({
+            content: v != null ? v.toFixed(2) : '—',
+            styles: {
+              halign: 'center',
+              fontSize: 6,
+              fillColor: [255, 251, 235],
+            },
+          })),
         ];
       });
       const avgTeaNum = this.reportRows.filter((r) => r.teaPct != null);
@@ -392,7 +399,7 @@ export class FeedbackreportComponent implements OnInit {
       body.push([
         {
           content: 'OVERALL AVERAGE',
-          colSpan: 4,
+          colSpan: 5,
           styles: {
             halign: 'right',
             fontStyle: 'bold',
@@ -400,14 +407,6 @@ export class FeedbackreportComponent implements OnInit {
             fillColor: [241, 245, 249],
           },
         },
-        ...aHdrs.map(() => ({
-          content: '',
-          styles: { fillColor: [241, 245, 249] },
-        })),
-        ...bHdrs.map(() => ({
-          content: '',
-          styles: { fillColor: [241, 245, 249] },
-        })),
         {
           content: tAvg,
           styles: {
@@ -428,6 +427,14 @@ export class FeedbackreportComponent implements OnInit {
             textColor: [146, 64, 14],
           },
         },
+        ...aHdrs.map(() => ({
+          content: '',
+          styles: { fillColor: [241, 245, 249] },
+        })),
+        ...bHdrs.map(() => ({
+          content: '',
+          styles: { fillColor: [241, 245, 249] },
+        })),
       ]);
       autoTable(doc, {
         startY: 28,
@@ -452,8 +459,9 @@ export class FeedbackreportComponent implements OnInit {
         columnStyles: {
           0: { cellWidth: 14 },
           1: { cellWidth: 22 },
-          2: { cellWidth: 14 },
-          3: { cellWidth: 16 },
+          2: { cellWidth: 16 },
+          3: { cellWidth: 14 },
+          4: { cellWidth: 16 },
         },
       });
       const finalY = (doc as any).lastAutoTable?.finalY || 180;
@@ -485,7 +493,7 @@ export class FeedbackreportComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/app/feedback']);
+    this.backNav.goBack({ route: '/app/feedback' });
   }
 
   private tsToDate(ts: number): string {

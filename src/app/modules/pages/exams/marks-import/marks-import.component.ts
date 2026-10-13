@@ -5,27 +5,26 @@ import * as XLSX from 'xlsx';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 @Component({
   selector: 'app-marks-import',
   standalone: false,
   templateUrl: './marks-import.component.html',
-  styleUrls: ['./marks-import.component.scss']
+  styleUrls: ['./marks-import.component.scss'],
 })
 export class MarksImportComponent implements OnInit {
-
   tenantId = '';
   submitting = false;
-
   examForm!: FormGroup;
   subjects: any[] = [];
-
   classOptions = [
-    ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
-    { label: '12th Pass', value: 13 }
+    ...Array.from({ length: 7 }, (_, i) => ({
+      label: `Class ${i + 6}`,
+      value: i + 6,
+    })),
+    { label: '12th Pass', value: 13 },
   ];
-
-  // Excel state
   excelFile: File | null = null;
   parsedStudents: any[] = [];
   excelParsing = false;
@@ -35,7 +34,8 @@ export class MarksImportComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private router: Router,
-    private breadcrumb: BredcrumpService
+    private breadcrumb: BredcrumpService,
+    private backNav: BackNavigationService,
   ) {
     this.tenantId = localStorage.getItem('tenantId') || '';
   }
@@ -43,7 +43,7 @@ export class MarksImportComponent implements OnInit {
   ngOnInit(): void {
     this.breadcrumb.set([
       { label: 'Exams', link: '/app/exams/exams' },
-      { label: 'Import Marks' }
+      { label: 'Import Marks' },
     ]);
     this.buildForm();
     this.loadSubjects();
@@ -59,7 +59,7 @@ export class MarksImportComponent implements OnInit {
       duration: [null],
       examDate: [''],
       description: [''],
-      sections: this.fb.array([this.newSection(0)])
+      sections: this.fb.array([this.newSection(0)]),
     });
   }
 
@@ -74,17 +74,22 @@ export class MarksImportComponent implements OnInit {
       subjectId: ['', Validators.required],
       numberOfQuestions: [0, [Validators.required, Validators.min(1)]],
       sectionTotalMarks: [null, [Validators.required, Validators.min(1)]],
-      sortOrder: [index]
+      sortOrder: [index],
     });
-    fg.get('sectionTotalMarks')?.valueChanges.subscribe(() => this.recalcTotalMarks());
+    fg.get('sectionTotalMarks')?.valueChanges.subscribe(() =>
+      this.recalcTotalMarks(),
+    );
     return fg;
   }
 
   recalcTotalMarks() {
     const total = this.sections.controls.reduce(
-      (sum, c) => sum + (Number(c.get('sectionTotalMarks')?.value) || 0), 0
+      (sum, c) => sum + (Number(c.get('sectionTotalMarks')?.value) || 0),
+      0,
     );
-    this.examForm.get('totalMarks')?.setValue(total || null, { emitEvent: false });
+    this.examForm
+      .get('totalMarks')
+      ?.setValue(total || null, { emitEvent: false });
   }
 
   addSection() {
@@ -94,7 +99,9 @@ export class MarksImportComponent implements OnInit {
   removeSection(i: number) {
     if (this.sections.length > 1) {
       this.sections.removeAt(i);
-      this.sections.controls.forEach((c, idx) => c.get('sortOrder')?.setValue(idx));
+      this.sections.controls.forEach((c, idx) =>
+        c.get('sortOrder')?.setValue(idx),
+      );
     }
   }
 
@@ -105,7 +112,7 @@ export class MarksImportComponent implements OnInit {
 
     // Duplicate check
     const duplicate = this.sections.controls.some(
-      (c, i) => i !== index && c.get('subjectId')?.value === subjectId
+      (c, i) => i !== index && c.get('subjectId')?.value === subjectId,
     );
     if (duplicate) {
       this.alert.error('This subject is already added in another section');
@@ -118,32 +125,40 @@ export class MarksImportComponent implements OnInit {
     if (subject) {
       section.patchValue({
         sectionCode: subject.subjectCode || '',
-        sectionName: subject.subjectName || ''
+        sectionName: subject.subjectName || '',
       });
     }
   }
 
   hasDuplicateSubjects(): boolean {
-    const ids = this.sections.controls.map(c => c.get('subjectId')?.value).filter(v => !!v);
+    const ids = this.sections.controls
+      .map((c) => c.get('subjectId')?.value)
+      .filter((v) => !!v);
     return new Set(ids).size !== ids.length;
   }
 
   get sectionQuestionsTotal(): number {
     return this.sections.controls.reduce(
-      (sum, c) => sum + (Number(c.get('numberOfQuestions')?.value) || 0), 0
+      (sum, c) => sum + (Number(c.get('numberOfQuestions')?.value) || 0),
+      0,
     );
   }
 
   get sectionTotalMarksSum(): number {
     return this.sections.controls.reduce(
-      (sum, c) => sum + (Number(c.get('sectionTotalMarks')?.value) || 0), 0
+      (sum, c) => sum + (Number(c.get('sectionTotalMarks')?.value) || 0),
+      0,
     );
   }
 
   private loadSubjects() {
-    this.commonApi.fetchData({ entiId: this.tenantId }, 'ims/subject', 'list?list=full').subscribe({
-      next: (res: any) => { this.subjects = res?.data || []; }
-    });
+    this.commonApi
+      .fetchData({ entiId: this.tenantId }, 'ims/subject', 'list?list=full')
+      .subscribe({
+        next: (res: any) => {
+          this.subjects = res?.data || [];
+        },
+      });
   }
 
   // ── Excel ──────────────────────────────────────────────────────────────────
@@ -165,10 +180,12 @@ export class MarksImportComponent implements OnInit {
   }
 
   getSectionMeta(): { sectionId: string; sectionName: string }[] {
-    return this.sections.controls.map((c: any) => ({
-      sectionId: c.get('subjectId')?.value || '',
-      sectionName: c.get('sectionName')?.value || ''
-    })).filter(s => s.sectionId && s.sectionName);
+    return this.sections.controls
+      .map((c: any) => ({
+        sectionId: c.get('subjectId')?.value || '',
+        sectionName: c.get('sectionName')?.value || '',
+      }))
+      .filter((s) => s.sectionId && s.sectionName);
   }
 
   parseExcel() {
@@ -186,26 +203,54 @@ export class MarksImportComponent implements OnInit {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
+        // this.parsedStudents = rows
+        //   .map((r: any) => {
+        //     const admissionNo = String(
+        //       r['Admission No'] ?? r['admission_no'] ?? r['AdmissionNo'] ?? '',
+        //     ).trim();
+        //     if (!admissionNo) return null;
+        //     const obtainedMarks = Number(
+        //       r['Obtained Marks'] ?? r['obtained_marks'] ?? 0,
+        //     );
+        //     const sectionResults = secMeta
+        //       .filter((s) => s.sectionName)
+        //       .map((s) => ({
+        //         sectionId: s.sectionId,
+        //         obtainedMarks: null,
+        //         totalQuestions: null,
+        //         correctCount: null,
+        //         wrongCount: null,
+        //         skippedCount: null,
+        //       }));
+        //     return { admissionNo, obtainedMarks, sectionResults };
+        //   })
+        //   .filter((r): r is NonNullable<typeof r> => r !== null);
         this.parsedStudents = rows
           .map((r: any) => {
             const admissionNo = String(
-              r['Admission No'] ?? r['admission_no'] ?? r['AdmissionNo'] ?? ''
+              r['Admission No'] ?? r['admission_no'] ?? r['AdmissionNo'] ?? '',
             ).trim();
             if (!admissionNo) return null;
-
-            const obtainedMarks = Number(r['Obtained Marks'] ?? r['obtained_marks'] ?? 0);
-
             const sectionResults = secMeta
-              .filter(s => s.sectionName)
-              .map(s => ({
+              .filter((s) => s.sectionName)
+              .map((s) => ({
                 sectionId: s.sectionId,
-                obtainedMarks: null,
+                sectionName: s.sectionName,
+                obtainedMarks: Number(r[`${s.sectionName} Marks`] ?? 0),
                 totalQuestions: null,
                 correctCount: null,
                 wrongCount: null,
                 skippedCount: null,
               }));
-
+            const subjectMarksSum = sectionResults.reduce(
+              (sum, sr) => sum + (sr.obtainedMarks || 0),
+              0,
+            );
+            const obtainedMarks = Number(
+              r['Total Obtained Marks'] ??
+                r['Obtained Marks'] ??
+                subjectMarksSum,
+            );
             return { admissionNo, obtainedMarks, sectionResults };
           })
           .filter((r): r is NonNullable<typeof r> => r !== null);
@@ -221,42 +266,71 @@ export class MarksImportComponent implements OnInit {
     reader.readAsArrayBuffer(this.excelFile);
   }
 
+  // downloadSample() {
+  //   const secMeta = this.getSectionMeta();
+  //   if (!secMeta.length) {
+  //     this.alert.error('Please configure at least one section with a subject before downloading the sample.');
+  //     return;
+  //   }
+  //   const data = [
+  //     { 'Admission No': 'ADM001', 'Obtained Marks': 85 },
+  //     { 'Admission No': 'ADM002', 'Obtained Marks': 72 },
+  //     { 'Admission No': 'ADM003', 'Obtained Marks': 90 },
+  //   ];
+  //   const ws = XLSX.utils.json_to_sheet(data);
+  //   const colWidths = Object.keys(data[0]).map(k => ({ wch: Math.max(k.length + 2, 14) }));
+  //   ws['!cols'] = colWidths;
+  //   const wb = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(wb, ws, 'Marks');
+  //   XLSX.writeFile(wb, 'sample_marks.xlsx');
+  // }
+
   downloadSample() {
     const secMeta = this.getSectionMeta();
     if (!secMeta.length) {
-      this.alert.error('Please configure at least one section with a subject before downloading the sample.');
+      this.alert.error(
+        'Please configure at least one section with a subject before downloading the sample.',
+      );
       return;
     }
-
-    const data = [
-      { 'Admission No': 'ADM001', 'Obtained Marks': 85 },
-      { 'Admission No': 'ADM002', 'Obtained Marks': 72 },
-      { 'Admission No': 'ADM003', 'Obtained Marks': 90 },
-    ];
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const colWidths = Object.keys(data[0]).map(k => ({ wch: Math.max(k.length + 2, 14) }));
+    const sampleRows = ['ADM001', 'ADM002', 'ADM003'].map((adm) => {
+      const row: any = { 'Admission No': adm };
+      secMeta.forEach((s) => {
+        row[`${s.sectionName} Marks`] = 0;
+      });
+      row['Total Obtained Marks'] = 0;
+      return row;
+    });
+    const ws = XLSX.utils.json_to_sheet(sampleRows);
+    const colWidths = Object.keys(sampleRows[0]).map((k) => ({
+      wch: Math.max(k.length + 2, 14),
+    }));
     ws['!cols'] = colWidths;
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Marks');
     XLSX.writeFile(wb, 'sample_marks.xlsx');
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
-
   canSubmit(): boolean {
     const f = this.examForm.getRawValue();
-    if (!this.examForm.valid || !f.examCode || !f.examName || !f.classNo) return false;
-    if (!this.parsedStudents.length || this.hasDuplicateSubjects()) return false;
+    if (!this.examForm.valid || !f.examCode || !f.examName || !f.classNo)
+      return false;
+    if (!this.parsedStudents.length || this.hasDuplicateSubjects())
+      return false;
     if (this.sectionTotalMarksSum === 0) return false;
-    if (f.totalQuestions && this.sectionQuestionsTotal !== Number(f.totalQuestions)) return false;
+    if (
+      f.totalQuestions &&
+      this.sectionQuestionsTotal !== Number(f.totalQuestions)
+    )
+      return false;
     return true;
   }
 
   submit() {
     if (!this.canSubmit()) {
       this.examForm.markAllAsTouched();
-      if (!this.parsedStudents.length) this.alert.error('Please upload and parse a student marks file.');
+      if (!this.parsedStudents.length)
+        this.alert.error('Please upload and parse a student marks file.');
       return;
     }
 
@@ -271,7 +345,7 @@ export class MarksImportComponent implements OnInit {
         subjectId: s.subjectId,
         numberOfQuestions: s.numberOfQuestions || 0,
         totalMarks: Number(s.sectionTotalMarks) || 0,
-        sortOrder: s.sortOrder ?? i
+        sortOrder: s.sortOrder ?? i,
       };
     });
 
@@ -281,8 +355,8 @@ export class MarksImportComponent implements OnInit {
       classNo: f.classNo,
       sectionResults: (s.sectionResults || []).map((sr: any) => ({
         ...sr,
-        totalMarks: sectionTotalMap[sr.sectionId] || 0
-      }))
+        totalMarks: sectionTotalMap[sr.sectionId] || 0,
+      })),
     }));
 
     const payload: any = {
@@ -293,7 +367,7 @@ export class MarksImportComponent implements OnInit {
       classNo: f.classNo,
       totalMarks: this.sectionTotalMarksSum,
       sections,
-      students
+      students,
     };
 
     if (f.totalQuestions) payload.totalQuestions = f.totalQuestions;
@@ -302,24 +376,29 @@ export class MarksImportComponent implements OnInit {
     if (f.description) payload.description = f.description;
 
     this.submitting = true;
-    this.commonApi.fetchData(payload, 'exam', 'result/bulk-upload-historical').subscribe({
-      next: (res: any) => {
-        this.submitting = false;
-        if (res?.status) {
-          this.alert.success(res.message || `Marks imported successfully. ${res.data?.insertedCount || ''} results saved.`);
-          this.router.navigate(['/app/exams/imported-exams']);
-        } else {
-          this.alert.error(res?.message || 'Failed to import marks.');
-        }
-      },
-      error: (err: any) => {
-        this.submitting = false;
-        this.alert.error(err?.error?.message || 'Error importing marks.');
-      }
-    });
+    this.commonApi
+      .fetchData(payload, 'exam', 'result/bulk-upload-historical')
+      .subscribe({
+        next: (res: any) => {
+          this.submitting = false;
+          if (res?.status) {
+            this.alert.success(
+              res.message ||
+                `Marks imported successfully. ${res.data?.insertedCount || ''} results saved.`,
+            );
+            this.router.navigate(['/app/exams/imported-exams']);
+          } else {
+            this.alert.error(res?.message || 'Failed to import marks.');
+          }
+        },
+        error: (err: any) => {
+          this.submitting = false;
+          this.alert.error(err?.error?.message || 'Error importing marks.');
+        },
+      });
   }
 
   goBack() {
-    this.router.navigate(['/app/exams/exams']);
+    this.backNav.goBack({ route: '/app/exams/imported-exams' });
   }
 }

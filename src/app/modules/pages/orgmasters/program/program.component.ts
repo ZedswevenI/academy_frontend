@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 type ImportMode = 'insert' | 'upsert';
 
@@ -100,6 +101,7 @@ export class ProgramComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgProgram:view'),
       callback: (row: any) => this.openView(row),
     },
     {
@@ -108,6 +110,7 @@ export class ProgramComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgProgram:edit'),
       callback: (row: any) => this.edit(row),
     },
     {
@@ -116,6 +119,7 @@ export class ProgramComponent implements OnInit {
       tooltip: 'Add Subjects',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgProgram:addSubjects'),
       callback: (row: any) => this.openSubjectsModal(row),
     },
     {
@@ -124,6 +128,7 @@ export class ProgramComponent implements OnInit {
       tooltip: 'Remove Subjects',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgProgram:removeSubjects'),
       callback: (row: any) => this.openRemoveSubjectsModal(row),
     },
     {
@@ -132,6 +137,7 @@ export class ProgramComponent implements OnInit {
       tooltip: 'Exam Mapping',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('orgProgram:examMapping'),
       callback: (row: any) => this.openExamMappingModal(row),
     },
     {
@@ -140,6 +146,7 @@ export class ProgramComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('orgProgram:delete'),
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -150,6 +157,7 @@ export class ProgramComponent implements OnInit {
     private alert: AlertService,
     private commonApi: CommonapiService,
     private cdr: ChangeDetectorRef,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
@@ -1277,6 +1285,8 @@ export class ProgramComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('orgProgram:view')) return;
     const recId = row?.recId || row?._raw?._id;
     if (!recId) return;
 

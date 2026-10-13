@@ -18,7 +18,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { QuestionTransformService } from './transform.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { Location } from '@angular/common';
+import { BackNavigationService } from '../../../../service/navigation/back-navigation.service';
 
 declare var katex: any;
 declare var renderMathInElement: any;
@@ -62,7 +62,7 @@ export class QuestionArrangementComponent implements OnInit {
     private transformService: QuestionTransformService,
     private cdr: ChangeDetectorRef,
     private breacrumb: BredcrumpService,
-    private location: Location,
+    private backNav: BackNavigationService,
   ) {
     this.breacrumb.set([
       { label: 'Exams', link: '/app/exams/exams' },
@@ -727,6 +727,6 @@ export class QuestionArrangementComponent implements OnInit {
   }
 
   goBack() {
-    this.location.back();
+    this.backNav.goBack({ route: '/app/exams/exams' });
   }
 }

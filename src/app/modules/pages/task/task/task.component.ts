@@ -4,6 +4,10 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const TASK_LIST_STATE_KEY = 'task-list';
 
 @Component({
   selector: 'app-task',
@@ -13,10 +17,16 @@ import { AuthService } from '../../../../service/auth/auth.service';
 })
 export class TaskComponent implements OnInit {
   tenantId = localStorage.getItem('tenantId');
+  currentPage = 1;
+  restoredPage = 1;
   columnsArray = [{ key: 'taskName', label: 'Task Name', sortable: false }, { key: 'assignedDate', label: 'Assigned Date', sortable: false }, { key: 'dueDate', label: 'Due Date', sortable: false }, { key: 'status', label: 'Status', sortable: false }];
   dataArray: any[] = [];
   totalRecords = 0;
   isEditMode: boolean = false;
+  // FIX: was `hidden:` — custom-table's template only ever reads
+  // `action.show` (a HIDE predicate), so this was a silent no-op and the
+  // Edit pencil showed on completed tasks too. Renamed with inverted logic
+  // and combined with the task:edit permission check.
   actions = [
     {
       type: 'icon',
@@ -25,7 +35,7 @@ export class TaskComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#16A34A',
       callback: (row: any) => this.editTask(row),
-      hidden: (row: any) => row.status.toUpperCase() === 'COMPLETED'
+      show: (row: any) => row.status.toUpperCase() === 'COMPLETED' || !this.permissionService.hasPermission('task:edit'),
     },
     {
       type: 'icon',
@@ -33,17 +43,28 @@ export class TaskComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('task:view'),
       callback: (row: any) => this.viewTask(row)
     }
   ];
 
-  constructor(private breadcrump: BredcrumpService, private router: Router, private commonApi: CommonapiService, private alert: AlertService, private authService: AuthService) {
+  constructor(
+    private breadcrump: BredcrumpService,
+    private router: Router,
+    private commonApi: CommonapiService,
+    private alert: AlertService,
+    private authService: AuthService,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
+  ) {
     this.breadcrump.set([{ label: 'Task' }]);
+    this.restoredPage = this.listStateService.consumePage(TASK_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {}
 
   loadTableData(req: { page: number; pageSize: number; search?: string; sortKey?: string; sortDirection?: 'asc' | 'desc' }) {
+    this.currentPage = req.page;
     let endpoint = '';
     if (this.authService.getRole() === 'L4') {
       const staffId = this.authService.getStaffId();
@@ -94,6 +115,7 @@ export class TaskComponent implements OnInit {
   }
 
   viewTask(row: any) {
+    this.listStateService.savePage(TASK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/task/view'], {
       queryParams: { taskId: row.taskId },
       state: { taskData: row }
@@ -101,12 +123,14 @@ export class TaskComponent implements OnInit {
   }
 
   editTask(row: any) {
+    this.listStateService.savePage(TASK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/task/create'], {
       state: { taskData: row }
     });
   }
 
    onRowSelected(row: any) {
+    this.listStateService.savePage(TASK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/task/view'], {
       queryParams: { taskId: row.taskId },
       state: { taskData: row }

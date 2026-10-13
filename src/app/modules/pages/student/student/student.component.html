@@ -9,23 +9,24 @@
       <div class="d-flex align-items-center gap-2">
 
         <!-- ── IMPORTS DROPDOWN ─────────────────────────────────────────── -->
-        <div class="btn-group" *appHasRole="['L1']">
+        <div class="btn-group"
+          *appHasPermission="['student:bulkUpload','student:imageUpload','student:rpaImport','student:boardImport','student:alumniImport']">
           <button type="button" class="btn btn-import fs-16 fw-medium dropdown-toggle" data-bs-toggle="dropdown"
             aria-expanded="false">
             <i class="fa-solid fa-file-import btn-icon"></i> Imports
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li>
+            <li *appHasPermission="'student:bulkUpload'">
               <a class="dropdown-item" href="javascript:void(0)" (click)="openBulkUpload()">
                 <i class="fa-solid fa-users me-2 text-primary"></i>Student Details (Excel)
               </a>
             </li>
-            <li>
+            <li *appHasPermission="'student:imageUpload'">
               <a class="dropdown-item" href="javascript:void(0)" (click)="openImageUpload()">
                 <i class="fa-solid fa-images me-2 text-success"></i>Student Photos (ZIP)
               </a>
             </li>
-            <li>
+            <li *appHasPermission="'student:rpaImport'">
               <a class="dropdown-item" href="javascript:void(0)" (click)="openRpaImport()">
                 <i class="fa-solid fa-id-badge me-2 text-info"></i>RPA Import
               </a>
@@ -33,12 +34,12 @@
             <li>
               <hr class="dropdown-divider">
             </li>
-            <li>
+            <li *appHasPermission="'student:boardImport'">
               <a class="dropdown-item" href="javascript:void(0)" (click)="openBoardExamImport()">
                 <i class="fa-solid fa-graduation-cap me-2 text-warning"></i>Board Exam Marks
               </a>
             </li>
-            <li>
+            <li *appHasPermission="'student:alumniImport'">
               <a class="dropdown-item" href="javascript:void(0)" (click)="openAlumniImport()">
                 <i class="fa-solid fa-trophy me-2 text-danger"></i>Alumni / Entrance Exam
               </a>
@@ -46,6 +47,11 @@
           </ul>
         </div>
         <!-- ── END IMPORTS DROPDOWN ────────────────────────────────────── -->
+
+        <button type="button" class="btn btn-outline-primary fs-16 fw-medium" *appHasPermission="'student:export'"
+          (click)="openExport()">
+          <i class="fa-solid fa-file-export me-1"></i>Export
+        </button>
 
         <div class="view-switch">
           <button class="view-btn" type="button" [ngClass]="{ active: activeTab === 'list' }" (click)="setTab('list')">
@@ -286,6 +292,52 @@
           </table>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MODAL: STUDENT DETAILS EXPORT
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="app-modal-backdrop" *ngIf="showExport">
+  <div class="app-modal" style="max-width:800px">
+    <div class="app-modal-header d-flex justify-content-between align-items-center">
+      <div>
+        <h6 class="mb-0 fw-semibold">Export Student Details</h6>
+        <span class="text-muted small">Choose the fields to include in the Excel export.</span>
+      </div>
+      <button type="button" class="btn-close" (click)="closeExport()" [disabled]="exporting"></button>
+    </div>
+    <div class="app-modal-body">
+      <div class="alert alert-info py-2 small mb-3">
+        Export applies the filters currently set above (search / program / center / status) and includes
+        all matching students in one Excel file.
+      </div>
+      <div class="d-flex justify-content-end gap-2 mb-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectAllExportFields()"
+          [disabled]="exporting">Select All</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearExportFields()"
+          [disabled]="exporting">Clear</button>
+      </div>
+      <div class="row g-3" style="max-height:420px;overflow-y:auto">
+        <div class="col-md-6" *ngFor="let group of exportFieldGroups">
+          <div class="fw-semibold small text-muted mb-2 text-uppercase">{{ group.label }}</div>
+          <div class="form-check" *ngFor="let field of group.fields">
+            <input type="checkbox" class="form-check-input" [id]="'exp_' + field.key"
+              [checked]="isFieldSelected(field.key)" (change)="toggleExportField(field.key)"
+              [disabled]="field.key === 'admissionNo'" />
+            <label class="form-check-label" [for]="'exp_' + field.key">{{ field.label }}</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="app-modal-footer d-flex justify-content-end gap-2 p-3 border-top">
+      <button type="button" class="btn btn-outline-secondary" (click)="closeExport()"
+        [disabled]="exporting">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="confirmExport()" [disabled]="exporting">
+        <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="fa-solid fa-file-excel me-1" *ngIf="!exporting"></i>Export to Excel
+      </button>
     </div>
   </div>
 </div>

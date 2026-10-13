@@ -30,7 +30,7 @@ export class BatchTimetableComponent extends BaseReportComponent {
   readonly columns = [
     { key: 'dateFormatted', label: 'Date' },
     { key: 'day', label: 'Day' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'periodNo', label: 'Period' },
     { key: 'periodType', label: 'Type' },
     { key: 'subjectName', label: 'Subject' },
@@ -67,6 +67,7 @@ export class BatchTimetableComponent extends BaseReportComponent {
               dateFormatted: this.reportService.formatEpoch(d.date),
               day: d.day,
               batchCode: d.batchCode || '-',
+              batchLabel: this.reportService.formatBatchLabel(d.batchName, d.batchCode),
               ...p
             });
           });

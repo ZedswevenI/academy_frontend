@@ -11,7 +11,8 @@
                 </p>
             </div>
 
-            <button class="btn btn-create fs-16 fw-medium" type="button" (click)="newMapping()">
+            <button class="btn btn-create fs-16 fw-medium" type="button" *appHasPermission="'communicationEvent:create'"
+                (click)="newMapping()">
                 <i class="fa-solid fa-plus btn-icon"></i>New Mapping
             </button>
         </div>
@@ -70,11 +71,13 @@
 
                             <div class="d-flex gap-2 ms-2">
                                 <button class="btn btn-sm btn-light border rounded-circle" type="button"
+                                    *appHasPermission="'communicationEvent:edit'"
                                     (click)="editMapping(m); $event.stopPropagation()">
                                     <i class="fa-regular fa-pen-to-square"></i>
                                 </button>
 
                                 <button class="btn btn-sm btn-light border rounded-circle text-danger" type="button"
+                                    *appHasPermission="'communicationEvent:delete'"
                                     (click)="deleteMapping(m); $event.stopPropagation()">
                                     <i class="fa-regular fa-trash-can"></i>
                                 </button>
@@ -131,7 +134,9 @@
                                 Clear
                             </button>
 
-                            <button type="button" class="btn btn-create fs-16 fw-medium" (click)="saveMapping()" [disabled]="loading">
+                            <button type="button" class="btn btn-create fs-16 fw-medium"
+                                *appHasPermission="mode === 'create' ? 'communicationEvent:create' : 'communicationEvent:edit'"
+                                (click)="saveMapping()" [disabled]="loading">
                                 <i class="fa-solid fa-floppy-disk btn-icon"></i>
                                 {{ mode === 'create' ? 'Save' : 'Update' }}
                             </button>

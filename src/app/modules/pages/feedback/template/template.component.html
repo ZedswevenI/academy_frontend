@@ -248,7 +248,7 @@
             <h1 class="fw-bold mb-0" style="font-size: 28px;">
                 <i class="fa-regular fa-file-lines me-2"></i>Feedback Templates
             </h1>
-            <button class="btn btn-create fs-16 fw-medium" (click)="openCreateModal()">
+            <button class="btn btn-create fs-16 fw-medium" *appHasPermission="'feedbackTemplate:create'" (click)="openCreateModal()">
                 <img src="assets/icons/plus.svg" alt="Add" width="20" height="20" class="me-2">
                 New Template
             </button>
@@ -538,7 +538,7 @@
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
                         data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-create fs-16 fw-medium"
+                    <button type="button" class="btn btn-create fs-16 fw-medium" *appHasPermission="isEditMode ? 'feedbackTemplate:edit' : 'feedbackTemplate:create'"
                         [disabled]="templateForm.invalid || !questions.length || saving" (click)="saveTemplate()">
                         <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
                         {{ saving ? 'Saving...' : (isEditMode ? 'Update Template' : 'Create Template') }}

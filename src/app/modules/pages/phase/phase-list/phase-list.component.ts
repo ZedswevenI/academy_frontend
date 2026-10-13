@@ -575,6 +575,7 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import * as XLSX from 'xlsx';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-phase-list',
@@ -628,6 +629,7 @@ export class PhaseListComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('phase:view'),
       callback: (row: any) => this.onView(row),
     },
     {
@@ -636,6 +638,7 @@ export class PhaseListComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('phase:edit'),
       callback: (row: any) => this.onEdit(row),
     },
     {
@@ -644,6 +647,7 @@ export class PhaseListComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('phase:delete'),
       callback: (row: any) => this.onDelte(row),
     },
   ];
@@ -683,6 +687,7 @@ export class PhaseListComponent implements OnInit {
     private alert: AlertService,
     private breadcrump: BredcrumpService,
     private authService: AuthService,
+    private permissionService: PermissionService,
   ) {
     this.tenantId = localStorage.getItem('tenantId') || '';
     this.breadcrump.set([{ label: 'Phase Plan', link: '/app/phase' }]);
@@ -1366,6 +1371,8 @@ export class PhaseListComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
+    if (!this.permissionService.hasPermission('phase:view')) return;
     this.selectedPhase = {
       ...row,
       topics: [...(row.topics || [])].sort((a, b) => a.sortOrder - b.sortOrder),

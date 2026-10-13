@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { AlertService } from '../../../../service/alert/alert.service';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
+import { PermissionService } from '../../../../shared/permission.service';
 
 @Component({
   selector: 'app-bankaccounts',
@@ -58,12 +59,14 @@ export class BankaccountsComponent implements OnInit {
       type: 'icon',
       icon: 'fa-regular fa-pen-to-square',
       tooltip: 'Edit',
+      show: () => !this.permissionService.hasPermission('orgBankAccount:edit'),
       callback: (row: any) => this.edit(row),
     },
     {
       type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
+      show: () => !this.permissionService.hasPermission('orgBankAccount:delete'),
       callback: (row: any) => this.openDelete(row),
     },
   ];
@@ -73,6 +76,7 @@ export class BankaccountsComponent implements OnInit {
     private breadcrumb: BredcrumpService,
     private alert: AlertService,
     private commonApi: CommonapiService,
+    private permissionService: PermissionService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([

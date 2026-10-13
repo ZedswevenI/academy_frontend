@@ -5,6 +5,10 @@ import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
 import * as XLSX from 'xlsx';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const PACKAGE_LIST_STATE_KEY = 'package-list';
 
 @Component({
   selector: 'app-package',
@@ -19,6 +23,8 @@ export class PackageComponent implements OnInit {
 
   dataArray: any[] = [];
   totalRecords = 0;
+  currentPage = 1;
+  restoredPage = 1;
 
   columnsArray = [
     { key: 'packageCode', label: 'Code', sortable: false },
@@ -35,6 +41,7 @@ export class PackageComponent implements OnInit {
       tooltip: 'View',
       color: '#6B7280',
       hoverColor: '#0066FF',
+      show: () => !this.permissionService.hasPermission('package:view'),
       callback: (row: any) => this.onView(row)
     },
     {
@@ -43,7 +50,8 @@ export class PackageComponent implements OnInit {
       tooltip: 'Edit',
       color: '#6B7280',
       hoverColor: '#16A34A',
-      callback: (row: any) => this.router.navigate(['/app/package/create'], { state: { package: row } })
+      show: () => !this.permissionService.hasPermission('package:edit'),
+      callback: (row: any) => this.goToEdit(row)
     },
     {
       type: 'icon',
@@ -51,6 +59,7 @@ export class PackageComponent implements OnInit {
       tooltip: 'Enable / Disable',
       color: '#6B7280',
       hoverColor: '#2563EB',
+      show: () => !this.permissionService.hasAny(['package:enable', 'package:disable']),
       callback: (row: any) => this.openEnableDisableModal(row)
     },
     {
@@ -59,6 +68,7 @@ export class PackageComponent implements OnInit {
       tooltip: 'Delete',
       color: '#6B7280',
       hoverColor: '#DC2626',
+      show: () => !this.permissionService.hasPermission('package:delete'),
       callback: (row: any) => this.openDeleteModal(row)
     }
   ];
@@ -97,10 +107,18 @@ export class PackageComponent implements OnInit {
     private fb: FormBuilder,
     public router: Router,
     private commonApi: CommonapiService,
-    private alert: AlertService
+    private alert: AlertService,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Study Materials' }]);
+    this.restoredPage = this.listStateService.consumePage(PACKAGE_LIST_STATE_KEY);
+  }
+
+  goToEdit(row: any): void {
+    this.listStateService.savePage(PACKAGE_LIST_STATE_KEY, this.currentPage);
+    this.router.navigate(['/app/package/create'], { state: { package: row } });
   }
 
   ngOnInit(): void {
@@ -199,6 +217,7 @@ export class PackageComponent implements OnInit {
   }
 
   loadTableData(req: { page: number; pageSize: number; search?: string }): void {
+    this.currentPage = req.page;
     this.fetchList(req.page, req.pageSize, req.search);
   }
 
@@ -487,6 +506,9 @@ export class PackageComponent implements OnInit {
   }
 
   onRowSelected(row: any) {
+    // Row click bypasses the View icon's `show` gate — same open-fetch-modal
+    // path as onView(), so it needs the same check independently.
+    if (!this.permissionService.hasPermission('package:view')) return;
      this.selectedPackage = row;
     this.viewEnablements = [];
     this.viewEnablementsLoading = true;

@@ -6,7 +6,11 @@ import { takeUntil } from 'rxjs/operators';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
+import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const ATTENDANCE_LIST_STATE_KEY = 'attendance-list';
 
 @Component({
   selector: 'app-attendance',
@@ -31,7 +35,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }[] = [];
   currentWeekMonday = 0;
   columnsArray = [
-    { key: 'batchCode', label: 'Batch', sortable: false },
+    { key: 'batchLabel', label: 'Batch', sortable: false },
     { key: 'timeLabel', label: 'Timing', sortable: false },
     { key: 'subjectName', label: 'Subject', sortable: false },
     { key: 'phaseName', label: 'Phase', sortable: false },
@@ -45,14 +49,22 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   dataArray: any[] = [];
   totalRecords = 0;
   actions: any[] = [];
+  currentPage = 1;
+  restoredPage = 1;
+  private hasAppliedRestoredPage = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
     private router: Router,
     private commonApi: CommonapiService,
     private auth: AuthService,
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.breadcrumb.set([{ label: 'Attendance' }]);
+    this.restoredPage = this.listStateService.consumePage(
+      ATTENDANCE_LIST_STATE_KEY,
+    );
   }
 
   ngOnInit(): void {
@@ -220,6 +232,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
       timeLabel: this.formatTimeLabel(r),
       subjectName: r.subjectName || r.subjectId || '—',
       facultyName: r.facultyName || r.facultyId || '—',
+      batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || ''),
       statusBadge: isMarked ? 'Marked' : 'Pending',
       attendanceSummary: isMarked
         ? `${r.attendance.presentCount}P / ${r.attendance.absentCount}A / ${r.attendance.lateCount}L`
@@ -231,27 +244,32 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }
 
   buildActions(): void {
+    // FIX: was `hidden:` — custom-table's template only ever reads
+    // `action.show` (a HIDE predicate), so this property name was a silent
+    // no-op and both buttons showed on every row regardless of state. Now
+    // combines the existing row-state/role logic with a permission check.
     this.actions = [
       {
         type: 'simple',
         color: 'primary',
         text: 'Mark Attendance',
         callback: (row: any) => this.goToMark(row),
-        hidden: (row: any) => !row._showAction || row._isMarked,
+        show: (row: any) =>
+          !row._showAction || row._isMarked || !this.permissionService.hasPermission('attendance:mark'),
       },
       {
         type: 'simple',
         color: 'secondary',
         text: 'Edit Attendance',
         callback: (row: any) => this.goToMark(row),
-        hidden: (row: any) =>
-          !row._showAction || !row._isMarked || this.isTeacher,
-        // hidden: (row: any) => !row._showAction || !row._isMarked,
+        show: (row: any) =>
+          !row._showAction || !row._isMarked || this.isTeacher || !this.permissionService.hasPermission('attendance:edit'),
       },
     ];
   }
 
   goToMark(row: any): void {
+    this.listStateService.savePage(ATTENDANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/attendance/mark'], {
       state: {
         batchCode: row.batchCode,
@@ -272,7 +290,16 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }
 
   buildTableData(): void {
-    this.loadTableData({ page: 1, pageSize: 10 });
+    // Only restore the page the user left on once, right after the screen
+    // reloads from a detail navigation — every later rebuild here (e.g.
+    // picking a different date) is a deliberate filter change and should
+    // reset to page 1 as normal.
+    const page =
+      !this.hasAppliedRestoredPage && this.restoredPage > 1
+        ? this.restoredPage
+        : 1;
+    this.hasAppliedRestoredPage = true;
+    this.loadTableData({ page, pageSize: 10 });
   }
 
   loadTableData(req: {
@@ -282,6 +309,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     sortKey?: string;
     sortDirection?: 'asc' | 'desc';
   }): void {
+    this.currentPage = req.page;
     let filtered = [...this.originalData];
     if (req.search) {
       const val = req.search.toLowerCase();
@@ -338,7 +366,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     }
     if (dataToExport.length === 0) return;
     const worksheetData = dataToExport.map((row) => ({
-      Batch: row.batchCode,
+      Batch: row.batchLabel,
       Timing: row.timeLabel,
       Subject: row.subjectName,
       Phase: row.phaseName,
@@ -366,4 +394,123 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     XLSX.writeFile(workbook, fileName);
   }
 
+  // ===== Periodic Report (date range) — new, additive, uses schedule/withattendance-range =====
+  showPeriodicModal = false;
+  periodicFromDateStr = '';
+  periodicToDateStr = '';
+  periodicLoading = false;
+  periodicError = '';
+
+  openPeriodicReport(): void {
+    this.periodicFromDateStr = '';
+    this.periodicToDateStr = '';
+    this.periodicError = '';
+    this.periodicLoading = false;
+    this.showPeriodicModal = true;
+  }
+
+  closePeriodicReport(): void {
+    this.showPeriodicModal = false;
+  }
+
+  private dateStrToUtcMs(dateStr: string): number | null {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    return Date.UTC(y, m - 1, d);
+  }
+
+  private formatDateLabel(ms: number): string {
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    const d = new Date(ms);
+    return `${dayLabels[d.getUTCDay()]} ${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  }
+
+  generatePeriodicReport(type: 'all' | 'marked' | 'pending'): void {
+    const startDate = this.dateStrToUtcMs(this.periodicFromDateStr);
+    const endDate = this.dateStrToUtcMs(this.periodicToDateStr);
+    if (!startDate || !endDate) {
+      this.periodicError = 'Please select both From and To dates.';
+      return;
+    }
+    if (startDate > endDate) {
+      this.periodicError = 'From date must be on or before To date.';
+      return;
+    }
+    this.periodicError = '';
+    this.periodicLoading = true;
+    const tenantId = localStorage.getItem('tenantId');
+    const payload = { tenantId, startDate, endDate };
+    this.commonApi
+      .fetchData(payload, 'attendance', 'schedule/withattendance-range')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.periodicLoading = false;
+          const days: any[] = res?.data ?? [];
+          let rows = days.flatMap((day: any) =>
+            (day.periods || []).map((p: any) => ({
+              ...this.enrichRow(p, true),
+              dateMs: day.date,
+              dateLabel: this.formatDateLabel(day.date),
+            })),
+          );
+          if (type === 'marked') {
+            rows = rows.filter((r) => r._isMarked);
+          } else if (type === 'pending') {
+            rows = rows.filter((r) => !r._isMarked);
+          }
+          if (rows.length === 0) {
+            this.periodicError = 'No records found for the selected range/filter.';
+            return;
+          }
+          this.exportPeriodicRowsToExcel(rows, type);
+          this.showPeriodicModal = false;
+        },
+        error: () => {
+          this.periodicLoading = false;
+          this.periodicError = 'Failed to fetch the periodic report. Please try again.';
+        },
+      });
+  }
+
+  private exportPeriodicRowsToExcel(
+    rows: any[],
+    type: 'all' | 'marked' | 'pending',
+  ): void {
+    const worksheetData = rows.map((row) => ({
+      Date: row.dateLabel,
+      Batch: row.batchLabel,
+      Timing: row.timeLabel,
+      Subject: row.subjectName,
+      Phase: row.phaseName,
+      Faculty: row.facultyName,
+      Type: row.periodType,
+      Mode: row.mode,
+      Status: row.statusBadge,
+      Attendance: row.attendanceSummary,
+    }));
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(worksheetData);
+    const max_width = worksheetData.reduce(
+      (w, r) => Math.max(w, r.Subject.length),
+      10,
+    );
+    worksheet['!cols'] = [
+      { wch: 16 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: max_width },
+      { wch: 15 },
+    ];
+    const workbook: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+    const fromLabel = this.periodicFromDateStr.replace(/-/g, '');
+    const toLabel = this.periodicToDateStr.replace(/-/g, '');
+    const fileName = `Attendance_Periodic_${type.toUpperCase()}_${fromLabel}_to_${toLabel}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  }
 }

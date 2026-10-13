@@ -25,7 +25,20 @@ interface ParsedQuestion {
   solutionHtml: string;
   matrixLeft: string[];
   matrixRight: string[];
+  partialMarkPerCorrect?: number | null;
 }
+
+// Tag-format ([SORT]/@QS/@OS/@TagS blocks) question-type codes -> canonical questionType
+const TAG_FORMAT_QTYPE_MAP: Record<string, string> = {
+  SCO: 'mcq_single',
+  MCO: 'mcq_multi',
+  INT: 'integer',
+  NUM: 'numeric',
+  SUB: 'subjective',
+  TF: 'true_false',
+  COM: 'passage_qns',
+  MTM: 'matrix',
+};
 
 const NTA_DEFAULTS: Record<
   string,
@@ -42,38 +55,12 @@ const NTA_DEFAULTS: Record<
   matrix: { pos: 8, neg: 0, partial: true },
 };
 
-function normalizeQtype(raw: string): string {
-  const v = (raw || '').trim().toLowerCase().replace(/[-\s]/g, '_');
-  if (['mcq_single', 'mcq', 'single', 'mcq_s'].includes(v)) return 'mcq_single';
-  if (['mcq_multi', 'mcq_multiple', 'multiple', 'multi'].includes(v))
-    return 'mcq_multi';
-  if (['integer', 'int'].includes(v)) return 'integer';
-  if (['numeric', 'numerical', 'num'].includes(v)) return 'numeric';
-  if (['true_false', 'true/false', 'tf', 'truefalse', 'boolean'].includes(v))
-    return 'true_false';
-  if (
-    [
-      'subjective',
-      'subj',
-      'long_answer',
-      'long',
-      'text_based',
-      'text',
-    ].includes(v)
-  )
-    return 'subjective';
-  if (['short_answer', 'short', 'fill'].includes(v)) return 'short_answer';
-  if (['passage_qns', 'passage', 'text_based'].includes(v))
-    return 'passage_qns';
-  if (['matrix', 'match', 'matrix_match'].includes(v)) return 'matrix';
-  return 'mcq_single';
-}
-
 function buildCorrectAnswer(
   qtype: string,
   rawAnswer: string,
   positiveMarks?: number,
   leftCount?: number,
+  partialMarkPerCorrect?: number | null,
 ): string {
   const ans = (rawAnswer || '').trim();
   switch (qtype) {
@@ -100,9 +87,11 @@ function buildCorrectAnswer(
         .map((p) => p.trim())
         .filter(Boolean);
       const perPairMarks =
-        leftCount && leftCount > 0
-          ? parseFloat(((positiveMarks || 8) / leftCount).toFixed(2))
-          : 2;
+        partialMarkPerCorrect != null
+          ? partialMarkPerCorrect
+          : leftCount && leftCount > 0
+            ? parseFloat(((positiveMarks || 8) / leftCount).toFixed(2))
+            : 2;
       const grouped: Record<string, string[]> = {};
       for (const pair of pairs) {
         const [lKey, rKey] = pair.split(':').map((s) => s.trim());
@@ -230,7 +219,7 @@ export class QuestionImportNewComponent implements OnInit {
         this.currentStep = 'preview';
       } else {
         this.errorMessage =
-          'No questions found. Ensure [Q] tag is used to mark each question.';
+          'No questions found. Ensure @QS is used to mark each question.';
       }
     } catch (e) {
       this.errorMessage = 'Failed to process DOCX: ' + (e as Error).message;
@@ -316,30 +305,32 @@ export class QuestionImportNewComponent implements OnInit {
   ): ParsedQuestion[] {
     const xmlDoc = new DOMParser().parseFromString(xml, 'text/xml');
     const paragraphs = this.extractParagraphs(xmlDoc, images, relMap);
+    return this.parseTagBlockQuestions(paragraphs);
+  }
 
+  // [SORT]/@QS.../@QE/@OS.../@OE/@TagS.../@TagE block format
+  private parseTagBlockQuestions(paragraphs: string[]): ParsedQuestion[] {
     const questions: ParsedQuestion[] = [];
     let current: ParsedQuestion | null = null;
+    let mode: 'none' | 'question' | 'options' | 'tags' = 'none';
     let questionTextLines: string[] = [];
-    let inSolution = false;
-    let solutionLines: string[] = [];
-    const saveCurrentQuestion = () => {
-      if (!current) return;
-      if (questionTextLines.length > 0) {
-        current.questionText = questionTextLines.join(' ').trim();
-        current.questionHtml = this.convertToHtml(current.questionText);
+    let pendingSort = '';
+
+    for (const raw of paragraphs) {
+      const p = raw.trim();
+
+      const sortMatch = p.match(/^\[SORT\]\s*(.+)$/i);
+      if (sortMatch) {
+        pendingSort = sortMatch[1].trim();
+        continue;
       }
-      if (solutionLines.length > 0) {
-        current.solutionHtml = solutionLines
-          .map((l) => this.convertToHtml(l))
-          .join('');
-      }
-      questions.push(current);
-    };
-    for (let i = 0; i < paragraphs.length; i++) {
-      const p = paragraphs[i];
-      if (p.startsWith('[Q]')) {
-        saveCurrentQuestion();
-        const qtypeRaw = 'mcq_single';
+      if (/^@QS$/i.test(p)) {
+        if (current) {
+          current.questionText = questionTextLines.join(' ').trim();
+          // Content is already HTML/LaTeX as authored (e.g. <br />, $x$) — no markdown conversion.
+          current.questionHtml = current.questionText;
+          questions.push(current);
+        }
         const qtype = 'mcq_single';
         const ntaDef = NTA_DEFAULTS[qtype];
         current = {
@@ -348,7 +339,7 @@ export class QuestionImportNewComponent implements OnInit {
           questionHtml: '',
           options: [],
           qtype,
-          qtypeRaw,
+          qtypeRaw: '',
           difficulty: 'medium',
           answer: '',
           positiveMarks: ntaDef.pos,
@@ -356,157 +347,123 @@ export class QuestionImportNewComponent implements OnInit {
           hasPartialMarking: ntaDef.partial,
           numericMin: null,
           numericMax: null,
-          sortid: '',
+          sortid: pendingSort,
           solutionHtml: '',
           matrixLeft: [],
           matrixRight: [],
+          partialMarkPerCorrect: null,
         };
+        pendingSort = '';
         questionTextLines = [];
-        solutionLines = [];
-        inSolution = false;
-        const qText = p.replace('[Q]', '').trim();
-        if (qText) questionTextLines.push(qText);
+        mode = 'question';
         continue;
       }
-
+      if (/^@QE$/i.test(p)) {
+        mode = 'none';
+        continue;
+      }
+      if (/^@OS$/i.test(p)) {
+        mode = 'options';
+        continue;
+      }
+      if (/^@OE$/i.test(p)) {
+        mode = 'none';
+        continue;
+      }
+      if (/^@TagS$/i.test(p)) {
+        mode = 'tags';
+        continue;
+      }
+      if (/^@TagE$/i.test(p)) {
+        mode = 'none';
+        continue;
+      }
       if (!current) continue;
-      if (p.startsWith('[qtype]')) {
-        const rawType = p.replace('[qtype]', '').trim();
-        current.qtypeRaw = rawType;
-        current.qtype = normalizeQtype(rawType);
-        const ntaDef = NTA_DEFAULTS[current.qtype];
-        if (ntaDef) {
-          current.positiveMarks = ntaDef.pos;
-          current.negativeMarks = ntaDef.neg;
-          current.hasPartialMarking = ntaDef.partial;
+
+      if (mode === 'question') {
+        questionTextLines.push(p);
+        continue;
+      }
+      if (mode === 'options') {
+        // Matrix Match column content: "(A) L: Force" / "(P) R: Newton"
+        const matrixColMatch = p.match(/^\(([A-Za-z0-9]+)\)\s*(L|R):\s*(.*)$/i);
+        if (matrixColMatch) {
+          const key = matrixColMatch[1].toUpperCase();
+          const side = matrixColMatch[2].toUpperCase();
+          const text = matrixColMatch[3].trim();
+          if (side === 'L') current.matrixLeft.push(`${key}. ${text}`);
+          else current.matrixRight.push(`${key}. ${text}`);
+          continue;
         }
-        inSolution = false;
+        const optionMatch = p.match(/^\(([A-Da-d])\)\s*(.*)$/);
+        if (optionMatch) {
+          const label = optionMatch[1].toUpperCase();
+          const text = optionMatch[2].trim();
+          current.options.push({ label, text, html: text });
+        }
         continue;
       }
-      if (p.startsWith('[DIFFICULTY]')) {
-        current.difficulty = p.replace('[DIFFICULTY]', '').trim().toLowerCase();
-        inSolution = false;
+      if (mode === 'tags') {
+        this.applyTagBlockMetadata(current, p);
         continue;
       }
-      if (p.startsWith('[ans]')) {
-        current.answer = p.replace('[ans]', '').trim();
-        inSolution = false;
-        continue;
-      }
-      if (p.startsWith('[Marks]')) {
-        const marksStr = p.replace('[Marks]', '').trim();
-        const parts = marksStr.split(',').map((s) => parseFloat(s.trim()));
-        if (parts.length >= 1 && !isNaN(parts[0]))
-          current.positiveMarks = parts[0];
-        if (parts.length >= 2 && !isNaN(parts[1]))
-          current.negativeMarks = parts[1];
-        inSolution = false;
-        continue;
-      }
-      if (p.startsWith('[numericMin]')) {
-        current.numericMin =
-          parseFloat(p.replace('[numericMin]', '').trim()) || null;
-        inSolution = false;
-        continue;
-      }
-      if (p.startsWith('[numericMax]')) {
-        current.numericMax =
-          parseFloat(p.replace('[numericMax]', '').trim()) || null;
-        inSolution = false;
-        continue;
-      }
-      if (p.startsWith('[sortid]')) {
-        current.sortid = p.replace('[sortid]', '').trim();
-        inSolution = false;
-        continue;
-      }
-      if (p.startsWith('[soln]')) {
-        inSolution = true;
-        const solText = p.replace('[soln]', '').trim();
-        if (solText) solutionLines.push(`<p>${solText}</p>`);
-        continue;
-      }
-      if (p.startsWith('[matrixLeft]')) {
-        const text = p.replace('[matrixLeft]', '').trim();
-        if (!current.matrixLeft) current.matrixLeft = [];
-        current.matrixLeft.push(text);
-        inSolution = false;
-        continue;
-      }
-      if (p.startsWith('[matrixRight]')) {
-        const text = p.replace('[matrixRight]', '').trim();
-        if (!current.matrixRight) current.matrixRight = [];
-        current.matrixRight.push(text);
-        inSolution = false;
-        continue;
-      }
-      if (inSolution) {
-        solutionLines.push(`<p>${p}</p>`);
-        continue;
-      }
-      const inlineOptions = this.extractInlineOptions(p);
-      if (inlineOptions.length >= 2) {
-        inlineOptions.forEach((opt) => {
-          current!.options.push({
-            label: opt.label.toUpperCase(),
-            text: opt.text,
-            html: this.convertToHtml(opt.text),
-          });
-        });
-        continue;
-      }
-      const singleOptionMatch = p.match(/^\(([A-Da-d])\)\s*/);
-      if (singleOptionMatch) {
-        const label = singleOptionMatch[1].toUpperCase();
-        const text = p.replace(/^\([A-Da-d]\)\s*/, '').trim();
-        current.options.push({ label, text, html: this.convertToHtml(text) });
-        continue;
-      }
-      if (/^\d+\.\s*$/.test(p)) continue;
-      if (
-        p.includes('[PHYSICS]') ||
-        p.includes('[CHEMISTRY]') ||
-        p.includes('[MATHS]')
-      )
-        continue;
-      questionTextLines.push(p);
     }
-    saveCurrentQuestion();
+    if (current) {
+      current.questionText = questionTextLines.join(' ').trim();
+      current.questionHtml = current.questionText;
+      questions.push(current);
+    }
     return questions;
   }
 
-  private extractInlineOptions(
-    text: string,
-  ): Array<{ label: string; text: string }> {
-    const regex = /\(([A-Da-d])\)/g;
-    const matches = [...text.matchAll(regex)];
-    if (matches.length < 2) return [];
-
-    const options: Array<{ label: string; text: string }> = [];
-    for (let i = 0; i < matches.length; i++) {
-      const label = matches[i][1];
-      const start = matches[i].index! + matches[i][0].length;
-      const end = i + 1 < matches.length ? matches[i + 1].index! : text.length;
-      options.push({ label, text: text.substring(start, end).trim() });
+  // Parses one @TagS...@TagE line, e.g. "QT:SCO" or "CM:4, PM:1,WM:1,"
+  private applyTagBlockMetadata(q: ParsedQuestion, line: string): void {
+    const tokens = line
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    for (const token of tokens) {
+      const idx = token.indexOf(':');
+      if (idx === -1) continue;
+      const key = token.slice(0, idx).trim().toUpperCase();
+      const value = token.slice(idx + 1).trim();
+      if (!value) continue;
+      switch (key) {
+        case 'QT': {
+          q.qtypeRaw = value;
+          q.qtype = TAG_FORMAT_QTYPE_MAP[value.toUpperCase()] || 'mcq_single';
+          const ntaDef = NTA_DEFAULTS[q.qtype];
+          if (ntaDef) {
+            q.positiveMarks = ntaDef.pos;
+            q.negativeMarks = ntaDef.neg;
+            q.hasPartialMarking = ntaDef.partial;
+          }
+          break;
+        }
+        case 'CA':
+          q.answer = value;
+          break;
+        case 'CM': {
+          const n = parseFloat(value);
+          if (!isNaN(n)) q.positiveMarks = n;
+          break;
+        }
+        case 'WM': {
+          const n = parseFloat(value);
+          if (!isNaN(n)) q.negativeMarks = n;
+          break;
+        }
+        case 'PM': {
+          const n = parseFloat(value);
+          if (!isNaN(n)) {
+            q.partialMarkPerCorrect = n;
+            q.hasPartialMarking = true;
+          }
+          break;
+        }
+      }
     }
-    return options;
   }
-
-  private convertToHtml(text: string): string {
-    let html = text;
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    html = html.replace(
-      /\$\$(.+?)\$\$/g,
-      '<span class="latex-formula">$$$1$$</span>',
-    );
-    html = html.replace(
-      /\$([^$]+?)\$/g,
-      '<span class="latex-formula">$$1$</span>',
-    );
-    return html;
-  }
-
 
   getCorrectOptionLabels(q: ParsedQuestion): string {
     if (!q.answer) return '—';
@@ -516,6 +473,7 @@ export class QuestionImportNewComponent implements OnInit {
         q.answer,
         q.positiveMarks,
         q.matrixLeft?.length,
+        q.partialMarkPerCorrect,
       ) || q.answer
     );
   }
@@ -639,6 +597,7 @@ export class QuestionImportNewComponent implements OnInit {
           q.answer,
           q.positiveMarks,
           q.matrixLeft?.length,
+          q.partialMarkPerCorrect,
         );
         let processedOptions: any[] = [];
         if (
@@ -661,7 +620,10 @@ export class QuestionImportNewComponent implements OnInit {
               const textHtml = await this.replaceImagesWithUrls(opt.html);
               const key = opt.label.toUpperCase();
               const isCorrect = correctKeys.includes(key);
-              const partialMark = q.qtype === 'mcq_multi' && isCorrect ? 1 : 0;
+              const partialMark =
+                q.qtype === 'mcq_multi' && isCorrect
+                  ? (q.partialMarkPerCorrect ?? 1)
+                  : 0;
               return { key, textHtml, isCorrect, partialMark };
             }),
           );
@@ -706,7 +668,7 @@ export class QuestionImportNewComponent implements OnInit {
             })) || [],
           solutionHtml: solutionHtml || undefined,
           enableSolution: !!solutionHtml,
-          sortOrder: q.id,
+          sortOrder: q.sortid ? parseInt(q.sortid, 10) || q.id : q.id,
         };
       }),
     );
@@ -844,79 +806,112 @@ export class QuestionImportNewComponent implements OnInit {
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
     <w:body>
-      <w:p><w:r><w:t>[Q] Which of the following is a vector quantity?</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] mcq_single</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[DIFFICULTY] medium</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 1</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Which of the following is a vector quantity?</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OS</w:t></w:r></w:p>
       <w:p><w:r><w:t>(A) Mass</w:t></w:r></w:p>
       <w:p><w:r><w:t>(B) Temperature</w:t></w:r></w:p>
       <w:p><w:r><w:t>(C) Velocity</w:t></w:r></w:p>
       <w:p><w:r><w:t>(D) Energy</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[ans] C</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[Marks] 4,1</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[soln] Velocity has both magnitude and direction making it a vector quantity.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:SCO</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CA:C</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:4, PM:1,WM:1,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
-      <w:p><w:r><w:t>[Q] Which of the following are fundamental forces of nature?</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] mcq_multi</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[DIFFICULTY] hard</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 2</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Which of the following are fundamental forces of nature?</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OS</w:t></w:r></w:p>
       <w:p><w:r><w:t>(A) Gravitational force</w:t></w:r></w:p>
       <w:p><w:r><w:t>(B) Frictional force</w:t></w:r></w:p>
       <w:p><w:r><w:t>(C) Electromagnetic force</w:t></w:r></w:p>
       <w:p><w:r><w:t>(D) Strong nuclear force</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[ans] A,C,D</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[Marks] 4,2</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[soln] Gravitational, electromagnetic and strong nuclear are fundamental forces.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:MCO</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CA:A,C,D</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:4, PM:1,WM:2,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
-      <w:p><w:r><w:t>[Q] The value of g at surface of Earth is approximately</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] integer</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[DIFFICULTY] easy</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[ans] 10</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[Marks] 4,0</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[soln] g = 9.8 m/s squared, approximately 10 m/s squared.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 3</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>The value of g at surface of Earth is approximately ___ m/s&#178;.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:INT</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CA:10</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:4, WM:0,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
-      <w:p><w:r><w:t>[Q] Calculate resistance in ohms for V=5V and I=0.5A</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] numeric</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[DIFFICULTY] medium</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[ans] 10</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[numericMin] 9.5</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[numericMax] 10.5</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[Marks] 4,0</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[soln] R = V divided by I = 5 divided by 0.5 = 10 ohms.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 4</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Calculate the resistance in ohms for V = 5V and I = 0.5A.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:NUM</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CA:10</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:4, WM:0,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
-      <w:p><w:r><w:t>[Q] Light travels faster in denser medium.</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] true_false</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[DIFFICULTY] easy</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[ans] false</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[Marks] 2,1</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[soln] Light travels slower in denser medium.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 5</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Light travels faster in a denser medium.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:TF</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CA:F</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:2, WM:1,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
-      <w:p><w:r><w:t>[Q] Explain the principle of conservation of energy with an example.</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] subjective</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[DIFFICULTY] hard</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[ans] Energy cannot be created or destroyed only converted from one form to another.</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[Marks] 4,0</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[soln] When a ball is thrown upward kinetic energy converts to potential energy and back.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 6</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Explain the principle of conservation of energy with an example.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:SUB</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:4, WM:0,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
-      <w:p><w:r><w:t>[Q] The SI unit of force is</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[qtype] text_based</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[DIFFICULTY] easy</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[ans] Newton</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[Marks] 4,0</w:t></w:r></w:p>
-      <w:p><w:r><w:t>[soln] The SI unit of force is Newton named after Isaac Newton.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 7</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Read the passage and answer: which unit measures force?</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(A) Joule</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(B) Newton</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(C) Pascal</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(D) Watt</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:COM</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CA:B</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:4, WM:1,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
-      <w:p><w:r><w:t>[Q] Match the following physical quantities with their SI units.</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[qtype] matrix</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[DIFFICULTY] medium</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixLeft] A. Force</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixLeft] B. Pressure</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixLeft] C. Energy</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixLeft] D. Power</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixRight] P. Newton</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixRight] Q. Pascal</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixRight] R. Joule</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[matrixRight] S. Watt</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[ans] A:P,B:Q,C:R,D:S</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[Marks] 8,0</w:t></w:r></w:p>
-    <w:p><w:r><w:t>[soln] Force-Newton, Pressure-Pascal, Energy-Joule, Power-Watt.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>[SORT] 8</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Match the following physical quantities with their SI units.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@QE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(A) L: Force</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(B) L: Pressure</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(C) L: Energy</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(D) L: Power</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(P) R: Newton</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(Q) R: Pascal</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(R) R: Joule</w:t></w:r></w:p>
+      <w:p><w:r><w:t>(S) R: Watt</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@OE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>QT:MTM</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CA:A:P,B:Q,C:R,D:S</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:8, PM:2,WM:0,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
     </w:body>
   </w:document>`,
     );

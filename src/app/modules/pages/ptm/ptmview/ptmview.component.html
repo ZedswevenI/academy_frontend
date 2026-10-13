@@ -6,7 +6,7 @@
             
                 <div>
                     <h1 class="fw-bold mb-0" style="font-size: 22px">
-                        <i class="fa-solid fa-users me-2"></i>{{ session?.batchCode }}
+                        <i class="fa-solid fa-users me-2"></i>{{ session?.batchName && session?.batchCode ? (session?.batchName + ' (' + session?.batchCode + ')') : (session?.batchName || session?.batchCode) }}
                     </h1>
                     <div class="text-muted small mt-1">
                         Parent Teacher Meeting Details
@@ -19,7 +19,7 @@
                     <span *ngIf="exporting" class="spinner-border spinner-border-sm me-2" role="status"></span>
                     <i class="fa-solid fa-file-export btn-icon" *ngIf="!exporting"></i>Export
                 </button>
-                <button class="btn btn-import fs-16 fw-medium me-2" (click)="openFeedbackImportModal()"
+                <button class="btn btn-import fs-16 fw-medium me-2" *appHasPermission="'ptm:edit'" (click)="openFeedbackImportModal()"
                     title="Bulk import staff feedback via Excel" data-bs-toggle="tooltip" data-bs-placement="left">
                     <i class="fa-solid fa-file-import btn-icon"></i>Import Feedback
                 </button>
@@ -131,7 +131,7 @@
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <span *ngIf="masterToggling" class="spinner-border spinner-border-sm text-primary"></span>
-                        <div class="form-check form-switch mb-0" title="{{
+                        <div class="form-check form-switch mb-0" *appHasPermission="'ptm:edit'" title="{{
                 masterPostFeedback
                   ? 'Disable post-PTM feedback for all students'
                   : 'Enable post-PTM feedback for all students'
@@ -219,17 +219,19 @@
                             </span>
                         </td>
                         <td class="text-center">
-                            <div *ngIf="row.status !== 'COMPLETED'"
-                                class="form-check form-switch d-flex justify-content-center mb-0" [title]="
-                  row.enablePostPtmFeedback
-                    ? 'Click to disable post-PTM feedback for ' +
-                      row.studentName
-                    : 'Click to enable post-PTM feedback for ' + row.studentName
-                " data-bs-toggle="tooltip" data-bs-placement="top">
-                                <input class="form-check-input" type="checkbox" role="switch" style="cursor: pointer"
-                                    [checked]="row.enablePostPtmFeedback"
-                                    (change)="onStudentToggle(row, $any($event.target).checked)" />
-                            </div>
+                            <ng-container *appHasPermission="'ptm:edit'">
+                                <div *ngIf="row.status !== 'COMPLETED'"
+                                    class="form-check form-switch d-flex justify-content-center mb-0" [title]="
+                      row.enablePostPtmFeedback
+                        ? 'Click to disable post-PTM feedback for ' +
+                          row.studentName
+                        : 'Click to enable post-PTM feedback for ' + row.studentName
+                    " data-bs-toggle="tooltip" data-bs-placement="top">
+                                    <input class="form-check-input" type="checkbox" role="switch" style="cursor: pointer"
+                                        [checked]="row.enablePostPtmFeedback"
+                                        (change)="onStudentToggle(row, $any($event.target).checked)" />
+                                </div>
+                            </ng-container>
                             <span *ngIf="row.status === 'COMPLETED'" class="text-muted">—</span>
                         </td>
                         <!-- <td style="max-width: 180px;">
@@ -250,13 +252,15 @@
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-2 justify-content-center">
-                                <button *ngIf="row.status !== 'COMPLETED'"
-                                    class="btn btn-sm btn-outline-success rounded-pill px-2"
-                                    (click)="openStaffFeedbackModal(row)" title="Add / edit staff remarks and update meeting status for {{
-                    row.studentName
-                  }}" data-bs-toggle="tooltip" data-bs-placement="top">
-                                    <i class="fa-regular fa-comment-dots"></i>
-                                </button>
+                                <ng-container *appHasPermission="'ptm:edit'">
+                                    <button *ngIf="row.status !== 'COMPLETED'"
+                                        class="btn btn-sm btn-outline-success rounded-pill px-2"
+                                        (click)="openStaffFeedbackModal(row)" title="Add / edit staff remarks and update meeting status for {{
+                        row.studentName
+                      }}" data-bs-toggle="tooltip" data-bs-placement="top">
+                                        <i class="fa-regular fa-comment-dots"></i>
+                                    </button>
+                                </ng-container>
                                 <button class="btn btn-sm btn-outline-primary rounded-pill px-2"
                                     (click)="openQuestionsModal(row)" title="View pre and post PTM questions answered by {{
                     row.studentName
@@ -374,7 +378,8 @@
                     <div>
                         <div class="fw-semibold">{{ selectedStudent.studentName }}</div>
                         <div class="text-muted small">
-                            {{ selectedStudent.admissionNo }} &nbsp;·&nbsp; {{ selectedStudent.batchCode }}
+                            {{ selectedStudent.admissionNo }} &nbsp;·&nbsp;
+                            {{ session?.batchName && selectedStudent.batchCode ? (session?.batchName + ' (' + selectedStudent.batchCode + ')') : (session?.batchName || selectedStudent.batchCode) }}
                         </div>
                     </div>
                 </div>

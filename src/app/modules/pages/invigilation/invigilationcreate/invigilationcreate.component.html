@@ -238,7 +238,8 @@
         </div>
         <!-- ── ACTIONS ── -->
         <div class="d-flex gap-2">
-            <button class="btn btn-create fs-16 fw-medium px-4" [disabled]="saving" (click)="save()">
+            <button class="btn btn-create fs-16 fw-medium px-4" *appHasPermission="isEdit ? 'invigilation:edit' : 'invigilation:create'"
+                [disabled]="saving" (click)="save()">
                 <span *ngIf="!saving">
                     <i class="fa-solid fa-floppy-disk me-1"></i>{{ isEdit ? 'Update' : 'Save' }}
                 </span>

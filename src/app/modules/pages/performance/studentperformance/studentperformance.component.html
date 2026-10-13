@@ -1,36 +1,48 @@
 <div class="ms-3 me-3 pt-1 pb-1">
-
     <!-- Loading -->
     <div *ngIf="loading" class="text-center py-5">
         <span class="spinner-border text-primary"></span>
     </div>
-
     <div *ngIf="!loading">
-
         <!-- ── Header card ──────────────────────────────────────────────────── -->
         <div class="bg-white rounded-4 shadow-sm p-4 mb-3">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="d-flex align-items-center gap-3">
                     <div>
                         <h1 class="fw-bold mb-0" style="font-size:22px;">
-                            {{ student?.admissionNo || studentId }}
+                            {{ studentProfile?.basic?.name || student?.admissionNo || studentId }}
                         </h1>
-                        <div class="text-muted small">Academic Year: {{ academicYear }}</div>
+                        <div class="text-muted small">
+                            Admission No: {{ studentProfile?.basic?.admissionNo || student?.admissionNo || '—' }}
+                            &nbsp;·&nbsp;
+                            Batch: {{ studentProfile?.program?.batchName || '—' }}
+                            <span *ngIf="studentProfile?.basic?.batchCode">
+                                ({{ studentProfile?.basic?.batchCode }})
+                            </span>
+                            &nbsp;·&nbsp;
+                            Program: {{ studentProfile?.program?.programName || '—' }}
+                            &nbsp;·&nbsp;
+                            Class: {{ studentProfile?.basic?.classNo || '—' }}
+                            &nbsp;·&nbsp;
+                            Center: {{ studentProfile?.program?.centerName || '—' }}
+                            &nbsp;·&nbsp;
+                            Academic Year: {{ academicYear }}
+                        </div>
                     </div>
                 </div>
                 <div>
-                    <button *ngIf="['L1','L3','L4'].includes(roleLevel)" class="btn btn-shuffle fs-16 fw-medium me-2"
+                    <button *appHasPermission="'performance:sync'" class="btn btn-shuffle fs-16 fw-medium me-2"
                         [disabled]="syncing" (click)="syncStudent()">
                         <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
                         {{ syncing ? 'Syncing...' : 'Sync' }}
                     </button>
-                    <button class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingCPT" (click)="printCPT()">
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingCPT" (click)="printCPT()">
                         <span *ngIf="exportingCPT" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!exportingCPT" class="fa-solid fa-file-pdf me-1"></i>
                         {{ exportingCPT ? 'Exporting...' : 'Z7i Performance' }}
                     </button>
-                    <button class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingSchool"
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingSchool"
                         (click)="printSchool()">
                         <span *ngIf="exportingSchool" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!exportingSchool" class="fa-solid fa-file-pdf me-1"></i>
@@ -41,7 +53,6 @@
                     </button>
                 </div>
             </div>
-
             <!-- KPI Cards -->
             <div class="row g-3">
                 <div class="col-6 col-md-3">
@@ -89,10 +100,8 @@
                 </div>
             </div>
         </div>
-
         <!-- ── Tab Card ──────────────────────────────────────────────────────── -->
         <div class="bg-white rounded-4 shadow-sm p-4">
-
             <!-- Tab nav -->
             <ul class="nav nav-tabs border-bottom mb-4">
                 <li class="nav-item">
@@ -106,7 +115,7 @@
                 <li class="nav-item">
                     <a class="nav-link fw-semibold" [class.active]="activeTab==='mock'" (click)="setTab('mock')"
                         href="javascript:void(0)">
-                        <i class="fa-solid fa-file-pen me-1"></i>Mock Exams
+                        <i class="fa-solid fa-file-pen me-1"></i>Exams
                         <span class="badge rounded-pill bg-secondary ms-1" style="font-size:10px;">{{
                             student?.summary?.mockExamCount || 0 }}</span>
                     </a>
@@ -128,7 +137,6 @@
                     </a>
                 </li>
             </ul>
-
             <!-- ── TAB: Assignment ──────────────────────────────────────────────── -->
             <div *ngIf="activeTab==='assignment'">
                 <div *ngIf="!assignments.length" class="text-center py-5 text-muted">
@@ -177,7 +185,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- ── TAB: Mock Exams ──────────────────────────────────────────────── -->
             <div *ngIf="activeTab==='mock'">
                 <div *ngIf="mockLoading" class="text-center py-4">
@@ -263,7 +270,6 @@
                             </tbody>
                         </table>
                     </div>
-
                     <!-- Pagination -->
                     <div *ngIf="mockPages > 1" class="d-flex justify-content-center gap-1 mt-3">
                         <button class="btn btn-sm btn-outline-secondary rounded-2" [disabled]="mockPage===1"
@@ -281,7 +287,6 @@
                     <div class="text-muted small text-center mt-2">{{ mockTotal }} total exams</div>
                 </div>
             </div>
-
             <!-- ── TAB: School Exams ────────────────────────────────────────────── -->
             <div *ngIf="activeTab==='school'">
                 <div *ngIf="schoolLoading" class="text-center py-4">
@@ -365,7 +370,6 @@
                             </tbody>
                         </table>
                     </div>
-
                     <!-- Pagination -->
                     <div *ngIf="schoolPages > 1" class="d-flex justify-content-center gap-1 mt-3">
                         <button class="btn btn-sm btn-outline-secondary rounded-2" [disabled]="schoolPage===1"
@@ -383,10 +387,8 @@
                     <div class="text-muted small text-center mt-2">{{ schoolTotal }} total exams</div>
                 </div>
             </div>
-
             <!-- ── TAB: Staff Remarks ───────────────────────────────────────────── -->
             <div *ngIf="activeTab==='remarks'">
-
                 <!-- Add remark -->
                 <div *ngIf="canAddRemark" class="mb-4 p-3 rounded-3 border"
                     style="border-color:#e2e8f0!important; background:#f8fafc;">
@@ -399,13 +401,11 @@
                         {{ remarkSaving ? 'Saving...' : 'Add Remark' }}
                     </button>
                 </div>
-
                 <!-- Remarks list -->
                 <div *ngIf="!staffFeedback.length" class="text-center py-5 text-muted">
                     <i class="fa-regular fa-comment fa-2x mb-3 d-block opacity-25"></i>
                     No remarks yet.
                 </div>
-
                 <div class="d-flex flex-column gap-3">
                     <div *ngFor="let f of staffFeedback" class="d-flex gap-3 p-3 rounded-3 border"
                         style="border-color:#e2e8f0!important;">
@@ -430,7 +430,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
