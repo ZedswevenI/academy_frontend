@@ -6,6 +6,9 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import * as XLSX from 'xlsx';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const PACKAGE_LIST_STATE_KEY = 'package-list';
 
 @Component({
   selector: 'app-package',
@@ -20,6 +23,8 @@ export class PackageComponent implements OnInit {
 
   dataArray: any[] = [];
   totalRecords = 0;
+  currentPage = 1;
+  restoredPage = 1;
 
   columnsArray = [
     { key: 'packageCode', label: 'Code', sortable: false },
@@ -46,7 +51,7 @@ export class PackageComponent implements OnInit {
       color: '#6B7280',
       hoverColor: '#16A34A',
       show: () => !this.permissionService.hasPermission('package:edit'),
-      callback: (row: any) => this.router.navigate(['/app/package/create'], { state: { package: row } })
+      callback: (row: any) => this.goToEdit(row)
     },
     {
       type: 'icon',
@@ -104,9 +109,16 @@ export class PackageComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'Study Materials' }]);
+    this.restoredPage = this.listStateService.consumePage(PACKAGE_LIST_STATE_KEY);
+  }
+
+  goToEdit(row: any): void {
+    this.listStateService.savePage(PACKAGE_LIST_STATE_KEY, this.currentPage);
+    this.router.navigate(['/app/package/create'], { state: { package: row } });
   }
 
   ngOnInit(): void {
@@ -205,6 +217,7 @@ export class PackageComponent implements OnInit {
   }
 
   loadTableData(req: { page: number; pageSize: number; search?: string }): void {
+    this.currentPage = req.page;
     this.fetchList(req.page, req.pageSize, req.search);
   }
 

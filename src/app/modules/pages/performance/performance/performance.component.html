@@ -58,7 +58,8 @@
         <!-- Table -->
         <div class="mt-2">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
-                [totalRecords]="totalRecords" searchPlaceholder="Search student name or admission no..."
+                [totalRecords]="totalRecords" [initialPage]="restoredPage"
+                searchPlaceholder="Search student name or admission no..."
                 (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)">
             </custom-table>
         </div>

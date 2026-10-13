@@ -44,6 +44,13 @@
               <i class="fa-regular fa-copy me-2 text-primary"></i>Duplicate Exam
             </a>
           </li>
+          <ng-container *ngIf="canImportQuestions">
+            <li *appHasPermission="'exam:importQuestions'">
+              <a class="dropdown-item" (click)="importQuestions()">
+                <i class="fa-solid fa-file-import me-2 text-primary"></i>Import Questions
+              </a>
+            </li>
+          </ng-container>
           <ng-container *ngIf="canRearrange">
             <li *appHasPermission="'exam:rearrangeQuestions'">
               <a class="dropdown-item" (click)="rearrangeQuestions()">
@@ -51,11 +58,13 @@
               </a>
             </li>
           </ng-container>
-          <li *appHasPermission="'exam:importAnswers'">
-            <a class="dropdown-item" (click)="importAnswers()">
-              <i class="fa-solid fa-cloud-arrow-up me-2 text-success"></i>Import Answers
-            </a>
-          </li>
+          <ng-container *ngIf="allQuestionsImported">
+            <li *appHasPermission="'exam:importAnswers'">
+              <a class="dropdown-item" (click)="importAnswers()">
+                <i class="fa-solid fa-cloud-arrow-up me-2 text-success"></i>Import Answers
+              </a>
+            </li>
+          </ng-container>
           <ng-container *ngIf="canAddOfflineMarks">
             <li *appHasPermission="'exam:offlineMarksEntry'">
               <a class="dropdown-item" (click)="openOfflineMarks()">
@@ -88,6 +97,16 @@
             <li *appHasPermission="'exam:graceMarks'">
               <a class="dropdown-item" (click)="openGraceModal()">
                 <i class="fa-solid fa-gift me-2 text-warning"></i>Grace Marks
+              </a>
+            </li>
+          </ng-container>
+          <ng-container *ngIf="canShowAbsenteesReport">
+            <li *appHasPermission="'exam:view'">
+              <a class="dropdown-item" [class.disabled]="exportingAbsenteesReport"
+                (click)="!exportingAbsenteesReport && exportAbsenteesReport()">
+                <span *ngIf="exportingAbsenteesReport" class="spinner-border spinner-border-sm me-2"></span>
+                <i *ngIf="!exportingAbsenteesReport" class="fa-solid fa-user-slash me-2 text-danger"></i>
+                {{ exportingAbsenteesReport ? 'Exporting...' : 'Absentees Report' }}
               </a>
             </li>
           </ng-container>

@@ -56,7 +56,7 @@
   <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
       success="PUBLISHED" primary="DRAFT" [totalRecords]="totalRecords"
       [searchPlaceholder]="'Search subject, category...'" (requestData)="loadTableData($event)"
-      (rowClick)="onRowSelected($event)">
+      (rowClick)="onRowSelected($event)" [initialPage]="restoredPage">
     </custom-table>
      </div>
   
@@ -92,7 +92,7 @@
           </div>
           <div class="col-6" *ngIf="selectedCircular.batchCode">
             <div class="text-muted small">Batch Code</div>
-            <div class="fw-semibold">{{ selectedCircular.batchCode }}</div>
+            <div class="fw-semibold">{{ combineBatchLabels(selectedCircular.batchCode, selectedCircular.batchName) }}</div>
           </div>
           <div class="col-6">
             <div class="text-muted small">Status</div>

@@ -535,50 +535,139 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     return new Date(ms).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  // Groups a date-range report's dates/rows into one bucket per calendar
+  // month, each with its own day columns, holiday set, and per-month
+  // present/absent/% recomputed from that month's slice of attendance[]
+  // (the API's row-level presentCount/absentCount/percentage are totals for
+  // the whole requested range, not per month, so they can't be reused here).
+  private splitRangeIntoMonthBuckets(data: any): {
+    monthLabel: string;
+    dayMeta: { label: string; isHoliday: boolean }[];
+    holidays: any[];
+    rows: any[];
+    workingDays: number;
+  }[] {
+    const dates: number[] = data.dates || [];
+    const holidays: any[] = data.holidays || [];
+    const holidayDateSet = new Set<number>(holidays.map((h: any) => h.date));
+    const sourceRows: any[] = data.rows || [];
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    const monthKeyOf = (ms: number) => {
+      const d = new Date(ms);
+      return `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+    };
+
+    const order: string[] = [];
+    const indicesByMonth = new Map<string, number[]>();
+    dates.forEach((ms, idx) => {
+      const key = monthKeyOf(ms);
+      if (!indicesByMonth.has(key)) {
+        indicesByMonth.set(key, []);
+        order.push(key);
+      }
+      indicesByMonth.get(key)!.push(idx);
+    });
+
+    return order.map((key) => {
+      const indices = indicesByMonth.get(key)!;
+      const [yearStr, monthStr] = key.split('-');
+      const year = Number(yearStr);
+      const monthNum = Number(monthStr);
+      const monthLabel = `${monthNames[monthNum]} ${year}`;
+
+      const dayMeta = indices.map((idx) => ({
+        label: String(new Date(dates[idx]).getUTCDate()),
+        isHoliday: holidayDateSet.has(dates[idx]),
+      }));
+      const workingDays = dayMeta.filter((d) => !d.isHoliday).length;
+      const monthHolidays = holidays.filter((h: any) => monthKeyOf(h.date) === key);
+
+      const rows = sourceRows.map((r: any) => {
+        const attendance = indices.map((idx) => r.attendance?.[idx] ?? '');
+        const remarks = indices.map((idx) => r.remarks?.[idx] ?? null);
+        const presentCount = attendance.filter((v) => v === 'P' || v === 'L').length;
+        const absentCount = attendance.filter((v) => v === 'A').length;
+        const percentage = workingDays > 0 ? Math.round((presentCount / workingDays) * 100) : 0;
+        return { ...r, attendance, remarks, presentCount, absentCount, percentage };
+      });
+
+      return { monthLabel, dayMeta, holidays: monthHolidays, rows, workingDays };
+    });
+  }
+
   private generatePdf(data: any, period: { monthLabel: string; fileSuffix?: string }): void {
     if (!data) return;
-    const monthLabel = period.monthLabel;
-    const rows: any[] = data.rows || [];
     const batch = this.printBatch;
-    const workingDays = data.workingDays || 0;
-    const holidays: any[] = data.holidays || [];
 
-    // Month mode: `data.lastDay` (1..N) is the day-of-month column count,
-    // holidays matched by day-of-month. Range mode: `data.dates[]` (epoch ms,
-    // one per column, positionally aligned with each row's `attendance[]`)
-    // — the range can cross a month boundary, so columns are labelled and
-    // holidays matched by exact date instead of a bare day number.
+    // Month mode: `data.lastDay` (1..N) is the day-of-month column count —
+    // rendered as a single page. Range mode: `data.dates[]` (epoch ms) can
+    // span several calendar months, so it's split into one page per month
+    // (same layout as the by-month report) instead of one continuous table
+    // with every date in the range as a column, which doesn't fit the page.
     const isRangeMode = !data.lastDay && Array.isArray(data.dates);
-    let dayMeta: { label: string; isHoliday: boolean }[];
-    if (isRangeMode) {
-      const holidayDateSet = new Set<number>((holidays || []).map((h: any) => h.date));
-      let lastMonth = -1;
-      dayMeta = (data.dates || []).map((ms: number) => {
-        const d = new Date(ms);
-        const dayNum = d.getUTCDate();
-        const monthNum = d.getUTCMonth();
-        const crossedMonth = lastMonth !== -1 && monthNum !== lastMonth;
-        lastMonth = monthNum;
-        return {
-          label: crossedMonth ? `${dayNum}/${monthNum + 1}` : String(dayNum),
-          isHoliday: holidayDateSet.has(ms),
-        };
-      });
-    } else {
-      const lastDay = data.lastDay || 31;
-      const holidayDaySet = new Set<number>();
-      holidays.forEach((h: any) => holidayDaySet.add(new Date(h.date).getUTCDate()));
-      dayMeta = Array.from({ length: lastDay }, (_, i) => ({
-        label: String(i + 1),
-        isHoliday: holidayDaySet.has(i + 1),
-      }));
-    }
-    const lastDay = dayMeta.length;
     const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
       format: 'a4',
     });
+
+    if (isRangeMode) {
+      const monthBlocks = this.splitRangeIntoMonthBuckets(data);
+      monthBlocks.forEach((block, i) => {
+        if (i > 0) doc.addPage();
+        this.renderAttendanceBlock(doc, batch, {
+          rows: block.rows,
+          dayMeta: block.dayMeta,
+          monthLabel: block.monthLabel,
+          holidays: block.holidays,
+          workingDays: block.workingDays,
+        });
+      });
+    } else {
+      const lastDay = data.lastDay || 31;
+      const holidays: any[] = data.holidays || [];
+      const holidayDaySet = new Set<number>();
+      holidays.forEach((h: any) => holidayDaySet.add(new Date(h.date).getUTCDate()));
+      const dayMeta = Array.from({ length: lastDay }, (_, i) => ({
+        label: String(i + 1),
+        isHoliday: holidayDaySet.has(i + 1),
+      }));
+      this.renderAttendanceBlock(doc, batch, {
+        rows: data.rows || [],
+        dayMeta,
+        monthLabel: period.monthLabel,
+        holidays,
+        workingDays: data.workingDays || 0,
+      });
+    }
+
+    const fileSuffix = period.fileSuffix || period.monthLabel.replace(/ /g, '_');
+    doc.save(`Attendance_${batch.batchCode}_${fileSuffix}.pdf`);
+  }
+
+  // Renders one month's attendance register as a single page/table block
+  // onto an already-created jsPDF document (caller adds a new page between
+  // blocks when printing multiple months for a date-range report).
+  private renderAttendanceBlock(
+    doc: jsPDF,
+    batch: any,
+    block: {
+      rows: any[];
+      dayMeta: { label: string; isHoliday: boolean }[];
+      monthLabel: string;
+      holidays: any[];
+      workingDays: number;
+    },
+  ): void {
+    const monthLabel = block.monthLabel;
+    const rows: any[] = block.rows;
+    const workingDays = block.workingDays;
+    const holidays: any[] = block.holidays;
+    const dayMeta = block.dayMeta;
+    const lastDay = dayMeta.length;
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const ml = 10,
@@ -600,7 +689,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     if (batch.classNo)
       doc.text(`Class   : ${batch.classNo}`, ml, batch.section ? 29 : 24);
     bold(10);
-    doc.text(`${isRangeMode ? 'Period' : 'Month'} : ${monthLabel}`, pageW / 2, 19, { align: 'center' });
+    doc.text(`Month : ${monthLabel}`, pageW / 2, 19, { align: 'center' });
     normal(9);
     doc.text(`No. of Working Days : ${workingDays}`, pageW - mr, 19, {
       align: 'right',
@@ -987,9 +1076,6 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       pageW / 2,
       footY + 22,
       { align: 'center' },
-    );
-    doc.save(
-      `Attendance_${batch.batchCode}_${period.fileSuffix || monthLabel.replace(/ /g, '_')}.pdf`,
     );
   }
 

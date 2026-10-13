@@ -124,7 +124,7 @@
                     </div>
                     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
                         [searchPlaceholder]="'Search batch, subject, faculty...'" [totalRecords]="totalRecords"
-                        (requestData)="loadTableData($event)">
+                        [initialPage]="restoredPage" (requestData)="loadTableData($event)">
                     </custom-table>
                 </div>
             </ng-container>

@@ -21,9 +21,7 @@
     <!-- Rows per page -->
     <select *ngIf="showpageoptions" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)"
       class="form-select form-select-sm" style="width: auto; font-size: 14px;" aria-label="Rows per page">
-      <option value="5">5 Rows</option>
-      <option value="10">10 Rows</option>
-      <option value="20">20 Rows</option>
+      <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }} Rows</option>
     </select>
 
     <!-- Filters button -->
@@ -177,7 +175,7 @@
   </div>
 </div>
 <!-- Pagination -->
-<div *ngIf="totalRecords > 5" class="d-flex align-items-center justify-content-between px-2 py-2">
+<div *ngIf="totalPages > 1" class="d-flex align-items-center justify-content-between px-2 py-2">
   <button class="btn btn-link text-muted text-decoration-none fs-16 fw-medium d-flex align-items-center gap-2"
     style="color: #6b7280 !important" [disabled]="currentPage <= 1" (click)="onPageChange(currentPage - 1)">
     <img src="assets/icons/pageileft.svg" alt="pageleft" width="20" height="20" style="color: #6b7280 !important" />

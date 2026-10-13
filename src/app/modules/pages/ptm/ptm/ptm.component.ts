@@ -478,7 +478,10 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const PTM_LIST_STATE_KEY = 'ptm-list';
 
 @Component({
   selector: 'app-ptm',
@@ -490,6 +493,8 @@ export class PtmComponent implements OnInit {
   ptmForm!: FormGroup;
   loading = false;
   tenantId: any;
+  currentPage = 1;
+  restoredPage = 1;
 
   dataArray: any[] = [];
   totalRecords = 0;
@@ -504,7 +509,7 @@ export class PtmComponent implements OnInit {
 
   // ── Session-level columns ────────────────────────────
   columnsArray = [
-    { key: 'batchCode', label: 'Batch', sortable: false },
+    { key: 'batchLabel', label: 'Batch', sortable: false },
     { key: 'ptmDateFormatted', label: 'PTM Date', sortable: true },
     { key: 'startFormatted', label: 'Start Time', sortable: false },
     { key: 'endFormatted', label: 'End Time', sortable: false },
@@ -589,9 +594,11 @@ export class PtmComponent implements OnInit {
     private alert: AlertService,
     private authService: AuthService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.tenantId = localStorage.getItem('tenantId');
     this.breadcrump.set([{ label: 'PTM' }]);
+    this.restoredPage = this.listStateService.consumePage(PTM_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -601,7 +608,7 @@ export class PtmComponent implements OnInit {
     });
     this.loadBatches();
     // Auto-load sessions on init
-    this.fetchSessions(1, 10);
+    this.fetchSessions(this.restoredPage, 10);
   }
 
   showimport(): boolean {
@@ -669,6 +676,7 @@ export class PtmComponent implements OnInit {
           ptmDateFormatted: this.formatDate(s.ptmDate),
           startFormatted: this.formatTime(s.startTime),
           endFormatted: this.formatTime(s.endTime),
+          batchLabel: s.batchName && s.batchCode ? `${s.batchName} (${s.batchCode})` : (s.batchName || s.batchCode || ''),
           // Pre-feedback progress label
           prePtmSubmittedCount: `${s.prePtmSubmittedCount} / ${s.totalStudents}`,
           postPtmSubmittedCount: `${s.postPtmSubmittedCount} / ${s.totalStudents}`,
@@ -688,12 +696,14 @@ export class PtmComponent implements OnInit {
     pageSize: number;
     search?: string;
   }): void {
+    this.currentPage = req.page;
     this.fetchSessions(req.page, req.pageSize);
   }
 
   onViewSession(row: any): void {
     const sessionKey = btoa(JSON.stringify({
       batchCode: row.batchCode,
+      batchName: row.batchName,
       centerCode: row.centerCode,
       ptmDate: row.ptmDate,
       startTime: row.startTime,
@@ -710,6 +720,7 @@ export class PtmComponent implements OnInit {
       status: row.status,
     }))
     console.log('sessionKey ', sessionKey);
+    this.listStateService.savePage(PTM_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/ptm/view', sessionKey]);
   }
 
@@ -946,6 +957,7 @@ export class PtmComponent implements OnInit {
   onRowSelected(row: any) {
     const sessionKey = btoa(JSON.stringify({
       batchCode: row.batchCode,
+      batchName: row.batchName,
       centerCode: row.centerCode,
       ptmDate: row.ptmDate,
       startTime: row.startTime,
@@ -962,6 +974,7 @@ export class PtmComponent implements OnInit {
       status: row.status,
     }))
     console.log('sessionKey ', sessionKey);
+    this.listStateService.savePage(PTM_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/ptm/view', sessionKey]);
   }
 }

@@ -7,7 +7,10 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AuthService } from '../../../../service/auth/auth.service';
 import { RoleLevel } from '../../../../shared/role.config';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
 import * as XLSX from 'xlsx';
+
+const ATTENDANCE_LIST_STATE_KEY = 'attendance-list';
 
 @Component({
   selector: 'app-attendance',
@@ -32,7 +35,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }[] = [];
   currentWeekMonday = 0;
   columnsArray = [
-    { key: 'batchCode', label: 'Batch', sortable: false },
+    { key: 'batchLabel', label: 'Batch', sortable: false },
     { key: 'timeLabel', label: 'Timing', sortable: false },
     { key: 'subjectName', label: 'Subject', sortable: false },
     { key: 'phaseName', label: 'Phase', sortable: false },
@@ -46,6 +49,9 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   dataArray: any[] = [];
   totalRecords = 0;
   actions: any[] = [];
+  currentPage = 1;
+  restoredPage = 1;
+  private hasAppliedRestoredPage = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -53,8 +59,12 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     private commonApi: CommonapiService,
     private auth: AuthService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.breadcrumb.set([{ label: 'Attendance' }]);
+    this.restoredPage = this.listStateService.consumePage(
+      ATTENDANCE_LIST_STATE_KEY,
+    );
   }
 
   ngOnInit(): void {
@@ -222,6 +232,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
       timeLabel: this.formatTimeLabel(r),
       subjectName: r.subjectName || r.subjectId || '—',
       facultyName: r.facultyName || r.facultyId || '—',
+      batchLabel: r.batchName && r.batchCode ? `${r.batchName} (${r.batchCode})` : (r.batchName || r.batchCode || ''),
       statusBadge: isMarked ? 'Marked' : 'Pending',
       attendanceSummary: isMarked
         ? `${r.attendance.presentCount}P / ${r.attendance.absentCount}A / ${r.attendance.lateCount}L`
@@ -258,6 +269,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }
 
   goToMark(row: any): void {
+    this.listStateService.savePage(ATTENDANCE_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/attendance/mark'], {
       state: {
         batchCode: row.batchCode,
@@ -278,7 +290,16 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   }
 
   buildTableData(): void {
-    this.loadTableData({ page: 1, pageSize: 10 });
+    // Only restore the page the user left on once, right after the screen
+    // reloads from a detail navigation — every later rebuild here (e.g.
+    // picking a different date) is a deliberate filter change and should
+    // reset to page 1 as normal.
+    const page =
+      !this.hasAppliedRestoredPage && this.restoredPage > 1
+        ? this.restoredPage
+        : 1;
+    this.hasAppliedRestoredPage = true;
+    this.loadTableData({ page, pageSize: 10 });
   }
 
   loadTableData(req: {
@@ -288,6 +309,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     sortKey?: string;
     sortDirection?: 'asc' | 'desc';
   }): void {
+    this.currentPage = req.page;
     let filtered = [...this.originalData];
     if (req.search) {
       const val = req.search.toLowerCase();
@@ -344,7 +366,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     }
     if (dataToExport.length === 0) return;
     const worksheetData = dataToExport.map((row) => ({
-      Batch: row.batchCode,
+      Batch: row.batchLabel,
       Timing: row.timeLabel,
       Subject: row.subjectName,
       Phase: row.phaseName,
@@ -462,7 +484,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   ): void {
     const worksheetData = rows.map((row) => ({
       Date: row.dateLabel,
-      Batch: row.batchCode,
+      Batch: row.batchLabel,
       Timing: row.timeLabel,
       Subject: row.subjectName,
       Phase: row.phaseName,

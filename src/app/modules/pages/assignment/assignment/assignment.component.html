@@ -17,7 +17,7 @@
         <div class="mt-3">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
                 [searchPlaceholder]="'Search Assignment, Due date...'" [totalRecords]="totalRecords"
-                (requestData)="loadTableData($event)"></custom-table>
+                [initialPage]="restoredPage" (requestData)="loadTableData($event)"></custom-table>
         </div>
     </div>
 </div>

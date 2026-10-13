@@ -24,14 +24,14 @@ export class StudentRemarksComponent extends BaseReportComponent {
   showDetail = false;
   isBulk = false;
 
-  readonly summaryColumns = [{ key: 'admissionNo', label: 'Enrollment No' }, { key: 'studentName', label: 'Student' }, { key: 'batchCode', label: 'Batch' }, { key: 'totalRemarks', label: 'Total Remarks' }];
+  readonly summaryColumns = [{ key: 'admissionNo', label: 'Enrollment No' }, { key: 'studentName', label: 'Student' }, { key: 'batchLabel', label: 'Batch' }, { key: 'totalRemarks', label: 'Total Remarks' }];
 
   readonly singleColumns = [{ key: 'slNo', label: '#' }, { key: 'type', label: 'Type' }, { key: 'dateFormatted', label: 'Date' }, { key: 'remark', label: 'Remark' }, { key: 'status', label: 'Status' }];
 
   readonly detailColumns = [
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'type', label: 'Type' },
     { key: 'dateFormatted', label: 'Date' },
     { key: 'remark', label: 'Remark' },
@@ -50,6 +50,11 @@ export class StudentRemarksComponent extends BaseReportComponent {
     return this.selectedAdmissionNos.length > 0;
   }
 
+  private buildBatchLabel(r: any): string {
+    if (r?.batchName && r?.batchCode) return `${r.batchName} (${r.batchCode})`;
+    return r?.batchName || r?.batchCode || '';
+  }
+
   generate(): void {
     this.isBulk = this.selectedAdmissionNos.length !== 1;
     const payload: any = {};
@@ -63,8 +68,10 @@ export class StudentRemarksComponent extends BaseReportComponent {
     this.reportService.generate('reports/student', endpoint, payload).subscribe({
       next: (res: any) => {
         this.onSuccess(res);
-        this.rows = this.isBulk ? res.data || [] : (res.data || []).map((r: any, i: number) => ({ slNo: i + 1, ...r }));
-        this.detailRows = res.detail || [];
+        this.rows = this.isBulk
+          ? (res.data || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }))
+          : (res.data || []).map((r: any, i: number) => ({ slNo: i + 1, ...r }));
+        this.detailRows = (res.detail || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }));
         this.summaryItems = this.reportService.buildSummaryItems(res.summary);
       },
       error: (err: any) => this.onError(err)

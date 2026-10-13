@@ -5,6 +5,9 @@ import { CommonapiService } from '../../../../service/commonapi/commonapi.servic
 import { AlertService } from '../../../../service/alert/alert.service';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const TASK_LIST_STATE_KEY = 'task-list';
 
 @Component({
   selector: 'app-task',
@@ -14,6 +17,8 @@ import { PermissionService } from '../../../../shared/permission.service';
 })
 export class TaskComponent implements OnInit {
   tenantId = localStorage.getItem('tenantId');
+  currentPage = 1;
+  restoredPage = 1;
   columnsArray = [{ key: 'taskName', label: 'Task Name', sortable: false }, { key: 'assignedDate', label: 'Assigned Date', sortable: false }, { key: 'dueDate', label: 'Due Date', sortable: false }, { key: 'status', label: 'Status', sortable: false }];
   dataArray: any[] = [];
   totalRecords = 0;
@@ -50,13 +55,16 @@ export class TaskComponent implements OnInit {
     private alert: AlertService,
     private authService: AuthService,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.breadcrump.set([{ label: 'Task' }]);
+    this.restoredPage = this.listStateService.consumePage(TASK_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {}
 
   loadTableData(req: { page: number; pageSize: number; search?: string; sortKey?: string; sortDirection?: 'asc' | 'desc' }) {
+    this.currentPage = req.page;
     let endpoint = '';
     if (this.authService.getRole() === 'L4') {
       const staffId = this.authService.getStaffId();
@@ -107,6 +115,7 @@ export class TaskComponent implements OnInit {
   }
 
   viewTask(row: any) {
+    this.listStateService.savePage(TASK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/task/view'], {
       queryParams: { taskId: row.taskId },
       state: { taskData: row }
@@ -114,12 +123,14 @@ export class TaskComponent implements OnInit {
   }
 
   editTask(row: any) {
+    this.listStateService.savePage(TASK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/task/create'], {
       state: { taskData: row }
     });
   }
 
    onRowSelected(row: any) {
+    this.listStateService.savePage(TASK_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/task/view'], {
       queryParams: { taskId: row.taskId },
       state: { taskData: row }

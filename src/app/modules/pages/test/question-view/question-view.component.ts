@@ -89,10 +89,26 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
     this.loading = false;
   }
 
+  // The API returns a question/option's images as a separate images[]
+  // array (url/label/order), not embedded as <img> tags inside
+  // questionHtml/textHtml — so append them as real <img> tags here first;
+  // replaceDownloadUrls() then resolves the S3 URL same as any other
+  // inline image.
+  private appendImageTags(html: string, images: any[] | undefined): string {
+    if (!images?.length) return html || '';
+    const tags = [...images]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((img) => `<img src="${img.url}" alt="${img.label || ''}" />`)
+      .join('');
+    return `${html || ''}${tags}`;
+  }
+
   async processQuestions(questions: any[]) {
     return Promise.all(
       questions.map(async (q, index) => {
-        let questionHtml = await this.replaceDownloadUrls(q.questionHtml);
+        let questionHtml = await this.replaceDownloadUrls(
+          this.appendImageTags(q.questionHtml, q.images),
+        );
         let solutionHtml = q.solutionHtml
           ? await this.replaceDownloadUrls(q.solutionHtml)
           : '';
@@ -104,7 +120,9 @@ export class QuestionViewComponent implements OnInit, AfterViewInit {
         const options = q.questionOptions?.length
           ? await Promise.all(
             q.questionOptions.map(async (opt: any) => {
-              let textHtml = await this.replaceDownloadUrls(opt.textHtml);
+              let textHtml = await this.replaceDownloadUrls(
+                this.appendImageTags(opt.textHtml, opt.images),
+              );
               textHtml = this.normalizeDelimiters(textHtml);
               return {
                 ...opt,

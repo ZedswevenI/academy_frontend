@@ -26,7 +26,7 @@ export class StudentLateEntriesComponent extends BaseReportComponent {
   readonly summaryColumns = [
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'totalEntries', label: 'Total Entries' },
     { key: 'lateCount', label: 'Late' },
     { key: 'earlyCount', label: 'Early Leave' },
@@ -38,7 +38,7 @@ export class StudentLateEntriesComponent extends BaseReportComponent {
   readonly detailColumns = [
     { key: 'admissionNo', label: 'Enrollment No' },
     { key: 'studentName', label: 'Student' },
-    { key: 'batchCode', label: 'Batch' },
+    { key: 'batchLabel', label: 'Batch' },
     { key: 'entryType', label: 'Type' },
     { key: 'dateFormatted', label: 'Date' },
     { key: 'periodNo', label: 'Period' },
@@ -57,6 +57,11 @@ export class StudentLateEntriesComponent extends BaseReportComponent {
     return this.selectedAdmissionNos.length > 0;
   }
 
+  private buildBatchLabel(r: any): string {
+    if (r?.batchName && r?.batchCode) return `${r.batchName} (${r.batchCode})`;
+    return r?.batchName || r?.batchCode || '';
+  }
+
   generate(): void {
     this.isBulk = this.selectedAdmissionNos.length !== 1;
     const payload: any = {};
@@ -69,8 +74,10 @@ export class StudentLateEntriesComponent extends BaseReportComponent {
     this.reportService.generate('reports/student', endpoint, payload).subscribe({
       next: (res: any) => {
         this.onSuccess(res);
-        this.rows = this.isBulk ? res.data || [] : (res.data || []).map((r: any, i: number) => ({ slNo: i + 1, ...r }));
-        this.detailRows = res.detail || [];
+        this.rows = this.isBulk
+          ? (res.data || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }))
+          : (res.data || []).map((r: any, i: number) => ({ slNo: i + 1, ...r }));
+        this.detailRows = (res.detail || []).map((r: any) => ({ ...r, batchLabel: this.buildBatchLabel(r) }));
         this.summaryItems = this.reportService.buildSummaryItems(res.summary);
       },
       error: (err: any) => this.onError(err)

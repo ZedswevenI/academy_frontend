@@ -265,7 +265,7 @@ export class KnowledgeCreateComponent implements OnInit {
         .subscribe((res: any) => {
           if (res?.status) {
             this.allBatches = res.data;
-            this.batch_options = res.data.map((b: any) => ({ label: b.batchName, value: b.batchCode }));
+            this.batch_options = res.data.map((b: any) => ({ label: b.batchName && b.batchCode ? `${b.batchName} (${b.batchCode})` : (b.batchName || b.batchCode || ''), value: b.batchCode }));
           }
           resolve();
         });

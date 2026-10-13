@@ -7,6 +7,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const ASSIGNMENT_LIST_STATE_KEY = 'assignment-list';
 
 @Component({
   selector: 'app-tests',
@@ -18,6 +21,8 @@ export class TestComponent implements OnInit, OnDestroy {
 
   loading = false;
   totalRecords = 0;
+  currentPage = 1;
+  restoredPage = 1;
 
   private routerSub!: Subscription;
 
@@ -105,8 +110,11 @@ export class TestComponent implements OnInit, OnDestroy {
     private alert: AlertService,
     private fb: FormBuilder,
     public authService: AuthService,
-    private permissionService: PermissionService
-  ) {}
+    private permissionService: PermissionService,
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(ASSIGNMENT_LIST_STATE_KEY);
+  }
 
   /* ================= INIT ================= */
   ngOnInit(): void {
@@ -224,6 +232,7 @@ export class TestComponent implements OnInit, OnDestroy {
 
   fetchTableData(params: any) {
     this.lastTableParams = { ...params };
+    this.currentPage = params.page;
     this.loading = true;
 
     let sortParam = '';
@@ -286,11 +295,11 @@ export class TestComponent implements OnInit, OnDestroy {
       });
   }
 
-  viewQuestions(row: any) { this.router.navigate(['/app/assignment/question-view'], { state: { questions: row } }); }
-  rearrange(row: any) { this.router.navigate(['/app/assignment/question-rearrange'], { state: { questions: row } }); }
-  editTest(row: any) { this.router.navigate(['/app/assignment/create'], { state: { test: row } }); }
-  importQuestions(row: any) { this.router.navigate(['/app/assignment/question-import'], { state: { questions: row } }); }
-  addQuestions(row: any) { this.router.navigate(['/app/assignment/question-create'], { state: { question: row } }); }
+  viewQuestions(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-view'], { state: { questions: row } }); }
+  rearrange(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-rearrange'], { state: { questions: row } }); }
+  editTest(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/create'], { state: { test: row } }); }
+  importQuestions(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-import'], { state: { questions: row } }); }
+  addQuestions(row: any) { this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage); this.router.navigate(['/app/assignment/question-create'], { state: { question: row } }); }
   studentFeedbacks(row: any) { }
   report(row: any) { }
   updateAnswers(row: any) { }
@@ -671,6 +680,7 @@ export class TestComponent implements OnInit, OnDestroy {
   onRowSelected(row: any) {
     // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
     if (!this.permissionService.hasPermission('test:view')) return;
+    this.listStateService.savePage(ASSIGNMENT_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/assignment/question-view'],
       { state: { questions: row } });
   }

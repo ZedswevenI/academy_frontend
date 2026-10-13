@@ -6,7 +6,7 @@
             
                 <div>
                     <h1 class="fw-bold mb-0" style="font-size: 22px">
-                        <i class="fa-solid fa-users me-2"></i>{{ session?.batchCode }}
+                        <i class="fa-solid fa-users me-2"></i>{{ session?.batchName && session?.batchCode ? (session?.batchName + ' (' + session?.batchCode + ')') : (session?.batchName || session?.batchCode) }}
                     </h1>
                     <div class="text-muted small mt-1">
                         Parent Teacher Meeting Details
@@ -378,7 +378,8 @@
                     <div>
                         <div class="fw-semibold">{{ selectedStudent.studentName }}</div>
                         <div class="text-muted small">
-                            {{ selectedStudent.admissionNo }} &nbsp;·&nbsp; {{ selectedStudent.batchCode }}
+                            {{ selectedStudent.admissionNo }} &nbsp;·&nbsp;
+                            {{ session?.batchName && selectedStudent.batchCode ? (session?.batchName + ' (' + selectedStudent.batchCode + ')') : (session?.batchName || selectedStudent.batchCode) }}
                         </div>
                     </div>
                 </div>

@@ -9,6 +9,10 @@ import { AuthService } from '../../../../service/auth/auth.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import katex from 'katex';
 import { PermissionService } from '../../../../shared/permission.service';
+import { sortQuestionsForPrint } from '../exam-print-order.util';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const EXAMS_LIST_STATE_KEY = 'exams-list';
 
 @Component({
   selector: 'app-exam-list',
@@ -27,6 +31,7 @@ export class TestComponent implements OnInit, OnDestroy {
     sortKey?: string;
     sortDirection?: string;
   } | null = null;
+  restoredPage = 1;
   showBatchModal = false;
   batchAssignRow: any = null;
   allBatches: any[] = [];
@@ -275,7 +280,20 @@ export class TestComponent implements OnInit, OnDestroy {
     public authService: AuthService,
     private sanitizer: DomSanitizer,
     private permissionService: PermissionService,
-  ) {}
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(EXAMS_LIST_STATE_KEY);
+  }
+
+  /** Remembers the current page so coming back from a detail/sub-screen
+   * restores it; a fresh visit from the menu never calls this, so it
+   * correctly starts at page 1. */
+  private captureListPosition(): void {
+    this.listStateService.savePage(
+      EXAMS_LIST_STATE_KEY,
+      this.lastTableParams?.page || 1,
+    );
+  }
 
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Exams' }]);
@@ -516,19 +534,23 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   viewExam(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
   viewQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-view'], {
       state: { questions: row },
     });
   }
   rearrange(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-rearrange'], {
       state: { questions: row },
     });
   }
   editExam(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/create'], { state: { test: row } });
   }
   showDuplicateModal = false;
@@ -630,28 +652,33 @@ export class TestComponent implements OnInit, OnDestroy {
   }
 
   importQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-import'], {
       state: { questions: row },
     });
   }
 
   importAnswers(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/answer-import'], {
       state: { exam: row },
     });
   }
 
   importMarks() {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/marks-import']);
   }
 
   addQuestions(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: { question: row },
     });
   }
 
   viewResult(row: any) {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/result-batch'], {
       state: { exam: row },
     });
@@ -863,15 +890,38 @@ export class TestComponent implements OnInit, OnDestroy {
                   textHtml: await this.replaceDownloadUrls(opt.textHtml || ''),
                 })),
               );
+              const leftColumn = q.leftColumn?.length
+                ? await Promise.all(
+                    q.leftColumn.map(async (item: any) => ({
+                      ...item,
+                      text: await this.replaceDownloadUrls(item?.text || ''),
+                    })),
+                  )
+                : q.leftColumn;
+              const rightColumn = q.rightColumn?.length
+                ? await Promise.all(
+                    q.rightColumn.map(async (item: any) => ({
+                      ...item,
+                      text: await this.replaceDownloadUrls(item?.text || ''),
+                    })),
+                  )
+                : q.rightColumn;
               return {
                 ...q,
                 questionHtml,
                 solutionHtml,
                 questionOptions: options,
+                leftColumn,
+                rightColumn,
               };
             }),
           );
-          return { examId, meta, questions: processed };
+          const sectionNameFor = (q: any): string =>
+            (meta.sections || []).find(
+              (s: any) => s.sectionId === q.sectionId,
+            )?.sectionName || '';
+          const ordered = sortQuestionsForPrint(processed, sectionNameFor);
+          return { examId, meta, questions: ordered };
         }),
       );
       const validTests = allTestsData.filter((t) => t.questions.length > 0);
@@ -949,7 +999,7 @@ export class TestComponent implements OnInit, OnDestroy {
     switch (type) {
       case 'mcq_single':
         return 'MCQ (Single)';
-      case 'mcq_multiple':
+      case 'mcq_multi':
         return 'MCQ (Multiple)';
       case 'true_false':
         return 'True / False';
@@ -957,10 +1007,51 @@ export class TestComponent implements OnInit, OnDestroy {
         return 'Subjective';
       case 'integer':
         return 'Integer';
+      case 'numeric':
+        return 'Numerical';
+      case 'passage_qns':
+        return 'Comprehension';
+      case 'matrix':
+        return 'Matrix Match';
       case 'short_answer':
         return 'Short Answer';
       default:
         return type;
+    }
+  }
+
+  private formatPrintAnswer(q: any): string {
+    switch (q.questionType) {
+      case 'mcq_single':
+      case 'passage_qns':
+        return (q.correctAnswer || '').toUpperCase();
+      case 'mcq_multi':
+        return (q.correctAnswer || '')
+          .toUpperCase()
+          .split(';')
+          .map((k: string) => k.trim())
+          .filter((k: string) => !!k)
+          .join(', ');
+      case 'true_false': {
+        const tf = (q.correctAnswer || '').toLowerCase();
+        return tf === 'true' ? 'True' : tf === 'false' ? 'False' : '';
+      }
+      case 'integer':
+        return q.correctAnswer ?? '';
+      case 'numeric': {
+        const range =
+          q.numericMin != null && q.numericMax != null
+            ? ` (Range: ${q.numericMin} – ${q.numericMax})`
+            : '';
+        return `${q.correctAnswer ?? ''}${range}`;
+      }
+      case 'subjective':
+      case 'short_answer':
+        return q.correctAnswer || 'Manually evaluated';
+      case 'matrix':
+        return 'See matrix matches below';
+      default:
+        return q.correctAnswer ?? '';
     }
   }
 
@@ -999,9 +1090,43 @@ export class TestComponent implements OnInit, OnDestroy {
               optionsHtml = `<table class="options-table">${rows.join('')}</table>`;
             }
 
+            let matrixHtml = '';
+            if (q.questionType === 'matrix' && q.leftColumn?.length) {
+              const leftRows = (q.leftColumn as any[])
+                .map(
+                  (l: any) =>
+                    `<tr><td class="matrix-key">${l.key}.</td><td class="matrix-cell">${l.text || ''}</td></tr>`,
+                )
+                .join('');
+              const rightRows = (q.rightColumn as any[])
+                .map(
+                  (r: any) =>
+                    `<tr><td class="matrix-key">${r.key}.</td><td class="matrix-cell">${r.text || ''}</td></tr>`,
+                )
+                .join('');
+              const matchesHtml =
+                withAnswer && q.matrixMatches?.length
+                  ? `<div class="matrix-matches">${(q.matrixMatches as any[])
+                      .map(
+                        (m: any) =>
+                          `<span class="opt-label">${m.key} &rarr; ${(m.matches || []).join(', ')}</span>`,
+                      )
+                      .join('&nbsp;&nbsp;')}</div>`
+                  : '';
+              matrixHtml = `
+            <table class="matrix-cols">
+              <thead><tr><th class="matrix-head">Column I</th><th class="matrix-head">Column II</th></tr></thead>
+              <tbody><tr>
+                <td class="matrix-side"><table><tbody>${leftRows}</tbody></table></td>
+                <td class="matrix-side"><table><tbody>${rightRows}</tbody></table></td>
+              </tr></tbody>
+            </table>
+            ${matchesHtml}`;
+            }
+
             const answerRow = withAnswer
               ? `<div class="answer-box">
-             <strong>Answer:</strong>&nbsp;${q.correctAnswer?.toUpperCase()}
+             <strong>Answer:</strong>&nbsp;${this.formatPrintAnswer(q)}
            </div>`
               : `<div class="answer-box"></div>`;
 
@@ -1016,6 +1141,7 @@ export class TestComponent implements OnInit, OnDestroy {
             </div>
             <div class="question-body">${q.questionHtml}</div>
             ${optionsHtml}
+            ${matrixHtml}
             ${answerRow}
           </div>`;
           })
@@ -1087,6 +1213,14 @@ export class TestComponent implements OnInit, OnDestroy {
           .opt-text { font-size: 11.5pt; line-height: 1.6; }
           .correct-opt .opt-text { font-weight: bold; text-decoration: underline; }
           .answer-box { margin: 6px 18px 0 18px; font-size: 11pt; padding-top: 4px; border-top: 1px solid #ccc; }
+          .matrix-cols { width: calc(100% - 36px); margin: 0 18px 6px 18px; border-collapse: collapse; table-layout: fixed; }
+          .matrix-head { font-size: 10.5pt; font-weight: bold; padding: 4px 8px; border-bottom: 1px solid #333; }
+          .matrix-side { width: 50%; vertical-align: top; padding: 4px 8px; border-right: 1px solid #ccc; }
+          .matrix-side:last-child { border-right: none; }
+          .matrix-side table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+          .matrix-key { font-weight: bold; padding: 3px 8px 3px 0; white-space: nowrap; vertical-align: top; width: 22px; }
+          .matrix-cell { padding: 3px 4px; vertical-align: top; line-height: 1.6; }
+          .matrix-matches { margin: 4px 18px 0 18px; font-size: 10.5pt; }
           .katex { font-size: 1em; }
           img { max-width: 100%; height: auto; display: block; margin: 4px 0; }
           @media print {
@@ -1439,6 +1573,7 @@ export class TestComponent implements OnInit, OnDestroy {
   onRowSelected(row: any) {
     // custom-table's (rowClick) bypasses the View icon's `show` gate — guard here too.
     if (!this.permissionService.hasPermission('exam:view')) return;
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
   }
 

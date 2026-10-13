@@ -38,7 +38,7 @@
     <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
       [success]="'Published'" [primary]="'Result Published'" [warn]="'Draft'" [totalRecords]="totalRecords"
       [loading]="loading" (requestData)="fetchTableData($event)" [searchPlaceholder]="'Search Exam Name, Code...'"
-      (rowClick)="onRowSelected($event)">
+      (rowClick)="onRowSelected($event)" [initialPage]="restoredPage">
     </custom-table>
   </div>
 </div>

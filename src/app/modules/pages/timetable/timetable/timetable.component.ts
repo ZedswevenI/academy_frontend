@@ -1411,7 +1411,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
   validateOk = false;
   validateConflicts: any[] = [];
   columns = [
-    { key: 'batchCode', label: 'Batch', sortable: true },
+    { key: 'batchLabel', label: 'Batch', sortable: true },
     { key: 'centerCode', label: 'Center', sortable: true },
     {
       key: 'latestStatus',
@@ -1538,6 +1538,7 @@ export class TimetableComponent implements OnInit, OnDestroy {
           this.timetables = Array.from(batchMap.values()).map((tt: any) => ({
             ...tt,
             _raw: tt,
+            batchLabel: tt.batchName && tt.batchCode ? `${tt.batchName} (${tt.batchCode})` : (tt.batchName || tt.batchCode || ''),
             latestStatus: tt.status,
             lastUpdatedLabel: tt.updatedAt
               ? new Date(tt.updatedAt).toLocaleDateString('en-GB', {

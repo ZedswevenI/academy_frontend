@@ -21,6 +21,14 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
     return this.dataLoaded && this.facultyReportData.length > 0;
   }
 
+  private batchLabel(r: any): string {
+    return r?.batchName
+      ? r?.batchCode
+        ? `${r.batchName} (${r.batchCode})`
+        : r.batchName
+      : r?.batchCode || '—';
+  }
+
   readonly sectionOptions = [
     { key: 'teaching', label: 'Teaching Hours', disabled: false },
     { key: 'invigilation', label: 'Invigilation Hours', disabled: true },
@@ -219,12 +227,12 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         null,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'delayMinutes', label: 'Delay (min)' },
           { key: 'reason', label: 'Reason' },
         ],
-        staff.lateEntry?.entries,
+        (staff.lateEntry?.entries || []).map((e: any) => ({ ...e, batchLabel: this.batchLabel(e) })),
       );
       addSection(
         'Early Leaving',
@@ -232,12 +240,12 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         null,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'earlyByMinutes', label: 'Early By (min)' },
           { key: 'reason', label: 'Reason' },
         ],
-        staff.earlyLeaving?.entries,
+        (staff.earlyLeaving?.entries || []).map((e: any) => ({ ...e, batchLabel: this.batchLabel(e) })),
       );
       addSection(
         'Attendance Marked',
@@ -245,7 +253,7 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         null,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'subject', label: 'Subject' },
           { key: 'presentCount', label: 'Present' },
@@ -253,7 +261,7 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
           { key: 'lateCount', label: 'Late' },
           { key: 'total', label: 'Total' },
         ],
-        staff.attendanceMarked?.periods,
+        (staff.attendanceMarked?.periods || []).map((p: any) => ({ ...p, batchLabel: this.batchLabel(p) })),
       );
       addSection(
         'Attendance Not Marked',
@@ -261,11 +269,11 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         null,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'subject', label: 'Subject' },
         ],
-        staff.attendanceNotMarked?.periods,
+        (staff.attendanceNotMarked?.periods || []).map((p: any) => ({ ...p, batchLabel: this.batchLabel(p) })),
       );
       addSection(
         'Assignment Enabled Per Batch',
@@ -418,12 +426,12 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         `Late Entries: ${staff.lateEntry?.count || 0}`,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'delayMinutes', label: 'Delay (min)' },
           { key: 'reason', label: 'Reason' },
         ],
-        staff.lateEntry?.entries,
+        (staff.lateEntry?.entries || []).map((e: any) => ({ ...e, batchLabel: this.batchLabel(e) })),
         this.exportService.rgb(234, 88, 12),
         this.exportService.rgb(255, 247, 237),
       );
@@ -432,12 +440,12 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         `Early Leaving: ${staff.earlyLeaving?.count || 0}`,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'earlyByMinutes', label: 'Early (min)' },
           { key: 'reason', label: 'Reason' },
         ],
-        staff.earlyLeaving?.entries,
+        (staff.earlyLeaving?.entries || []).map((e: any) => ({ ...e, batchLabel: this.batchLabel(e) })),
         this.exportService.rgb(234, 88, 12),
         this.exportService.rgb(255, 247, 237),
       );
@@ -446,14 +454,14 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         `Attendance Marked: ${staff.attendanceMarked?.count || 0}`,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'subject', label: 'Subject' },
           { key: 'presentCount', label: 'Present' },
           { key: 'absentCount', label: 'Absent' },
           { key: 'total', label: 'Total' },
         ],
-        staff.attendanceMarked?.periods,
+        (staff.attendanceMarked?.periods || []).map((p: any) => ({ ...p, batchLabel: this.batchLabel(p) })),
         this.exportService.rgb(20, 184, 166),
         this.exportService.rgb(240, 253, 250),
       );
@@ -462,11 +470,11 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         `Not Marked: ${staff.attendanceNotMarked?.count || 0}`,
         [
           { key: 'dateFormatted', label: 'Date' },
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'periodNo', label: 'Period' },
           { key: 'subject', label: 'Subject' },
         ],
-        staff.attendanceNotMarked?.periods,
+        (staff.attendanceNotMarked?.periods || []).map((p: any) => ({ ...p, batchLabel: this.batchLabel(p) })),
         this.exportService.rgb(245, 158, 11),
         this.exportService.rgb(255, 251, 235),
       );
@@ -474,14 +482,14 @@ export class TeacherFacultyReportComponent extends BaseReportComponent {
         'Assignment Enabled Per Batch',
         `Assignments: ${staff.assignments?.count || 0}`,
         [
-          { key: 'batchCode', label: 'Batch' },
+          { key: 'batchLabel', label: 'Batch' },
           { key: 'subjectName', label: 'Subject' },
           { key: 'topicName', label: 'Topic' },
           { key: 'testCount', label: 'Tests' },
           { key: 'enabledAtFormatted', label: 'Enabled On' },
           { key: 'totalStudents', label: 'Students' },
         ],
-        staff.assignments?.rows,
+        (staff.assignments?.rows || []).map((r: any) => ({ ...r, batchLabel: this.batchLabel(r) })),
         this.exportService.rgb(99, 102, 241),
         this.exportService.rgb(238, 242, 255),
       );

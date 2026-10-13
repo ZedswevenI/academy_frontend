@@ -5,6 +5,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { Router } from '@angular/router';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const BATCH_LIST_STATE_KEY = 'batch-list';
 
 const safeTrim = (v: any) =>
   v === undefined || v === null ? '' : String(v).trim();
@@ -23,6 +26,8 @@ export class BatchComponent implements OnInit {
   filterForm!: FormGroup;
   editorForm!: FormGroup;
   totalRecords = 0;
+  currentPage = 1;
+  restoredPage = 1;
   batchRows: any[] = [];
   statusOptions = [
     { label: 'ALL', value: 'ALL' },
@@ -173,11 +178,13 @@ export class BatchComponent implements OnInit {
     private commonApi: CommonapiService,
     private router: Router,
     private permissionService: PermissionService,
+    private listStateService: ListStateService,
   ) {
     this.entiId = localStorage.getItem('tenantId');
     this.breadcrumb.set([
       { label: 'Batches' },
     ]);
+    this.restoredPage = this.listStateService.consumePage(BATCH_LIST_STATE_KEY);
   }
 
   ngOnInit(): void {
@@ -245,7 +252,7 @@ export class BatchComponent implements OnInit {
     this.loadProgramsFull();
     this.loadCentersFull();
     this.loadAcademicYearConfigsForFilter();
-    this.loadBatches({ page: 1, pageSize: 20 });
+    this.loadBatches({ page: this.restoredPage, pageSize: 20 });
     this.loadStaffFull();
     this.editorForm.get('courseStartYear')?.valueChanges.subscribe(() => {
       if (!this.isEditMode) this.onCreateInputsChanged();
@@ -501,6 +508,7 @@ export class BatchComponent implements OnInit {
 
   loadBatches(event?: { page: number; pageSize: number; search?: string }) {
     const page = event?.page || 1;
+    this.currentPage = page;
     const limit = event?.pageSize || 20;
     const f = this.filterForm?.value || {};
     const search = safeTrim(event?.search || f.search);
@@ -1437,6 +1445,7 @@ export class BatchComponent implements OnInit {
   }
 
   openView(row: any) {
+    this.listStateService.savePage(BATCH_LIST_STATE_KEY, this.currentPage);
     const b = row?._raw || row;
     this.router.navigate(['/app/batch/view', b?.batchId]);
   }
@@ -1448,6 +1457,7 @@ export class BatchComponent implements OnInit {
     // hit the guard's redirect-to-login flow, which reads as a confusing
     // forced logout rather than "you can't do that".
     if (!this.permissionService.hasPermission('batch:view')) return;
+    this.listStateService.savePage(BATCH_LIST_STATE_KEY, this.currentPage);
     const b = row?._raw || row;
     this.router.navigate(['/app/batch/view', b?.batchId]);
   }

@@ -8,6 +8,9 @@ import { AlertService } from '../../../../service/alert/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import katex from 'katex';
 import { PermissionService } from '../../../../shared/permission.service';
+import { ListStateService } from '../../../../shared/list-state.service';
+
+const QUESTION_BANK_LIST_STATE_KEY = 'question-bank-list';
 
 @Component({
   selector: 'app-exam-questions',
@@ -28,6 +31,7 @@ export class ExamQuestionsComponent implements OnInit {
     sortKey?: string;
     sortDirection?: string;
   } | null = null;
+  restoredPage = 1;
 
   /* ================= TABLE COLUMNS ================= */
   columnsArray = [
@@ -91,6 +95,7 @@ export class ExamQuestionsComponent implements OnInit {
   viewSolutionHtml: SafeHtml = '';
     viewPassageHtml: SafeHtml = '';
 viewInstructionHtml: SafeHtml = '';
+viewCorrectAnswerHtml: SafeHtml = '';
 
   /* ================= ACTIONS ================= */
   actions = [
@@ -131,7 +136,22 @@ viewInstructionHtml: SafeHtml = '';
     private sanitizer: DomSanitizer,
     private router: Router,
     private permissionService: PermissionService,
-  ) {}
+    private listStateService: ListStateService,
+  ) {
+    this.restoredPage = this.listStateService.consumePage(
+      QUESTION_BANK_LIST_STATE_KEY,
+    );
+  }
+
+  /** Remembers the current page so coming back from a detail/sub-screen
+   * restores it; a fresh visit from the menu never calls this, so it
+   * correctly starts at page 1. */
+  private captureListPosition(): void {
+    this.listStateService.savePage(
+      QUESTION_BANK_LIST_STATE_KEY,
+      this.lastTableParams?.page || 1,
+    );
+  }
 
   ngOnInit(): void {
     this.breadcrumb.set([{ label: 'Exams' }, { label: 'Questions' }]);
@@ -403,6 +423,7 @@ viewInstructionHtml: SafeHtml = '';
   /* ================= NAVIGATION ================= */
 
   editQuestion(row: any): void {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: {
         bank: true,
@@ -412,12 +433,14 @@ viewInstructionHtml: SafeHtml = '';
   }
 
   goToCreate(): void {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-create'], {
       state: { bank: true },
     });
   }
 
   goToImport(): void {
+    this.captureListPosition();
     this.router.navigate(['/app/exams/exams/question-import'], {
       state: { bank: true },
     });
@@ -461,6 +484,37 @@ viewInstructionHtml: SafeHtml = '';
   // }
 
 
+private parseMatrixCorrectAnswer(
+  correctAnswer: string,
+): Record<string, { matches: string[]; marks: number; negMark: number }> {
+  const map: Record<
+    string,
+    { matches: string[]; marks: number; negMark: number }
+  > = {};
+  if (!correctAnswer) return map;
+  correctAnswer.split(';').forEach((pStr: string) => {
+    const colonIdx = pStr.indexOf(':');
+    if (colonIdx === -1) return;
+    const lKey = pStr.substring(0, colonIdx).trim().toUpperCase();
+    let rPart = pStr.substring(colonIdx + 1).trim();
+    let marks = 0;
+    let negMark = 0;
+    const marksMatch = rPart.match(/\(([^,)]+)(?:,([^)]+))?\)/);
+    if (marksMatch) {
+      marks = parseFloat(marksMatch[1]) || 0;
+      negMark = marksMatch[2] !== undefined ? parseFloat(marksMatch[2]) : 0;
+    }
+    rPart = rPart.replace(/\([^)]*\)/g, '').trim();
+    if (!lKey || !rPart) return;
+    if (!map[lKey]) map[lKey] = { matches: [], marks, negMark };
+    const parts = rPart.toUpperCase().split(',').filter(Boolean);
+    for (const rk of parts) {
+      if (!map[lKey].matches.includes(rk)) map[lKey].matches.push(rk);
+    }
+  });
+  return map;
+}
+
 async viewQuestion(row: any): Promise<void> {
   if (!this.permissionService.hasPermission('exam:view')) return;
   this.viewData = JSON.parse(JSON.stringify(row));
@@ -495,6 +549,37 @@ async viewQuestion(row: any): Promise<void> {
     this.viewData.questionOptions[i].safeHtml =
       this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(oH));
   }
+
+  // matrix columns
+  for (let i = 0; i < (this.viewData.leftColumn || []).length; i++) {
+    let lH = await this.replaceDownloadUrls(this.viewData.leftColumn[i].text || '');
+    this.viewData.leftColumn[i].safeHtml =
+      this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(lH));
+  }
+  for (let i = 0; i < (this.viewData.rightColumn || []).length; i++) {
+    let rH = await this.replaceDownloadUrls(this.viewData.rightColumn[i].text || '');
+    this.viewData.rightColumn[i].safeHtml =
+      this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(rH));
+  }
+
+  // matrix correct matches (derived from the "A:P,Q(2,0);B:R(2,0)" correctAnswer string)
+  if (this.viewData.questionTypeRaw === 'matrix') {
+    const matchMap = this.parseMatrixCorrectAnswer(this.viewData.correctAnswer);
+    this.viewData.matrixMatches = (this.viewData.leftColumn || []).map((l: any) => ({
+      key: l.key,
+      matches: matchMap[l.key]?.matches || [],
+      marks: matchMap[l.key]?.marks || 0,
+      negMark: matchMap[l.key]?.negMark || 0,
+    }));
+  }
+
+  // subjective correct answer (may contain rich HTML)
+  if (this.viewData.questionTypeRaw === 'subjective' && this.viewData.correctAnswer) {
+    let aH = await this.replaceDownloadUrls(this.viewData.correctAnswer);
+    this.viewCorrectAnswerHtml = this.sanitizer.bypassSecurityTrustHtml(this.renderLatexInHtml(aH));
+  } else {
+    this.viewCorrectAnswerHtml = '';
+  }
 }
 
 // onRowSelected just delegates:
@@ -510,5 +595,6 @@ closeViewModal(): void {
   this.viewSolutionHtml = '';
   this.viewPassageHtml = '';
   this.viewInstructionHtml = '';
+  this.viewCorrectAnswerHtml = '';
 }
 }

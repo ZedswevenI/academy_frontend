@@ -17,7 +17,7 @@ export class TeacherLateEntriesComponent extends BaseReportComponent {
   toDate = '';
   rows: any[] = [];
   summaryItems: { label: string; value: any }[] = [];
-  readonly columns = [{ key: 'slNo', label: '#' }, { key: 'dateFormatted', label: 'Date' }, { key: 'batchCode', label: 'Batch' }, { key: 'periodNo', label: 'Period' }, { key: 'delayMinutes', label: 'Delay (min)' }, { key: 'reason', label: 'Reason' }];
+  readonly columns = [{ key: 'slNo', label: '#' }, { key: 'dateFormatted', label: 'Date' }, { key: 'batchLabel', label: 'Batch' }, { key: 'periodNo', label: 'Period' }, { key: 'delayMinutes', label: 'Delay (min)' }, { key: 'reason', label: 'Reason' }];
 
   constructor(rs: ReportService, es: ReportExportService, a: AlertService) {
     super(rs, es, a);
@@ -34,7 +34,7 @@ export class TeacherLateEntriesComponent extends BaseReportComponent {
     this.reportService.generate('reports/teacher', 'late-entries', payload).subscribe({
       next: (res: any) => {
         this.onSuccess(res);
-        this.rows = (res.data || []).map((r: any, i: number) => ({ slNo: i + 1, ...r }));
+        this.rows = (res.data || []).map((r: any, i: number) => ({ slNo: i + 1, ...r, batchLabel: this.reportService.formatBatchLabel(r.batchName, r.batchCode) }));
         this.summaryItems = this.reportService.buildSummaryItems(res.summary);
       },
       error: (err: any) => this.onError(err)

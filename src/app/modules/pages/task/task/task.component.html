@@ -18,7 +18,7 @@
       <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [actions]="actions"
         [success]="'Completed'" [danger]="'NOT COMPLETED'" [warn]="'Pending'" [warn1]="'NEED MORE TIME'"
         [primary]="'In Progress'" [searchPlaceholder]="'Search StudentName,Batch,...'" [totalRecords]="totalRecords"
-        (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)"></custom-table>
+        [initialPage]="restoredPage" (requestData)="loadTableData($event)" (rowClick)="onRowSelected($event)"></custom-table>
     </div>
   </div>
 </div>

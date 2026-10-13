@@ -278,7 +278,7 @@
         <!-- Sessions Table -->
         <div class="mt-5">
             <custom-table [autoFitChars]="true" [columns]="columnsArray" [data]="dataArray" [showaction]="true"
-                success="COMPLETED" primary="SCHEDULED" [totalRecords]="totalRecords"
+                success="COMPLETED" primary="SCHEDULED" [totalRecords]="totalRecords" [initialPage]="restoredPage"
                 (requestData)="loadTableData($event)" [actions]="actions"
                 [searchPlaceholder]="'Search Batch, Venue...'" (rowClick)="onRowSelected($event)">
             </custom-table>
