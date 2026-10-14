@@ -47,6 +47,15 @@
                         </formfield>
                     </div>
 
+                    <!-- Password (create only — not editable from this form, see
+                         Change Password action on the list screen) -->
+                    <div class="col-md-6" *ngIf="!isEditMode">
+                        <formfield label="Password" [type]="'password'" formControlName="password"
+                            [control]="packageForm.get('password')"
+                            placeholder="Enter password (optional)">
+                        </formfield>
+                    </div>
+
                     <!-- Description (create only) -->
                     <div class="col-md-12" *ngIf="!isEditMode">
                         <description label="Description" formControlName="description"
