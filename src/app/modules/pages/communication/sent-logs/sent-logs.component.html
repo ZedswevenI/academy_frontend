@@ -14,6 +14,14 @@
         </div>
       </div>
 
+      <div class="alert alert-light border d-flex align-items-center gap-2 mb-0" *ngIf="campaignId">
+        <i class="fa-solid fa-bullhorn text-primary"></i>
+        Filtered to campaign <strong>{{ campaignId }}</strong>
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" (click)="clearCampaignFilter()">
+          <i class="fa-solid fa-xmark me-1"></i>Clear
+        </button>
+      </div>
+
       <div class="card shadow-sm border-0 mb-3" *ngIf="showFilters">
         <div class="card-header bg-white border-0">
           <form [formGroup]="filterForm" class="row g-3 align-items-end">

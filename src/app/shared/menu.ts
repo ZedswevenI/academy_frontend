@@ -184,6 +184,12 @@ export const MENU_ITEMS: MenuItem[] = [
         permission: 'communication:create'
       },
       {
+        label: 'Send to Batch',
+        icon: 'fa-solid fa-layer-group',
+        route: '/app/communication/send-batch',
+        permission: 'communication:send'
+      },
+      {
         label: 'Templates',
         icon: 'fa-solid fa-file-lines',
         route: '/app/communication/templates',

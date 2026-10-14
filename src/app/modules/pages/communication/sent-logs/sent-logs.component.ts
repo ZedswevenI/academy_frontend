@@ -144,7 +144,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PermissionService } from '../../../../shared/permission.service';
 
 const safeTrim = (v: any) =>
@@ -187,6 +187,7 @@ export class SentLogsComponent implements OnInit {
   page = 1;
   limit = 20;
   search = '';
+  campaignId = '';
 
   channelOptions = [
     { label: 'All', value: '' },
@@ -209,6 +210,7 @@ export class SentLogsComponent implements OnInit {
     { key: 'className', label: 'Class', sortable: false },
     { key: 'batch', label: 'Batch', sortable: false },
     { key: 'templateName', label: 'Template', sortable: false },
+    { key: 'campaignId', label: 'Campaign ID', sortable: false },
     { key: 'channelDisplay', label: 'Channel', sortable: false },
     { key: 'statusDisplay', label: 'Status', sortable: false },
     { key: 'sentAtDisplay', label: 'Sent At', sortable: true },
@@ -244,6 +246,7 @@ export class SentLogsComponent implements OnInit {
     private commonApi: CommonapiService,
     private alert: AlertService,
     private router: Router,
+    private route: ActivatedRoute,
     private permissionService: PermissionService
   ) {
     this.entiId = localStorage.getItem('tenantId');
@@ -259,6 +262,11 @@ export class SentLogsComponent implements OnInit {
       channel: [''],
       status: [''],
     });
+
+    // Deep-link from a just-sent batch campaign (Send to Batch screen) —
+    // ?campaignId=... filters straight to that campaign's recipient logs.
+    this.campaignId = safeTrim(this.route.snapshot.queryParamMap.get('campaignId'));
+    if (this.campaignId) this.showFilters = true;
 
     this.loadLogs();
   }
@@ -276,6 +284,7 @@ export class SentLogsComponent implements OnInit {
     if (safeTrim(v.status)) query.push(`status=${encodeURIComponent(safeTrim(v.status))}`);
     if (safeTrim(v.channel)) query.push(`channel=${encodeURIComponent(safeTrim(v.channel))}`);
     if (safeTrim(v.search)) query.push(`search=${encodeURIComponent(safeTrim(v.search))}`);
+    if (this.campaignId) query.push(`campaignId=${encodeURIComponent(this.campaignId)}`);
 
     this.commonApi
       .fetchData(
@@ -366,7 +375,13 @@ export class SentLogsComponent implements OnInit {
 
   clearFilters(): void {
     this.filterForm.reset({ search: '', channel: '', status: '' });
+    this.clearCampaignFilter();
+  }
+
+  clearCampaignFilter(): void {
+    this.campaignId = '';
     this.page = 1;
+    this.router.navigate([], { relativeTo: this.route, queryParams: {} });
     this.loadLogs();
   }
 
