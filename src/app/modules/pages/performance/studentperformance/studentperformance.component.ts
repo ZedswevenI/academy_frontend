@@ -52,6 +52,7 @@ export class StudentperformanceComponent implements OnInit {
   studentProfile: any = null;
   exportingCPT = false;
   exportingSchool = false;
+  batchSection = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -366,7 +367,24 @@ export class StudentperformanceComponent implements OnInit {
       classNo: this.studentProfile?.basic?.classNo || null,
       programName: this.studentProfile?.program?.programName || '—',
       batchCode: this.studentProfile?.program?.batchName || this.batchId || '—',
+      academicYear: this.academicYear,
+      section: this.batchSection,
     };
+  }
+
+  private fetchBatchSection(): Promise<void> {
+    if (!this.batchId) return Promise.resolve();
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData({ entiId: this.tenantId, batchId: this.batchId }, 'batch', 'view')
+        .subscribe({
+          next: (res: any) => {
+            this.batchSection = res?.data?.section || '';
+            resolve();
+          },
+          error: () => resolve(),
+        });
+    });
   }
 
   async printCPT(): Promise<void> {
@@ -379,6 +397,7 @@ export class StudentperformanceComponent implements OnInit {
       return;
     }
     const batchStatsMap = new Map<string, SectionStats[]>();
+    const highestTotalMap = new Map<string, number>();
     this.exportingCPT = true;
     for (const exam of exams) {
       if (!exam.examId) continue;
@@ -394,7 +413,12 @@ export class StudentperformanceComponent implements OnInit {
             'result/batch-subject-stats',
           )
           .toPromise();
-        if (res?.status) batchStatsMap.set(exam.examId, res.data || []);
+        if (res?.status) {
+          batchStatsMap.set(exam.examId, res.data || []);
+          if (res.batchHighestTotal != null) {
+            highestTotalMap.set(exam.examId, res.batchHighestTotal);
+          }
+        }
       } catch (e) {
       } finally {
         this.exportingCPT = false;
@@ -404,6 +428,7 @@ export class StudentperformanceComponent implements OnInit {
       this.getPrintStudent(),
       exams,
       batchStatsMap,
+      highestTotalMap,
     );
     const name = `CPT_${this.studentProfile?.basic?.admissionNo || this.studentId}.pdf`;
     await exportToPdf(html, name);
@@ -414,15 +439,16 @@ export class StudentperformanceComponent implements OnInit {
     this.exportingSchool = true;
     try {
       if (!this.studentProfile) await this.loadStudentProfile();
+      if (!this.batchSection) await this.fetchBatchSection();
       let exams = this.schoolExams;
       if (!exams.length) exams = await this.fetchAllSchoolExams();
       if (!exams.length) {
         this.alert.error('No school exam data to print');
         return;
       }
-      const html = buildSchoolPrintHtml(this.getPrintStudent(), exams);
+      const html = await buildSchoolPrintHtml(this.getPrintStudent(), exams);
       const name = `School_${this.studentProfile?.basic?.admissionNo || this.studentId}.pdf`;
-      await exportToPdf(html, name);
+      await exportToPdf(html, name, '#F7F06A');
     } catch (err) {
       this.alert.error('Failed to export PDF');
     } finally {

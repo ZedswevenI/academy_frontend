@@ -12,9 +12,10 @@ import { TemplatesComponent } from './templates/templates.component';
 import { SentLogsComponent } from './sent-logs/sent-logs.component';
 import { EventMappingComponent } from './event-mapping/event-mapping.component';
 import { ExcelBulkMailComponent } from './excel-bulk-mail/excel-bulk-mail.component';
+import { SendBatchComponent } from './send-batch/send-batch.component';
 
 @NgModule({
-  declarations: [CommunicationComponent, WhatsappComponent, MsgComponent, MailComponent, ComListComponent, TemplatesComponent, SentLogsComponent, EventMappingComponent, ExcelBulkMailComponent],
+  declarations: [CommunicationComponent, WhatsappComponent, MsgComponent, MailComponent, ComListComponent, TemplatesComponent, SentLogsComponent, EventMappingComponent, ExcelBulkMailComponent, SendBatchComponent],
   imports: [CommonModule, CommunicationRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
   exports: []
 })

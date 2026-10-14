@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.service';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
 import { AlertService } from '../../../../service/alert/alert.service';
@@ -64,6 +64,15 @@ export class PackageComponent implements OnInit {
     },
     {
       type: 'icon',
+      icon: 'fa-solid fa-key',
+      tooltip: 'Change Password',
+      color: '#6B7280',
+      hoverColor: '#D97706',
+      show: () => !this.permissionService.hasPermission('package:edit'),
+      callback: (row: any) => this.openChangePasswordModal(row)
+    },
+    {
+      type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete',
       color: '#6B7280',
@@ -76,6 +85,11 @@ export class PackageComponent implements OnInit {
   // Modals state
   selectedPackage: any = null;
   packageToDelete: any = null;
+
+  // ── Change Password modal ────────────────────────────
+  changePasswordForm!: FormGroup;
+  changePasswordLoading = false;
+  packageForPasswordChange: any = null;
 
   // ── Enable/Disable modal ─────────────────────────────
   enableForm!: FormGroup;
@@ -123,6 +137,9 @@ export class PackageComponent implements OnInit {
 
   ngOnInit(): void {
     this.buildEnableForm();
+    this.changePasswordForm = this.fb.group({
+      password: ['', [Validators.required, Validators.minLength(4)]]
+    });
     this.loadBatches();
     // this.fetchList(1, 10);
   }
@@ -396,6 +413,47 @@ export class PackageComponent implements OnInit {
         error: () => {
           this.enableLoading = false;
           this.alert.error('Error enabling package');
+        }
+      });
+  }
+
+  // ====================================================
+  // CHANGE PASSWORD
+  // ====================================================
+
+  openChangePasswordModal(row: any): void {
+    this.packageForPasswordChange = row;
+    this.changePasswordForm.reset({ password: '' });
+    this.openModal('packageChangePasswordModal');
+  }
+
+  confirmChangePassword(): void {
+    if (this.changePasswordForm.invalid) {
+      this.changePasswordForm.markAllAsTouched();
+      return;
+    }
+    const payload = {
+      tenantId: this.tenantId,
+      packageId: this.packageForPasswordChange.packageId,
+      userId: localStorage.getItem('userId'),
+      password: this.changePasswordForm.value.password
+    };
+
+    this.changePasswordLoading = true;
+    this.commonApi.fetchData(payload, 'ims/package', 'password/change')
+      .subscribe({
+        next: (res: any) => {
+          this.changePasswordLoading = false;
+          if (res?.status) {
+            this.alert.success('Password updated successfully');
+            this.closeModal('packageChangePasswordModal');
+          } else {
+            this.alert.error(res?.message || 'Error updating password');
+          }
+        },
+        error: (err: any) => {
+          this.changePasswordLoading = false;
+          this.alert.error(err?.error?.message || 'Error updating password');
         }
       });
   }

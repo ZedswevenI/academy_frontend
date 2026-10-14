@@ -429,6 +429,7 @@ export class PerformanceComponent implements OnInit {
         ]);
         if (!mockExams.length) continue;
         const batchStatsMap = new Map<string, SectionStats[]>();
+        const highestTotalMap = new Map<string, number>();
         for (const exam of mockExams) {
           if (!exam.examId) continue;
           try {
@@ -443,7 +444,12 @@ export class PerformanceComponent implements OnInit {
                 'result/batch-subject-stats',
               )
               .toPromise();
-            if (res?.status) batchStatsMap.set(exam.examId, res.data || []);
+            if (res?.status) {
+              batchStatsMap.set(exam.examId, res.data || []);
+              if (res.batchHighestTotal != null) {
+                highestTotalMap.set(exam.examId, res.batchHighestTotal);
+              }
+            }
           } catch (e) {}
         }
         const printStudent: PrintStudent = {
@@ -457,6 +463,7 @@ export class PerformanceComponent implements OnInit {
           printStudent,
           mockExams,
           batchStatsMap,
+          highestTotalMap,
         );
         allPages.push(pageHtml);
       }
@@ -487,6 +494,7 @@ export class PerformanceComponent implements OnInit {
         this.alert.error('No students found');
         return;
       }
+      const batchSection = await this.fetchBatchSection(this.selectedBatchId);
       const allPages: string[] = [];
       for (const s of students) {
         const [schoolExams, profile] = await Promise.all([
@@ -500,6 +508,8 @@ export class PerformanceComponent implements OnInit {
           classNo: profile?.basic?.classNo || null,
           programName: profile?.program?.programName || '—',
           batchCode: this.selectedBatchCode || '—',
+          academicYear: this.selectedYear,
+          section: batchSection,
         };
         // allPages.push(buildSchoolPageHtml(printStudent, schoolExams));
         const pageHtml = await buildSchoolPageHtml(printStudent, schoolExams);
@@ -514,6 +524,7 @@ export class PerformanceComponent implements OnInit {
       await exportToPdf(
         html,
         `School_Batch_${this.selectedBatchCode}_${this.selectedYear}.pdf`,
+        '#F7F06A',
       );
     } finally {
       this.printingAllSchool = false;
@@ -590,6 +601,18 @@ export class PerformanceComponent implements OnInit {
         .subscribe({
           next: (res: any) => resolve(res?.data || null),
           error: () => resolve(null),
+        });
+    });
+  }
+
+  private fetchBatchSection(batchId: string): Promise<string> {
+    if (!batchId) return Promise.resolve('');
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData({ entiId: this.tenantId, batchId }, 'batch', 'view')
+        .subscribe({
+          next: (res: any) => resolve(res?.data?.section || ''),
+          error: () => resolve(''),
         });
     });
   }

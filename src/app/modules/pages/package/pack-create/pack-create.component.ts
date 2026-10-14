@@ -96,7 +96,8 @@ export class PackCreateComponent implements OnInit {
         packageCode: ['', Validators.required],
         title: ['', Validators.required],
         description: [''],
-        attachmentUrl: ['', Validators.required]
+        attachmentUrl: ['', Validators.required],
+        password: ['']
       });
     }
   }
@@ -198,7 +199,7 @@ export class PackCreateComponent implements OnInit {
     // Find subject name from selected subjectId
     const selectedSubject = this.subject_options.find(s => s.value === f.subjectId);
 
-    const payload = {
+    const payload: any = {
       tenantId: this.tenantId,
       packageCode: f.packageCode,
       classNo: Number(f.classNo),
@@ -208,6 +209,7 @@ export class PackCreateComponent implements OnInit {
       description: f.description || '',
       attachmentUrl: f.attachmentUrl || ''
     };
+    if (f.password) payload.password = f.password;
 
     this.loading = true;
     this.commonApi.fetchData(payload, 'ims/package', 'create')
