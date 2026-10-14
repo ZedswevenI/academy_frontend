@@ -1,0 +1,141 @@
+<div class="ms-3 me-3 pt-1 pb-1">
+    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h1 class="fw-bold mb-0" style="font-size: 30px;">
+                <i class="fa-solid fa-layer-group"></i> Send to Batch
+            </h1>
+        </div>
+
+        <div class="mt-3">
+            <form [formGroup]="sendBatchForm">
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label fs-13 fw-medium">Campaign Title</label>
+                        <input class="form-control form-control-sm" formControlName="title"
+                            placeholder="e.g. October batch notice" />
+                    </div>
+                </div>
+
+                <!-- ── BATCH multi-select ────────────────────── -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <label class="form-label fw-medium">
+                            Batches <span class="text-danger">*</span>
+                            <span class="badge bg-primary ms-2">{{ selectedBatchCodes.length }} selected</span>
+                        </label>
+                        <div class="border rounded-3 p-2" style="max-height: 220px; overflow-y: auto;">
+                            <div class="d-flex align-items-center px-2 py-1 border-bottom mb-1">
+                                <input type="checkbox" class="form-check-input me-2"
+                                    [checked]="selectAllBatches"
+                                    (change)="toggleAllBatches($any($event.target).checked)" />
+                                <span class="fw-semibold small">Select All</span>
+                                <span class="text-muted small ms-auto">{{ batches.length }} total</span>
+                            </div>
+                            <div *ngFor="let b of batches"
+                                class="d-flex align-items-center px-2 py-1 rounded" style="cursor:pointer;">
+                                <input type="checkbox" class="form-check-input me-2"
+                                    [checked]="isBatchSelected(b.batchCode)"
+                                    (change)="toggleBatch(b.batchCode, $any($event.target).checked)" />
+                                <span class="small">{{ b.batchName }}</span>
+                                <span class="text-muted small ms-auto">{{ b.batchCode }}</span>
+                            </div>
+                            <div *ngIf="batches.length === 0" class="text-muted small text-center py-2">
+                                No batches found
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Content mode toggle ─────────────────────── -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <selectbox label="Message Content" formControlName="contentMode"
+                            [options]="contentModeOptions" optionLabel="label" optionValue="value"
+                            [control]="sendBatchForm.get('contentMode')" [required]="true">
+                        </selectbox>
+                    </div>
+                </div>
+
+                <!-- Template mode -->
+                <div class="row mt-3" *ngIf="sendBatchForm.get('contentMode')?.value === 'TEMPLATE'">
+                    <div class="col-md-6">
+                        <selectbox label="Select Template" placeholder="Choose a template"
+                            formControlName="templateId" [options]="templateOptions"
+                            optionLabel="label" optionValue="value"
+                            [control]="sendBatchForm.get('templateId')" [required]="true">
+                        </selectbox>
+                    </div>
+                </div>
+                <div *ngIf="sendBatchForm.get('contentMode')?.value === 'TEMPLATE' && selectedTemplate"
+                    class="send-preview mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold fs-14">
+                            <i class="fa-regular fa-eye me-1 text-primary"></i> Template Preview
+                        </span>
+                        <small class="text-muted">Keys shown with example values</small>
+                    </div>
+                    <div *ngIf="previewSubject" class="preview-subject mb-2">
+                        <small class="text-muted d-block">Subject</small>
+                        <div class="fw-medium" [innerHTML]="previewSubject"></div>
+                    </div>
+                    <div class="preview-body" [innerHTML]="previewBody"></div>
+                </div>
+
+                <!-- Ad-hoc mode -->
+                <div class="row mt-3" *ngIf="sendBatchForm.get('contentMode')?.value === 'ADHOC'">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label fs-13 fw-medium">
+                            Subject <span class="text-danger">*</span>
+                        </label>
+                        <input class="form-control form-control-sm" formControlName="subject"
+                            placeholder="e.g. Important update for {{ '{{studentName}}' }}" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fs-13 fw-medium">
+                            Body <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control form-control-sm" rows="6" formControlName="body"
+                            placeholder="Hello {{ '{{studentName}}' }}, ..."></textarea>
+                    </div>
+                    <div class="col-md-12 mt-2">
+                        <small class="text-muted">
+                            Available placeholders:
+                            <code *ngFor="let k of availableKeys" class="me-2">{{ k.key }}</code>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- ── Send type ────────────────────────────────── -->
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <selectbox label="Send Type" formControlName="sendType" [options]="sendTypeOptions"
+                            optionLabel="label" optionValue="value" [control]="sendBatchForm.get('sendType')"
+                            [required]="true">
+                        </selectbox>
+                    </div>
+                    <div class="col-md-3" *ngIf="sendBatchForm.get('sendType')?.value === 'SCHEDULED'">
+                        <label class="form-label fs-13 fw-medium">
+                            Schedule Date &amp; Time <span class="text-danger">*</span>
+                        </label>
+                        <input type="datetime-local" class="form-control form-control-sm"
+                            formControlName="scheduledAtInput" />
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="d-flex justify-content-end px-2">
+                        <button type="button" class="btn btn-back fs-16 fw-medium me-2" (click)="goBack()">
+                            Back
+                        </button>
+                        <button type="button" class="btn btn-create fs-16 fw-medium"
+                            *appHasPermission="'communication:send'" (click)="onSubmit()" [disabled]="loading">
+                            {{ loading ? 'Processing...' : 'Send to Batch' }}
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>

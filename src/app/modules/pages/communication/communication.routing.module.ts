@@ -9,11 +9,13 @@ import { TemplatesComponent } from './templates/templates.component';
 import { SentLogsComponent } from './sent-logs/sent-logs.component';
 import { EventMappingComponent } from './event-mapping/event-mapping.component';
 import { ExcelBulkMailComponent } from './excel-bulk-mail/excel-bulk-mail.component';
+import { SendBatchComponent } from './send-batch/send-batch.component';
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
   { path: '', redirectTo: 'send', pathMatch: 'full' },
   { path: 'send', component: CommunicationComponent, title: 'Communication - Send', canActivate: [PermissionGuard], data: { permission: 'communication:create' } },
+  { path: 'send-batch', component: SendBatchComponent, title: 'Communication - Send to Batch', canActivate: [PermissionGuard], data: { permission: 'communication:send' } },
   { path: 'templates', component: TemplatesComponent, title: 'Communication - Templates', canActivate: [PermissionGuard], data: { permission: 'communicationTemplate:list' } },
   { path: 'sent-logs', component: SentLogsComponent, title: 'Communication - Sent Logs', canActivate: [PermissionGuard], data: { permission: 'communicationLog:list' } },
   { path: 'event-mapping', component: EventMappingComponent, title: 'Communication - Event Mapping', canActivate: [PermissionGuard], data: { permission: 'communicationEvent:list' } },
