@@ -198,6 +198,7 @@ export class BatchperformanceComponent implements OnInit {
         if (!mockExams.length) continue;
 
         const batchStatsMap = new Map<string, SectionStats[]>();
+        const highestTotalMap = new Map<string, number>();
         for (const exam of mockExams) {
           if (!exam.examId) continue;
           try {
@@ -212,7 +213,12 @@ export class BatchperformanceComponent implements OnInit {
                 'result/batch-subject-stats',
               )
               .toPromise();
-            if (res?.status) batchStatsMap.set(exam.examId, res.data || []);
+            if (res?.status) {
+              batchStatsMap.set(exam.examId, res.data || []);
+              if (res.batchHighestTotal != null) {
+                highestTotalMap.set(exam.examId, res.batchHighestTotal);
+              }
+            }
           } catch (e) {}
         }
 
@@ -228,6 +234,7 @@ export class BatchperformanceComponent implements OnInit {
           printStudent,
           mockExams,
           batchStatsMap,
+          highestTotalMap,
         );
         allPages.push(pageHtml);
       }
@@ -261,6 +268,7 @@ export class BatchperformanceComponent implements OnInit {
         return;
       }
 
+      const batchSection = await this.fetchBatchSection(this.batchId);
       const allPages: string[] = [];
       for (const s of students) {
         const [schoolExams, profile] = await Promise.all([
@@ -275,6 +283,8 @@ export class BatchperformanceComponent implements OnInit {
           classNo: profile?.basic?.classNo || null,
           programName: profile?.program?.programName || '—',
           batchCode: this.batchCode || '—',
+          academicYear: this.academicYear,
+          section: batchSection,
         };
 
         const pageHtml = await buildSchoolPageHtml(printStudent, schoolExams);
@@ -289,6 +299,7 @@ export class BatchperformanceComponent implements OnInit {
       await exportToPdf(
         html,
         `School_Batch_${this.batchCode}_${this.academicYear}.pdf`,
+        '#F7F06A',
       );
     } catch (err) {
       this.alert.error('Failed to export PDF');
@@ -367,6 +378,18 @@ export class BatchperformanceComponent implements OnInit {
         .subscribe({
           next: (res: any) => resolve(res?.data || null),
           error: () => resolve(null),
+        });
+    });
+  }
+
+  private fetchBatchSection(batchId: string): Promise<string> {
+    if (!batchId) return Promise.resolve('');
+    return new Promise((resolve) => {
+      this.commonApi
+        .fetchData({ entiId: this.tenantId, batchId }, 'batch', 'view')
+        .subscribe({
+          next: (res: any) => resolve(res?.data?.section || ''),
+          error: () => resolve(''),
         });
     });
   }
