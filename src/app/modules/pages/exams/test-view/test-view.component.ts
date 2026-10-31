@@ -1630,7 +1630,6 @@ export class TestViewComponent implements OnInit {
       const headers = [
         'S No',
         'Class',
-        'Adm.No',
         'Enrl. No',
         'Name',
         ...sections.map((sec) => `${sec.toUpperCase()} (${sectionMax[sec]})`),
@@ -1649,8 +1648,7 @@ export class TestViewComponent implements OnInit {
       sortedRows.forEach((r, i) => {
         const row: any[] = [
           i + 1,
-          groupLabel(r),
-          r.admissionNo,
+          r.classNo ?? '-',
           r.admissionNo,
           r.studentName,
         ];
@@ -1668,8 +1666,8 @@ export class TestViewComponent implements OnInit {
         rows: any[],
         getter: (r: any) => number | 'AB',
       ): number[] => rows.map(getter).filter((v): v is number => typeof v === 'number');
-      const highestRow: any[] = ['', '', '', '', 'Highest'];
-      const averageRow: any[] = ['', '', '', '', 'Average'];
+      const highestRow: any[] = ['', '', '', 'Highest'];
+      const averageRow: any[] = ['', '', '', 'Average'];
       sections.forEach((sec) => {
         const vals = numericValues(sortedRows, (r) =>
           r.sections?.[sec]?.isAbsent ? 'AB' : Number(r.sections?.[sec]?.obtainedMarks) || 0,
