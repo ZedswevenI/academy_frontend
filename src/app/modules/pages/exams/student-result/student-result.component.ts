@@ -28,6 +28,11 @@ export class StudentResultComponent implements OnInit {
   subjectMap: Record<string, string> = {};
   leaderboard: any[] = [];
 
+  // Question-wise "view question" popup
+  viewQuestionData: any = null;
+  viewQuestionLoading = false;
+  private allQuestionsCache: any[] | null = null;
+
   // Active sub-tab
   activeSubTab:
     | 'summary'
@@ -653,5 +658,71 @@ export class StudentResultComponent implements OnInit {
   ): boolean {
     const correctKeys = this.getMatrixCorrectKeys(correctAnswer, leftKey);
     return correctKeys.includes(rightKey.toUpperCase());
+  }
+
+  // ====================================================
+  // VIEW QUESTION POPUP (Question-wise tab)
+  // ====================================================
+
+  async openQuestionModal(a: any): Promise<void> {
+    if (a.questionHtml) {
+      this.viewQuestionData = a;
+      return;
+    }
+    // Answer row has no question content attached — fall back to the same
+    // all-questions API the Exam View / Question-wise screens use, and
+    // merge in the matching question so every type renders the same way.
+    this.viewQuestionLoading = true;
+    try {
+      const full = await this.fetchFullQuestion(a);
+      this.viewQuestionData = full ? { ...a, ...full } : a;
+      if (!full) {
+        this.alert.error('Full question details are not available for this question');
+      }
+    } finally {
+      this.viewQuestionLoading = false;
+    }
+  }
+
+  closeQuestionModal(): void {
+    this.viewQuestionData = null;
+  }
+
+  private async fetchFullQuestion(a: any): Promise<any> {
+    try {
+      if (!this.allQuestionsCache) {
+        const body = { tenantId: this.tenantId, examId: this.examData.examId };
+        const res: any = await firstValueFrom(
+          this.commonApi.fetchData(body, 'exam/questions', 'getallquestions'),
+        );
+        this.allQuestionsCache = res?.data?.questions || [];
+      }
+      const list = this.allQuestionsCache || [];
+      const byId = (a.questionId || a._id) &&
+        list.find(
+          (q: any) =>
+            q.questionId === (a.questionId || a._id) ||
+            q._id === (a.questionId || a._id),
+        );
+      const match =
+        byId ||
+        (a.sectionId && a.questionNo
+          ? list.filter((q: any) => q.sectionId === a.sectionId)[a.questionNo - 1]
+          : null);
+      if (!match) return null;
+
+      const full = { ...match };
+      if (full.questionHtml) {
+        full.questionHtml = await this.replaceDownloadUrls(full.questionHtml);
+      }
+      if (full.questionOptions) {
+        for (const opt of full.questionOptions) {
+          if (opt.textHtml) opt.textHtml = await this.replaceDownloadUrls(opt.textHtml);
+        }
+      }
+      return full;
+    } catch (e) {
+      return null;
+    }
   }
 }

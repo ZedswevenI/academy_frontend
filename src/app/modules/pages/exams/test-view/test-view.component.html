@@ -110,6 +110,13 @@
               </a>
             </li>
           </ng-container>
+          <ng-container *ngIf="examData?.status === 'result_published'">
+            <li *appHasPermission="'communication:send'">
+              <a class="dropdown-item" (click)="resultEmailModal.open()">
+                <i class="fa-solid fa-envelope me-2 text-primary"></i>Send Result Email
+              </a>
+            </li>
+          </ng-container>
         </ul>
       </div>
 
@@ -642,6 +649,12 @@
           <option value="">All Batches</option>
           <option *ngFor="let b of allBatches" [value]="b.batchId">{{ b.label }}</option>
         </select>
+        <button type="button" class="btn btn-export fs-16 fw-medium"
+          [disabled]="exportingQuestionWiseMarks" (click)="exportQuestionWiseMarks()">
+          <span *ngIf="exportingQuestionWiseMarks" class="spinner-border spinner-border-sm me-1"></span>
+          <i *ngIf="!exportingQuestionWiseMarks" class="fa-solid fa-file-excel me-1"></i>
+          {{ exportingQuestionWiseMarks ? 'Exporting...' : 'Export Marks' }}
+        </button>
       </div>
     </div>
 
@@ -1131,3 +1144,6 @@
     </div>
   </div>
 </div>
+
+<app-exam-result-email-modal #resultEmailModal [examId]="examData.examId" [examName]="examData.examName">
+</app-exam-result-email-modal>

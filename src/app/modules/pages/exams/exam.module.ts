@@ -27,6 +27,7 @@ import { QuestionCreateNewComponent } from './question-create-new/question-creat
 import { PassageSelectorNewComponent } from './passage-selector-new/passage-selector-new.component';
 import { QuestionImportNewComponent } from './question-import-new/question-import-new.component';
 import { OfflineMarksComponent } from './offline-marks/offline-marks.component';
+import { ExamResultEmailModalComponent } from './exam-result-email-modal/exam-result-email-modal.component';
 
 @NgModule({
   declarations: [
@@ -51,7 +52,8 @@ import { OfflineMarksComponent } from './offline-marks/offline-marks.component';
     QuestionCreateNewComponent,
     PassageSelectorNewComponent,
     QuestionImportNewComponent,
-    OfflineMarksComponent
+    OfflineMarksComponent,
+    ExamResultEmailModalComponent
   ],
   imports: [CommonModule, ExamRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule, NgIf, NgFor, NgClass, DragDropModule, BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],

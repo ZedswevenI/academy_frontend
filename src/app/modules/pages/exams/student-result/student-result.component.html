@@ -17,6 +17,10 @@
             <button class="btn btn btn-import fs-16 fw-medium" (click)="exportToExcel()">
                 <i class="fa-solid fa-file-excel me-2"></i>Export Excel
             </button>
+            <button *appHasPermission="'communication:send'" class="btn btn btn-shuffle fs-16 fw-medium"
+                (click)="resultEmailModal.open()">
+                <i class="fa-solid fa-envelope me-2"></i>Send Result Email
+            </button>
             <button class="btn btn btn-back fs-16 fw-medium" (click)="goBack()">
                 <i class="fa-solid fa-arrow-left"></i>Back
             </button>
@@ -218,6 +222,7 @@
                             <tr>
                                 <th class="ps-4">No.</th>
                                 <th>Section</th>
+                                <th class="text-center">View</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-center">Your Ans</th>
                                 <th class="text-center">Correct Ans</th>
@@ -234,16 +239,24 @@
                                     <span class="text-muted small ms-1" *ngIf="a.questionNo">({{ a.questionNo }})</span>
                                 </td>
                                 <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        (click)="openQuestionModal(a)" [disabled]="viewQuestionLoading">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center">
                                     <span *ngIf="a.isSkipped"
                                         class="badge bg-warning-soft text-warning border-warning-soft px-3">Skipped</span>
-                                    <span *ngIf="!a.isSkipped && a.isCorrect"
+                                    <span *ngIf="!a.isSkipped && a.isCorrect === true"
                                         class="badge bg-success-soft text-success border-success-soft px-3">Correct</span>
-                                    <span *ngIf="!a.isSkipped && !a.isCorrect"
+                                    <span *ngIf="!a.isSkipped && a.isCorrect === false"
                                         class="badge bg-danger-soft text-danger border-danger-soft px-3">Incorrect</span>
+                                    <span *ngIf="!a.isSkipped && a.isCorrect === null"
+                                        class="badge bg-info-soft text-info border-info-soft px-3">Partial</span>
                                 </td>
                                 <td class="text-center">
                                     <span class="fw-bold"
-                                        [ngClass]="{'text-success': a.isCorrect, 'text-danger': !a.isCorrect && !a.isSkipped}">
+                                        [ngClass]="{'text-success': a.isCorrect === true, 'text-danger': a.isCorrect === false, 'text-info': a.isCorrect === null && !a.isSkipped}">
                                         {{ a.answerRaw || '---' }}
                                     </span>
                                 </td>
@@ -709,3 +722,227 @@
     </div>
     <span class="fw-medium text-muted">Building Comprehensive Analysis...</span>
 </div>
+
+<!-- ===================== VIEW QUESTION MODAL (Question-wise tab) ===================== -->
+<div class="modal-backdrop fade show" *ngIf="viewQuestionData" (click)="closeQuestionModal()"></div>
+<div class="modal fade show d-block" tabindex="-1" *ngIf="viewQuestionData">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+        (click)="$event.stopPropagation()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-regular fa-eye me-2 text-primary"></i>View Question
+                </h5>
+                <button type="button" class="btn-close" (click)="closeQuestionModal()"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="question-analysis-card border-0 shadow-none" [ngClass]="{
+            'correct': viewQuestionData.isCorrect === true && !viewQuestionData.isSkipped,
+            'wrong': viewQuestionData.isCorrect === false && !viewQuestionData.isSkipped,
+            'skipped': viewQuestionData.isSkipped
+          }">
+
+                    <!-- Question Header -->
+                    <div class="q-header p-3 border-bottom d-flex justify-content-between align-items-center bg-light-soft">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-secondary-soft text-muted fw-normal text-capitalize">
+                                {{ viewQuestionData.questionType?.replace('_', ' ') }}
+                            </span>
+                            <span class="badge bg-secondary-soft text-muted fw-normal">
+                                <i class="fa-regular fa-clock me-1"></i>
+                                {{ (viewQuestionData.timeTaken / 1000).toFixed(1) }}s
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="marks-pill" [ngClass]="viewQuestionData.marksAwarded >= 0 ? 'plus' : 'minus'">
+                                {{ viewQuestionData.marksAwarded >= 0 ? '+' : '' }}{{ viewQuestionData.marksAwarded }} pt
+                            </div>
+                            <span *ngIf="viewQuestionData.isSkipped" class="badge bg-warning text-dark px-3 py-2">SKIPPED</span>
+                            <span *ngIf="!viewQuestionData.isSkipped && viewQuestionData.isCorrect === true"
+                                class="badge bg-success px-3 py-2">CORRECT</span>
+                            <span *ngIf="!viewQuestionData.isSkipped && viewQuestionData.isCorrect === false"
+                                class="badge bg-danger px-3 py-2">INCORRECT</span>
+                            <span *ngIf="!viewQuestionData.isSkipped && viewQuestionData.isCorrect === null"
+                                class="badge bg-info px-3 py-2">PARTIAL</span>
+                        </div>
+                    </div>
+
+                    <div class="q-body p-4">
+
+                        <!-- Passage (for passage_qns) -->
+                        <div *ngIf="viewQuestionData.passage?.passageHtml"
+                            class="passage-box p-3 mb-4 bg-light border-start border-4 border-primary rounded-3">
+                            <div class="fw-semibold text-primary mb-2 fs-13">
+                                <i class="fa-solid fa-book-open me-1"></i>
+                                {{ viewQuestionData.passage.title || 'Passage' }}
+                            </div>
+                            <div class="fs-14" [innerHTML]="renderLatex(viewQuestionData.passage.passageHtml)"></div>
+                        </div>
+
+                        <!-- Question Text -->
+                        <div class="fw-medium mb-4 q-text-premium"
+                            [innerHTML]="renderLatex(viewQuestionData.questionHtml)"></div>
+
+                        <!-- MCQ Single / MCQ Multi / Passage MCQ — Options Grid -->
+                        <div *ngIf="(viewQuestionData.questionType === 'mcq_single' || viewQuestionData.questionType === 'mcq_multi' || viewQuestionData.questionType === 'passage_qns') && viewQuestionData.questionOptions?.length"
+                            class="options-grid mb-3">
+                            <div *ngFor="let opt of viewQuestionData.questionOptions; let optIdx = index"
+                                class="option-item border" [ngClass]="{
+                    'is-correct': opt.isCorrect,
+                    'user-selected': isOptionSelected(viewQuestionData, getOptionLabel(optIdx)),
+                    'is-wrong': isOptionSelected(viewQuestionData, getOptionLabel(optIdx)) && !opt.isCorrect
+                  }">
+                                <div class="option-label">{{ getOptionLabel(optIdx) }}</div>
+                                <div class="option-text" [innerHTML]="renderLatex(opt.textHtml)"></div>
+                                <div class="option-marker">
+                                    <i class="fa-solid fa-check text-success" *ngIf="opt.isCorrect"></i>
+                                    <i class="fa-solid fa-xmark text-danger"
+                                        *ngIf="isOptionSelected(viewQuestionData, getOptionLabel(optIdx)) && !opt.isCorrect"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- True / False -->
+                        <div *ngIf="viewQuestionData.questionType === 'true_false'" class="d-flex gap-3 mb-3">
+                            <div class="tf-option border rounded-3 px-4 py-2 d-flex align-items-center gap-2" [ngClass]="{
+                    'is-correct': normalizeBoolean(viewQuestionData.correctAnswer) === 'true',
+                    'user-selected': normalizeBoolean(viewQuestionData.answerRaw) === 'true',
+                    'is-wrong': normalizeBoolean(viewQuestionData.answerRaw) === 'true' && normalizeBoolean(viewQuestionData.correctAnswer) !== 'true'
+                  }">
+                                <i class="fa-solid fa-check text-success"
+                                    *ngIf="normalizeBoolean(viewQuestionData.correctAnswer) === 'true'"></i>
+                                <i class="fa-solid fa-xmark text-danger"
+                                    *ngIf="normalizeBoolean(viewQuestionData.answerRaw) === 'true' && normalizeBoolean(viewQuestionData.correctAnswer) !== 'true'"></i>
+                                True
+                            </div>
+                            <div class="tf-option border rounded-3 px-4 py-2 d-flex align-items-center gap-2" [ngClass]="{
+                    'is-correct': normalizeBoolean(viewQuestionData.correctAnswer) === 'false',
+                    'user-selected': normalizeBoolean(viewQuestionData.answerRaw) === 'false',
+                    'is-wrong': normalizeBoolean(viewQuestionData.answerRaw) === 'false' && normalizeBoolean(viewQuestionData.correctAnswer) !== 'false'
+                  }">
+                                <i class="fa-solid fa-check text-success"
+                                    *ngIf="normalizeBoolean(viewQuestionData.correctAnswer) === 'false'"></i>
+                                <i class="fa-solid fa-xmark text-danger"
+                                    *ngIf="normalizeBoolean(viewQuestionData.answerRaw) === 'false' && normalizeBoolean(viewQuestionData.correctAnswer) !== 'false'"></i>
+                                False
+                            </div>
+                        </div>
+
+                        <!-- Integer / Numeric / Subjective / Short Answer -->
+                        <div *ngIf="['integer','numeric','subjective','short_answer'].includes(viewQuestionData.questionType)"
+                            class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 border"
+                                    [ngClass]="viewQuestionData.isCorrect ? 'bg-success-subtle border-success' : viewQuestionData.isSkipped ? 'bg-warning-subtle border-warning' : 'bg-danger-subtle border-danger'">
+                                    <small class="text-muted d-block fw-bold mb-1" style="font-size:10px">YOUR ANSWER</small>
+                                    <span class="fw-bold fs-5"
+                                        [ngClass]="viewQuestionData.isCorrect ? 'text-success' : viewQuestionData.isSkipped ? 'text-warning' : 'text-danger'">
+                                        {{ viewQuestionData.isSkipped ? '— Skipped —' : (viewQuestionData.answerRaw ?? '— No Answer —') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 rounded-3 border bg-success-subtle border-success">
+                                    <small class="text-muted d-block fw-bold mb-1" style="font-size:10px">CORRECT ANSWER</small>
+                                    <span class="fw-bold fs-5 text-success">
+                                        <ng-container
+                                            *ngIf="viewQuestionData.questionType === 'numeric' && viewQuestionData.numericMin !== null && viewQuestionData.numericMax !== null">
+                                            {{ viewQuestionData.numericMin }} – {{ viewQuestionData.numericMax }}
+                                        </ng-container>
+                                        <ng-container
+                                            *ngIf="!(viewQuestionData.questionType === 'numeric' && viewQuestionData.numericMin !== null && viewQuestionData.numericMax !== null)">
+                                            {{ viewQuestionData.correctAnswer ?? '—' }}
+                                        </ng-container>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Matrix Match -->
+                        <div *ngIf="viewQuestionData.questionType === 'matrix' && viewQuestionData.leftColumn?.length" class="mb-3">
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle text-center mb-0 matrix-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-start" style="width:35%">Left Column</th>
+                                            <th style="width:25%">Right Column</th>
+                                            <th style="width:20%">Your Answer</th>
+                                            <th style="width:20%">Correct Answer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let left of viewQuestionData.leftColumn; let li = index">
+                                            <td class="text-start p-3">
+                                                <span class="badge bg-primary me-2">{{ left.key }}</span>
+                                                <span [innerHTML]="renderLatex(left.text)"></span>
+                                            </td>
+                                            <td class="p-2" *ngIf="li === 0" [attr.rowspan]="viewQuestionData.leftColumn.length">
+                                                <div *ngFor="let right of viewQuestionData.rightColumn"
+                                                    class="d-flex align-items-center gap-2 mb-1 text-start">
+                                                    <span class="badge bg-success">{{ right.key }}</span>
+                                                    <span [innerHTML]="renderLatex(right.text)"></span>
+                                                </div>
+                                            </td>
+                                            <td class="p-2">
+                                                <span *ngFor="let rk of getMatrixStudentAnswer(viewQuestionData.answerRaw, left.key)"
+                                                    class="badge me-1"
+                                                    [ngClass]="isMatrixKeyCorrect(viewQuestionData.correctAnswer, left.key, rk) ? 'bg-success' : 'bg-danger'">
+                                                    {{ rk }}
+                                                </span>
+                                                <span *ngIf="!getMatrixStudentAnswer(viewQuestionData.answerRaw, left.key).length"
+                                                    class="text-muted small">—</span>
+                                            </td>
+                                            <td class="p-2">
+                                                <span *ngFor="let ck of getMatrixCorrectKeys(viewQuestionData.correctAnswer, left.key)"
+                                                    class="badge bg-success me-1">
+                                                    {{ ck }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Answer + Solution Footer -->
+                        <div class="answer-comparison mt-3 p-3 bg-light rounded-3 d-flex flex-wrap gap-4 border">
+                            <div>
+                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size:9px">Weightage</small>
+                                <span class="fw-medium mt-1 text-muted">+{{ viewQuestionData.positiveMarks }} / -{{ viewQuestionData.negativeMarks }}</span>
+                            </div>
+                            <div class="vr d-none d-md-block"></div>
+                            <div>
+                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size:9px">Difficulty</small>
+                                <span class="badge bg-light text-dark border mt-1 text-capitalize">{{ viewQuestionData.difficulty }}</span>
+                            </div>
+                            <div class="vr d-none d-md-block"></div>
+                            <div>
+                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size:9px">Marks Awarded</small>
+                                <span class="fw-bold mt-1" [ngClass]="viewQuestionData.marksAwarded >= 0 ? 'text-success' : 'text-danger'">
+                                    {{ viewQuestionData.marksAwarded >= 0 ? '+' : '' }}{{ viewQuestionData.marksAwarded }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Solution -->
+                        <div *ngIf="viewQuestionData.solutionHtml"
+                            class="mt-3 p-3 border-start border-4 border-success bg-success-subtle rounded-3">
+                            <div class="fw-semibold text-success mb-2 fs-13">
+                                <i class="fa-solid fa-lightbulb me-1"></i> Solution
+                            </div>
+                            <div [innerHTML]="renderLatex(viewQuestionData.solutionHtml)"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-close-custom fs-16 fw-medium" (click)="closeQuestionModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<app-exam-result-email-modal #resultEmailModal [examId]="examData.examId" [examName]="examData.examName"
+    [admissionNo]="studentInfo.admissionNo">
+</app-exam-result-email-modal>

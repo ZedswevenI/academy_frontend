@@ -45,14 +45,14 @@ const NTA_DEFAULTS: Record<
   { pos: number; neg: number; partial: boolean }
 > = {
   mcq_single: { pos: 4, neg: 1, partial: false },
-  mcq_multi: { pos: 4, neg: 2, partial: true },
-  integer: { pos: 4, neg: 0, partial: false },
-  numeric: { pos: 4, neg: 0, partial: false },
+  mcq_multi: { pos: 4, neg: 1, partial: true },
+  integer: { pos: 4, neg: 1, partial: false },
+  numeric: { pos: 4, neg: 1, partial: false },
   true_false: { pos: 2, neg: 1, partial: false },
-  subjective: { pos: 4, neg: 0, partial: false },
-  short_answer: { pos: 4, neg: 0, partial: false },
+  subjective: { pos: 4, neg: 1, partial: false },
+  short_answer: { pos: 4, neg: 1, partial: false },
   passage_qns: { pos: 4, neg: 1, partial: false },
-  matrix: { pos: 8, neg: 0, partial: true },
+  matrix: { pos: 8, neg: 1, partial: true },
 };
 
 function buildCorrectAnswer(
@@ -312,8 +312,9 @@ export class QuestionImportNewComponent implements OnInit {
   private parseTagBlockQuestions(paragraphs: string[]): ParsedQuestion[] {
     const questions: ParsedQuestion[] = [];
     let current: ParsedQuestion | null = null;
-    let mode: 'none' | 'question' | 'options' | 'tags' = 'none';
+    let mode: 'none' | 'question' | 'options' | 'solution' | 'tags' = 'none';
     let questionTextLines: string[] = [];
+    let solutionTextLines: string[] = [];
     let pendingSort = '';
 
     for (const raw of paragraphs) {
@@ -329,6 +330,7 @@ export class QuestionImportNewComponent implements OnInit {
           current.questionText = questionTextLines.join(' ').trim();
           // Content is already HTML/LaTeX as authored (e.g. <br />, $x$) — no markdown conversion.
           current.questionHtml = current.questionText;
+          current.solutionHtml = solutionTextLines.join(' ').trim();
           questions.push(current);
         }
         const qtype = 'mcq_single';
@@ -355,6 +357,7 @@ export class QuestionImportNewComponent implements OnInit {
         };
         pendingSort = '';
         questionTextLines = [];
+        solutionTextLines = [];
         mode = 'question';
         continue;
       }
@@ -370,6 +373,18 @@ export class QuestionImportNewComponent implements OnInit {
         mode = 'none';
         continue;
       }
+      // Solution is optional — a question with no @SS/@SE block simply keeps
+      // the default empty solutionHtml set when it was created.
+      if (/^@SS$/i.test(p)) {
+        solutionTextLines = [];
+        mode = 'solution';
+        continue;
+      }
+      if (/^@SE$/i.test(p)) {
+        if (current) current.solutionHtml = solutionTextLines.join(' ').trim();
+        mode = 'none';
+        continue;
+      }
       if (/^@TagS$/i.test(p)) {
         mode = 'tags';
         continue;
@@ -382,6 +397,10 @@ export class QuestionImportNewComponent implements OnInit {
 
       if (mode === 'question') {
         questionTextLines.push(p);
+        continue;
+      }
+      if (mode === 'solution') {
+        solutionTextLines.push(p);
         continue;
       }
       if (mode === 'options') {
@@ -411,6 +430,7 @@ export class QuestionImportNewComponent implements OnInit {
     if (current) {
       current.questionText = questionTextLines.join(' ').trim();
       current.questionHtml = current.questionText;
+      current.solutionHtml = solutionTextLines.join(' ').trim();
       questions.push(current);
     }
     return questions;
@@ -816,10 +836,13 @@ export class QuestionImportNewComponent implements OnInit {
       <w:p><w:r><w:t>(C) Velocity</w:t></w:r></w:p>
       <w:p><w:r><w:t>(D) Energy</w:t></w:r></w:p>
       <w:p><w:r><w:t>@OE</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@SS</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Velocity has both magnitude and direction, so it is a vector quantity.</w:t></w:r></w:p>
+      <w:p><w:r><w:t>@SE</w:t></w:r></w:p>
       <w:p><w:r><w:t>@TagS</w:t></w:r></w:p>
       <w:p><w:r><w:t>QT:SCO</w:t></w:r></w:p>
       <w:p><w:r><w:t>CA:C</w:t></w:r></w:p>
-      <w:p><w:r><w:t>CM:4, PM:1,WM:1,</w:t></w:r></w:p>
+      <w:p><w:r><w:t>CM:4,WM:1,</w:t></w:r></w:p>
       <w:p><w:r><w:t>@TagE</w:t></w:r></w:p>
 
       <w:p><w:r><w:t>[SORT] 2</w:t></w:r></w:p>

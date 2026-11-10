@@ -10,7 +10,10 @@ import { BaseChartDirective } from 'ng2-charts';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import katex from 'katex';
 import { DomSanitizer } from '@angular/platform-browser';
-import * as XLSX from 'xlsx';
+// xlsx-js-style (not the plain `xlsx` package) — the community `xlsx`
+// package silently drops cell `.s` styling (bold/fill/color) when writing
+// .xlsx files; this is a drop-in-compatible fork that actually writes it.
+import * as XLSX from 'xlsx-js-style';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -194,6 +197,7 @@ export class TestViewComponent implements OnInit {
   marksMismatch = false;
   exportingReport = false;
   exportingAbsenteesReport = false;
+  exportingQuestionWiseMarks = false;
 
   constructor(
     private breadcrumb: BredcrumpService,
@@ -1026,7 +1030,9 @@ export class TestViewComponent implements OnInit {
           }));
           this.allBatches = this.batchData.map((b: any) => ({
             batchId: b.batchId,
-            label: b.batchId,
+            label: b.batchName && b.batchCode
+              ? `${b.batchName} (${b.batchCode})`
+              : b.batchName || b.batchCode || b.batchId,
           }));
         }
         this.batchLoading = false;
@@ -1599,6 +1605,22 @@ export class TestViewComponent implements OnInit {
         return;
       }
 
+      // Absentees list is the authoritative source of who was absent — a
+      // row's own `sections` data may be entirely missing (not just flagged
+      // isAbsent per section) for a student who never attempted the exam,
+      // so per-section isAbsent checks alone would silently show 0 instead
+      // of AB for them. Merge in any absentee not already present in `data`.
+      const absentees: any[] = res.data?.absentees || res.absentees || [];
+      const absentAdmissionNos = new Set(
+        absentees.map((a: any) => a.admissionNo).filter(Boolean),
+      );
+      const knownAdmissionNos = new Set(rows.map((r: any) => r.admissionNo));
+      absentees.forEach((a: any) => {
+        if (!knownAdmissionNos.has(a.admissionNo)) {
+          rows.push({ ...a, sections: {}, obtainedMarks: 0, rank: null });
+        }
+      });
+
       // Per-section max marks (constant across students — take the max seen
       // so a missing/zero value on one row doesn't shrink the column header).
       const sectionMax: Record<string, number> = {};
@@ -1630,6 +1652,7 @@ export class TestViewComponent implements OnInit {
       const headers = [
         'S No',
         'Class',
+        'Batch',
         'Enrl. No',
         'Name',
         ...sections.map((sec) => `${sec.toUpperCase()} (${sectionMax[sec]})`),
@@ -1643,21 +1666,24 @@ export class TestViewComponent implements OnInit {
       ];
 
       const rowIsFullyAbsent = (r: any) =>
-        sections.length > 0 && sections.every((sec) => r.sections?.[sec]?.isAbsent);
+        absentAdmissionNos.has(r.admissionNo) ||
+        (sections.length > 0 && sections.every((sec) => r.sections?.[sec]?.isAbsent));
 
       sortedRows.forEach((r, i) => {
+        const absentRow = rowIsFullyAbsent(r);
         const row: any[] = [
           i + 1,
           r.classNo ?? '-',
+          groupLabel(r),
           r.admissionNo,
           r.studentName,
         ];
         sections.forEach((sec) => {
           const sd = r.sections?.[sec];
-          row.push(sd?.isAbsent ? 'AB' : (sd?.obtainedMarks ?? 0));
+          row.push(absentRow || sd?.isAbsent ? 'AB' : (sd?.obtainedMarks ?? 0));
         });
-        row.push(rowIsFullyAbsent(r) ? 'AB' : (r.obtainedMarks ?? 0));
-        row.push(r.rank ?? '—');
+        row.push(absentRow ? 'AB' : (r.obtainedMarks ?? 0));
+        row.push(absentRow ? '—' : (r.rank ?? '—'));
         sheetData.push(row);
       });
 
@@ -1666,11 +1692,13 @@ export class TestViewComponent implements OnInit {
         rows: any[],
         getter: (r: any) => number | 'AB',
       ): number[] => rows.map(getter).filter((v): v is number => typeof v === 'number');
-      const highestRow: any[] = ['', '', '', 'Highest'];
-      const averageRow: any[] = ['', '', '', 'Average'];
+      const highestRow: any[] = ['', '', '', '', 'Highest'];
+      const averageRow: any[] = ['', '', '', '', 'Average'];
       sections.forEach((sec) => {
         const vals = numericValues(sortedRows, (r) =>
-          r.sections?.[sec]?.isAbsent ? 'AB' : Number(r.sections?.[sec]?.obtainedMarks) || 0,
+          rowIsFullyAbsent(r) || r.sections?.[sec]?.isAbsent
+            ? 'AB'
+            : Number(r.sections?.[sec]?.obtainedMarks) || 0,
         );
         highestRow.push(vals.length ? Math.max(...vals) : '—');
         averageRow.push(
@@ -1711,6 +1739,20 @@ export class TestViewComponent implements OnInit {
           font: { bold: true, sz: 14 },
           alignment: { horizontal: 'center' },
         };
+      // Highlight every "AB" (absent) cell in red, bold.
+      for (let r = 2; r < sheetData.length - 2; r++) {
+        for (let c = 0; c < colCount; c++) {
+          if (sheetData[r][c] === 'AB') {
+            const ref = XLSX.utils.encode_cell({ r, c });
+            if (ws[ref]) {
+              ws[ref].s = {
+                font: { bold: true, color: { rgb: 'FF0000' } },
+                alignment: { horizontal: 'center' },
+              };
+            }
+          }
+        }
+      }
       for (let c = 0; c < colCount; c++) {
         const hRef = XLSX.utils.encode_cell({ r: 1, c });
         if (ws[hRef]) ws[hRef].s = { font: { bold: true } };
@@ -1845,6 +1887,90 @@ export class TestViewComponent implements OnInit {
       );
     } finally {
       this.exportingAbsenteesReport = false;
+    }
+  }
+
+  async exportQuestionWiseMarks(): Promise<void> {
+    this.exportingQuestionWiseMarks = true;
+    try {
+      const payload: any = {
+        entiId: this.tenantId,
+        examId: this.examData.examId,
+      };
+      if (this.selectedBatchId) payload.batchId = this.selectedBatchId;
+
+      const res: any = await firstValueFrom(
+        this.commonApi.fetchData(
+          payload,
+          'exam/result',
+          'question-wise-marks-export',
+        ),
+      );
+      if (!res?.status) {
+        this.alert.error(res?.message || 'Failed to fetch question-wise marks');
+        return;
+      }
+      const questions: any[] = res.questions || [];
+      const rows: any[] = res.data || [];
+      if (!rows.length) {
+        this.alert.error('No data found for this exam');
+        return;
+      }
+
+      const headers = [
+        'S No',
+        'Class',
+        'Batch',
+        'Enrl. No',
+        'Name',
+        ...questions.map((q: any) => q.label),
+      ];
+
+      const examTitle = `${res.exam?.examName || this.examData?.examName || 'Exam'} - ${this.formatDate(
+        res.exam?.startTime || this.examData?.startTime,
+      )}`;
+
+      const sheetData: any[][] = [[examTitle], headers];
+      rows.forEach((row: any) => {
+        sheetData.push([
+          row.sNo,
+          row.classNo,
+          row.batchName,
+          row.admissionNo,
+          row.studentName,
+          ...(row.marks || []),
+        ]);
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      const colCount = headers.length;
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } }];
+      ws['!cols'] = headers.map((h, i) => ({
+        wch:
+          Math.max(
+            h.length,
+            ...sheetData.slice(2).map((r) => String(r[i] ?? '').length),
+          ) + 2,
+      }));
+      const titleRef = XLSX.utils.encode_cell({ r: 0, c: 0 });
+      if (ws[titleRef]) ws[titleRef].s = { font: { bold: true, sz: 14 } };
+      for (let c = 0; c < colCount; c++) {
+        const hRef = XLSX.utils.encode_cell({ r: 1, c });
+        if (ws[hRef]) ws[hRef].s = { font: { bold: true } };
+      }
+      XLSX.utils.book_append_sheet(wb, ws, 'Question-wise Marks');
+      XLSX.writeFile(
+        wb,
+        `${res.exam?.examCode || this.examData?.examCode || 'exam'}_question_wise_marks.xlsx`,
+      );
+      this.alert.success('Question-wise marks exported successfully');
+    } catch (err: any) {
+      this.alert.error(
+        err?.error?.message || 'Failed to export question-wise marks',
+      );
+    } finally {
+      this.exportingQuestionWiseMarks = false;
     }
   }
 }

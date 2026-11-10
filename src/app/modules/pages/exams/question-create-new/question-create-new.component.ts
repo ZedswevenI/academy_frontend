@@ -60,14 +60,14 @@ export class QuestionCreateNewComponent implements OnInit {
     { pos: number; neg: number; partial: boolean }
   > = {
     mcq_single: { pos: 4, neg: 1, partial: false },
-    mcq_multi: { pos: 4, neg: 2, partial: true },
-    integer: { pos: 4, neg: 0, partial: false },
-    numeric: { pos: 4, neg: 0, partial: false },
+    mcq_multi: { pos: 4, neg: 1, partial: true },
+    integer: { pos: 4, neg: 1, partial: false },
+    numeric: { pos: 4, neg: 1, partial: false },
     true_false: { pos: 2, neg: 1, partial: false },
-    subjective: { pos: 4, neg: 0, partial: false },
-    short_answer: { pos: 4, neg: 0, partial: false },
+    subjective: { pos: 4, neg: 1, partial: false },
+    short_answer: { pos: 4, neg: 1, partial: false },
     passage_qns: { pos: 4, neg: 1, partial: false },
-    matrix: { pos: 8, neg: 0, partial: true },
+    matrix: { pos: 8, neg: 1, partial: true },
   };
   private noPartialTypes = new Set([
     'mcq_single',
