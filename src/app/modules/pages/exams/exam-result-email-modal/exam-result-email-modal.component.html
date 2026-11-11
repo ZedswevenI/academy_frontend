@@ -1,97 +1,65 @@
 <div class="modal-backdrop fade show" *ngIf="show" (click)="close()"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="show">
-    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-        (click)="$event.stopPropagation()">
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold">
                     <i class="fa-solid fa-envelope me-2 text-primary"></i>Send Result Email
-                    <span class="text-muted fs-14 fw-normal ms-2" *ngIf="!admissionNo">(all participants)</span>
                 </h5>
                 <button type="button" class="btn-close" (click)="close()"></button>
             </div>
 
             <form [formGroup]="form">
                 <div class="modal-body">
+
+                    <div class="alert alert-light border small mb-3">
+                        <i class="fa-solid fa-circle-info me-1 text-primary"></i>
+                        <ng-container *ngIf="admissionNo">
+                            Sends the fixed result-email content to this one student.
+                        </ng-container>
+                        <ng-container *ngIf="!admissionNo">
+                            Sends the fixed result-email content to every student assigned to this exam
+                            <span *ngIf="batches.length">— optionally limited to one batch below</span>.
+                        </ng-container>
+                    </div>
+
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label fs-13 fw-medium">Campaign Title</label>
                             <input class="form-control form-control-sm" formControlName="title"
                                 placeholder="Defaults to &quot;{{ examName || 'Exam' }} - Result Mail&quot;" />
                         </div>
                     </div>
 
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <selectbox label="Message Content" formControlName="contentMode"
-                                [options]="contentModeOptions" optionLabel="label" optionValue="value"
-                                [control]="form.get('contentMode')" [required]="true">
-                            </selectbox>
-                        </div>
-                    </div>
-
-                    <!-- Template mode -->
-                    <div class="row mt-3" *ngIf="form.get('contentMode')?.value === 'TEMPLATE'">
-                        <div class="col-md-6">
-                            <selectbox label="Select Template" placeholder="Choose a template"
-                                formControlName="templateId" [options]="templateOptions"
-                                optionLabel="label" optionValue="value"
-                                [control]="form.get('templateId')" [required]="true">
-                            </selectbox>
-                        </div>
-                    </div>
-                    <div *ngIf="form.get('contentMode')?.value === 'TEMPLATE' && selectedTemplate"
-                        class="send-preview mt-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-semibold fs-14">
-                                <i class="fa-regular fa-eye me-1 text-primary"></i> Template Preview
-                            </span>
-                            <small class="text-muted">Keys shown with example values</small>
-                        </div>
-                        <div *ngIf="previewSubject" class="preview-subject mb-2">
-                            <small class="text-muted d-block">Subject</small>
-                            <div class="fw-medium" [innerHTML]="previewSubject"></div>
-                        </div>
-                        <div class="preview-body" [innerHTML]="previewBody"></div>
-                    </div>
-
-                    <!-- Ad-hoc mode -->
-                    <div class="row mt-3" *ngIf="form.get('contentMode')?.value === 'ADHOC'">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label fs-13 fw-medium">
-                                Subject <span class="text-danger">*</span>
-                            </label>
-                            <input class="form-control form-control-sm" formControlName="subject"
-                                placeholder="e.g. {{ '{{examName}}' }} - Result for {{ '{{studentName}}' }}" />
-                        </div>
+                    <div class="row mt-3" *ngIf="!admissionNo && batches.length">
                         <div class="col-md-12">
-                            <label class="form-label fs-13 fw-medium">
-                                Body <span class="text-danger">*</span>
-                            </label>
-                            <textarea class="form-control form-control-sm" rows="6" formControlName="body"
-                                placeholder="Dear {{ '{{parentName}}' }}, here is {{ '{{studentName}}' }}'s result. {{ '{{marksTable}}' }}"></textarea>
-                        </div>
-                        <div class="col-md-12 mt-2">
-                            <small class="text-muted">
-                                Available placeholders:
-                                <code *ngFor="let k of availableKeys" class="me-2">{{ k.key }}</code>
-                            </small>
-                            <small class="text-muted d-block mt-1">
-                                <strong>{{ '{{marksTable}}' }}</strong> is a pre-built subject-wise marks table — drop it
-                                anywhere in the body.
-                            </small>
+                            <selectbox label="Limit to Batch (optional)" placeholder="All batches"
+                                formControlName="batchId" [options]="batches" optionLabel="label"
+                                optionValue="batchId" [control]="form.get('batchId')">
+                            </selectbox>
                         </div>
                     </div>
 
-                    <!-- Send type -->
                     <div class="row mt-3">
-                        <div class="col-md-3">
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="notifyAbsentees"
+                                    formControlName="notifyAbsentees" />
+                                <label class="form-check-label" for="notifyAbsentees">
+                                    Also notify absent students (sends an "Absence Notice" instead of skipping them)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6">
                             <selectbox label="Send Type" formControlName="sendType" [options]="sendTypeOptions"
                                 optionLabel="label" optionValue="value" [control]="form.get('sendType')"
                                 [required]="true">
                             </selectbox>
                         </div>
-                        <div class="col-md-3" *ngIf="form.get('sendType')?.value === 'SCHEDULED'">
+                        <div class="col-md-6" *ngIf="form.get('sendType')?.value === 'SCHEDULED'">
                             <label class="form-label fs-13 fw-medium">
                                 Schedule Date &amp; Time <span class="text-danger">*</span>
                             </label>
