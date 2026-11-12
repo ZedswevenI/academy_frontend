@@ -55,6 +55,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
   printBatch: any = null;
   printMonth = '';
   printMode: 'month' | 'range' = 'month';
+  printReportType: 'ALL' | 'PRESENT' | 'ABSENT' = 'ALL';
   printFromDate = '';
   printToDate = '';
   printLoading = false;
@@ -454,6 +455,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
   openPrintModal(batch: any): void {
     this.printBatch = batch;
     this.printMode = 'month';
+    this.printReportType = 'ALL';
     this.printFromDate = '';
     this.printToDate = '';
     this.showPrintModal = true;
@@ -462,9 +464,14 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
   closePrintModal(): void {
     this.showPrintModal = false;
     this.printBatch = null;
+    this.printReportType = 'ALL';
   }
 
   downloadPdf(): void {
+    if (this.printReportType === 'PRESENT' || this.printReportType === 'ABSENT') {
+      this.downloadFirstBatchPdf();
+      return;
+    }
     if (this.printMode === 'range') {
       this.downloadRangePdf();
       return;
@@ -488,6 +495,70 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
         error: (err: any) => {
           this.printLoading = false;
           this.alert.error(err?.error?.message || 'Failed to generate report');
+        },
+      });
+  }
+
+  private downloadFirstBatchPdf(): void {
+    if (!this.printBatch || this.printLoading) return;
+    const tenantId = localStorage.getItem('tenantId');
+    const payload: any = {
+      entiId: tenantId,
+      batchCode: this.printBatch.batchCode,
+      reportType: this.printReportType,
+    };
+
+    let monthLabel = '';
+    let fileSuffix = '';
+
+    if (this.printMode === 'month') {
+      if (!this.printMonth) return;
+      const [year, month] = this.printMonth.split('-').map(Number);
+      payload.month = month;
+      payload.year = year;
+      monthLabel = this.monthLabelFor(year, month);
+      fileSuffix = monthLabel.replace(/ /g, '_');
+    } else {
+      if (!this.printFromDate || !this.printToDate) return;
+      const [fy, fm, fd] = this.printFromDate.split('-').map(Number);
+      const [ty, tm, td] = this.printToDate.split('-').map(Number);
+      const fromDate = Date.UTC(fy, fm - 1, fd);
+      const toDate = Date.UTC(ty, tm - 1, td);
+      payload.fromDate = fromDate;
+      payload.toDate = toDate;
+      monthLabel = `${this.formatShortDate(fromDate)} – ${this.formatShortDate(toDate)}`;
+      fileSuffix = `${this.printFromDate}_to_${this.printToDate}`;
+    }
+
+    const reportTypeName = this.printReportType === 'PRESENT' ? 'Present List' : 'Absent List';
+    const reportTitle = this.printReportType === 'PRESENT'
+      ? 'PRESENT LIST'
+      : this.printReportType === 'ABSENT'
+        ? 'ABSENT LIST'
+        : 'ATTENDANCE REGISTER';
+    const filePrefix = this.printReportType === 'PRESENT' ? 'Present' : 'Absent';
+
+    this.printLoading = true;
+    this.commonApi
+      .fetchData(payload, 'batch', 'school-attendance/first-batch-report')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.printLoading = false;
+          if (!res?.data?.rows?.length && !res?.data?.allRows?.length) {
+            this.alert.warning(`No students found in the First Batch ${reportTypeName} for this period`);
+            return;
+          }
+          this.generatePdf(res?.data, {
+            monthLabel,
+            fileSuffix,
+            title: reportTitle,
+            filePrefix,
+          });
+        },
+        error: (err: any) => {
+          this.printLoading = false;
+          this.alert.error(err?.error?.message || `Failed to generate First Batch ${reportTypeName}`);
         },
       });
   }
@@ -598,15 +669,17 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     });
   }
 
-  private generatePdf(data: any, period: { monthLabel: string; fileSuffix?: string }): void {
+  private generatePdf(
+    data: any,
+    period: { monthLabel: string; fileSuffix?: string; title?: string; filePrefix?: string },
+  ): void {
     if (!data) return;
     const batch = this.printBatch;
 
     // Month mode: `data.lastDay` (1..N) is the day-of-month column count —
     // rendered as a single page. Range mode: `data.dates[]` (epoch ms) can
-    // span several calendar months, so it's split into one page per month
-    // (same layout as the by-month report) instead of one continuous table
-    // with every date in the range as a column, which doesn't fit the page.
+    // span several calendar months, so it's split into daily pages
+    // with a dedicated Remarks column.
     const isRangeMode = !data.lastDay && Array.isArray(data.dates);
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -615,17 +688,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     });
 
     if (isRangeMode) {
-      const monthBlocks = this.splitRangeIntoMonthBuckets(data);
-      monthBlocks.forEach((block, i) => {
-        if (i > 0) doc.addPage();
-        this.renderAttendanceBlock(doc, batch, {
-          rows: block.rows,
-          dayMeta: block.dayMeta,
-          monthLabel: block.monthLabel,
-          holidays: block.holidays,
-          workingDays: block.workingDays,
-        });
-      });
+      this.renderDateRangeDailyPages(doc, batch, data, period);
     } else {
       const lastDay = data.lastDay || 31;
       const holidays: any[] = data.holidays || [];
@@ -641,11 +704,271 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
         monthLabel: period.monthLabel,
         holidays,
         workingDays: data.workingDays || 0,
+        title: period.title,
       });
     }
 
     const fileSuffix = period.fileSuffix || period.monthLabel.replace(/ /g, '_');
-    doc.save(`Attendance_${batch.batchCode}_${fileSuffix}.pdf`);
+    const prefix = period.filePrefix ? `${period.filePrefix}_` : '';
+    doc.save(`Attendance_${prefix}${batch.batchCode}_${fileSuffix}.pdf`);
+  }
+
+  // Date range report: renders each date on a separate PDF page with a dedicated Remarks column.
+  private renderDateRangeDailyPages(
+    doc: jsPDF,
+    batch: any,
+    data: any,
+    period: { monthLabel: string; title?: string },
+  ): void {
+    const dates: number[] = data.dates || [];
+    if (!dates.length) return;
+
+    const holidays: any[] = data.holidays || [];
+    const holidayDateMap = new Map<number, string>();
+    holidays.forEach((h: any) => {
+      holidayDateMap.set(h.date, h.holidayName || h.type || 'Holiday');
+    });
+
+    const sourceStudents: any[] =
+      data.allRows && data.allRows.length ? data.allRows : data.rows || [];
+    const reportType = this.printReportType;
+
+    let pageAddedCount = 0;
+
+    dates.forEach((dateMs, dateIdx) => {
+      if (pageAddedCount > 0) {
+        doc.addPage();
+      }
+      this.renderDailyDateBlock(doc, batch, {
+        dateMs,
+        dateIdx,
+        students: sourceStudents,
+        isHoliday: holidayDateMap.has(dateMs),
+        holidayName: holidayDateMap.get(dateMs),
+        reportType,
+        customTitle: period.title,
+      });
+      pageAddedCount++;
+    });
+  }
+
+  private renderDailyDateBlock(
+    doc: jsPDF,
+    batch: any,
+    block: {
+      dateMs: number;
+      dateIdx: number;
+      students: any[];
+      isHoliday: boolean;
+      holidayName?: string;
+      reportType: 'ALL' | 'PRESENT' | 'ABSENT';
+      customTitle?: string;
+    },
+  ): void {
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const ml = 10,
+      mr = 10;
+    const contentW = pageW - ml - mr;
+
+    const bold = (s: number) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(s);
+    };
+    const normal = (s: number) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(s);
+    };
+
+    const d = new Date(block.dateMs);
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
+    const dateDDMMYYYY = `${dd}/${mm}/${yyyy}`;
+
+    // 1. Process all students for this date
+    const allForDate = block.students.map((s: any) => {
+      const raw = s.attendance?.[block.dateIdx] ?? '';
+      const remark = s.remarks?.[block.dateIdx] || '';
+      return {
+        admissionNo: s.admissionNo || '',
+        name: s.name || '',
+        raw,
+        remark,
+      };
+    });
+
+    const totalStudents = allForDate.length;
+    const presentCount = allForDate.filter(
+      (s) => s.raw === 'P' || s.raw === 'L',
+    ).length;
+    const absentCount = allForDate.filter((s) => s.raw === 'A').length;
+    const lateCount = allForDate.filter((s) => s.raw === 'L').length;
+    const attPct =
+      totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
+
+    // Filter students by selected report type
+    let displayStudents = allForDate;
+    if (block.reportType === 'PRESENT') {
+      displayStudents = allForDate.filter((s) => s.raw === 'P' || s.raw === 'L');
+    } else if (block.reportType === 'ABSENT') {
+      displayStudents = allForDate.filter((s) => s.raw === 'A');
+    }
+
+    // 2. Header
+    bold(14);
+    let titleText = 'ATTENDANCE REGISTER';
+    if (block.reportType === 'PRESENT') {
+      titleText = 'PRESENT LIST';
+    } else if (block.reportType === 'ABSENT') {
+      titleText = 'ABSENT LIST';
+    } else if (block.customTitle) {
+      titleText = block.customTitle
+        .replace(/^ATTENDANCE REGISTER\s*-\s*/i, '')
+        .replace(/^FIRST BATCH\s*/i, '');
+    }
+    doc.text(titleText, pageW / 2, 11, { align: 'center' });
+
+    let secVal = batch.section || '';
+    if (!secVal && batch.batchName) {
+      const match = String(batch.batchName).match(/\b\d+([A-Za-z]\d*)\b/);
+      secVal = match ? match[1] : '';
+    }
+
+    normal(9);
+    doc.text(`Date  : ${dateDDMMYYYY}`, ml, 18);
+    doc.text(`Class : ${batch.classNo || '-'}`, ml, 23);
+    doc.text(`Sec   : ${secVal || '-'}`, ml, 28);
+
+    if (block.isHoliday) {
+      bold(9);
+      doc.setTextColor(211, 84, 0);
+      doc.text(`[ ${block.holidayName || 'HOLIDAY / WEEK-OFF'} ]`, pageW / 2, 23, {
+        align: 'center',
+      });
+      doc.setTextColor(0, 0, 0);
+    }
+
+    normal(9);
+    doc.text(`Total Students : ${totalStudents}`, pageW - mr, 18, {
+      align: 'right',
+    });
+    const countsLine = `Present: ${presentCount}  |  Absent: ${absentCount}  |  Late: ${lateCount}`;
+    doc.text(countsLine, pageW - mr, 23, { align: 'right' });
+    bold(9);
+    doc.text(`Attendance : ${attPct}%`, pageW - mr, 28, { align: 'right' });
+
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.3);
+    doc.line(ml, 31, pageW - mr, 31);
+
+    // 3. Table Rows
+    const head = [['Sr', 'Adm No', 'Student Name', 'Status', 'Remarks']];
+    let body: any[][] = [];
+
+    if (displayStudents.length === 0) {
+      const emptyMsg =
+        block.reportType === 'ABSENT'
+          ? 'No students absent on this date (100% Attendance)'
+          : block.reportType === 'PRESENT'
+            ? 'No students present on this date'
+            : 'No student records available for this date';
+      body = [['-', '-', emptyMsg, 'Nil', '-']];
+    } else {
+      body = displayStudents.map((s, idx) => {
+        let statusStr = 'Not Marked';
+        if (block.isHoliday) statusStr = block.holidayName || 'Holiday';
+        else if (s.raw === 'P') statusStr = 'Present';
+        else if (s.raw === 'L') statusStr = 'Late';
+        else if (s.raw === 'A') statusStr = 'Absent';
+        else if (s.raw === 'H') statusStr = block.holidayName || 'Holiday';
+
+        return [
+          String(idx + 1),
+          s.admissionNo,
+          s.name,
+          statusStr,
+          s.remark || '-',
+        ];
+      });
+    }
+
+    const srW = 12;
+    const idW = 36;
+    const nameW = 70;
+    const statusW = 32;
+    const remW = contentW - srW - idW - nameW - statusW; // ~123mm
+
+    autoTable(doc, {
+      startY: 33,
+      head,
+      body,
+      theme: 'grid',
+      styles: {
+        fontSize: 7.5,
+        cellPadding: 1.5,
+        lineColor: [210, 210, 210],
+        lineWidth: 0.2,
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontSize: 8,
+        fontStyle: 'bold',
+        cellPadding: 2,
+        halign: 'center',
+      },
+      columnStyles: {
+        0: { cellWidth: srW, halign: 'center' },
+        1: { cellWidth: idW, halign: 'center' },
+        2: { cellWidth: nameW, halign: 'left' },
+        3: { cellWidth: statusW, halign: 'center' },
+        4: { cellWidth: remW, halign: 'left' },
+      },
+      alternateRowStyles: { fillColor: [250, 252, 255] },
+      margin: { left: ml, right: mr },
+      didParseCell: (hookData: any) => {
+        if (hookData.section === 'body' && hookData.column.index === 3) {
+          const val = String(hookData.cell.raw || '');
+          if (val === 'Present') {
+            hookData.cell.styles.fillColor = [235, 247, 238];
+            hookData.cell.styles.textColor = [39, 174, 96];
+            hookData.cell.styles.fontStyle = 'bold';
+          } else if (val === 'Absent') {
+            hookData.cell.styles.fillColor = [253, 237, 237];
+            hookData.cell.styles.textColor = [192, 57, 43];
+            hookData.cell.styles.fontStyle = 'bold';
+          } else if (val === 'Late') {
+            hookData.cell.styles.fillColor = [254, 243, 230];
+            hookData.cell.styles.textColor = [230, 126, 34];
+            hookData.cell.styles.fontStyle = 'bold';
+          } else if (val.includes('Holiday') || val.includes('Week-Off')) {
+            hookData.cell.styles.fillColor = [254, 249, 231];
+            hookData.cell.styles.textColor = [183, 149, 11];
+            hookData.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+    });
+
+    // 4. Footer & Signatures
+    const finalY = (doc as any).lastAutoTable?.finalY || pageH - 30;
+    const footY = Math.min(finalY + 8, pageH - 18);
+
+    normal(7.5);
+    doc.setTextColor(100, 100, 100);
+
+    const sigX1 = pageW - mr - 130;
+    const sigX2 = pageW - mr - 55;
+
+    doc.setDrawColor(120, 120, 120);
+    doc.setLineWidth(0.2);
+    doc.line(sigX1, footY + 4, sigX1 + 45, footY + 4);
+    doc.line(sigX2, footY + 4, sigX2 + 50, footY + 4);
+
+    doc.text('Signature of Class Teacher', sigX1 + 2, footY + 8);
+    doc.text('Signature of Principal / Academic Coordinator', sigX2, footY + 8);
   }
 
   // Renders one month's attendance register as a single page/table block
@@ -660,6 +983,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       monthLabel: string;
       holidays: any[];
       workingDays: number;
+      title?: string;
     },
   ): void {
     const monthLabel = block.monthLabel;
@@ -682,7 +1006,10 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       doc.setFontSize(s);
     };
     bold(14);
-    doc.text('ATTENDANCE REGISTER', pageW / 2, 12, { align: 'center' });
+    let titleText = block.title || 'ATTENDANCE REGISTER';
+    if (titleText.includes('PRESENT LIST')) titleText = 'PRESENT LIST';
+    else if (titleText.includes('ABSENT LIST')) titleText = 'ABSENT LIST';
+    doc.text(titleText, pageW / 2, 12, { align: 'center' });
     normal(9);
     doc.text(`Batch  : ${batch.batchName} (${batch.batchCode})`, ml, 19);
     if (batch.section) doc.text(`Section : ${batch.section}`, ml, 24);
