@@ -1,0 +1,240 @@
+.timetable-generator-container {
+  background-color: #f8fafc;
+  min-height: calc(100vh - 70px);
+}
+
+.matrix-scroll-wrap {
+  border: 1px solid #e2e8f0;
+}
+
+.matrix-table {
+  font-size: 0.8rem;
+  white-space: nowrap;
+
+  th, td {
+    padding: 0.45rem 0.6rem;
+    vertical-align: middle;
+  }
+
+  thead th {
+    font-size: 0.72rem;
+    letter-spacing: 0.3px;
+    font-weight: 700;
+    color: #334155;
+    background-color: #f1f5f9;
+    border-bottom: 2px solid #cbd5e1;
+  }
+}
+
+/* Sticky columns */
+.sticky-col {
+  position: sticky;
+  z-index: 2;
+  box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1);
+}
+
+.col-date {
+  left: 0;
+  min-width: 80px;
+}
+
+.col-start {
+  left: 80px;
+  min-width: 65px;
+}
+
+.col-end {
+  left: 145px;
+  min-width: 65px;
+  border-right: 2px solid #cbd5e1 !important;
+}
+
+/* Class Column Headers */
+.class-header-th {
+  min-width: 130px;
+  padding: 0.5rem !important;
+  transition: all 0.2s ease;
+
+  .class-grade-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #2563eb;
+    text-transform: uppercase;
+  }
+
+  .class-section-name {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .class-code-tag {
+    font-size: 0.65rem;
+    font-family: monospace;
+  }
+
+  &.active-batch-th {
+    background-color: #eff6ff !important;
+    border-top: 3px solid #2563eb !important;
+    .class-section-name {
+      color: #1d4ed8;
+    }
+  }
+}
+
+.highlight-active-batch {
+  background-color: #f8fafc;
+}
+
+.duty-th {
+  min-width: 150px;
+}
+
+/* Matrix Cells */
+.matrix-cell {
+  min-width: 120px;
+  max-width: 180px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  user-select: none;
+
+  &.editable-cell {
+    cursor: pointer;
+    &:hover {
+      background-color: #e0e7ff !important;
+      outline: 2px dashed #4f46e5;
+    }
+  }
+
+  .cell-content-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cell-text {
+    font-size: 0.75rem;
+    letter-spacing: 0.2px;
+  }
+}
+
+/* Cell Status Presets */
+.cell-break, .cell-lunch {
+  background-color: #fefce8 !important;
+}
+
+.cell-holiday {
+  background-color: #fef2f2 !important;
+}
+
+.cell-exam {
+  background-color: #f5f3ff !important;
+}
+
+.cell-lab {
+  background-color: #f0fdfa !important;
+}
+
+.cell-doubt {
+  background-color: #eef2ff !important;
+}
+
+/* Pills */
+.pill-break {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #854d0e;
+  background-color: #fef08a;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.pill-lunch {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #9a3412;
+  background-color: #fed7aa;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.pill-holiday {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #991b1b;
+  background-color: #fecaca;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.text-exam {
+  color: #6b21a8;
+  font-weight: 700;
+}
+
+.text-lab {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.text-doubt {
+  color: #3730a3;
+  font-weight: 700;
+}
+
+/* Conflict highlight */
+.cell-conflict {
+  background-color: #fee2e2 !important;
+  border: 1.5px solid #ef4444 !important;
+  color: #b91c1c !important;
+
+  .conflict-icon {
+    animation: bounce 1s infinite alternate;
+  }
+}
+
+@keyframes bounce {
+  from { transform: scale(1); }
+  to { transform: scale(1.2); }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.staff-chip {
+  transition: all 0.15s ease;
+  &:hover {
+    background-color: #dbeafe !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+  }
+}
+
+.batch-select-btn {
+  font-size: 0.78rem;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.border-bottom-dashed {
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.btn-xs {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  border-radius: 0.25rem;
+}
+
+.animate-pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

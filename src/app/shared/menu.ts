@@ -38,9 +38,22 @@ export const MENU_ITEMS: MenuItem[] = [
   {
     label: 'Timetable',
     icon: 'fa-solid fa-calendar-days',
-    route: '/app/timetable',
-    permission: ['timetable:list', 'timetable:view'],
-    requireAll: true
+    children: [
+      {
+        label: 'Timetable',
+        icon: 'fa-solid fa-calendar-days',
+        route: '/app/timetable',
+        permission: ['timetable:list', 'timetable:view'],
+        requireAll: true
+      },
+      {
+        label: 'Time Table Generator',
+        icon: 'fa-solid fa-wand-magic-sparkles',
+        route: '/app/timetable/generator',
+        permission: ['timetable:list', 'timetable:view'],
+        requireAll: false
+      }
+    ]
   },
   {
     label: 'Attendance',

@@ -8,9 +8,10 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ViewTableComponent } from './view-table/view-table.component';
 import { TimetableviewnewComponent } from './timetableviewnew/timetableviewnew.component';
 import { TimetablenewComponent } from './timetablenew/timetablenew.component';
+import { TimetableGeneratorComponent } from './generator/timetable-generator.component';
 
 @NgModule({
-  declarations: [TimetableComponent, ListComponent, ViewTableComponent, TimetableviewnewComponent, TimetablenewComponent],
+  declarations: [TimetableComponent, ListComponent, ViewTableComponent, TimetableviewnewComponent, TimetablenewComponent, TimetableGeneratorComponent],
   imports: [CommonModule, TimetableRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
   exports: []
 })

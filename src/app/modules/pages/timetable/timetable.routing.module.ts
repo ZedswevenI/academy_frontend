@@ -5,10 +5,12 @@ import { ListComponent } from './list/list.component';
 import { ViewTableComponent } from './view-table/view-table.component';
 import { TimetableviewnewComponent } from './timetableviewnew/timetableviewnew.component';
 import { TimetablenewComponent } from './timetablenew/timetablenew.component';
+import { TimetableGeneratorComponent } from './generator/timetable-generator.component';
 import { PermissionGuard } from '../../../shared/permission.guard';
 
 const routes: Routes = [
   { path: '', component: TimetableComponent, title: 'Timetable', canActivate: [PermissionGuard], data: { permission: ['timetable:list', 'timetable:view'] } },
+  { path: 'generator', component: TimetableGeneratorComponent, title: 'Time Table Generator', canActivate: [PermissionGuard], data: { permission: ['timetable:list', 'timetable:view'] } },
   { path: '1', component: TimetablenewComponent, title: 'Timetable', canActivate: [PermissionGuard], data: { permission: 'timetable:list' } },
   // 'table' is an unrelated hardcoded attendance-mock prototype riding on
   // this module's routing — no ties to any timetable:* key. Left unguarded
