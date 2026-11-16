@@ -530,13 +530,11 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       fileSuffix = `${this.printFromDate}_to_${this.printToDate}`;
     }
 
-    const reportTypeName = this.printReportType === 'PRESENT' ? 'Present List' : 'Absent List';
-    const reportTitle = this.printReportType === 'PRESENT'
-      ? 'PRESENT LIST'
-      : this.printReportType === 'ABSENT'
-        ? 'ABSENT LIST'
-        : 'ATTENDANCE REGISTER';
-    const filePrefix = this.printReportType === 'PRESENT' ? 'Present' : 'Absent';
+    const reportTypeName = this.printReportType === 'PRESENT' ? 'Starting Batch Att Reg' : 'Absent List';
+    const reportTitle = this.printReportType === 'ABSENT'
+      ? 'ABSENT LIST'
+      : 'ATTENDANCE REGISTER';
+    const filePrefix = this.printReportType === 'PRESENT' ? 'StartingBatch' : 'Absent';
 
     this.printLoading = true;
     this.commonApi
@@ -617,11 +615,13 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     holidays: any[];
     rows: any[];
     workingDays: number;
+    cumulativeWorkingDays: number;
   }[] {
     const dates: number[] = data.dates || [];
     const holidays: any[] = data.holidays || [];
     const holidayDateSet = new Set<number>(holidays.map((h: any) => h.date));
-    const sourceRows: any[] = data.rows || [];
+    const sourceRows: any[] =
+      data.allRows && data.allRows.length ? data.allRows : data.rows || [];
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December',
@@ -642,6 +642,13 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       indicesByMonth.get(key)!.push(idx);
     });
 
+    let runningWorkingDays = Number(data.priorWorkingDays || 0);
+    const runningPresentByStudent = new Map<string, number>();
+    sourceRows.forEach((r: any) => {
+      const keyId = r.studentId || r.admissionNo;
+      runningPresentByStudent.set(keyId, Number(r.priorPresentCount || 0));
+    });
+
     return order.map((key) => {
       const indices = indicesByMonth.get(key)!;
       const [yearStr, monthStr] = key.split('-');
@@ -653,19 +660,54 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
         label: String(new Date(dates[idx]).getUTCDate()),
         isHoliday: holidayDateSet.has(dates[idx]),
       }));
-      const workingDays = dayMeta.filter((d) => !d.isHoliday).length;
-      const monthHolidays = holidays.filter((h: any) => monthKeyOf(h.date) === key);
+      const workingDays = indices.filter(
+        (idx) =>
+          !holidayDateSet.has(dates[idx]) &&
+          sourceRows.some((r: any) => {
+            const v = r.attendance?.[idx];
+            return v === 'P' || v === 'A' || v === 'L';
+          }),
+      ).length;
+      runningWorkingDays += workingDays;
+      const cumulativeWorkingDays = runningWorkingDays;
+      const monthHolidays = holidays
+        .filter((h: any) => monthKeyOf(h.date) === key)
+        .map((h: any) => ({ ...h, name: h.name || h.holidayName || h.type }));
 
       const rows = sourceRows.map((r: any) => {
+        const keyId = r.studentId || r.admissionNo;
         const attendance = indices.map((idx) => r.attendance?.[idx] ?? '');
         const remarks = indices.map((idx) => r.remarks?.[idx] ?? null);
         const presentCount = attendance.filter((v) => v === 'P' || v === 'L').length;
         const absentCount = attendance.filter((v) => v === 'A').length;
         const percentage = workingDays > 0 ? Math.round((presentCount / workingDays) * 100) : 0;
-        return { ...r, attendance, remarks, presentCount, absentCount, percentage };
+        const prevPresent = runningPresentByStudent.get(keyId) || 0;
+        const cumulativePresentCount = prevPresent + presentCount;
+        runningPresentByStudent.set(keyId, cumulativePresentCount);
+        const cumulativePercentage =
+          cumulativeWorkingDays > 0
+            ? Math.round((cumulativePresentCount / cumulativeWorkingDays) * 100)
+            : 0;
+        return {
+          ...r,
+          attendance,
+          remarks,
+          presentCount,
+          absentCount,
+          percentage,
+          cumulativePresentCount,
+          cumulativePercentage,
+        };
       });
 
-      return { monthLabel, dayMeta, holidays: monthHolidays, rows, workingDays };
+      return {
+        monthLabel,
+        dayMeta,
+        holidays: monthHolidays,
+        rows,
+        workingDays,
+        cumulativeWorkingDays,
+      };
     });
   }
 
@@ -676,10 +718,6 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     if (!data) return;
     const batch = this.printBatch;
 
-    // Month mode: `data.lastDay` (1..N) is the day-of-month column count —
-    // rendered as a single page. Range mode: `data.dates[]` (epoch ms) can
-    // span several calendar months, so it's split into daily pages
-    // with a dedicated Remarks column.
     const isRangeMode = !data.lastDay && Array.isArray(data.dates);
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -687,8 +725,22 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       format: 'a4',
     });
 
-    if (isRangeMode) {
+    if (this.printReportType === 'ABSENT') {
       this.renderDateRangeDailyPages(doc, batch, data, period);
+    } else if (isRangeMode) {
+      const buckets = this.splitRangeIntoMonthBuckets(data);
+      buckets.forEach((bucket, idx) => {
+        if (idx > 0) doc.addPage();
+        this.renderAttendanceBlock(doc, batch, {
+          rows: bucket.rows,
+          dayMeta: bucket.dayMeta,
+          monthLabel: bucket.monthLabel,
+          holidays: bucket.holidays,
+          workingDays: bucket.workingDays,
+          cumulativeWorkingDays: bucket.cumulativeWorkingDays,
+          title: period.title,
+        });
+      });
     } else {
       const lastDay = data.lastDay || 31;
       const holidays: any[] = data.holidays || [];
@@ -704,6 +756,7 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
         monthLabel: period.monthLabel,
         holidays,
         workingDays: data.workingDays || 0,
+        cumulativeWorkingDays: data.cumulativeWorkingDays ?? data.workingDays ?? 0,
         title: period.title,
       });
     }
@@ -983,12 +1036,14 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       monthLabel: string;
       holidays: any[];
       workingDays: number;
+      cumulativeWorkingDays?: number;
       title?: string;
     },
   ): void {
     const monthLabel = block.monthLabel;
     const rows: any[] = block.rows;
     const workingDays = block.workingDays;
+    const cumulativeWorkingDays = block.cumulativeWorkingDays ?? workingDays;
     const holidays: any[] = block.holidays;
     const dayMeta = block.dayMeta;
     const lastDay = dayMeta.length;
@@ -1010,11 +1065,21 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     if (titleText.includes('PRESENT LIST')) titleText = 'PRESENT LIST';
     else if (titleText.includes('ABSENT LIST')) titleText = 'ABSENT LIST';
     doc.text(titleText, pageW / 2, 12, { align: 'center' });
+    let secVal = batch.section || '';
+    if (!secVal && batch.batchName) {
+      const match = String(batch.batchName).match(/\b\d+([A-Za-z]\d*)\b/);
+      secVal = match ? match[1] : '';
+    }
     normal(9);
-    doc.text(`Batch  : ${batch.batchName} (${batch.batchCode})`, ml, 19);
-    if (batch.section) doc.text(`Section : ${batch.section}`, ml, 24);
-    if (batch.classNo)
-      doc.text(`Class   : ${batch.classNo}`, ml, batch.section ? 29 : 24);
+    if (this.printReportType === 'PRESENT') {
+      doc.text(`Class   : ${batch.classNo || '-'}`, ml, 19);
+      doc.text(`Section : ${secVal || '-'}`, ml, 24);
+    } else {
+      doc.text(`Batch  : ${batch.batchName} (${batch.batchCode})`, ml, 19);
+      if (batch.section) doc.text(`Section : ${batch.section}`, ml, 24);
+      if (batch.classNo)
+        doc.text(`Class   : ${batch.classNo}`, ml, batch.section ? 29 : 24);
+    }
     bold(10);
     doc.text(`Month : ${monthLabel}`, pageW / 2, 19, { align: 'center' });
     normal(9);
@@ -1033,13 +1098,25 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
     doc.setLineWidth(0.4);
     doc.line(ml, 32, pageW - mr, 32);
     const srW = 6,
-      idW = 22,
-      nameW = 36,
-      dayW = 5.5,
-      pW = 8,
-      aW = 8,
-      pctW = 10;
-    const remW = contentW - srW - idW - nameW - lastDay * dayW - pW - aW - pctW;
+      idW = 20,
+      nameW = 34,
+      dayW = 5.2,
+      pW = 7,
+      aW = 7,
+      pctW = 9,
+      pTotW = 11,
+      totPctW = 10;
+    const remW =
+      contentW -
+      srW -
+      idW -
+      nameW -
+      lastDay * dayW -
+      pW -
+      aW -
+      pctW -
+      pTotW -
+      totPctW;
     const head: any[][] = [[]];
     head[0].push(
       {
@@ -1088,6 +1165,24 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
         },
       },
       {
+        content: `P Total\n(${cumulativeWorkingDays})`,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          cellWidth: pTotW,
+          fontSize: 5.5,
+        },
+      },
+      {
+        content: `Total %\n(${cumulativeWorkingDays}d)`,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          cellWidth: totPctW,
+          fontSize: 5.5,
+        },
+      },
+      {
         content: 'Remarks',
         styles: {
           halign: 'center',
@@ -1132,6 +1227,8 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
           },
         });
       }
+      const cumP = row.cumulativePresentCount ?? row.presentCount;
+      const cumPct = row.cumulativePercentage ?? row.percentage;
       cells.push(
         {
           content: row.presentCount,
@@ -1155,6 +1252,22 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
             halign: 'center',
             fontStyle: 'bold',
             textColor: row.percentage >= 75 ? [25, 135, 84] : [220, 53, 69],
+          },
+        },
+        {
+          content: cumP,
+          styles: {
+            halign: 'center',
+            fontStyle: 'bold',
+            textColor: [25, 135, 84],
+          },
+        },
+        {
+          content: `${cumPct}%`,
+          styles: {
+            halign: 'center',
+            fontStyle: 'bold',
+            textColor: cumPct >= 75 ? [25, 135, 84] : [220, 53, 69],
           },
         },
         { content: '', styles: { halign: 'left' } },
@@ -1215,6 +1328,20 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
             rows.length,
         )
       : 0;
+    const totalCumPresent = rows.reduce(
+      (s: number, r: any) =>
+        s + (r.cumulativePresentCount ?? r.presentCount ?? 0),
+      0,
+    );
+    const avgCumPct = rows.length
+      ? Math.round(
+          rows.reduce(
+            (s: number, r: any) =>
+              s + (r.cumulativePercentage ?? r.percentage ?? 0),
+            0,
+          ) / rows.length,
+        )
+      : 0;
     dayTotalsRow.push(
       {
         content: totalPresent,
@@ -1236,6 +1363,23 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       },
       {
         content: `${avgPct}%`,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          fillColor: [230, 235, 255],
+        },
+      },
+      {
+        content: totalCumPresent,
+        styles: {
+          halign: 'center',
+          fontStyle: 'bold',
+          fillColor: [230, 235, 255],
+          textColor: [25, 135, 84],
+        },
+      },
+      {
+        content: `${avgCumPct}%`,
         styles: {
           halign: 'center',
           fontStyle: 'bold',
@@ -1296,6 +1440,8 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       { content: '', styles: { fillColor: [245, 245, 245] } },
       { content: '', styles: { fillColor: [245, 245, 245] } },
       { content: '', styles: { fillColor: [245, 245, 245] } },
+      { content: '', styles: { fillColor: [245, 245, 245] } },
+      { content: '', styles: { fillColor: [245, 245, 245] } },
     );
     body.push(dayPctRow);
     const blankRow = (label: string) => {
@@ -1316,6 +1462,8 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       for (let d = 0; d < lastDay; d++)
         r.push({ content: '', styles: { fillColor: [255, 255, 255] } });
       r.push(
+        { content: '', styles: { fillColor: [255, 255, 255] } },
+        { content: '', styles: { fillColor: [255, 255, 255] } },
         { content: '', styles: { fillColor: [255, 255, 255] } },
         { content: '', styles: { fillColor: [255, 255, 255] } },
         { content: '', styles: { fillColor: [255, 255, 255] } },
@@ -1360,30 +1508,49 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
       },
     });
     const finalY = (doc as any).lastAutoTable?.finalY || pageH - 40;
-    const footY = Math.min(finalY + 8, pageH - 28);
+    const footY = Math.min(finalY + 8, pageH - 30);
     normal(7.5);
     doc.setTextColor(80, 80, 80);
     doc.text('No. on Roll at beginning of month : ___________', ml, footY);
-    doc.text('No. on Roll at end of month        : ___________', ml, footY + 5);
+    doc.text('No. on Roll at end of month        : ___________', ml, footY + 4.5);
     doc.text(
       'No. Admitted                        : ___________',
       ml,
-      footY + 10,
+      footY + 9,
     );
     doc.text(
       'No. Left with TC                    : ___________',
       ml,
-      footY + 15,
+      footY + 13.5,
     );
-    const sigX = pageW - mr - 70;
-    doc.line(sigX, footY + 8, sigX + 65, footY + 8);
-    doc.text('Signature of Class Teacher', sigX, footY + 10);
-    doc.line(sigX, footY + 16, sigX + 65, footY + 16);
-    doc.text('Signature of Principal / Academic Coordinator', sigX, footY + 18);
-    if (batch.classTeacherName) {
+
+    const sig1X = pageW - mr - 135;
+    const sig1W = 55;
+    const sig2X = pageW - mr - 65;
+    const sig2W = 65;
+
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.3);
+    doc.line(sig1X, footY + 8, sig1X + sig1W, footY + 8);
+    doc.line(sig2X, footY + 8, sig2X + sig2W, footY + 8);
+
+    normal(7.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text('Signature of Class Teacher', sig1X + sig1W / 2, footY + 12, {
+      align: 'center',
+    });
+    doc.text(
+      'Signature of Principal / Academic Coordinator',
+      sig2X + sig2W / 2,
+      footY + 12,
+      { align: 'center' },
+    );
+    if (batch.classTeacherName && this.printReportType !== 'PRESENT') {
       normal(7);
-      doc.setTextColor(60, 60, 60);
-      doc.text(`(${batch.classTeacherName})`, sigX, footY + 12.5);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`(${batch.classTeacherName})`, sig1X + sig1W / 2, footY + 15.5, {
+        align: 'center',
+      });
     }
     if (holidays.length) {
       normal(7);
@@ -1394,14 +1561,14 @@ export class SchoolAttendanceComponent implements OnInit, OnDestroy {
           return `${dn} — ${h.name} (${h.type})`;
         })
         .join('   |   ');
-      doc.text(`Holidays : ${hText}`, ml, footY + 17);
+      doc.text(`Holidays : ${hText}`, ml, footY + 19);
     }
     normal(7);
     doc.setTextColor(100, 100, 100);
     doc.text(
       'P = Present   A = Absent   L = Late   H = Holiday/Week-off   (grey) = Not taken   % = of working days',
       pageW / 2,
-      footY + 22,
+      footY + 23.5,
       { align: 'center' },
     );
   }
