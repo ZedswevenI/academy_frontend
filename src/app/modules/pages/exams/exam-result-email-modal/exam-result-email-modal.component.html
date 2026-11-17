@@ -1,7 +1,7 @@
 <div class="modal-backdrop fade show" *ngIf="show" (click)="close()"></div>
 <div class="modal fade show d-block" tabindex="-1" *ngIf="show">
-    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
-        <div class="modal-content">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" (click)="$event.stopPropagation()">
+        <div class="modal-content" [formGroup]="form" style="max-height: 90vh;">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold">
                     <i class="fa-solid fa-envelope me-2 text-primary"></i>Send Result Email
@@ -9,16 +9,15 @@
                 <button type="button" class="btn-close" (click)="close()"></button>
             </div>
 
-            <form [formGroup]="form">
-                <div class="modal-body">
+            <div class="modal-body" style="overflow-y: auto;">
 
                     <div class="alert alert-light border small mb-3">
                         <i class="fa-solid fa-circle-info me-1 text-primary"></i>
                         <ng-container *ngIf="admissionNo">
-                            Sends the fixed result-email content to this one student.
+                            Sends the result email with the Academic Performance Report PDF attached to this student.
                         </ng-container>
                         <ng-container *ngIf="!admissionNo">
-                            Sends the fixed result-email content to every student assigned to this exam
+                            Sends the result email with each student's Academic Performance Report PDF attached
                             <span *ngIf="batches.length">— optionally limited to one batch below</span>.
                         </ng-container>
                     </div>
@@ -31,12 +30,74 @@
                         </div>
                     </div>
 
-                    <div class="row mt-3" *ngIf="!admissionNo && batches.length">
-                        <div class="col-md-12">
-                            <selectbox label="Limit to Batch (optional)" placeholder="All batches"
-                                formControlName="batchId" [options]="batches" optionLabel="label"
-                                optionValue="batchId" [control]="form.get('batchId')">
-                            </selectbox>
+                    <!-- Batch Multi-Selection -->
+                    <div class="mt-3 border rounded-3 p-2 bg-light" *ngIf="!admissionNo && batches.length">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold fs-13 text-dark">
+                                Select Batches ({{ selectedBatchIds.size }} / {{ batches.length }} selected)
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                (click)="toggleSelectAllBatches()">
+                                {{ allBatchesSelected ? 'Clear All' : 'Select All' }}
+                            </button>
+                        </div>
+                        <div class="bg-white border rounded-2 p-2" style="max-height: 120px; overflow-y: auto;">
+                            <div class="form-check py-1" *ngFor="let b of batches">
+                                <input type="checkbox" class="form-check-input" [id]="'batch_' + b.batchId"
+                                    [checked]="selectedBatchIds.has(b.batchId)"
+                                    (change)="toggleBatchSelection(b.batchId)" />
+                                <label class="form-check-label small" [for]="'batch_' + b.batchId">
+                                    {{ b.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student Selection for the selected batch(es) -->
+                    <div class="mt-3 border rounded-3 p-2 bg-light" *ngIf="!admissionNo && selectedBatchIds.size > 0">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                            <span class="fw-semibold fs-13 text-dark">
+                                Select Students ({{ selectedAdmissionNos.size }} / {{ batchStudents.length }} selected)
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="text" class="form-control form-control-sm" style="width: 170px;"
+                                    placeholder="Search student..." [(ngModel)]="studentSearch"
+                                    [ngModelOptions]="{ standalone: true }" />
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    *ngIf="batchStudents.length" (click)="toggleSelectAllStudents()">
+                                    {{ allStudentsSelected ? 'Clear All' : 'Select All' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div *ngIf="batchStudentsLoading" class="text-center py-2 text-muted small">
+                            <span class="spinner-border spinner-border-sm me-1"></span>Loading students...
+                        </div>
+
+                        <div *ngIf="!batchStudentsLoading && !batchStudents.length" class="text-muted small py-1">
+                            No students assigned in the selected batch(es).
+                        </div>
+
+                        <div *ngIf="!batchStudentsLoading && batchStudents.length" class="bg-white border rounded-2 p-2"
+                            style="max-height: 175px; overflow-y: auto;">
+                            <div class="form-check py-1 border-bottom" *ngFor="let stu of filteredBatchStudents">
+                                <input type="checkbox" class="form-check-input" [id]="'stu_' + stu.admissionNo"
+                                    [checked]="selectedAdmissionNos.has(stu.admissionNo)"
+                                    (change)="toggleStudentSelection(stu.admissionNo)" />
+                                <label class="form-check-label d-flex justify-content-between align-items-center w-100 small"
+                                    [for]="'stu_' + stu.admissionNo">
+                                    <span>
+                                        <strong>{{ stu.name }}</strong>
+                                        <span class="text-muted ms-1">({{ stu.admissionNo }})</span>
+                                        <span *ngIf="stu.batchName" class="text-muted ms-1">• {{ stu.batchName }}</span>
+                                    </span>
+                                    <span class="d-flex align-items-center gap-1">
+                                        <span *ngIf="!stu.email" class="badge bg-warning text-dark">No Email</span>
+                                        <span *ngIf="stu.hasResult" class="badge bg-success-subtle text-success">Result</span>
+                                        <span *ngIf="!stu.hasResult" class="badge bg-secondary-subtle text-secondary">Absent</span>
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -67,6 +128,185 @@
                                 formControlName="scheduledAtInput" />
                         </div>
                     </div>
+
+                    <!-- Email & Performance Report Visual Preview -->
+                    <div class="mt-4 border rounded-3 p-3 bg-light">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                            <span class="fw-bold fs-13 text-dark">
+                                <i class="fa-solid fa-eye me-1 text-primary"></i>Email &amp; Performance Report Preview
+                                <span *ngIf="!admissionNo" class="text-muted fw-normal small ms-1">(Sample Student)</span>
+                            </span>
+                            <button *ngIf="admissionNo" type="button" class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                [disabled]="downloadingReport || previewLoading || !previewData"
+                                (click)="downloadPerformanceReport()">
+                                <span *ngIf="downloadingReport" class="spinner-border spinner-border-sm me-1"></span>
+                                <i *ngIf="!downloadingReport" class="fa-solid fa-download me-1"></i>
+                                {{ downloadingReport ? 'Downloading...' : 'Download Performance Report' }}
+                            </button>
+                        </div>
+
+                        <div *ngIf="previewLoading" class="text-center py-4 text-muted small">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Loading preview...
+                        </div>
+
+                        <div *ngIf="!previewLoading && previewError" class="alert alert-warning small mb-0">
+                            {{ previewError }}
+                        </div>
+
+                        <ng-container *ngIf="!previewLoading && previewData?.reportData as rep">
+                            <!-- Email Body Preview -->
+                            <div class="bg-white border rounded-2 p-3 mb-3 small">
+                                <div class="text-muted mb-2 pb-2 border-bottom">
+                                    <div><strong>Subject:</strong> {{ previewData.subject }}</div>
+                                    <div *ngIf="previewData.recipientEmail"><strong>To:</strong> {{ previewData.recipientEmail }}</div>
+                                </div>
+                                <div class="mb-2">
+                                    <div>Dear <strong>{{ rep.studentName }}</strong> :</div>
+                                    <div class="mt-1">Please find the performance report of the <strong>{{ rep.examName }}</strong> attached below.</div>
+                                </div>
+
+                                <table class="table table-borderless table-sm small mb-2" style="width: auto;">
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0" style="width: 112px;">Name</td>
+                                            <td class="fw-semibold px-1 py-0" style="width: 10px;">:</td>
+                                            <td class="ps-1 py-0">{{ rep.studentName }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Enrollment No</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.enrollmentNo }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Admission No</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.admissionNo }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Batch Name</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.batchName }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Program</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.programName }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="table-responsive my-2">
+                                    <table class="table table-bordered table-sm text-center align-middle mb-0 small"
+                                        style="border-color: #000;">
+                                        <thead>
+                                            <tr>
+                                                <th>Subject</th>
+                                                <th>Your Marks</th>
+                                                <th>Out of</th>
+                                                <th>Highest</th>
+                                                <th>Average</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let r of rep.rows">
+                                                <td>{{ r.subject }}</td>
+                                                <td>{{ r.yourMarks }}</td>
+                                                <td class="fw-bold">{{ r.outOf }}</td>
+                                                <td>{{ r.highest }}</td>
+                                                <td>{{ r.average }}</td>
+                                            </tr>
+                                            <tr class="fw-bold">
+                                                <td>Total</td>
+                                                <td>{{ rep.total?.yourMarks }}</td>
+                                                <td>{{ rep.total?.outOf }}</td>
+                                                <td>{{ rep.total?.highest }}</td>
+                                                <td>{{ rep.total?.average }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="d-inline-flex align-items-center gap-2 px-2 py-1 rounded border bg-light text-dark small mt-1">
+                                    <i class="fa-solid fa-file-pdf text-danger"></i>
+                                    <span class="fw-medium">{{ rep.filename }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Attached Performance Report Card Preview -->
+                            <div class="bg-white border rounded-2 p-4 shadow-sm">
+                                <div class="d-flex justify-content-end border-bottom pb-2 mb-3">
+                                    <img src="assets/z7i_logo.png" alt="Z7i Logo" style="height: 38px; object-fit: contain;" />
+                                </div>
+
+                                <h6 class="fw-bold text-center mb-3" style="letter-spacing: 0.3px;">
+                                    Academic Performance Report
+                                </h6>
+
+                                <table class="table table-borderless table-sm small mb-3" style="width: auto;">
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0" style="width: 112px;">Name</td>
+                                            <td class="fw-semibold px-1 py-0" style="width: 10px;">:</td>
+                                            <td class="ps-1 py-0">{{ rep.studentName }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Enrollment No</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.enrollmentNo }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Admission No</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.admissionNo }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Batch Name</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.batchName }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-semibold ps-0 pe-2 py-0">Program</td>
+                                            <td class="fw-semibold px-1 py-0">:</td>
+                                            <td class="ps-1 py-0">{{ rep.programName }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="text-center fw-bold mb-2 small">{{ rep.examName }}</div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm text-center align-middle mb-0 small"
+                                        style="border-color: #000;">
+                                        <thead>
+                                            <tr>
+                                                <th>Subject</th>
+                                                <th>Your Marks</th>
+                                                <th>Out of</th>
+                                                <th>Highest</th>
+                                                <th>Average</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let r of rep.rows">
+                                                <td>{{ r.subject }}</td>
+                                                <td>{{ r.yourMarks }}</td>
+                                                <td class="fw-bold">{{ r.outOf }}</td>
+                                                <td>{{ r.highest }}</td>
+                                                <td>{{ r.average }}</td>
+                                            </tr>
+                                            <tr class="fw-bold">
+                                                <td>Total</td>
+                                                <td>{{ rep.total?.yourMarks }}</td>
+                                                <td>{{ rep.total?.outOf }}</td>
+                                                <td>{{ rep.total?.highest }}</td>
+                                                <td>{{ rep.total?.average }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </ng-container>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-close-custom fs-16 fw-medium me-2"
@@ -77,7 +317,6 @@
                         {{ loading ? 'Sending...' : 'Send' }}
                     </button>
                 </div>
-            </form>
         </div>
     </div>
 </div>
