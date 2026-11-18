@@ -64,6 +64,7 @@ export class ExamResultEmailModalComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group({
       title: [''],
+      note: [''],
       notifyAbsentees: [false],
       sendType: ['NOW', Validators.required],
       scheduledAtInput: [''],
@@ -81,6 +82,7 @@ export class ExamResultEmailModalComponent implements OnInit {
     this.studentSearch = '';
     this.form.reset({
       title: '',
+      note: '',
       notifyAbsentees: false,
       sendType: 'NOW',
       scheduledAtInput: '',
@@ -306,6 +308,7 @@ export class ExamResultEmailModalComponent implements OnInit {
       }
     }
     if (safeTrim(v.title)) payload.title = safeTrim(v.title);
+    if (safeTrim(v.note)) payload.note = safeTrim(v.note);
 
     if (payload.sendType === 'SCHEDULED') {
       const scheduledAt = this.scheduledInputToEpoch();
