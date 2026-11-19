@@ -40,7 +40,7 @@ export class TableListComponent {
   isChat: boolean = false;
   columnsArray = [
     { key: 'student.name', label: 'Student Name', sortable: false },
-    { key: 'admissionNo', label: 'Admission No.', sortable: false },
+    { key: 'admissionNo', label: 'Enrollment No.', sortable: false },
     { key: 'student.phone', label: 'Mobile', sortable: false },
     { key: 'batchCode', label: 'Batch Code', sortable: false },
     { key: 'batchName', label: 'Batch Name', sortable: false },

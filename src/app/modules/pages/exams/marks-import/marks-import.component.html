@@ -60,8 +60,10 @@
           </div>
 
           <div class="col-md-3">
-            <label class="form-label fw-medium">Exam Date</label>
-            <input type="date" class="form-control" formControlName="examDate">
+            <label class="form-label fw-medium">Exam Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" formControlName="examDate"
+              [class.is-invalid]="examForm.get('examDate')?.invalid && examForm.get('examDate')?.touched">
+            <div class="invalid-feedback">Exam date is required.</div>
           </div>
 
           <div class="col-md-12">
@@ -146,7 +148,7 @@
             style="cursor:pointer" (change)="onExcelSelected($event)">
           <i class="fas fa-file-excel text-success mb-2" style="font-size:2.5rem;"></i>
           <p class="mb-1 fw-medium">Click or drag Excel file here</p>
-          <small class="text-muted">Columns: <code>Admission No</code>, <code>Obtained Marks</code></small>
+          <small class="text-muted">Columns: <code>Admission No</code>, <code>Enrollment No</code>, <code>Student Name</code>, Subject Marks, <code>Total Obtained Marks</code></small>
         </div>
 
         <div *ngIf="excelFile" class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light mb-3">
@@ -192,6 +194,8 @@
                 <tr>
                   <th>#</th>
                   <th>Admission No</th>
+                  <th>Enrollment No</th>
+                  <th>Student Name</th>
                   <th *ngFor="let s of getSectionMeta()">{{ s.sectionName }} Marks</th>
                   <th>Total Obtained Marks</th>
                 </tr>
@@ -199,9 +203,19 @@
               <tbody>
                 <tr *ngFor="let s of parsedStudents; let i = index">
                   <td class="text-muted">{{ i + 1 }}</td>
-                  <td class="fw-medium">{{ s.admissionNo }}</td>
-                  <td *ngFor="let sr of s.sectionResults">{{ sr.obtainedMarks }}</td>
-                  <td>{{ s.obtainedMarks }}</td>
+                  <td class="fw-medium">{{ s.admissionNo || '-' }}</td>
+                  <td class="fw-medium">{{ s.enrollmentNo || '-' }}</td>
+                  <td>{{ s.studentName || '-' }}</td>
+                  <td *ngFor="let sr of s.sectionResults">
+                    <span [class.text-danger]="sr.isAbsent" [class.fw-semibold]="sr.isAbsent">
+                      {{ sr.isAbsent ? 'AB' : sr.obtainedMarks }}
+                    </span>
+                  </td>
+                  <td>
+                    <span [class.text-danger]="s.isAbsent" [class.fw-semibold]="s.isAbsent">
+                      {{ s.isAbsent ? 'AB' : s.obtainedMarks }}
+                    </span>
+                  </td>
                 </tr>
               </tbody>
             </table>

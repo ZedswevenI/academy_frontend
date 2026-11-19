@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonapiService } from '../../../../service/commonapi/commonapi.service';
@@ -7,6 +7,7 @@ import { BredcrumpService } from '../../../../service/bredcrump/bredcrump.servic
 import { AuthService } from '../../../../service/auth/auth.service';
 import { PermissionService } from '../../../../shared/permission.service';
 import { ListStateService } from '../../../../shared/list-state.service';
+import { ExamResultEmailModalComponent } from '../exam-result-email-modal/exam-result-email-modal.component';
 
 const IMPORTED_EXAMS_LIST_STATE_KEY = 'imported-exams-list';
 
@@ -45,6 +46,15 @@ export class ImportedExamsComponent implements OnInit {
     },
     {
       type: 'icon',
+      icon: 'fa-regular fa-envelope',
+      tooltip: 'Send Result Email',
+      color: '#6B7280',
+      hoverColor: '#0066FF',
+      show: (row: any) => row.status !== 'result_published' || !this.permissionService.hasPermission('communication:send'),
+      callback: (row: any) => this.openSendResultEmail(row)
+    },
+    {
+      type: 'icon',
       icon: 'fa-regular fa-trash-can',
       tooltip: 'Delete Imported Exam',
       color: '#6B7280',
@@ -53,6 +63,10 @@ export class ImportedExamsComponent implements OnInit {
       callback: (row: any) => this.deleteImportedExam(row)
     }
   ];
+  @ViewChild('resultEmailModal') resultEmailModal!: ExamResultEmailModalComponent;
+  emailExamId = '';
+  emailExamName = '';
+  emailBatches: any[] = [];
   classOptions = [
     ...Array.from({ length: 7 }, (_, i) => ({ label: `Class ${i + 6}`, value: i + 6 })),
     { label: '12th Pass', value: 13 }
@@ -143,6 +157,31 @@ export class ImportedExamsComponent implements OnInit {
   viewExam(row: any) {
     this.listStateService.savePage(IMPORTED_EXAMS_LIST_STATE_KEY, this.currentPage);
     this.router.navigate(['/app/exams/exams/view'], { state: { exam: row } });
+  }
+
+  openSendResultEmail(row: any) {
+    const tenantId = localStorage.getItem('tenantId') || '';
+    this.emailExamId = row.examId || '';
+    this.emailExamName = row.examName || row.examCode || '';
+    this.emailBatches = [];
+    this.commonApi
+      .fetchData({ entiId: tenantId, examId: this.emailExamId }, 'exam/batch', 'list-by-exam')
+      .subscribe({
+        next: (res: any) => {
+          const list = Array.isArray(res?.data) ? res.data : [];
+          this.emailBatches = list.map((b: any) => ({
+            batchId: b.batchId,
+            label:
+              b.batchName && b.batchCode
+                ? `${b.batchName} (${b.batchCode})`
+                : b.batchName || b.batchCode || b.batchId,
+          }));
+          setTimeout(() => this.resultEmailModal?.open());
+        },
+        error: () => {
+          setTimeout(() => this.resultEmailModal?.open());
+        },
+      });
   }
 
   deleteImportedExam(row: any) {

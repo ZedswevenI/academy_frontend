@@ -1508,6 +1508,17 @@ export class TestViewComponent implements OnInit {
     });
   }
 
+  formatDateOnly(dateVal: any): string {
+    if (!dateVal) return '-';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
   /* ================= NAVIGATION ================= */
 
   viewQuestions() {

@@ -6,7 +6,7 @@
       <span class="input-group-text bg-white border-end-0">
         <i class="fa-solid fa-magnifying-glass text-muted"></i>
       </span>
-      <input type="text" class="form-control border-start-0" placeholder="Search name, admission no, phone..."
+      <input type="text" class="form-control border-start-0" placeholder="Search name, enrollment no, phone..."
         [value]="searchTerm" (input)="onSearch($any($event.target).value)">
     </div>
     <div class="text-muted small" *ngIf="!loading">

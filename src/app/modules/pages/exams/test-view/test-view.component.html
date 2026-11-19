@@ -9,9 +9,9 @@
     </span>
   </div>
   <div class="top-bar">
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex flex-column align-items-start gap-1">
       <h4 class="fw-bold mb-0">{{ examData.examName || 'Exam' }}</h4>
-      <span class="badge rounded-pill px-3 py-2" [ngClass]="getStatusBadgeClass(examData.status)">
+      <span class="badge rounded-pill px-2 py-1" style="font-size: 11px;" [ngClass]="getStatusBadgeClass(examData.status)">
         {{ formatStatus(examData.status) }}
       </span>
     </div>
@@ -27,6 +27,12 @@
         <i *ngIf="!exportingReport" class="fa-solid fa-file-excel me-1"></i>
         {{ exportingReport ? 'Exporting...' : 'Export Report' }}
       </button>
+      <ng-container *ngIf="examData.isImported && examData.status === 'result_published'">
+        <button *appHasPermission="'communication:send'" class="btn btn-shuffle fs-16 fw-medium me-2"
+          (click)="resultEmailModal.open()">
+          <i class="fa-solid fa-envelope me-1"></i> Send Result Email
+        </button>
+      </ng-container>
       <ng-container *ngIf="examData.status !== 'result_published'">
         <button *appHasPermission="'exam:edit'"
           class="btn btn-edit fs-16 fw-medium me-2" (click)="editExam()">
@@ -732,15 +738,16 @@
             <tr>
               <th>Rank</th>
               <th>Student Name</th>
-              <th>Start Date</th>
-              <th>End Date</th>
+              <th *ngIf="!examData.isImported">Start Date</th>
+              <th *ngIf="!examData.isImported">End Date</th>
+              <th *ngIf="examData.isImported">Exam Date</th>
               <th>Correct</th>
               <th>Incorrect</th>
               <th>Max Score</th>
               <th>Score</th>
               <th>Per %</th>
-              <th *ngIf="!examData.isImported">Mode</th>
-              <th *ngIf="!examData.isImported">Time</th>
+              <th>Mode</th>
+              <th>Time</th>
               <th *ngIf="!examData.isImported">Action</th>
             </tr>
           </thead>
@@ -759,8 +766,9 @@
                 <div class="fw-bold">{{ p.studentName }}</div>
                 <small class="text-muted">{{ p.admissionNo }}</small>
               </td>
-              <td>{{ formatDate(p.startedAt) }}</td>
-              <td>{{ formatDate(p.completedAt) }}</td>
+              <td *ngIf="!examData.isImported">{{ formatDate(p.startedAt) }}</td>
+              <td *ngIf="!examData.isImported">{{ formatDate(p.completedAt) }}</td>
+              <td *ngIf="examData.isImported">{{ formatDateOnly(examData?.startTime || p.startedAt || p.completedAt) }}</td>
               <td><span class="text-success fw-bold">{{ p.correctCount }}</span></td>
               <td><span class="text-danger fw-bold">{{ p.wrongCount }}</span></td>
               <td>{{ p.totalMarks }}</td>
@@ -771,12 +779,12 @@
                   {{ p.percentage }}%
                 </span>
               </td>
-              <td *ngIf="!examData.isImported">
+              <td>
                 <span class="badge rounded-pill" [ngClass]="isOfflineParticipant(p) ? 'bg-warning-subtle text-warning-emphasis' : 'bg-primary-subtle text-primary-emphasis'">
                   {{ isOfflineParticipant(p) ? 'Offline' : 'Online' }}
                 </span>
               </td>
-              <td *ngIf="!examData.isImported">{{ isOfflineParticipant(p) ? '--' : (p.timeTakenMins + 'm') }}</td>
+              <td>{{ isOfflineParticipant(p) ? '--' : ((p.timeTakenMins ?? 0) + 'm') }}</td>
               <td *ngIf="!examData.isImported">
                 <div class="d-flex gap-1">
                   <button *appHasPermission="'exam:view'" class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"

@@ -57,7 +57,7 @@ export class MarksImportComponent implements OnInit {
       totalMarks: [{ value: null, disabled: true }],
       totalQuestions: [null],
       duration: [null],
-      examDate: [''],
+      examDate: ['', Validators.required],
       description: [''],
       sections: this.fb.array([this.newSection(0)]),
     });
@@ -230,33 +230,51 @@ export class MarksImportComponent implements OnInit {
             const admissionNo = String(
               r['Admission No'] ?? r['admission_no'] ?? r['AdmissionNo'] ?? '',
             ).trim();
-            if (!admissionNo) return null;
+            const enrollmentNo = String(
+              r['Enrollment No'] ?? r['enrollment_no'] ?? r['EnrollmentNo'] ?? '',
+            ).trim();
+            if (!admissionNo && !enrollmentNo) return null;
+            const studentName = String(
+              r['Student Name'] ?? r['student_name'] ?? r['StudentName'] ?? r['Name'] ?? '',
+            ).trim();
+            const isAb = (v: any) => String(v ?? '').trim().toUpperCase() === 'AB';
             const sectionResults = secMeta
               .filter((s) => s.sectionName)
-              .map((s) => ({
-                sectionId: s.sectionId,
-                sectionName: s.sectionName,
-                obtainedMarks: Number(r[`${s.sectionName} Marks`] ?? 0),
-                totalQuestions: null,
-                correctCount: null,
-                wrongCount: null,
-                skippedCount: null,
-              }));
+              .map((s) => {
+                const rawMark = r[`${s.sectionName} Marks`];
+                const isAbsent = isAb(rawMark);
+                return {
+                  sectionId: s.sectionId,
+                  sectionName: s.sectionName,
+                  obtainedMarks: isAbsent ? 0 : (Number(rawMark) || 0),
+                  isAbsent,
+                  totalQuestions: null,
+                  correctCount: null,
+                  wrongCount: null,
+                  skippedCount: null,
+                };
+              });
             const subjectMarksSum = sectionResults.reduce(
               (sum, sr) => sum + (sr.obtainedMarks || 0),
               0,
             );
-            const obtainedMarks = Number(
-              r['Total Obtained Marks'] ??
-                r['Obtained Marks'] ??
-                subjectMarksSum,
-            );
-            return { admissionNo, obtainedMarks, sectionResults };
+            const rawTotal = r['Total Obtained Marks'] ?? r['Obtained Marks'];
+            const allSectionsAbsent =
+              sectionResults.length > 0 && sectionResults.every((sr) => sr.isAbsent);
+            const isAbsent = isAb(rawTotal) || allSectionsAbsent;
+            const hasExplicitTotal =
+              rawTotal !== undefined && rawTotal !== null && String(rawTotal).trim() !== '';
+            const obtainedMarks = isAbsent
+              ? 0
+              : hasExplicitTotal && !isAb(rawTotal)
+                ? Number(rawTotal) || 0
+                : subjectMarksSum;
+            return { admissionNo, enrollmentNo, studentName, obtainedMarks, isAbsent, sectionResults };
           })
           .filter((r): r is NonNullable<typeof r> => r !== null);
 
         if (!this.parsedStudents.length) {
-          this.alert.error('No valid rows found. Ensure column: Admission No');
+          this.alert.error('No valid rows found. Ensure column: Admission No or Enrollment No');
         }
       } catch (err) {
         this.alert.error('Failed to parse Excel file.');
@@ -293,8 +311,12 @@ export class MarksImportComponent implements OnInit {
       );
       return;
     }
-    const sampleRows = ['ADM001', 'ADM002', 'ADM003'].map((adm) => {
-      const row: any = { 'Admission No': adm };
+    const sampleRows = ['ADM001', 'ADM002', 'ADM003'].map((adm, idx) => {
+      const row: any = {
+        'Admission No': adm,
+        'Enrollment No': `ENR00${idx + 1}`,
+        'Student Name': `Student ${idx + 1}`,
+      };
       secMeta.forEach((s) => {
         row[`${s.sectionName} Marks`] = 0;
       });
@@ -350,11 +372,14 @@ export class MarksImportComponent implements OnInit {
     });
 
     const students = this.parsedStudents.map((s: any) => ({
-      admissionNo: s.admissionNo,
+      admissionNo: s.admissionNo || '',
+      enrollmentNo: s.enrollmentNo || '',
       obtainedMarks: s.obtainedMarks,
+      isAbsent: Boolean(s.isAbsent),
       classNo: f.classNo,
       sectionResults: (s.sectionResults || []).map((sr: any) => ({
         ...sr,
+        isAbsent: Boolean(sr.isAbsent),
         totalMarks: sectionTotalMap[sr.sectionId] || 0,
       })),
     }));
