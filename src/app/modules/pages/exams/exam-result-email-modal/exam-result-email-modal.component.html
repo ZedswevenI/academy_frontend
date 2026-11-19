@@ -186,11 +186,6 @@
                                             <td class="ps-1 py-0">{{ rep.enrollmentNo }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-semibold ps-0 pe-2 py-0">Admission No</td>
-                                            <td class="fw-semibold px-1 py-0">:</td>
-                                            <td class="ps-1 py-0">{{ rep.admissionNo }}</td>
-                                        </tr>
-                                        <tr>
                                             <td class="fw-semibold ps-0 pe-2 py-0">Batch Name</td>
                                             <td class="fw-semibold px-1 py-0">:</td>
                                             <td class="ps-1 py-0">{{ rep.batchName }}</td>
@@ -218,14 +213,14 @@
                                         <tbody>
                                             <tr *ngFor="let r of rep.rows">
                                                 <td>{{ r.subject }}</td>
-                                                <td>{{ r.yourMarks }}</td>
+                                                <td [class.text-danger]="r.yourMarks === 'AB'" [class.fw-bold]="r.yourMarks === 'AB'">{{ r.yourMarks }}</td>
                                                 <td>{{ r.outOf }}</td>
                                                 <td>{{ r.highest }}</td>
                                                 <td>{{ r.average }}</td>
                                             </tr>
                                             <tr class="fw-bold">
                                                 <td>Total</td>
-                                                <td>{{ rep.total?.yourMarks }}</td>
+                                                <td [class.text-danger]="rep.total?.yourMarks === 'AB'">{{ rep.total?.yourMarks }}</td>
                                                 <td>{{ rep.total?.outOf }}</td>
                                                 <td>{{ rep.total?.highest }}</td>
                                                 <td>{{ rep.total?.average }}</td>
@@ -279,11 +274,6 @@
                                             <td class="ps-1 py-0">{{ rep.enrollmentNo }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-semibold ps-0 pe-2 py-0">Admission No</td>
-                                            <td class="fw-semibold px-1 py-0">:</td>
-                                            <td class="ps-1 py-0">{{ rep.admissionNo }}</td>
-                                        </tr>
-                                        <tr>
                                             <td class="fw-semibold ps-0 pe-2 py-0">Batch Name</td>
                                             <td class="fw-semibold px-1 py-0">:</td>
                                             <td class="ps-1 py-0">{{ rep.batchName }}</td>
@@ -316,14 +306,14 @@
                                         <tbody>
                                             <tr *ngFor="let r of rep.rows">
                                                 <td>{{ r.subject }}</td>
-                                                <td>{{ r.yourMarks }}</td>
+                                                <td [class.text-danger]="r.yourMarks === 'AB'" [class.fw-bold]="r.yourMarks === 'AB'">{{ r.yourMarks }}</td>
                                                 <td>{{ r.outOf }}</td>
                                                 <td>{{ r.highest }}</td>
                                                 <td>{{ r.average }}</td>
                                             </tr>
                                             <tr class="fw-bold">
                                                 <td>Total</td>
-                                                <td>{{ rep.total?.yourMarks }}</td>
+                                                <td [class.text-danger]="rep.total?.yourMarks === 'AB'">{{ rep.total?.yourMarks }}</td>
                                                 <td>{{ rep.total?.outOf }}</td>
                                                 <td>{{ rep.total?.highest }}</td>
                                                 <td>{{ rep.total?.average }}</td>
