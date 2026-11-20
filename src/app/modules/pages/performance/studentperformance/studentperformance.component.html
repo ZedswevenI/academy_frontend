@@ -6,14 +6,14 @@
     <div *ngIf="!loading">
         <!-- ── Header card ──────────────────────────────────────────────────── -->
         <div class="bg-white rounded-4 shadow-sm p-4 mb-3">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <div class="d-flex align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                <div class="d-flex align-items-center gap-3" style="flex: 1 1 320px; min-width: 0;">
                     <div>
-                        <h1 class="fw-bold mb-0" style="font-size:22px;">
+                        <h1 class="fw-bold mb-1" style="font-size:22px;">
                             {{ studentProfile?.basic?.name || student?.admissionNo || studentId }}
                         </h1>
                         <div class="text-muted small">
-                            Admission No: {{ studentProfile?.basic?.admissionNo || student?.admissionNo || '—' }}
+                            Enrollment No: {{ studentProfile?.basic?.admissionNo || student?.admissionNo || '—' }}
                             &nbsp;·&nbsp;
                             Batch: {{ studentProfile?.program?.batchName || '—' }}
                             <span *ngIf="studentProfile?.basic?.batchCode">
@@ -30,25 +30,29 @@
                         </div>
                     </div>
                 </div>
-                <div>
-                    <button *appHasPermission="'performance:sync'" class="btn btn-shuffle fs-16 fw-medium me-2"
+                <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 flex-shrink-0">
+                    <button *appHasPermission="'performance:sync'" class="btn btn-shuffle fs-14 fw-medium text-nowrap"
                         [disabled]="syncing" (click)="syncStudent()">
                         <span *ngIf="syncing" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!syncing" class="fa-solid fa-rotate me-1"></i>
                         {{ syncing ? 'Syncing...' : 'Sync' }}
                     </button>
-                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingCPT" (click)="printCPT()">
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-14 fw-medium text-nowrap" [disabled]="exportingCPT" (click)="printCPT()">
                         <span *ngIf="exportingCPT" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!exportingCPT" class="fa-solid fa-file-pdf me-1"></i>
                         {{ exportingCPT ? 'Exporting...' : 'Z7i Performance' }}
                     </button>
-                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-16 fw-medium me-2" [disabled]="exportingSchool"
+                    <button *appHasPermission="'performance:view'" class="btn btn-export fs-14 fw-medium text-nowrap" [disabled]="exportingSchool"
                         (click)="printSchool()">
                         <span *ngIf="exportingSchool" class="spinner-border spinner-border-sm me-1"></span>
                         <i *ngIf="!exportingSchool" class="fa-solid fa-file-pdf me-1"></i>
                         {{ exportingSchool ? 'Exporting...' : 'School Performance' }}
                     </button>
-                    <button class="btn btn-back fs-16 fw-medium" (click)="goBack()">
+                    <button *appHasPermission="'communication:send'" class="btn btn-shuffle fs-14 fw-medium text-nowrap"
+                        (click)="perfEmailModal.open(activeTab === 'school' ? 'school' : 'z7i')">
+                        <i class="fa-solid fa-envelope me-1"></i> Send Email
+                    </button>
+                    <button class="btn btn-back fs-14 fw-medium text-nowrap" (click)="goBack()">
                         <i class="fa-solid fa-arrow-left btn-icon"></i>Back
                     </button>
                 </div>
@@ -195,7 +199,36 @@
                     No mock exam records found.
                 </div>
                 <div *ngIf="!mockLoading && mockExams.length">
-                    <div class="table-responsive">
+                    <div class="row g-2 mb-3 align-items-end p-2 rounded-3 bg-light border">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold mb-1">From Date</label>
+                            <input type="date" class="form-control form-control-sm" [(ngModel)]="mockFromDate"
+                                (ngModelChange)="onMockDateFilterChange()" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold mb-1">To Date</label>
+                            <input type="date" class="form-control form-control-sm" [(ngModel)]="mockToDate"
+                                (ngModelChange)="onMockDateFilterChange()" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold mb-1">Exam Name</label>
+                            <select class="form-select form-select-sm" [(ngModel)]="mockExamFilter">
+                                <option value="">All Exams ({{ mockExamsInDateRange.length }})</option>
+                                <option *ngFor="let ex of mockExamsInDateRange" [value]="ex.examId || ex.examName">
+                                    {{ ex.examName || ex.examId }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" (click)="clearMockFilters()">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div *ngIf="!filteredMockExams.length" class="text-center py-4 text-muted small">
+                        No mock exams match the selected date / exam filter.
+                    </div>
+                    <div *ngIf="filteredMockExams.length" class="table-responsive">
                         <table class="table table-hover align-middle" style="font-size:14px;">
                             <thead class="table-light">
                                 <tr>
@@ -208,7 +241,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <ng-container *ngFor="let m of mockExams">
+                                <ng-container *ngFor="let m of filteredMockExams">
                                     <!-- Main row -->
                                     <tr [style.cursor]="m.sectionResults?.length ? 'pointer' : 'default'"
                                         (click)="m.sectionResults?.length && toggleMockExpand(m.examId)">
@@ -297,7 +330,36 @@
                     No school exam records found.
                 </div>
                 <div *ngIf="!schoolLoading && schoolExams.length">
-                    <div class="table-responsive">
+                    <div class="row g-2 mb-3 align-items-end p-2 rounded-3 bg-light border">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold mb-1">From Date</label>
+                            <input type="date" class="form-control form-control-sm" [(ngModel)]="schoolFromDate"
+                                (ngModelChange)="onSchoolDateFilterChange()" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold mb-1">To Date</label>
+                            <input type="date" class="form-control form-control-sm" [(ngModel)]="schoolToDate"
+                                (ngModelChange)="onSchoolDateFilterChange()" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold mb-1">Exam Name</label>
+                            <select class="form-select form-select-sm" [(ngModel)]="schoolExamFilter">
+                                <option value="">All Exams ({{ schoolExamsInDateRange.length }})</option>
+                                <option *ngFor="let ex of schoolExamsInDateRange" [value]="ex.examId || ex.examName">
+                                    {{ ex.examName || ex.examId }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" (click)="clearSchoolFilters()">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div *ngIf="!filteredSchoolExams.length" class="text-center py-4 text-muted small">
+                        No school exams match the selected date / exam filter.
+                    </div>
+                    <div *ngIf="filteredSchoolExams.length" class="table-responsive">
                         <table class="table table-hover align-middle" style="font-size:14px;">
                             <thead class="table-light">
                                 <tr>
@@ -309,7 +371,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <ng-container *ngFor="let e of schoolExams">
+                                <ng-container *ngFor="let e of filteredSchoolExams">
                                     <tr [style.cursor]="e.subjects?.length ? 'pointer' : 'default'"
                                         (click)="e.subjects?.length && toggleSchoolExpand(e.examId)">
                                         <td>
@@ -434,3 +496,10 @@
         </div>
     </div>
 </div>
+
+<app-performance-email-modal #perfEmailModal
+    [studentId]="studentId"
+    [admissionNo]="studentProfile?.basic?.admissionNo || student?.admissionNo || ''"
+    [studentName]="studentProfile?.basic?.name || student?.admissionNo || ''"
+    [academicYear]="academicYear">
+</app-performance-email-modal>

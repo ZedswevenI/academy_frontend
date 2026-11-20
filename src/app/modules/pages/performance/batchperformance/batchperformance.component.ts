@@ -299,7 +299,6 @@ export class BatchperformanceComponent implements OnInit {
       await exportToPdf(
         html,
         `School_Batch_${this.batchCode}_${this.academicYear}.pdf`,
-        '#F7F06A',
       );
     } catch (err) {
       this.alert.error('Failed to export PDF');

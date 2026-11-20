@@ -524,7 +524,6 @@ export class PerformanceComponent implements OnInit {
       await exportToPdf(
         html,
         `School_Batch_${this.selectedBatchCode}_${this.selectedYear}.pdf`,
-        '#F7F06A',
       );
     } finally {
       this.printingAllSchool = false;

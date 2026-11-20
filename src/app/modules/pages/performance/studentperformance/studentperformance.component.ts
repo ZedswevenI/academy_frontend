@@ -41,12 +41,18 @@ export class StudentperformanceComponent implements OnInit {
   mockTotal = 0;
   mockLoading = false;
   expandedMockId = '';
+  mockFromDate = '';
+  mockToDate = '';
+  mockExamFilter = '';
   schoolExams: any[] = [];
   schoolPage = 1;
   schoolPageSize = 20;
   schoolTotal = 0;
   schoolLoading = false;
   expandedSchoolId = '';
+  schoolFromDate = '';
+  schoolToDate = '';
+  schoolExamFilter = '';
   remarkText = '';
   remarkSaving = false;
   studentProfile: any = null;
@@ -387,11 +393,42 @@ export class StudentperformanceComponent implements OnInit {
     });
   }
 
+  get mockExamsInDateRange(): any[] {
+    const fromTs = this.mockFromDate ? new Date(this.mockFromDate).setHours(0, 0, 0, 0) : null;
+    const toTs = this.mockToDate ? new Date(this.mockToDate).setHours(23, 59, 59, 999) : null;
+    return (this.mockExams || []).filter((m) => {
+      const dt = m.syncedAt ? Number(m.syncedAt) : null;
+      if (fromTs !== null && (dt === null || dt < fromTs)) return false;
+      if (toTs !== null && (dt === null || dt > toTs)) return false;
+      return true;
+    });
+  }
+
+  get filteredMockExams(): any[] {
+    const inRange = this.mockExamsInDateRange;
+    if (!this.mockExamFilter) return inRange;
+    return inRange.filter((m) => (m.examId || m.examName) === this.mockExamFilter);
+  }
+
+  onMockDateFilterChange(): void {
+    if (
+      this.mockExamFilter &&
+      !this.mockExamsInDateRange.some((m) => (m.examId || m.examName) === this.mockExamFilter)
+    ) {
+      this.mockExamFilter = '';
+    }
+  }
+
+  clearMockFilters(): void {
+    this.mockFromDate = '';
+    this.mockToDate = '';
+    this.mockExamFilter = '';
+  }
+
   async printCPT(): Promise<void> {
     if (!this.permissionService.hasPermission('performance:view')) return;
     if (!this.studentProfile) await this.loadStudentProfile();
-    let exams = this.mockExams;
-    if (!exams.length) exams = await this.fetchAllMockExams();
+    let exams = this.mockExams.length ? this.filteredMockExams : await this.fetchAllMockExams();
     if (!exams.length) {
       this.alert.error('No exam data to print');
       return;
@@ -430,8 +467,42 @@ export class StudentperformanceComponent implements OnInit {
       batchStatsMap,
       highestTotalMap,
     );
-    const name = `CPT_${this.studentProfile?.basic?.admissionNo || this.studentId}.pdf`;
+    const safeStuName = (this.studentProfile?.basic?.name || this.student?.admissionNo || this.studentId || 'Student').replace(/[^A-Za-z0-9_-]/g, '_');
+    const enrNo = (this.studentProfile?.basic?.admissionNo || this.studentId || '').replace(/[^A-Za-z0-9_-]/g, '_');
+    const name = `${safeStuName}_${enrNo}.pdf`;
     await exportToPdf(html, name);
+  }
+
+  get schoolExamsInDateRange(): any[] {
+    const fromTs = this.schoolFromDate ? new Date(this.schoolFromDate).setHours(0, 0, 0, 0) : null;
+    const toTs = this.schoolToDate ? new Date(this.schoolToDate).setHours(23, 59, 59, 999) : null;
+    return (this.schoolExams || []).filter((e) => {
+      const dt = e.examDate ? Number(e.examDate) : null;
+      if (fromTs !== null && (dt === null || dt < fromTs)) return false;
+      if (toTs !== null && (dt === null || dt > toTs)) return false;
+      return true;
+    });
+  }
+
+  get filteredSchoolExams(): any[] {
+    const inRange = this.schoolExamsInDateRange;
+    if (!this.schoolExamFilter) return inRange;
+    return inRange.filter((e) => (e.examId || e.examName) === this.schoolExamFilter);
+  }
+
+  onSchoolDateFilterChange(): void {
+    if (
+      this.schoolExamFilter &&
+      !this.schoolExamsInDateRange.some((e) => (e.examId || e.examName) === this.schoolExamFilter)
+    ) {
+      this.schoolExamFilter = '';
+    }
+  }
+
+  clearSchoolFilters(): void {
+    this.schoolFromDate = '';
+    this.schoolToDate = '';
+    this.schoolExamFilter = '';
   }
 
   async printSchool(): Promise<void> {
@@ -440,15 +511,16 @@ export class StudentperformanceComponent implements OnInit {
     try {
       if (!this.studentProfile) await this.loadStudentProfile();
       if (!this.batchSection) await this.fetchBatchSection();
-      let exams = this.schoolExams;
-      if (!exams.length) exams = await this.fetchAllSchoolExams();
+      let exams = this.schoolExams.length ? this.filteredSchoolExams : await this.fetchAllSchoolExams();
       if (!exams.length) {
         this.alert.error('No school exam data to print');
         return;
       }
       const html = await buildSchoolPrintHtml(this.getPrintStudent(), exams);
-      const name = `School_${this.studentProfile?.basic?.admissionNo || this.studentId}.pdf`;
-      await exportToPdf(html, name, '#F7F06A');
+      const safeStuName = (this.studentProfile?.basic?.name || this.student?.admissionNo || this.studentId || 'Student').replace(/[^A-Za-z0-9_-]/g, '_');
+      const enrNo = (this.studentProfile?.basic?.admissionNo || this.studentId || '').replace(/[^A-Za-z0-9_-]/g, '_');
+      const name = `${safeStuName}_${enrNo}.pdf`;
+      await exportToPdf(html, name);
     } catch (err) {
       this.alert.error('Failed to export PDF');
     } finally {

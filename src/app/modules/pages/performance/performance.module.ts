@@ -7,9 +7,11 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PerformanceComponent } from './performance/performance.component';
 import { StudentperformanceComponent } from './studentperformance/studentperformance.component';
 import { BatchperformanceComponent } from './batchperformance/batchperformance.component';
+import { PerformanceEmailModalComponent } from './performance-email-modal/performance-email-modal.component';
+import { SchoolPerformanceModalComponent } from './school-performance-modal/school-performance-modal.component';
 
 @NgModule({
-  declarations: [PerformanceComponent, StudentperformanceComponent, BatchperformanceComponent],
+  declarations: [PerformanceComponent, StudentperformanceComponent, BatchperformanceComponent, PerformanceEmailModalComponent, SchoolPerformanceModalComponent],
   imports: [CommonModule, PerformanceRoutingModule, UiElementsModule, ReactiveFormsModule, FormsModule],
   exports: []
 })

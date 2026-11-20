@@ -147,31 +147,46 @@ const SCHOOL_WEBSITE = 'www.sugunapips.in';
 
 // Shared CSS for one exam scorecard block, used by both the standalone
 // single-student document and the bulk wrapAllPages() document.
-const CPT_BLOCK_CSS = `
-    .exam-block { margin-bottom: 28px; page-break-inside: avoid; break-inside: avoid; }
-    .cpt-title { text-align: center; font-size: 12.5pt; font-weight: 800; margin-bottom: 16px; }
-    .cpt-greeting { font-size: 10.5pt; margin-bottom: 4px; }
-    .cpt-reg { font-size: 10.5pt; margin-bottom: 14px; }
-    .cpt-intro { font-size: 10.5pt; margin-bottom: 6px; }
-    .cpt-paper-label { font-size: 10.5pt; font-weight: 700; margin-bottom: 6px; }
-    .marks-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 18px; }
-    .marks-table th { border: 1px solid #333; padding: 6px 10px; font-weight: 700; background: #f0f0f0; text-align: center; }
-    .marks-table td { border: 1px solid #333; padding: 6px 10px; text-align: center; background: #fff; }
-    .marks-table tr.total-row td { font-weight: 700; background: #f8f9fa; }
-    .cpt-signoff p { font-size: 10.5pt; margin-bottom: 2px; }
-    .cpt-tagline { color: #c0392b; font-weight: 600; }
+const REPORT_COMMON_CSS = `
+    .header-divider { border: none; border-top: 1px solid #333; margin: 10px 0 14px; }
+    .report-main-title { text-align: center; font-size: 15pt; font-weight: 700; color: #111; margin-bottom: 12px; }
+    .section-heading { font-size: 11pt; font-weight: 700; color: #111; margin-bottom: 6px; }
+    .scorecard-heading { text-align: center; font-size: 11.5pt; font-weight: 700; color: #111; margin: 12px 0 8px; }
+    .student-details-table { border-collapse: collapse; margin-bottom: 10px; font-size: 10.5pt; }
+    .student-details-table td { padding: 2px 6px 2px 0; vertical-align: top; }
+    .student-details-table td.lbl { font-weight: 700; white-space: nowrap; width: 105px; }
+    .student-details-table td.sep { font-weight: 700; width: 10px; }
+    .exam-block { margin-bottom: 18px; page-break-inside: avoid; break-inside: avoid; }
+    .exam-heading { font-size: 11pt; font-weight: 700; color: #111; margin-bottom: 6px; }
+    .marks-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 8px; }
+    .marks-table th { border: 1px solid #000; padding: 6px 10px; font-weight: 700; text-align: center; background: #fff; }
+    .marks-table td { border: 1px solid #000; padding: 6px 10px; text-align: center; background: #fff; }
+    .marks-table tr.total-row td { font-weight: 700; }
+    .ab-mark { color: #dc2626; font-weight: 700; }
+    .report-signoff { margin-top: 18px; font-size: 10.5pt; color: #222; }
+    .report-signoff .team { font-weight: 700; color: #111; margin-top: 2px; }
 `;
 
-// One complete scorecard block (greeting + marks table + sign-off) for a
-// single exam. The Total row's "Highest" comes from the backend's
-// batchHighestTotal (the real topper's combined total) rather than summing
-// each subject's individual highest — the student who tops the combined
-// total is usually not the one who topped every subject. The Total row's
-// "Average" is a correct sum of per-subject averages (average is linear,
-// unlike max), so it's computed client-side even when highestTotal is
-// missing.
-const buildCPTExamBlockHtml = (
-  student: PrintStudent,
+const esc = (v: any): string =>
+  String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+const buildStudentDetailsHtml = (student: PrintStudent): string => `
+  <div class="section-heading">Student Details</div>
+  <table class="student-details-table">
+    <tbody>
+      <tr><td class="lbl">Name</td><td class="sep">:</td><td>${esc(student.studentName || '—')}</td></tr>
+      <tr><td class="lbl">Enrollment No</td><td class="sep">:</td><td>${esc(student.admissionNo || '—')}</td></tr>
+      <tr><td class="lbl">Batch Name</td><td class="sep">:</td><td>${esc(student.batchCode || '—')}</td></tr>
+      <tr><td class="lbl">Program</td><td class="sep">:</td><td>${esc(student.programName || '—')}</td></tr>
+    </tbody>
+  </table>
+`;
+
+const buildCPTExamTableHtml = (
   exam: PrintMockExam,
   batchStatsMap: Map<string, SectionStats[]>,
   highestTotalMap?: Map<string, number>,
@@ -179,44 +194,43 @@ const buildCPTExamBlockHtml = (
   const stats = batchStatsMap.get(exam.examId) || [];
   const statsMap = new Map(stats.map((s) => [s.sectionId, s]));
   const highestTotal = highestTotalMap?.get(exam.examId);
-  const examName = exam.examName || 'Z-SAT';
-  const monthYear = exam.syncedAt ? formatMonthYear(exam.syncedAt) : '';
+  const examName = exam.examName || 'Exam';
 
   let avgTotal = 0;
   let avgTotalKnown = false;
   const rows = (exam.sectionResults || [])
-    .map((sec) => {
+    .map((sec: any) => {
       const stat = statsMap.get(sec.sectionId);
       if (stat) {
         avgTotal += stat.avgObtained;
         avgTotalKnown = true;
       }
+      const isAb = sec.isAbsent === true || String(sec.obtainedMarks ?? '').trim().toUpperCase() === 'AB';
+      const yourMarks = isAb ? 'AB' : (sec.obtainedMarks ?? '—');
       return `
       <tr>
-        <td style="text-align:left;">${sec.subjectName || sec.sectionId || '—'}</td>
-        <td>${sec.obtainedMarks ?? '—'}</td>
-        <td><strong>${sec.totalMarks ?? '—'}</strong></td>
+        <td>${esc(sec.subjectName || sec.sectionId || '—')}</td>
+        <td class="${isAb ? 'ab-mark' : ''}">${esc(yourMarks)}</td>
+        <td>${sec.totalMarks ?? '—'}</td>
         <td>${stat ? stat.maxObtained : '—'}</td>
         <td>${stat ? Math.round(stat.avgObtained) : '—'}</td>
       </tr>`;
     })
     .join('');
 
+  const isOverallAb =
+    (exam as any).isAbsent === true ||
+    String(exam.obtainedMarks ?? '').trim().toUpperCase() === 'AB' ||
+    ((exam.sectionResults || []).length > 0 &&
+      (exam.sectionResults || []).every((s: any) => s.isAbsent === true));
+
   return `
     <div class="exam-block">
-      <div class="cpt-title">${examName.toUpperCase()} EXAM RESULTS${monthYear ? ' - ' + monthYear : ''}</div>
-
-      <div class="cpt-greeting">Dear <strong>${student.studentName || '—'}</strong>,</div>
-      <div class="cpt-reg">Registration No: <strong>${student.admissionNo || '—'}</strong></div>
-
-      <div class="cpt-intro">Your Test results are out. Please find your scorecard.</div>
-      <div class="cpt-intro">Your Performance in our ${examName} Exam is given below:</div>
-      <div class="cpt-paper-label">Paper 1</div>
-
+      <div class="exam-heading">Exam Name: ${esc(examName)}</div>
       <table class="marks-table">
         <thead>
           <tr>
-            <th style="text-align:left;">Subject</th>
+            <th>Subject</th>
             <th>Your Marks</th>
             <th>Out of</th>
             <th>Highest</th>
@@ -226,21 +240,14 @@ const buildCPTExamBlockHtml = (
         <tbody>
           ${rows || '<tr><td colspan="5" style="text-align:center;color:#888;">No subject data</td></tr>'}
           <tr class="total-row">
-            <td style="text-align:left;">Total</td>
-            <td>${exam.obtainedMarks ?? '—'}</td>
+            <td>Total</td>
+            <td class="${isOverallAb ? 'ab-mark' : ''}">${isOverallAb ? 'AB' : (exam.obtainedMarks ?? '—')}</td>
             <td>${exam.totalMarks ?? '—'}</td>
             <td>${highestTotal != null ? highestTotal : '—'}</td>
             <td>${avgTotalKnown ? Math.round(avgTotal) : '—'}</td>
           </tr>
         </tbody>
       </table>
-
-      <div class="cpt-signoff">
-        <p>Yours sincerely,</p>
-        <p>${examName} Team</p>
-        <p>Z7i - Coimbatore</p>
-        <p class="cpt-tagline">"You Aspire, We Inspire"</p>
-      </div>
     </div>`;
 };
 
@@ -250,28 +257,20 @@ export const buildCPTPrintHtml = async (
   batchStatsMap: Map<string, SectionStats[]>,
   highestTotalMap?: Map<string, number>,
 ): Promise<string> => {
-  const logo = await getLogoBase64();
-  const logoHtml = logo
-    ? `<img src="${logo}" alt="Z7i" style="height:60px;max-width:200px;object-fit:contain;" />`
-    : `<h2>Z7i INSTITUTE</h2><p>JEE | NEET | Foundation</p>`;
-  const examBlocksHtml = mockExams
-    .map((exam) => buildCPTExamBlockHtml(student, exam, batchStatsMap, highestTotalMap))
-    .join('');
+  const pageHtml = await buildCPTPageHtml(student, mockExams, batchStatsMap, highestTotalMap);
   return `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>CPT Results — ${student.studentName}</title>
+      <title>Academic Performance Report — ${esc(student.studentName)}</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #111; padding: 20px 30px; }
         .page { page-break-after: always; }
         .page:last-child { page-break-after: auto; }
-        .logo-header { text-align: center; margin-bottom: 16px; }
-        .logo-header h2 { font-size: 20pt; font-weight: 800; letter-spacing: 1px; }
-        .logo-header p { font-size: 10pt; color: #555; }
+        .logo-header { text-align: center; margin-bottom: 6px; }
         .logo-header img { display: block; margin: 0 auto; }
-        ${CPT_BLOCK_CSS}
+        ${REPORT_COMMON_CSS}
         @media print {
           body { padding: 8px 15px; }
           .page { page-break-after: always; }
@@ -280,17 +279,7 @@ export const buildCPTPrintHtml = async (
       </style>
     </head>
     <body>
-      <div class="page">
-        <div class="logo-header">
-          <img src="/assets/z7i_logo.png"
-       alt="Z7i Institute"
-       style="height:60px; max-width:200px; object-fit:contain;"
-       crossorigin="anonymous" />
-          <p>JEE | NEET | Foundation</p>
-        </div>
-
-        ${examBlocksHtml || '<p style="text-align:center;color:#888;padding:20px;">No mock exam data available.</p>'}
-      </div>
+      ${pageHtml}
     </body>
     </html>`;
 };
@@ -483,31 +472,80 @@ const buildSchoolExamBlockHtml = (
     </div>`;
 };
 
+const buildSchoolExamTableHtml = (exam: PrintSchoolExam): string => {
+  const subjects = exam.subjects || [];
+  let highestSum = 0;
+  let hasHighest = false;
+  let avgSum = 0;
+  let hasAvg = false;
+
+  const rows = subjects
+    .map((sub) => {
+      if (sub.maxObtained != null) {
+        highestSum += Number(sub.maxObtained);
+        hasHighest = true;
+      }
+      if (sub.avgObtained != null) {
+        avgSum += Number(sub.avgObtained);
+        hasAvg = true;
+      }
+      const isAb = String(sub.obtainedMarks ?? '').trim().toUpperCase() === 'AB';
+      return `
+      <tr>
+        <td>${esc(sub.subjectName || '—')}</td>
+        <td class="${isAb ? 'ab-mark' : ''}">${isAb ? 'AB' : (sub.obtainedMarks ?? '—')}</td>
+        <td>${sub.maxMarks ?? '—'}</td>
+        <td>${sub.maxObtained != null ? Math.round(sub.maxObtained) : '—'}</td>
+        <td>${sub.avgObtained != null ? Math.round(sub.avgObtained) : '—'}</td>
+      </tr>`;
+    })
+    .join('');
+
+  return `
+    <div class="exam-block">
+      <div class="exam-heading">Exam Name: ${esc(exam.examName || 'School Exam')}</div>
+      <table class="marks-table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Your Marks</th>
+            <th>Out of</th>
+            <th>Highest</th>
+            <th>Average</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="5" style="text-align:center;color:#888;">No subject data</td></tr>'}
+          <tr class="total-row">
+            <td>Total</td>
+            <td>${exam.obtainedMarks ?? '—'}</td>
+            <td>${exam.totalMarks ?? '—'}</td>
+            <td>${hasHighest ? Math.round(highestSum) : '—'}</td>
+            <td>${hasAvg ? Math.round(avgSum) : '—'}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+};
+
 export const buildSchoolPrintHtml = async (
   student: PrintStudent,
   schoolExams: PrintSchoolExam[],
 ): Promise<string> => {
-  const logo = await getSchoolLogoBase64();
-  const logoHtml = logo
-    ? `<img src="${logo}" alt="Suguna PIP School" style="height:70px;width:70px;object-fit:contain;" />`
-    : '';
-  const examBlocksHtml = schoolExams
-    .map((exam) => buildSchoolExamBlockHtml(student, exam, logoHtml))
-    .join('');
-
+  const pageHtml = await buildSchoolPageHtml(student, schoolExams);
   return `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>School Performance — ${student.studentName}</title>
+      <title>Academic Performance Report — ${esc(student.studentName)}</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #111; padding: 20px 30px; }
         .page { page-break-after: always; }
         .page:last-child { page-break-after: auto; }
-        .text-center { text-align: center !important; }
-        .fw-bold { font-weight: 700; }
-        ${SCHOOL_BLOCK_CSS}
+        .logo-header { text-align: center; margin-bottom: 6px; }
+        .logo-header img { display: block; margin: 0 auto; }
+        ${REPORT_COMMON_CSS}
         @media print {
           body { padding: 8px 15px; }
           .page { page-break-after: always; }
@@ -516,9 +554,7 @@ export const buildSchoolPrintHtml = async (
       </style>
     </head>
     <body>
-      <div class="page">
-        ${examBlocksHtml || '<p style="text-align:center;color:#888;padding:20px;">No school exam data available.</p>'}
-      </div>
+      ${pageHtml}
     </body>
     </html>`;
 };
@@ -545,18 +581,23 @@ export const buildCPTPageHtml = async (
   const logo = await getLogoBase64();
   const logoHtml = logo
     ? `<img src="${logo}" alt="Z7i" style="height:60px;max-width:200px;object-fit:contain;" />`
-    : `<h2>Z7i INSTITUTE</h2><p>JEE | NEET | Foundation</p>`;
+    : `<h2 style="font-size:18pt;font-weight:800;">Z7i INSTITUTE</h2>`;
   const examBlocksHtml = mockExams
-    .map((exam: any) => buildCPTExamBlockHtml(student, exam, batchStatsMap, highestTotalMap))
+    .map((exam: any) => buildCPTExamTableHtml(exam, batchStatsMap, highestTotalMap))
     .join('');
 
   return `
     <div class="page">
-      <div class="logo-header">
-        ${logoHtml}
-       <p style="margin-top:4px;font-size:10pt;color:#555;">JEE | NEET | Foundation</p>
+      <div class="logo-header">${logoHtml}</div>
+      <hr class="header-divider" />
+      <div class="report-main-title">Academic Performance Report</div>
+      ${buildStudentDetailsHtml(student)}
+      <div class="scorecard-heading">Score Card</div>
+      ${examBlocksHtml || '<p style="text-align:center;color:#888;padding:20px;">No mock exam data available.</p>'}
+      <div class="report-signoff">
+        <div>Regards,</div>
+        <div class="team">Team Z7i</div>
       </div>
-      ${examBlocksHtml}
     </div>`;
 };
 
@@ -566,13 +607,25 @@ export const buildSchoolPageHtml = async (
 ): Promise<string> => {
   const logo = await getSchoolLogoBase64();
   const logoHtml = logo
-    ? `<img src="${logo}" alt="Suguna PIP School" style="height:70px;width:70px;object-fit:contain;" />`
-    : '';
+    ? `<img src="${logo}" alt="Suguna PIP School" style="height:64px;width:64px;object-fit:contain;" />`
+    : `<h2 style="font-size:16pt;font-weight:800;">${SCHOOL_NAME}</h2>`;
   const examBlocksHtml = schoolExams
-    .map((exam: any) => buildSchoolExamBlockHtml(student, exam, logoHtml))
+    .map((exam: any) => buildSchoolExamTableHtml(exam))
     .join('');
 
-  return `<div class="page">${examBlocksHtml}</div>`;
+  return `
+    <div class="page">
+      <div class="logo-header">${logoHtml}</div>
+      <hr class="header-divider" />
+      <div class="report-main-title">Academic Performance Report</div>
+      ${buildStudentDetailsHtml(student)}
+      <div class="scorecard-heading">Score Card</div>
+      ${examBlocksHtml || '<p style="text-align:center;color:#888;padding:20px;">No school exam data available.</p>'}
+      <div class="report-signoff">
+        <div>Regards,</div>
+        <div class="team">Team Z7i</div>
+      </div>
+    </div>`;
 };
 
 // export const wrapAllPages = (
@@ -633,25 +686,23 @@ export const buildSchoolPageHtml = async (
 // };
 
 export const wrapAllPages = (pages: string[], type: 'cpt' | 'school'): string => {
-  const cptStyles = `
-    .logo-header { text-align:center; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #1a3a6b; }
+  const sharedStyles = `
+    .logo-header { text-align:center; margin-bottom:6px; }
     .logo-header img { display:block; margin:0 auto; }
-    ${CPT_BLOCK_CSS}`;
-
-  const schoolStyles = SCHOOL_BLOCK_CSS;
+    ${REPORT_COMMON_CSS}`;
 
   return `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>${type === 'cpt' ? 'CPT Results' : 'School Performance'}</title>
+      <title>${type === 'cpt' ? 'Z7i Performance Report' : 'School Performance Report'}</title>
       <style>
         * { box-sizing:border-box; margin:0; padding:0; }
         body { font-family:'Segoe UI',Arial,sans-serif; font-size:11pt; color:#111; }
         .page { padding:20px 30px; }
         .text-center { text-align:center !important; }
         .fw-bold { font-weight:700; }
-        ${type === 'cpt' ? cptStyles : schoolStyles}
+        ${sharedStyles}
       </style>
     </head>
     <body>${pages.join('')}</body>
