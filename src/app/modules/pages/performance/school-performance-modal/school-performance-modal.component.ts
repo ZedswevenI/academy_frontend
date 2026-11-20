@@ -25,6 +25,7 @@ export class SchoolPerformanceModalComponent implements OnInit {
   previewError = '';
   tenantId = localStorage.getItem('tenantId') || '';
 
+  reportType: 'z7i' | 'school' = 'school';
   fromDate = '';
   toDate = '';
   examDropdownOpen = false;
@@ -65,8 +66,9 @@ export class SchoolPerformanceModalComponent implements OnInit {
     });
   }
 
-  open(): void {
+  open(type: 'z7i' | 'school' = 'school'): void {
     this.tenantId = localStorage.getItem('tenantId') || this.tenantId;
+    this.reportType = type;
     this.fromDate = '';
     this.toDate = '';
     this.examDropdownOpen = false;
@@ -84,6 +86,14 @@ export class SchoolPerformanceModalComponent implements OnInit {
       scheduledAtInput: '',
     });
     this.show = true;
+    this.loadExamsAndStudents();
+  }
+
+  setReportType(type: 'z7i' | 'school'): void {
+    if (this.reportType === type) return;
+    this.reportType = type;
+    this.examDropdownOpen = false;
+    this.selectedExamIds.clear();
     this.loadExamsAndStudents();
   }
 
@@ -153,6 +163,7 @@ export class SchoolPerformanceModalComponent implements OnInit {
           entiId: this.tenantId,
           batchId: this.batchId,
           academicYear: this.academicYear || undefined,
+          reportType: this.reportType,
           fromDate: this.fromDate || undefined,
           toDate: this.toDate || undefined,
         },
@@ -251,7 +262,7 @@ export class SchoolPerformanceModalComponent implements OnInit {
           batchId: this.batchId,
           admissionNos: admNos.length ? admNos : undefined,
           academicYear: this.academicYear || undefined,
-          reportType: 'school',
+          reportType: this.reportType,
           examIds,
           fromDate: this.fromDate || undefined,
           toDate: this.toDate || undefined,
@@ -268,7 +279,7 @@ export class SchoolPerformanceModalComponent implements OnInit {
           this.previewLoading = false;
           this.previewData = null;
           this.previewError =
-            err?.error?.message || 'Unable to load school performance preview';
+            err?.error?.message || `Unable to load ${this.reportType === 'school' ? 'school' : 'Z7i'} performance preview`;
         },
       });
   }
@@ -293,7 +304,7 @@ export class SchoolPerformanceModalComponent implements OnInit {
           entiId: this.tenantId,
           batchId: this.batchId,
           academicYear: this.academicYear || undefined,
-          reportType: 'school',
+          reportType: this.reportType,
           admissionNos,
           examIds,
           fromDate: this.fromDate || undefined,
@@ -310,7 +321,7 @@ export class SchoolPerformanceModalComponent implements OnInit {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `School_Performance_${this.batchCode || this.batchId}.zip`;
+          a.download = `${this.reportType === 'school' ? 'School' : 'Z7i'}_Performance_${this.batchCode || this.batchId}.zip`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -357,7 +368,7 @@ export class SchoolPerformanceModalComponent implements OnInit {
           batchId: this.batchId,
           admissionNos,
           academicYear: this.academicYear || undefined,
-          reportType: 'school',
+          reportType: this.reportType,
           examIds,
           fromDate: this.fromDate || undefined,
           toDate: this.toDate || undefined,

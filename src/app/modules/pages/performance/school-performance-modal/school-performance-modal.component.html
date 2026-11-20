@@ -3,25 +3,43 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title fw-bold">
-          <i class="fa-solid fa-school me-2 text-primary"></i>School Performance — Bulk Email &amp; ZIP Report
+          <i class="fa-solid fa-envelope me-2 text-primary"></i>
+          {{ reportType === 'school' ? 'School Performance' : 'Z7i Performance' }} — Bulk Email &amp; ZIP Report
         </h5>
         <button type="button" class="btn-close" (click)="close()"></button>
       </div>
 
       <div class="modal-body" [formGroup]="form">
-        <!-- Date & Exam Filters -->
+        <!-- Report Type + Date & Exam Filters -->
         <div class="row g-2 mb-3 align-items-end p-3 rounded-3 bg-light border">
           <div class="col-md-3">
+            <label class="form-label fw-semibold small mb-1">Report Type</label>
+            <div class="btn-group w-100" role="group">
+              <button type="button" class="btn btn-sm"
+                [class.btn-primary]="reportType === 'z7i'"
+                [class.btn-outline-primary]="reportType !== 'z7i'"
+                (click)="setReportType('z7i')">
+                Z7i
+              </button>
+              <button type="button" class="btn btn-sm"
+                [class.btn-primary]="reportType === 'school'"
+                [class.btn-outline-primary]="reportType !== 'school'"
+                (click)="setReportType('school')">
+                School
+              </button>
+            </div>
+          </div>
+          <div class="col-md-2">
             <label class="form-label fw-semibold small mb-1">From Date</label>
             <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate"
               [ngModelOptions]="{ standalone: true }" (ngModelChange)="onDateRangeChange()" />
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label class="form-label fw-semibold small mb-1">To Date</label>
             <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate"
               [ngModelOptions]="{ standalone: true }" (ngModelChange)="onDateRangeChange()" />
           </div>
-          <div class="col-md-4 position-relative">
+          <div class="col-md-3 position-relative">
             <label class="form-label fw-semibold small mb-1">Exam Name</label>
             <button type="button" class="form-select form-select-sm text-start text-truncate"
               [disabled]="examsLoading" (click)="examDropdownOpen = !examDropdownOpen">
